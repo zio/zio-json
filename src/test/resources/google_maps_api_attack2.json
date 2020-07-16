@@ -1,0 +1,1881 @@
+{
+"!!sjyfIedestination_addresses": null,
+"destination_addresses" : [
+"New York, NY, USA",
+"Los Angeles, CA, USA",
+"Chicago, IL, USA",
+"Houston, TX, USA",
+"Phoenix, AZ, USA",
+"Philadelphia, PA, USA",
+"San Antonio, TX, USA",
+"San Diego, CA, USA",
+"Dallas, TX, USA",
+"San Jose, CA, USA"
+],
+"!!sjyfIeorigin_addresses":null,"!!sjyej'origin_addresses":null,"!!sjyeiForigin_addresses":null,"!!sjyeheorigin_addresses":null,
+"origin_addresses" : [
+"New York, NY, USA",
+"Los Angeles, CA, USA",
+"Chicago, IL, USA",
+"Houston, TX, USA",
+"Phoenix, AZ, USA",
+"Philadelphia, PA, USA",
+"San Antonio, TX, USA",
+"San Diego, CA, USA",
+"Dallas, TX, USA",
+"San Jose, CA, USA"
+],
+"!!sjyfIerows":null,"!!sjyej'rows":null,"!!sjyeiFrows":null,"!!sjyeherows":null,
+"rows" : [
+{
+"!!sjyfIeelements":null,"!!sjyej'elements":null,"!!sjyeiFelements":null,
+"elements" : [
+{
+"!!sjyfIedistance":null,"!!sjyej'distance":null,"!!sjyeiFdistance":null,"!!sjyehedistance":null,
+"distance" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "1 m",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 0
+},
+"!!sjyfIeduration":null,"!!sjyej'duration":null,"!!sjyeiFduration":null,"!!sjyeheduration":null,
+"duration" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "1 min",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 0
+},
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+},
+{
+"!!sjyfIedistance":null,"!!sjyej'distance":null,"!!sjyeiFdistance":null,"!!sjyehedistance":null,
+"distance" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "4,490 km",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 4489862
+},
+"!!sjyfIeduration":null,"!!sjyej'duration":null,"!!sjyeiFduration":null,"!!sjyeheduration":null,
+"duration" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "1 day 16 hours",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 145589
+},
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+},
+{
+"!!sjyfIedistance":null,"!!sjyej'distance":null,"!!sjyeiFdistance":null,"!!sjyehedistance":null,
+"distance" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "1,270 km",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 1270445
+},
+"!!sjyfIeduration":null,"!!sjyej'duration":null,"!!sjyeiFduration":null,"!!sjyeheduration":null,
+"duration" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "12 hours 10 mins",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 43773
+},
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+},
+{
+"!!sjyfIedistance":null,"!!sjyej'distance":null,"!!sjyeiFdistance":null,"!!sjyehedistance":null,
+"distance" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "2,621 km",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 2620658
+},
+"!!sjyfIeduration":null,"!!sjyej'duration":null,"!!sjyeiFduration":null,"!!sjyeheduration":null,
+"duration" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "23 hours 55 mins",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 86073
+},
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+},
+{
+"!!sjyfIedistance":null,"!!sjyej'distance":null,"!!sjyeiFdistance":null,"!!sjyehedistance":null,
+"distance" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "3,876 km",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 3875676
+},
+"!!sjyfIeduration":null,"!!sjyej'duration":null,"!!sjyeiFduration":null,"!!sjyeheduration":null,
+"duration" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "1 day 12 hours",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 129040
+},
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+},
+{
+"!!sjyfIedistance":null,"!!sjyej'distance":null,"!!sjyeiFdistance":null,"!!sjyehedistance":null,
+"distance" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "158 km",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 158242
+},
+"!!sjyfIeduration":null,"!!sjyej'duration":null,"!!sjyeiFduration":null,"!!sjyeheduration":null,
+"duration" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "1 hour 55 mins",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 6885
+},
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+},
+{
+"!!sjyfIedistance":null,"!!sjyej'distance":null,"!!sjyeiFdistance":null,"!!sjyehedistance":null,
+"distance" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "2,935 km",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 2934803
+},
+"!!sjyfIeduration":null,"!!sjyej'duration":null,"!!sjyeiFduration":null,"!!sjyeheduration":null,
+"duration" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "1 day 3 hours",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 96322
+},
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+},
+{
+"!!sjyfIedistance":null,"!!sjyej'distance":null,"!!sjyeiFdistance":null,"!!sjyehedistance":null,
+"distance" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "4,443 km",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 4443412
+},
+"!!sjyfIeduration":null,"!!sjyej'duration":null,"!!sjyeiFduration":null,"!!sjyeheduration":null,
+"duration" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "1 day 17 hours",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 147406
+},
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+},
+{
+"!!sjyfIedistance":null,"!!sjyej'distance":null,"!!sjyeiFdistance":null,"!!sjyehedistance":null,
+"distance" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "2,492 km",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 2492302
+},
+"!!sjyfIeduration":null,"!!sjyej'duration":null,"!!sjyeiFduration":null,"!!sjyeheduration":null,
+"duration" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "22 hours 53 mins",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 82371
+},
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+},
+{
+"!!sjyfIedistance":null,"!!sjyej'distance":null,"!!sjyeiFdistance":null,"!!sjyehedistance":null,
+"distance" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "4,728 km",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 4728294
+},
+"!!sjyfIeduration":null,"!!sjyej'duration":null,"!!sjyeiFduration":null,"!!sjyeheduration":null,
+"duration" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "1 day 19 hours",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 154228
+},
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+}
+]
+},
+{
+"!!sjyfIeelements":null,"!!sjyej'elements":null,"!!sjyeiFelements":null,
+"elements" : [
+{
+"!!sjyfIedistance":null,"!!sjyej'distance":null,"!!sjyeiFdistance":null,"!!sjyehedistance":null,
+"distance" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "4,501 km",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 4501326
+},
+"!!sjyfIeduration":null,"!!sjyej'duration":null,"!!sjyeiFduration":null,"!!sjyeheduration":null,
+"duration" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "1 day 16 hours",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 145282
+},
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+},
+{
+"!!sjyfIedistance":null,"!!sjyej'distance":null,"!!sjyeiFdistance":null,"!!sjyehedistance":null,
+"distance" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "1 m",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 0
+},
+"!!sjyfIeduration":null,"!!sjyej'duration":null,"!!sjyeiFduration":null,"!!sjyeheduration":null,
+"duration" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "1 min",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 0
+},
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+},
+{
+"!!sjyfIedistance":null,"!!sjyej'distance":null,"!!sjyeiFdistance":null,"!!sjyehedistance":null,
+"distance" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "3,244 km",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 3243718
+},
+"!!sjyfIeduration":null,"!!sjyej'duration":null,"!!sjyeiFduration":null,"!!sjyeheduration":null,
+"duration" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "1 day 5 hours",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 103355
+},
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+},
+{
+"!!sjyfIedistance":null,"!!sjyej'distance":null,"!!sjyeiFdistance":null,"!!sjyehedistance":null,
+"distance" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "2,491 km",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 2491140
+},
+"!!sjyfIeduration":null,"!!sjyej'duration":null,"!!sjyeiFduration":null,"!!sjyeheduration":null,
+"duration" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "21 hours 48 mins",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 78485
+},
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+},
+{
+"!!sjyfIedistance":null,"!!sjyej'distance":null,"!!sjyeiFdistance":null,"!!sjyehedistance":null,
+"distance" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "600 km",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 600314
+},
+"!!sjyfIeduration":null,"!!sjyej'duration":null,"!!sjyeiFduration":null,"!!sjyeheduration":null,
+"duration" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "5 hours 29 mins",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 19738
+},
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+},
+{
+"!!sjyfIedistance":null,"!!sjyej'distance":null,"!!sjyeiFdistance":null,"!!sjyehedistance":null,
+"distance" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "4,368 km",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 4368094
+},
+"!!sjyfIeduration":null,"!!sjyej'duration":null,"!!sjyeiFduration":null,"!!sjyeheduration":null,
+"duration" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "1 day 15 hours",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 141933
+},
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+},
+{
+"!!sjyfIedistance":null,"!!sjyej'distance":null,"!!sjyeiFdistance":null,"!!sjyehedistance":null,
+"distance" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "2,177 km",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 2176782
+},
+"!!sjyfIeduration":null,"!!sjyej'duration":null,"!!sjyeiFduration":null,"!!sjyeheduration":null,
+"duration" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "19 hours 3 mins",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 68584
+},
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+},
+{
+"!!sjyfIedistance":null,"!!sjyej'distance":null,"!!sjyeiFdistance":null,"!!sjyehedistance":null,
+"distance" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "194 km",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 193646
+},
+"!!sjyfIeduration":null,"!!sjyej'duration":null,"!!sjyeiFduration":null,"!!sjyeheduration":null,
+"duration" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "1 hour 57 mins",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 7042
+},
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+},
+{
+"!!sjyfIedistance":null,"!!sjyej'distance":null,"!!sjyeiFdistance":null,"!!sjyehedistance":null,
+"distance" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "2,312 km",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 2311734
+},
+"!!sjyfIeduration":null,"!!sjyej'duration":null,"!!sjyeiFduration":null,"!!sjyeheduration":null,
+"duration" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "20 hours 25 mins",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 73503
+},
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+},
+{
+"!!sjyfIedistance":null,"!!sjyej'distance":null,"!!sjyeiFdistance":null,"!!sjyehedistance":null,
+"distance" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "547 km",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 546932
+},
+"!!sjyfIeduration":null,"!!sjyej'duration":null,"!!sjyeiFduration":null,"!!sjyeheduration":null,
+"duration" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "5 hours 11 mins",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 18651
+},
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+}
+]
+},
+{
+"elements" : [
+{
+"!!sjyfIedistance":null,"!!sjyej'distance":null,"!!sjyeiFdistance":null,"!!sjyehedistance":null,
+"distance" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "1,282 km",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 1281616
+},
+"!!sjyfIeduration":null,"!!sjyej'duration":null,"!!sjyeiFduration":null,"!!sjyeheduration":null,
+"duration" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "12 hours 8 mins",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 43678
+},
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+},
+{
+"!!sjyfIedistance":null,"!!sjyej'distance":null,"!!sjyeiFdistance":null,"!!sjyehedistance":null,
+"distance" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "3,243 km",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 3242543
+},
+"!!sjyfIeduration":null,"!!sjyej'duration":null,"!!sjyeiFduration":null,"!!sjyeheduration":null,
+"duration" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "1 day 5 hours",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 103349
+},
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+},
+{
+"!!sjyfIedistance":null,"!!sjyej'distance":null,"!!sjyeiFdistance":null,"!!sjyehedistance":null,
+"distance" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "1 m",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 0
+},
+"!!sjyfIeduration":null,"!!sjyej'duration":null,"!!sjyeiFduration":null,"!!sjyeheduration":null,
+"duration" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "1 min",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 0
+},
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+},
+{
+"!!sjyfIedistance":null,"!!sjyej'distance":null,"!!sjyeiFdistance":null,"!!sjyehedistance":null,
+"distance" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "1,742 km",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 1741571
+},
+"!!sjyfIeduration":null,"!!sjyej'duration":null,"!!sjyeiFduration":null,"!!sjyeheduration":null,
+"duration" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "16 hours 11 mins",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 58255
+},
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+},
+{
+"!!sjyfIedistance":null,"!!sjyej'distance":null,"!!sjyeiFdistance":null,"!!sjyehedistance":null,
+"distance" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "2,821 km",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 2821137
+},
+"!!sjyfIeduration":null,"!!sjyej'duration":null,"!!sjyeiFduration":null,"!!sjyeheduration":null,
+"duration" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "1 day 2 hours",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 92449
+},
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+},
+{
+"!!sjyfIedistance":null,"!!sjyej'distance":null,"!!sjyeiFdistance":null,"!!sjyehedistance":null,
+"distance" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "1,220 km",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 1219825
+},
+"!!sjyfIeduration":null,"!!sjyej'duration":null,"!!sjyeiFduration":null,"!!sjyeheduration":null,
+"duration" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "11 hours 27 mins",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 41212
+},
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+},
+{
+"!!sjyfIedistance":null,"!!sjyej'distance":null,"!!sjyeiFdistance":null,"!!sjyehedistance":null,
+"distance" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "1,997 km",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 1996514
+},
+"!!sjyfIeduration":null,"!!sjyej'duration":null,"!!sjyeiFduration":null,"!!sjyeheduration":null,
+"duration" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "18 hours 4 mins",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 65059
+},
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+},
+{
+"!!sjyfIedistance":null,"!!sjyej'distance":null,"!!sjyeiFdistance":null,"!!sjyehedistance":null,
+"distance" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "3,342 km",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 3341754
+},
+"!!sjyfIeduration":null,"!!sjyej'duration":null,"!!sjyeiFduration":null,"!!sjyeheduration":null,
+"duration" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "1 day 6 hours",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 106407
+},
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+},
+{
+"!!sjyfIedistance":null,"!!sjyej'distance":null,"!!sjyeiFdistance":null,"!!sjyehedistance":null,
+"distance" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "1,490 km",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 1489726
+},
+"!!sjyfIeduration":null,"!!sjyej'duration":null,"!!sjyeiFduration":null,"!!sjyeheduration":null,
+"duration" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "14 hours 2 mins",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 50540
+},
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+},
+{
+"!!sjyfIedistance":null,"!!sjyej'distance":null,"!!sjyeiFdistance":null,"!!sjyehedistance":null,
+"distance" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "3,481 km",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 3480975
+},
+"!!sjyfIeduration":null,"!!sjyej'duration":null,"!!sjyeiFduration":null,"!!sjyeheduration":null,
+"duration" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "1 day 7 hours",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 111989
+},
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+}
+]
+},
+{
+"elements" : [
+{
+"!!sjyfIedistance":null,"!!sjyej'distance":null,"!!sjyeiFdistance":null,"!!sjyehedistance":null,
+"distance" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "2,624 km",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 2623641
+},
+"!!sjyfIeduration":null,"!!sjyej'duration":null,"!!sjyeiFduration":null,"!!sjyeheduration":null,
+"duration" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "23 hours 58 mins",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 86258
+},
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+},
+{
+"!!sjyfIedistance":null,"!!sjyej'distance":null,"!!sjyeiFdistance":null,"!!sjyehedistance":null,
+"distance" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "2,488 km",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 2488117
+},
+"!!sjyfIeduration":null,"!!sjyej'duration":null,"!!sjyeiFduration":null,"!!sjyeheduration":null,
+"duration" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "21 hours 49 mins",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 78547
+},
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+},
+{
+"!!sjyfIedistance":null,"!!sjyej'distance":null,"!!sjyeiFdistance":null,"!!sjyehedistance":null,
+"distance" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "1,742 km",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 1741761
+},
+"!!sjyfIeduration":null,"!!sjyej'duration":null,"!!sjyeiFduration":null,"!!sjyeheduration":null,
+"duration" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "16 hours 13 mins",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 58360
+},
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+},
+{
+"!!sjyfIedistance":null,"!!sjyej'distance":null,"!!sjyeiFdistance":null,"!!sjyehedistance":null,
+"distance" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "1 m",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 0
+},
+"!!sjyfIeduration":null,"!!sjyej'duration":null,"!!sjyeiFduration":null,"!!sjyeheduration":null,
+"duration" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "1 min",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 0
+},
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+},
+{
+"!!sjyfIedistance":null,"!!sjyej'distance":null,"!!sjyeiFdistance":null,"!!sjyehedistance":null,
+"distance" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "1,890 km",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 1889580
+},
+"!!sjyfIeduration":null,"!!sjyej'duration":null,"!!sjyeiFduration":null,"!!sjyeheduration":null,
+"duration" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "16 hours 28 mins",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 59289
+},
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+},
+{
+"!!sjyfIedistance":null,"!!sjyej'distance":null,"!!sjyeiFdistance":null,"!!sjyehedistance":null,
+"distance" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "2,489 km",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 2489250
+},
+"!!sjyfIeduration":null,"!!sjyej'duration":null,"!!sjyeiFduration":null,"!!sjyeheduration":null,
+"duration" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "22 hours 42 mins",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 81704
+},
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+},
+{
+"!!sjyfIedistance":null,"!!sjyej'distance":null,"!!sjyeiFdistance":null,"!!sjyehedistance":null,
+"distance" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "317 km",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 317168
+},
+"!!sjyfIeduration":null,"!!sjyej'duration":null,"!!sjyeiFduration":null,"!!sjyeheduration":null,
+"duration" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "2 hours 55 mins",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 10481
+},
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+},
+{
+"!!sjyfIedistance":null,"!!sjyej'distance":null,"!!sjyeiFdistance":null,"!!sjyehedistance":null,
+"distance" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "2,363 km",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 2362972
+},
+"!!sjyfIeduration":null,"!!sjyej'duration":null,"!!sjyeiFduration":null,"!!sjyeheduration":null,
+"duration" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "20 hours 36 mins",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 74158
+},
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+},
+{
+"!!sjyfIedistance":null,"!!sjyej'distance":null,"!!sjyeiFdistance":null,"!!sjyehedistance":null,
+"distance" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "385 km",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 384812
+},
+"!!sjyfIeduration":null,"!!sjyej'duration":null,"!!sjyeiFduration":null,"!!sjyeheduration":null,
+"duration" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "3 hours 26 mins",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 12385
+},
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+},
+{
+"!!sjyfIedistance":null,"!!sjyej'distance":null,"!!sjyeiFdistance":null,"!!sjyehedistance":null,
+"distance" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "3,033 km",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 3033431
+},
+"!!sjyfIeduration":null,"!!sjyej'duration":null,"!!sjyeiFduration":null,"!!sjyeheduration":null,
+"duration" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "1 day 3 hours",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 96387
+},
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+}
+]
+},
+{
+"!!sjyfIeelements":null,"!!sjyej'elements":null,"!!sjyeiFelements":null,
+"elements" : [
+{
+"!!sjyfIedistance":null,"!!sjyej'distance":null,"!!sjyeiFdistance":null,"!!sjyehedistance":null,
+"distance" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "3,885 km",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 3884549
+},
+"!!sjyfIeduration":null,"!!sjyej'duration":null,"!!sjyeiFduration":null,"!!sjyeheduration":null,
+"duration" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "1 day 12 hours",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 128892
+},
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+},
+{
+"!!sjyfIedistance":null,"!!sjyej'distance":null,"!!sjyeiFdistance":null,"!!sjyehedistance":null,
+"distance" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "599 km",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 598636
+},
+"!!sjyfIeduration":null,"!!sjyej'duration":null,"!!sjyeiFduration":null,"!!sjyeheduration":null,
+"duration" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "5 hours 32 mins",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 19898
+},
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+},
+{
+"!!sjyfIedistance":null,"!!sjyej'distance":null,"!!sjyeiFdistance":null,"!!sjyehedistance":null,
+"distance" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "2,829 km",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 2828868
+},
+"!!sjyfIeduration":null,"!!sjyej'duration":null,"!!sjyeiFduration":null,"!!sjyeheduration":null,
+"duration" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "1 day 2 hours",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 92370
+},
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+},
+{
+"!!sjyfIedistance":null,"!!sjyej'distance":null,"!!sjyeiFdistance":null,"!!sjyehedistance":null,
+"distance" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "1,893 km",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 1892718
+},
+"!!sjyfIeduration":null,"!!sjyej'duration":null,"!!sjyeiFduration":null,"!!sjyeheduration":null,
+"duration" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "16 hours 31 mins",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 59432
+},
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+},
+{
+"!!sjyfIedistance":null,"!!sjyej'distance":null,"!!sjyeiFdistance":null,"!!sjyehedistance":null,
+"distance" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "1 m",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 0
+},
+"!!sjyfIeduration":null,"!!sjyej'duration":null,"!!sjyeiFduration":null,"!!sjyeheduration":null,
+"duration" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "1 min",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 0
+},
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+},
+{
+"!!sjyfIedistance":null,"!!sjyej'distance":null,"!!sjyeiFdistance":null,"!!sjyehedistance":null,
+"distance" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "3,776 km",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 3776390
+},
+"!!sjyfIeduration":null,"!!sjyej'duration":null,"!!sjyeiFduration":null,"!!sjyeheduration":null,
+"duration" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "1 day 11 hours",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 124555
+},
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+},
+{
+"!!sjyfIedistance":null,"!!sjyej'distance":null,"!!sjyeiFdistance":null,"!!sjyehedistance":null,
+"distance" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "1,578 km",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 1578360
+},
+"!!sjyfIeduration":null,"!!sjyej'duration":null,"!!sjyeiFduration":null,"!!sjyeheduration":null,
+"duration" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "13 hours 46 mins",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 49532
+},
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+},
+{
+"!!sjyfIedistance":null,"!!sjyej'distance":null,"!!sjyeiFdistance":null,"!!sjyehedistance":null,
+"distance" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "571 km",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 570657
+},
+"!!sjyfIeduration":null,"!!sjyej'duration":null,"!!sjyeiFduration":null,"!!sjyeheduration":null,
+"duration" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "5 hours 17 mins",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 19041
+},
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+},
+{
+"!!sjyfIedistance":null,"!!sjyej'distance":null,"!!sjyeiFdistance":null,"!!sjyehedistance":null,
+"distance" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "1,713 km",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 1713312
+},
+"!!sjyfIeduration":null,"!!sjyej'duration":null,"!!sjyeiFduration":null,"!!sjyeheduration":null,
+"duration" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "15 hours 8 mins",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 54450
+},
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+},
+{
+"!!sjyfIedistance":null,"!!sjyej'distance":null,"!!sjyeiFdistance":null,"!!sjyehedistance":null,
+"distance" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "1,144 km",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 1143951
+},
+"!!sjyfIeduration":null,"!!sjyej'duration":null,"!!sjyeiFduration":null,"!!sjyeheduration":null,
+"duration" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "10 hours 29 mins",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 37738
+},
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+}
+]
+},
+{
+"!!sjyfIeelements":null,"!!sjyej'elements":null,"!!sjyeiFelements":null,
+"elements" : [
+{
+"!!sjyfIedistance":null,"!!sjyej'distance":null,"!!sjyeiFdistance":null,"!!sjyehedistance":null,
+"distance" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "159 km",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 158684
+},
+"!!sjyfIeduration":null,"!!sjyej'duration":null,"!!sjyeiFduration":null,"!!sjyeheduration":null,
+"duration" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "1 hour 53 mins",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 6753
+},
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+},
+{
+"!!sjyfIedistance":null,"!!sjyej'distance":null,"!!sjyeiFdistance":null,"!!sjyehedistance":null,
+"distance" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "4,363 km",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 4362509
+},
+"!!sjyfIeduration":null,"!!sjyej'duration":null,"!!sjyeiFduration":null,"!!sjyeheduration":null,
+"duration" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "1 day 16 hours",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 142324
+},
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+},
+{
+"!!sjyfIedistance":null,"!!sjyej'distance":null,"!!sjyeiFdistance":null,"!!sjyehedistance":null,
+"distance" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "1,221 km",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 1220728
+},
+"!!sjyfIeduration":null,"!!sjyej'duration":null,"!!sjyeiFduration":null,"!!sjyeheduration":null,
+"duration" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "11 hours 30 mins",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 41424
+},
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+},
+{
+"!!sjyfIedistance":null,"!!sjyej'distance":null,"!!sjyeiFdistance":null,"!!sjyehedistance":null,
+"distance" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "2,488 km",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 2487984
+},
+"!!sjyfIeduration":null,"!!sjyej'duration":null,"!!sjyeiFduration":null,"!!sjyeheduration":null,
+"duration" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "22 hours 37 mins",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 81429
+},
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+},
+{
+"!!sjyfIedistance":null,"!!sjyej'distance":null,"!!sjyeiFdistance":null,"!!sjyehedistance":null,
+"distance" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "3,769 km",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 3769346
+},
+"!!sjyfIeduration":null,"!!sjyej'duration":null,"!!sjyeiFduration":null,"!!sjyeheduration":null,
+"duration" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "1 day 11 hours",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 124752
+},
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+},
+{
+"!!sjyfIedistance":null,"!!sjyej'distance":null,"!!sjyeiFdistance":null,"!!sjyehedistance":null,
+"distance" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "1 m",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 0
+},
+"!!sjyfIeduration":null,"!!sjyej'duration":null,"!!sjyeiFduration":null,"!!sjyeheduration":null,
+"duration" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "1 min",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 0
+},
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+},
+{
+"!!sjyfIedistance":null,"!!sjyej'distance":null,"!!sjyeiFdistance":null,"!!sjyehedistance":null,
+"distance" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "2,802 km",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 2802129
+},
+"!!sjyfIeduration":null,"!!sjyej'duration":null,"!!sjyeiFduration":null,"!!sjyeheduration":null,
+"duration" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "1 day 1 hour",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 91677
+},
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+},
+{
+"!!sjyfIedistance":null,"!!sjyej'distance":null,"!!sjyeiFdistance":null,"!!sjyehedistance":null,
+"distance" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "4,337 km",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 4337082
+},
+"!!sjyfIeduration":null,"!!sjyej'duration":null,"!!sjyeiFduration":null,"!!sjyeheduration":null,
+"duration" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "1 day 16 hours",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 143118
+},
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+},
+{
+"!!sjyfIedistance":null,"!!sjyej'distance":null,"!!sjyeiFdistance":null,"!!sjyehedistance":null,
+"distance" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "2,360 km",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 2359628
+},
+"!!sjyfIeduration":null,"!!sjyej'duration":null,"!!sjyeiFduration":null,"!!sjyeheduration":null,
+"duration" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "21 hours 35 mins",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 77726
+},
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+},
+{
+"!!sjyfIedistance":null,"!!sjyej'distance":null,"!!sjyeiFdistance":null,"!!sjyehedistance":null,
+"distance" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "4,679 km",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 4678576
+},
+"!!sjyfIeduration":null,"!!sjyej'duration":null,"!!sjyeiFduration":null,"!!sjyeheduration":null,
+"duration" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "1 day 18 hours",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 151879
+},
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+}
+]
+},
+{
+"!!sjyfIeelements":null,"!!sjyej'elements":null,"!!sjyeiFelements":null,
+"elements" : [
+{
+"!!sjyfIedistance":null,"!!sjyej'distance":null,"!!sjyeiFdistance":null,"!!sjyehedistance":null,
+"distance" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "2,939 km",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 2938513
+},
+"!!sjyfIeduration":null,"!!sjyej'duration":null,"!!sjyeiFduration":null,"!!sjyeheduration":null,
+"duration" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "1 day 3 hours",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 96477
+},
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+},
+{
+"!!sjyfIedistance":null,"!!sjyej'distance":null,"!!sjyeiFdistance":null,"!!sjyehedistance":null,
+"distance" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "2,178 km",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 2178117
+},
+"!!sjyfIeduration":null,"!!sjyej'duration":null,"!!sjyeiFduration":null,"!!sjyeheduration":null,
+"duration" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "19 hours 6 mins",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 68773
+},
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+},
+{
+"!!sjyfIedistance":null,"!!sjyej'distance":null,"!!sjyeiFdistance":null,"!!sjyehedistance":null,
+"distance" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "1,996 km",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 1996414
+},
+"!!sjyfIeduration":null,"!!sjyej'duration":null,"!!sjyeiFduration":null,"!!sjyeheduration":null,
+"duration" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "18 hours 3 mins",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 64959
+},
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+},
+{
+"!!sjyfIedistance":null,"!!sjyej'distance":null,"!!sjyeiFdistance":null,"!!sjyehedistance":null,
+"distance" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "318 km",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 317558
+},
+"!!sjyfIeduration":null,"!!sjyej'duration":null,"!!sjyeiFduration":null,"!!sjyeheduration":null,
+"duration" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "2 hours 54 mins",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 10436
+},
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+},
+{
+"!!sjyfIedistance":null,"!!sjyej'distance":null,"!!sjyeiFdistance":null,"!!sjyehedistance":null,
+"distance" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "1,580 km",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 1579581
+},
+"!!sjyfIeduration":null,"!!sjyej'duration":null,"!!sjyeiFduration":null,"!!sjyeheduration":null,
+"duration" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "13 hours 45 mins",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 49515
+},
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+},
+{
+"!!sjyfIedistance":null,"!!sjyej'distance":null,"!!sjyeiFdistance":null,"!!sjyehedistance":null,
+"distance" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "2,804 km",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 2804123
+},
+"!!sjyfIeduration":null,"!!sjyej'duration":null,"!!sjyeiFduration":null,"!!sjyeheduration":null,
+"duration" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "1 day 2 hours",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 91923
+},
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+},
+{
+"!!sjyfIedistance":null,"!!sjyej'distance":null,"!!sjyeiFdistance":null,"!!sjyehedistance":null,
+"distance" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "1 m",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 0
+},
+"!!sjyfIeduration":null,"!!sjyej'duration":null,"!!sjyeiFduration":null,"!!sjyeheduration":null,
+"duration" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "1 min",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 0
+},
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+},
+{
+"!!sjyfIedistance":null,"!!sjyej'distance":null,"!!sjyeiFdistance":null,"!!sjyehedistance":null,
+"distance" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "2,053 km",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 2052972
+},
+"!!sjyfIeduration":null,"!!sjyej'duration":null,"!!sjyeiFduration":null,"!!sjyeheduration":null,
+"duration" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "17 hours 53 mins",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 64384
+},
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+},
+{
+"!!sjyfIedistance":null,"!!sjyej'distance":null,"!!sjyeiFdistance":null,"!!sjyehedistance":null,
+"distance" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "440 km",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 440485
+},
+"!!sjyfIeduration":null,"!!sjyej'duration":null,"!!sjyeiFduration":null,"!!sjyeheduration":null,
+"duration" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "4 hours 7 mins",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 14809
+},
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+},
+{
+"!!sjyfIedistance":null,"!!sjyej'distance":null,"!!sjyeiFdistance":null,"!!sjyehedistance":null,
+"distance" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "2,723 km",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 2723432
+},
+"!!sjyfIeduration":null,"!!sjyej'duration":null,"!!sjyeiFduration":null,"!!sjyeheduration":null,
+"duration" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "1 day 0 hours",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 86613
+},
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+}
+]
+},
+{
+"!!sjyfIeelements":null,"!!sjyej'elements":null,"!!sjyeiFelements":null,
+"elements" : [
+{
+"!!sjyfIedistance":null,"!!sjyej'distance":null,"!!sjyeiFdistance":null,"!!sjyehedistance":null,
+"distance" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "4,450 km",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 4449804
+},
+"!!sjyfIeduration":null,"!!sjyej'duration":null,"!!sjyeiFduration":null,"!!sjyeheduration":null,
+"duration" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "1 day 17 hours",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 147307
+},
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+},
+{
+"!!sjyfIedistance":null,"!!sjyej'distance":null,"!!sjyeiFdistance":null,"!!sjyehedistance":null,
+"distance" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "193 km",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 193391
+},
+"!!sjyfIeduration":null,"!!sjyej'duration":null,"!!sjyeiFduration":null,"!!sjyeheduration":null,
+"duration" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "2 hours 1 min",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 7257
+},
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+},
+{
+"!!sjyfIedistance":null,"!!sjyej'distance":null,"!!sjyeiFdistance":null,"!!sjyehedistance":null,
+"distance" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "3,343 km",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 3342861
+},
+"!!sjyfIeduration":null,"!!sjyej'duration":null,"!!sjyeiFduration":null,"!!sjyeheduration":null,
+"duration" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "1 day 6 hours",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 106618
+},
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+},
+{
+"!!sjyfIedistance":null,"!!sjyej'distance":null,"!!sjyeiFdistance":null,"!!sjyehedistance":null,
+"distance" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "2,365 km",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 2365196
+},
+"!!sjyfIeduration":null,"!!sjyej'duration":null,"!!sjyeiFduration":null,"!!sjyeheduration":null,
+"duration" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "20 hours 39 mins",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 74342
+},
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+},
+{
+"!!sjyfIedistance":null,"!!sjyej'distance":null,"!!sjyeiFdistance":null,"!!sjyehedistance":null,
+"distance" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "571 km",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 571299
+},
+"!!sjyfIeduration":null,"!!sjyej'duration":null,"!!sjyeiFduration":null,"!!sjyeheduration":null,
+"duration" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "5 hours 20 mins",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 19183
+},
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+},
+{
+"!!sjyfIedistance":null,"!!sjyej'distance":null,"!!sjyeiFdistance":null,"!!sjyehedistance":null,
+"distance" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "4,342 km",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 4341645
+},
+"!!sjyfIeduration":null,"!!sjyej'duration":null,"!!sjyeiFduration":null,"!!sjyeheduration":null,
+"duration" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "1 day 16 hours",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 142971
+},
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+},
+{
+"!!sjyfIedistance":null,"!!sjyej'distance":null,"!!sjyeiFdistance":null,"!!sjyehedistance":null,
+"distance" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "2,051 km",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 2050838
+},
+"!!sjyfIeduration":null,"!!sjyej'duration":null,"!!sjyeiFduration":null,"!!sjyeheduration":null,
+"duration" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "17 hours 54 mins",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 64441
+},
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+},
+{
+"!!sjyfIedistance":null,"!!sjyej'distance":null,"!!sjyeiFdistance":null,"!!sjyehedistance":null,
+"distance" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "1 m",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 0
+},
+"!!sjyfIeduration":null,"!!sjyej'duration":null,"!!sjyeiFduration":null,"!!sjyeheduration":null,
+"duration" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "1 min",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 0
+},
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+},
+{
+"!!sjyfIedistance":null,"!!sjyej'distance":null,"!!sjyeiFdistance":null,"!!sjyehedistance":null,
+"distance" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "2,186 km",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 2185790
+},
+"!!sjyfIeduration":null,"!!sjyej'duration":null,"!!sjyeiFduration":null,"!!sjyeheduration":null,
+"duration" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "19 hours 16 mins",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 69360
+},
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+},
+{
+"!!sjyfIedistance":null,"!!sjyej'distance":null,"!!sjyeiFdistance":null,"!!sjyehedistance":null,
+"distance" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "740 km",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 740005
+},
+"!!sjyfIeduration":null,"!!sjyej'duration":null,"!!sjyeiFduration":null,"!!sjyeheduration":null,
+"duration" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "7 hours 6 mins",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 25541
+},
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+}
+]
+},
+{
+"!!sjyfIeelements":null,"!!sjyej'elements":null,"!!sjyeiFelements":null,
+"elements" : [
+{
+"!!sjyfIedistance":null,"!!sjyej'distance":null,"!!sjyeiFdistance":null,"!!sjyehedistance":null,
+"distance" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "2,493 km",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 2492688
+},
+"!!sjyfIeduration":null,"!!sjyej'duration":null,"!!sjyeiFduration":null,"!!sjyeheduration":null,
+"duration" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "22 hours 52 mins",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 82333
+},
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+},
+{
+"!!sjyfIedistance":null,"!!sjyej'distance":null,"!!sjyeiFdistance":null,"!!sjyehedistance":null,
+"distance" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "2,311 km",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 2310974
+},
+"!!sjyfIeduration":null,"!!sjyej'duration":null,"!!sjyeiFduration":null,"!!sjyeheduration":null,
+"duration" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "20 hours 27 mins",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 73596
+},
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+},
+{
+"!!sjyfIedistance":null,"!!sjyej'distance":null,"!!sjyeiFdistance":null,"!!sjyehedistance":null,
+"distance" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "1,557 km",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 1556570
+},
+"!!sjyfIeduration":null,"!!sjyej'duration":null,"!!sjyeiFduration":null,"!!sjyeheduration":null,
+"duration" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "14 hours 3 mins",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 50581
+},
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+},
+{
+"!!sjyfIedistance":null,"!!sjyej'distance":null,"!!sjyeiFdistance":null,"!!sjyehedistance":null,
+"distance" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "385 km",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 385037
+},
+"!!sjyfIeduration":null,"!!sjyej'duration":null,"!!sjyeiFduration":null,"!!sjyeheduration":null,
+"duration" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "3 hours 28 mins",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 12495
+},
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+},
+{
+"!!sjyfIedistance":null,"!!sjyej'distance":null,"!!sjyeiFdistance":null,"!!sjyehedistance":null,
+"distance" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "1,712 km",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 1712438
+},
+"!!sjyfIeduration":null,"!!sjyej'duration":null,"!!sjyeiFduration":null,"!!sjyeheduration":null,
+"duration" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "15 hours 6 mins",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 54339
+},
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+},
+{
+"!!sjyfIedistance":null,"!!sjyej'distance":null,"!!sjyeiFdistance":null,"!!sjyehedistance":null,
+"distance" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "2,358 km",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 2358297
+},
+"!!sjyfIeduration":null,"!!sjyej'duration":null,"!!sjyeiFduration":null,"!!sjyeheduration":null,
+"duration" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "21 hours 36 mins",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 77780
+},
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+},
+{
+"!!sjyfIedistance":null,"!!sjyej'distance":null,"!!sjyeiFdistance":null,"!!sjyehedistance":null,
+"distance" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "441 km",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 440702
+},
+"!!sjyfIeduration":null,"!!sjyej'duration":null,"!!sjyeiFduration":null,"!!sjyeheduration":null,
+"duration" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "4 hours 7 mins",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 14800
+},
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+},
+{
+"!!sjyfIedistance":null,"!!sjyej'distance":null,"!!sjyeiFdistance":null,"!!sjyehedistance":null,
+"distance" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "2,186 km",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 2185829
+},
+"!!sjyfIeduration":null,"!!sjyej'duration":null,"!!sjyeiFduration":null,"!!sjyeheduration":null,
+"duration" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "19 hours 13 mins",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 69208
+},
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+},
+{
+"!!sjyfIedistance":null,"!!sjyej'distance":null,"!!sjyeiFdistance":null,"!!sjyehedistance":null,
+"distance" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "1 m",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 0
+},
+"!!sjyfIeduration":null,"!!sjyej'duration":null,"!!sjyeiFduration":null,"!!sjyeheduration":null,
+"duration" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "1 min",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 0
+},
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+},
+{
+"!!sjyfIedistance":null,"!!sjyej'distance":null,"!!sjyeiFdistance":null,"!!sjyehedistance":null,
+"distance" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "2,716 km",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 2715614
+},
+"!!sjyfIeduration":null,"!!sjyej'duration":null,"!!sjyeiFduration":null,"!!sjyeheduration":null,
+"duration" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "1 day 1 hour",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 89296
+},
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+}
+]
+},
+{
+"!!sjyfIeelements":null,"!!sjyej'elements":null,"!!sjyeiFelements":null,
+"elements" : [
+{
+"!!sjyfIedistance":null,"!!sjyej'distance":null,"!!sjyeiFdistance":null,"!!sjyehedistance":null,
+"distance" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "4,741 km",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 4740819
+},
+"!!sjyfIeduration":null,"!!sjyej'duration":null,"!!sjyeiFduration":null,"!!sjyeheduration":null,
+"duration" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "1 day 19 hours",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 153881
+},
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+},
+{
+"!!sjyfIedistance":null,"!!sjyej'distance":null,"!!sjyeiFdistance":null,"!!sjyehedistance":null,
+"distance" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "549 km",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 549030
+},
+"!!sjyfIeduration":null,"!!sjyej'duration":null,"!!sjyeiFduration":null,"!!sjyeheduration":null,
+"duration" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "5 hours 11 mins",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 18643
+},
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+},
+{
+"!!sjyfIedistance":null,"!!sjyej'distance":null,"!!sjyeiFdistance":null,"!!sjyehedistance":null,
+"distance" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "3,483 km",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 3483210
+},
+"!!sjyfIeduration":null,"!!sjyej'duration":null,"!!sjyeiFduration":null,"!!sjyeheduration":null,
+"duration" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "1 day 7 hours",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 111954
+},
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+},
+{
+"!!sjyfIedistance":null,"!!sjyej'distance":null,"!!sjyeiFdistance":null,"!!sjyehedistance":null,
+"distance" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "3,037 km",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 3036563
+},
+"!!sjyfIeduration":null,"!!sjyej'duration":null,"!!sjyeiFduration":null,"!!sjyeheduration":null,
+"duration" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "1 day 3 hours",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 96326
+},
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+},
+{
+"!!sjyfIedistance":null,"!!sjyej'distance":null,"!!sjyeiFdistance":null,"!!sjyehedistance":null,
+"distance" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "1,146 km",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 1145736
+},
+"!!sjyfIeduration":null,"!!sjyej'duration":null,"!!sjyeiFduration":null,"!!sjyeheduration":null,
+"duration" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "10 hours 26 mins",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 37580
+},
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+},
+{
+"!!sjyfIedistance":null,"!!sjyej'distance":null,"!!sjyeiFdistance":null,"!!sjyehedistance":null,
+"distance" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "4,679 km",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 4679027
+},
+"!!sjyfIeduration":null,"!!sjyej'duration":null,"!!sjyeiFduration":null,"!!sjyeheduration":null,
+"duration" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "1 day 18 hours",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 151414
+},
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+},
+{
+"!!sjyfIedistance":null,"!!sjyej'distance":null,"!!sjyeiFdistance":null,"!!sjyehedistance":null,
+"distance" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "2,722 km",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 2722204
+},
+"!!sjyfIeduration":null,"!!sjyej'duration":null,"!!sjyeiFduration":null,"!!sjyeheduration":null,
+"duration" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "1 day 0 hours",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 86426
+},
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+},
+{
+"!!sjyfIedistance":null,"!!sjyej'distance":null,"!!sjyeiFdistance":null,"!!sjyehedistance":null,
+"distance" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "740 km",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 739719
+},
+"!!sjyfIeduration":null,"!!sjyej'duration":null,"!!sjyeiFduration":null,"!!sjyeheduration":null,
+"duration" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "7 hours 2 mins",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 25298
+},
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+},
+{
+"!!sjyfIedistance":null,"!!sjyej'distance":null,"!!sjyeiFdistance":null,"!!sjyehedistance":null,
+"distance" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "2,717 km",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 2717009
+},
+"!!sjyfIeduration":null,"!!sjyej'duration":null,"!!sjyeiFduration":null,"!!sjyeheduration":null,
+"duration" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "1 day 1 hour",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 89209
+},
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+},
+{
+"!!sjyfIedistance":null,"!!sjyej'distance":null,"!!sjyeiFdistance":null,"!!sjyehedistance":null,
+"distance" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "1 m",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 0
+},
+"!!sjyfIeduration":null,"!!sjyej'duration":null,"!!sjyeiFduration":null,"!!sjyeheduration":null,
+"duration" : {
+"!!sjyfIetext":null,"!!sjyej'text":null,"!!sjyeiFtext":null,"!!sjyehetext":null,"!!sjyfJFtext":null,
+"text" : "1 min",
+"!!sjyfIevalue":null,"!!sjyej'value":null,"!!sjyeiFvalue":null,"!!sjyehevalue":null,"!!sjyfJFvalue":null,"!!sjyfK'value":null,"!!sjyg*evalue":null,"!!sjyg+Fvalue":null,"!!sjyg,'value":null,
+"value" : 0
+},
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+}
+]
+}
+],
+"!!sjyfIestatus":null,"!!sjyej'status":null,"!!sjyeiFstatus":null,"!!sjyehestatus":null,
+"status" : "OK"
+}
