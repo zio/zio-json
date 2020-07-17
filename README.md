@@ -11,11 +11,11 @@ The goal of this project is to create the best all-round JSON library for Scala:
 
 # How
 
-Extreme **performance** is achieved by decoding JSON directly from the input source into business objects (inspired by [plokhotnyuk](https://github.com/plokhotnyuk/jsoniter-scala)). Although not a requirement, the latest advances in [Java Loom](https://openjdk.java.net/projects/loom/) can be used to support arbitrarily large payloads with near-zero overhead.
+Extreme **performance** is achieved by decoding JSON directly from the input source into business objects (inspired by [plokhotnyuk](https://github.com/plokhotnyuk/jsoniter-scala)). Although not a requirement, the latest advances in [Java Loom](https://wiki.openjdk.java.net/display/loom/Main) can be used to support arbitrarily large payloads with near-zero overhead.
 
 Best in class **security** is achieved with an aggressive *early exit* strategy that avoids costly stacktraces, even when parsing malformed numbers. Malicious (and badly formed) payloads are rejected before finishing reading.
 
-**Fast compilation** and **future proofing** is possible thanks to [Magnolia](https://propensive.com/opensource/magnolia/) which allows us to generate boilerplate in a way that will survive the exodus to Scala 3. zio-json is internally implemented using the [`java.io.Reader`](https://docs.oracle.com/en/java/javase/14/docs/api/java.base/java/io/Reader.html) interface which is making a comeback to center stage in [Java Loom](https://wiki.openjdk.java.net/display/loom/Main).
+**Fast compilation** and **future proofing** is possible thanks to [Magnolia](https://propensive.com/opensource/magnolia/) which allows us to generate boilerplate in a way that will survive the exodus to Scala 3. zio-json is internally implemented using the [`java.io.Reader`](https://docs.oracle.com/en/java/javase/14/docs/api/java.base/java/io/Reader.html) interface which is making a comeback to center stage in Loom.
 
 **Simplicity** is achieved by using well-known software patterns and avoiding bloat. The only requirement to use this library is to know about Scala's encoding of typeclasses, described in [Functional Programming for Mortals](https://leanpub.com/fpmortals/read#leanpub-auto-functionality).
 
@@ -344,7 +344,7 @@ play   2350 ( 3589)  1854 (1344)
 
 The reason why zio-json is not as badly affected is because it skips values that are unexpected. We can completely mitigate this kind of attack by using the `@json.no_extra_fields` annotation which results in the payload being rejected at a rate of 5.5 million ops/sec.
 
-Other kinds of redundant values attacks are also possible, such as using an array of 60K full of high precision decimal numbers that require slow parsing, attacking the CPU. However, the memory attack afforded to us by a redundant `String` is already quite effective.
+Other kinds of redundant values attacks are also possible, such as using an array of 60K full of high precision decimal numbers that require slow parsing (also known as ["near halfway numbers"](https://www.exploringbinary.com/17-digits-gets-you-there-once-youve-found-your-way/)), attacking the CPU. However, the memory attack afforded to us by a redundant `String` is already quite effective.
 
 ### `hashCode` Collisions
 
@@ -368,6 +368,11 @@ play   1312 ( 3589)  1636 (1344)
 ops/sec is down for all decoders relative to the baseline, but since zio-json and Circe memory usage is also reduced the throughput on a server might not be impacted as badly as it sounds.
 
 However, this attack hurts Play very badly; memory usage is up compared to the baseline with throughput reduced to 40% of the baseline (22% of the original).
+
+There is a variant of this attack that can be devastating for libraries that rely on `HashMap`. In this attack, [developed by plokhotnyuk to DOS upickle and ujson](https://github.com/plokhotnyuk/jsoniter-scala/pull/325), an object is filled with many fields that have a `hashCode` of zero. This exploits two facts:
+
+- Java `String` does not cache `hashCode` of zero, recomputing every time it is requested
+- many `HashMap` implementations re-request the hashes of all objects as the number of entries increases during construction.
 
 ### Death by a Thousand Zeros
 
