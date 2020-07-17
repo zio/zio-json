@@ -403,5 +403,4 @@ JSON is an inefficent transport format. If your performance needs are still not 
 
 For legacy services, a port supporting XML is also be possible.
 
-FIXME: generate all tuple decoders
 FIXME: encoders

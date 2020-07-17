@@ -46,3 +46,37 @@ libraryDependencies += "ai.x" %% "play-json-extensions" % "0.42.0" % "test"
 
 enablePlugins(NeoJmhPlugin)
 inConfig(Jmh)(org.scalafmt.sbt.ScalafmtPlugin.scalafmtConfigSettings)
+
+sourceGenerators in Compile += Def.task {
+  val dir = (sourceManaged in Compile).value
+  val file = dir / "zio" / "json" / "GeneratedTuples.scala"
+  val decoders = (2 to 22).map { i =>
+    val tparams = (1 to i).map(p => s"A$p").mkString(", ")
+    val implicits = (1 to i).map(p => s"A$p: Decoder[A$p]").mkString(", ")
+    val work = (1 to i).map { p =>
+      s"val a$p = A$p.unsafeDecode(traces($p) :: trace, in)"
+    }.mkString("\n        Lexer.char(trace, in, ',')\n        ")
+    val returns = (1 to i).map(p => s"a$p").mkString(", ")
+
+    s"""implicit def tuple${i}[$tparams](implicit $implicits): Decoder[($tparams)] =
+       |    new Decoder[($tparams)] {
+       |      val traces: Array[JsonError] = (0 to $i).map(JsonError.ArrayAccess(_)).toArray
+       |      def unsafeDecode(trace: List[JsonError], in: RetractReader): ($tparams) = {
+       |        Lexer.char(trace, in, '[')
+       |        $work
+       |        Lexer.char(trace, in, ']')
+       |        ($returns)
+       |      }
+       |    }""".stripMargin
+  }
+  IO.write(
+    file,
+    s"""package zio.json
+       |
+       |import zio.json.internal._
+       |
+       |private[json] trait GeneratedTuples { this: Decoder.type =>
+       |  ${decoders.mkString("\n\n  ")}
+       |}""".stripMargin)
+  Seq(file)
+}.taskValue

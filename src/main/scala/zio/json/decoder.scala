@@ -72,7 +72,7 @@ trait Decoder[A] { self =>
   def unsafeDecode(trace: List[JsonError], in: RetractReader): A
 }
 
-object Decoder extends DecoderLowPriority1 with DecoderLowPriority2 {
+object Decoder extends GeneratedTuples with DecoderLowPriority1 with DecoderLowPriority2 {
   def apply[A](implicit a: Decoder[A]): Decoder[A] = a
 
   // Design note: we could require the position in the stream here to improve
@@ -211,48 +211,6 @@ object Decoder extends DecoderLowPriority1 with DecoderLowPriority2 {
         if (values(0) != null)
           Left(values(0).asInstanceOf[A])
         else Right(values(1).asInstanceOf[B])
-      }
-    }
-
-  implicit def tuple2[A0, A1](implicit
-    A0: Decoder[A0],
-    A1: Decoder[A1]
-  ): Decoder[(A0, A1)] =
-    new Decoder[(A0, A1)] {
-      val traces: Array[JsonError] =
-        (0 to 1).map(JsonError.ArrayAccess(_)).toArray
-
-      def unsafeDecode(trace: List[JsonError], in: RetractReader): (A0, A1) = {
-        Lexer.char(trace, in, '[')
-        val a0 = A0.unsafeDecode(traces(0) :: trace, in)
-        Lexer.char(trace, in, ',')
-        val a1 = A1.unsafeDecode(traces(1) :: trace, in)
-        Lexer.char(trace, in, ']')
-        (a0, a1)
-      }
-    }
-
-  implicit def tuple3[A0, A1, A2](implicit
-    A0: Decoder[A0],
-    A1: Decoder[A1],
-    A2: Decoder[A2]
-  ): Decoder[(A0, A1, A2)] =
-    new Decoder[(A0, A1, A2)] {
-      val traces: Array[JsonError] =
-        (0 to 2).map(JsonError.ArrayAccess(_)).toArray
-
-      def unsafeDecode(
-        trace: List[JsonError],
-        in: RetractReader
-      ): (A0, A1, A2) = {
-        Lexer.char(trace, in, '[')
-        val a0 = A0.unsafeDecode(traces(0) :: trace, in)
-        Lexer.char(trace, in, ',')
-        val a1 = A1.unsafeDecode(traces(1) :: trace, in)
-        Lexer.char(trace, in, ',')
-        val a2 = A2.unsafeDecode(traces(2) :: trace, in)
-        Lexer.char(trace, in, ']')
-        (a0, a1, a2)
       }
     }
 
