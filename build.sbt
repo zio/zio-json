@@ -20,14 +20,14 @@ libraryDependencies += "com.propensive" %% "magnolia" % "0.16.0"
 libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value % Provided
 
 testFrameworks += new TestFramework("scalaprops.ScalapropsFramework")
-libraryDependencies += "com.github.scalaprops" %% "scalaprops" % "0.8.0" % "test"
+libraryDependencies += "com.github.scalaprops" %% "scalaprops" % "0.8.0" % Test
 parallelExecution in Test := false // scalaprops does not support parallel execution
 
-libraryDependencies += "com.lihaoyi" %% "utest" % "0.7.2" % "test"
+libraryDependencies += "com.lihaoyi" %% "utest" % "0.7.2" % Test
 testFrameworks += new TestFramework("utest.runner.Framework")
 
-libraryDependencies += "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-core" % "2.5.0" % "test"
-libraryDependencies += "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-macros" % "2.5.0" % "test"
+libraryDependencies += "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-core" % "2.5.0" % Test
+libraryDependencies += "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-macros" % "2.5.0" % Test
 
 // circe is super easy to install (e_e)
 val circeVersion = "0.13.0"
@@ -35,12 +35,12 @@ libraryDependencies ++= Seq(
   "io.circe" %% "circe-core",
   "io.circe" %% "circe-generic",
   "io.circe" %% "circe-parser"
-).map(_ % circeVersion % "test")
-libraryDependencies += "io.circe" %% "circe-generic-extras" % "0.13.0" % "test"
+).map(_ % circeVersion % Test)
+libraryDependencies += "io.circe" %% "circe-generic-extras" % "0.13.0" % Test
 libraryDependencies += "org.typelevel" %% "jawn-ast" % "1.0.0" // matches circe
 
-libraryDependencies += "com.typesafe.play" %% "play-json" % "2.9.0" % "test"
-libraryDependencies += "ai.x" %% "play-json-extensions" % "0.42.0" % "test"
+libraryDependencies += "com.typesafe.play" %% "play-json" % "2.9.0" % Test
+libraryDependencies += "ai.x" %% "play-json-extensions" % "0.42.0" % Test
 
 // scalafmtOnCompile := true
 
