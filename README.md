@@ -198,7 +198,7 @@ Another usecase is if we want to encode a `case class` as an array of values, ra
 ```scala
 case class Things(s: String, i: Int, b: Boolean)
 object Things {
-  implicit val decoder: json.Decoder[Things] = json.Decoder[(String, Int, Boolean)].map(Things.tupled)
+  implicit val decoder: json.Decoder[Things] = json.Decoder[(String, Int, Boolean)].map((Things.apply _).tupled)
 }
 ```
 
