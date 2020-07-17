@@ -7,16 +7,19 @@ The goal of this project is to create the best all-round JSON library for Scala:
 - **Fast Compilation** no shapeless, no type astronautics.
 - **Future Proof** prepared for Scala 3 and next generation Java.
 - **Simple** small codebase, short and concise documentation that covers everything.
+- **Helpful errors** are readable by humans and machines.
 
 # How
 
 Extreme **performance** is achieved by decoding JSON directly from the input source into business objects (inspired by [plokhotnyuk](https://github.com/plokhotnyuk/jsoniter-scala)). Although not a requirement, the latest advances in [Java Loom](https://openjdk.java.net/projects/loom/) can be used to support arbitrarily large payloads with near-zero overhead.
 
-Best in class **security** is achieved with an aggressive *early exit* strategy during decoding, combined with an error handling strategy that avoids costly stacktraces, even when parsing malformed numbers. Malicious (and badly formed) payloads are rejected before finishing reading.
+Best in class **security** is achieved with an aggressive *early exit* strategy that avoids costly stacktraces, even when parsing malformed numbers. Malicious (and badly formed) payloads are rejected before finishing reading.
 
 **Fast compilation** and **future proofing** is possible thanks to [Magnolia](https://propensive.com/opensource/magnolia/) which allows us to generate boilerplate in a way that will survive the exodus to Scala 3. zio-json is internally implemented using the [`java.io.Reader`](https://docs.oracle.com/en/java/javase/14/docs/api/java.base/java/io/Reader.html) interface which is making a comeback to center stage in [Java Loom](https://wiki.openjdk.java.net/display/loom/Main).
 
 **Simplicity** is achieved by using well-known software patterns and avoiding bloat. The only requirement to use this library is to know about Scala's encoding of typeclasses, described in [Functional Programming for Mortals](https://leanpub.com/fpmortals/read#leanpub-auto-functionality).
+
+**Helpful errors** are produced in the form of a [`jq`](https://stedolan.github.io/jq/) query, with a note about what went wrong, pointing to the exact part of the payload that failed to parse.
 
 # Documentation
 
@@ -67,7 +70,7 @@ scala> json.parser.decode[Banana]("""{"curvature":0.5}""")
 val res: Either[String, Banana] = Right(Banana(0.5))
 ```
 
-getting [`jq`](https://stedolan.github.io/jq/) compatible error messages if the JSON is malformed
+And bad JSON will produce an error in `jq` syntax with an additional piece of contextual information (in parentheses)
 
 ```
 scala> json.parser.decode[Banana]("""{"curvature": womp}""")
@@ -327,7 +330,7 @@ play    3589 ( 5756)  1344 (2260)
 
 Most JSON libraries (but not zio-json) first create a representation of the JSON message in an Abstract Syntax Tree (AST) that represents all the objects, arrays and values in a generic way. Their decoders typically read what they need from the AST.
 
-An intermediate AST enables attack vectors that insert redundant data, for example in our Google Maps dataset we can add a new field called `redundant` at top-level containing a 60K `String`. If we do this, and run the benchmarks, we see that Circe is heavily impacted, with a 75% reduction in capacity and an increase in memory usage. Play is also impacted, although not as severely. zio-json's ops/sec are reduced by 30% but the memory usage is in line which means that throughput is unlikely to be affected by this kind of attack.
+An intermediate AST enables attack vectors that insert redundant data, for example in our Google Maps dataset we can add a new field called `redundant` at top-level containing a 60K `String`. If we do this, and run the benchmarks, we see that Circe is heavily impacted, with a 75% reduction in capacity and an increase in memory usage. Play is also impacted, although not as severely. zio-json's ops/sec are reduced but the memory usage is in line which means that throughput is unlikely to be affected by this kind of attack.
 
 <!-- jmh:run -prof gc GoogleMaps.*Attack1 -->
 
@@ -338,7 +341,7 @@ circe  2224 ( 7456)  1655 (1533)
 play   2350 ( 3589)  1854 (1344)
 ```
 
-The reason why zio-json is not as badly affected is because it skips values that are unexpected. We can also completely mitigate this kind of attack by using the `@json.no_extra_fields` annotation which results in the payload being rejected at a rate of 5.5 million ops/sec.
+The reason why zio-json is not as badly affected is because it skips values that are unexpected. We can completely mitigate this kind of attack by using the `@json.no_extra_fields` annotation which results in the payload being rejected at a rate of 5.5 million ops/sec.
 
 Other kinds of redundant values attacks are also possible, such as using an array of 60K full of high precision decimal numbers that require slow parsing, attacking the CPU. However, the memory attack afforded to us by a redundant `String` is already quite effective.
 
