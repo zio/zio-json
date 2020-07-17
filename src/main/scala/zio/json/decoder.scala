@@ -6,6 +6,8 @@ import scala.util.control.NoStackTrace
 import zio.json.internal._
 import Decoder.JsonError
 
+import scala.reflect.ClassTag
+
 // convenience to match the circe api
 object parser {
 
@@ -225,6 +227,29 @@ object Decoder extends GeneratedTuples with DecoderLowPriority1 with DecoderLowP
           builder += A.unsafeDecode(trace_, in)
         } while (Lexer.nextArray(trace_, in))
         builder.result()
+      }
+    }
+
+  implicit def vector[A](implicit A: Decoder[A]): Decoder[Vector[A]] =
+    list[A].map(_.toVector)
+
+  implicit def seq[A](implicit A: Decoder[A]): Decoder[Seq[A]] =
+    list[A].map(_.toSeq)
+
+  implicit def set[A](implicit A: Decoder[A]): Decoder[Set[A]] =
+    list[A].map(_.toSet)
+
+  implicit def array[A:ClassTag](implicit A: Decoder[A]): Decoder[Array[A]] =
+    new Decoder[Array[A]] {
+      def unsafeDecode(trace: List[JsonError], in: RetractReader): Array[A] = {
+        var builder = Array[A]()
+        Lexer.char(trace, in, '[')
+        var trace_ = trace
+        if (Lexer.firstArray(trace, in)) do {
+          trace_ = JsonError.ArrayAccess(builder.length) :: trace
+          builder = builder :+ A.unsafeDecode(trace_, in)
+        } while (Lexer.nextArray(trace_, in))
+        builder
       }
     }
 
