@@ -1,8 +1,6 @@
 package zio.json.internal
 
 import java.io._
-import java.util.regex.Pattern
-import scala.annotation._
 import scala.util.control.NoStackTrace
 
 /**
