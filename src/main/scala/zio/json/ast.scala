@@ -1,7 +1,5 @@
 package zio.json
 
-import scala.collection.mutable.{ListBuffer}
-
 import Decoder.{JsonError, UnsafeJson}
 import zio.json.internal._
 import scala.annotation._

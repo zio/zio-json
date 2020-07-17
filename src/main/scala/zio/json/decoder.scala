@@ -1,8 +1,7 @@
 package zio.json
 
 import scala.annotation._
-import java.io._
-import scala.collection.mutable.{ListBuffer}
+import scala.collection.mutable.ListBuffer
 import scala.util.control.NoStackTrace
 import zio.json.internal._
 import Decoder.JsonError
@@ -281,7 +280,7 @@ object Decoder extends DecoderLowPriority1 with DecoderLowPriority2 {
         trace: List[JsonError],
         in: RetractReader
       ): List[(K, A)] = {
-        var builder: ListBuffer[(K, A)] = new ListBuffer
+        val builder: ListBuffer[(K, A)] = new ListBuffer
         var trace_ = trace
         Lexer.char(trace, in, '{')
         if (Lexer.firstObject(trace, in))
