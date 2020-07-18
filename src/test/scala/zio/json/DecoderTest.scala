@@ -227,6 +227,23 @@ object DecoderTest extends TestSuite {
       json.parser.decode[Monster](jsonStr) ==> Right(expected)
     }
 
+    test("Map") {
+      case class Monsters(population: Map[String, Int])
+
+      object Monsters {
+        implicit val decoder: json.Decoder[Monsters] = json.MagnoliaDecoder.gen
+      }
+
+      val jsonStr = """{"population":{"5XL":3,"2XL":14,"XL":159}}"""
+      val expected = Monsters(population =
+        Map(
+          "5XL" -> 3,
+          "2XL" -> 14,
+          "XL" -> 159)
+      )
+      json.parser.decode[Monsters](jsonStr) ==> Right(expected)
+    }
+
     test("jawn test data: bar") {
       testAst("bar")
     }

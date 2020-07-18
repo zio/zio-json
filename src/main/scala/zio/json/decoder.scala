@@ -241,6 +241,8 @@ object Decoder extends GeneratedTuples with DecoderLowPriority1 with DecoderLowP
   }
 
   // FIXME compiles without seq but tests fails
+  // assertion failed: Right(Monster(List())) != Right(Monster(List(5XL, 2XL, XL)))
+  // maybe sth is off with cbf ?
   implicit def seq[A: Decoder]: Decoder[Seq[A]] = new Decoder[Seq[A]] {
     def unsafeDecode(trace: List[JsonError], in: RetractReader): Seq[A] =
       builder(trace, in, new mutable.ListBuffer[A])
