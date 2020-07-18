@@ -191,16 +191,6 @@ object DecoderTest extends TestSuite {
       json.parser.decode[String](""""€🐵🥰"""") ==> Right("€🐵🥰")
     }
 
-    test("array") {
-      case class Cookie(count: Array[Int])
-
-      object Cookie {
-        implicit val decoder: json.Decoder[Cookie] = json.MagnoliaDecoder.gen
-      }
-      json.parser.decode[Cookie]("""{"count":[1,2,3]}""").map(_.count.toList) ==>
-        Right(Array(1,2,3).toList)
-    }
-
     test("Vector") {
       case class Monster(sizes: Vector[String])
 
