@@ -191,6 +191,59 @@ object DecoderTest extends TestSuite {
       json.parser.decode[String](""""€🐵🥰"""") ==> Right("€🐵🥰")
     }
 
+    test("Seq") {
+      case class Monster(sizes: Seq[String])
+
+      object Monster {
+        implicit val decoder: json.Decoder[Monster] = json.MagnoliaDecoder.gen
+      }
+
+      val jsonStr = """{"sizes":["5XL","2XL","XL"]}"""
+      val expected = Monster(sizes = Seq("5XL","2XL","XL"))
+      json.parser.decode[Monster](jsonStr) ==> Right(expected)
+    }
+
+    test("Vector") {
+      case class Monster(sizes: Vector[String])
+
+      object Monster {
+        implicit val decoder: json.Decoder[Monster] = json.MagnoliaDecoder.gen
+      }
+
+      val jsonStr = """{"sizes":["5XL","2XL","XL"]}"""
+      val expected = Monster(sizes = Vector("5XL","2XL","XL"))
+      json.parser.decode[Monster](jsonStr) ==> Right(expected)
+    }
+
+    test("Set") {
+      case class Monster(sizes: Set[String])
+
+      object Monster {
+        implicit val decoder: json.Decoder[Monster] = json.MagnoliaDecoder.gen
+      }
+
+      val jsonStr = """{"sizes":["5XL","2XL","XL"]}"""
+      val expected = Monster(sizes = Set("5XL","2XL","XL"))
+      json.parser.decode[Monster](jsonStr) ==> Right(expected)
+    }
+
+    test("Map") {
+      case class Monsters(population: Map[String, Int])
+
+      object Monsters {
+        implicit val decoder: json.Decoder[Monsters] = json.MagnoliaDecoder.gen
+      }
+
+      val jsonStr = """{"population":{"5XL":3,"2XL":14,"XL":159}}"""
+      val expected = Monsters(population =
+        Map(
+          "5XL" -> 3,
+          "2XL" -> 14,
+          "XL" -> 159)
+      )
+      json.parser.decode[Monsters](jsonStr) ==> Right(expected)
+    }
+
     test("jawn test data: bar") {
       testAst("bar")
     }
