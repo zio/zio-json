@@ -231,6 +231,22 @@ object Decoder extends GeneratedTuples with DecoderLowPriority1 with DecoderLowP
     builder.result()
   }
 
+}
+
+// We have a hierarchy of implicits for two reasons:
+//
+// 1. the compiler searches each scope and returns early if it finds a match.
+//    This means that it is faster to put more complex derivation rules (that
+//    are unlikely to be commonly used) into a lower priority scope, allowing
+//    simple things like primitives to match fast.
+//
+// 2. sometimes we want to have overlapping instances with a more specific /
+//    optimised instances, and a fallback for the more general case that would
+//    otherwise conflict in a lower priority scope. A good example of this is to
+//    have specialised decoders for collection types, falling back to BuildFrom.
+private[json] trait DecoderLowPriority1 {
+  this: Decoder.type =>
+
   implicit def list[A: Decoder]: Decoder[List[A]] = new Decoder[List[A]] {
     def unsafeDecode(trace: List[JsonError], in: RetractReader): List[A] =
       builder(trace, in, new mutable.ListBuffer[A])
@@ -266,33 +282,37 @@ object Decoder extends GeneratedTuples with DecoderLowPriority1 with DecoderLowP
       }
     }
 
-  implicit def sortedmap[K: FieldDecoder, V: Decoder](
-    implicit
-    O: Ordering[K]
-  ): Decoder[collection.SortedMap[K, V]] =
+  implicit def sortedmap[K: FieldDecoder: Ordering, V: Decoder]: Decoder[collection.SortedMap[K, V]] =
     keylist[K, V].map(lst => collection.SortedMap.apply(lst: _*))
-}
 
-// TODO DecoderLowPriority0 for anything with a type parameter
-// TODO document the reasoning behind implicit priorities
+  implicit def map[K: FieldDecoder, V: Decoder]: Decoder[Map[K, V]] = hashmap[K, V].widen
 
-private[json] trait DecoderLowPriority1 {
-  this: Decoder.type =>
+  implicit def hashmap[K: FieldDecoder, V: Decoder]: Decoder[immutable.HashMap[K, V]] =
+    keylist[K, V].map(lst => immutable.HashMap(lst: _*))
 
-  // allows SortedMap to be found
-  implicit def dict[K: FieldDecoder, V: Decoder]: Decoder[Map[K, V]] =
-    keylist[K, V].map(_.toMap)
+  // no work needed if we just want a supertype of List
+  implicit def seq[A: Decoder]: Decoder[Seq[A]] = list[A].widen
 
-  // TODO why is this needed? CBF should work
-  implicit def set[A: Decoder]: Decoder[Set[A]] = new Decoder[Set[A]] {
-    def unsafeDecode(trace: List[JsonError], in: RetractReader): Set[A] =
-      builder(trace, in, new mutable.ListBuffer[A]).toSet
-  }
+  // this is not optimised, it exists because there is no CBF
+  implicit def set[A: Decoder]: Decoder[Set[A]] = hashset[A].widen
+
+  // this is not optimised, it exists because there is no CBF
+  implicit def hashset[A: Decoder]: Decoder[immutable.HashSet[A]] =
+    list[A].map(lst => immutable.HashSet(lst: _*))
+
+  // this is not optimised, it exists because there is no CBF
+  implicit def sortedset[A: Ordering: Decoder]: Decoder[immutable.SortedSet[A]] =
+    list[A].map(lst => immutable.SortedSet(lst: _*))
+
 }
 
 private[json] trait DecoderLowPriority2 {
   this: Decoder.type =>
 
+  // This is us trying to be good stdlib citizens, but BuildFrom is so rubbish
+  // (missing instances, bugs, etc) that it's basically useless and this rule
+  // should probably just be deleted and replaced with instances for each
+  // interface and collection data type.
   import scala.collection.generic.CanBuildFrom
   implicit def cbf[T[_], A: Decoder](
     implicit
