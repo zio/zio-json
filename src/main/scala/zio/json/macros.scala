@@ -5,26 +5,26 @@ import scala.reflect.macros.whitebox
 
 import magnolia._
 
-import zio.json.Decoder.{JsonError, UnsafeJson}
-import zio.json.internal.{Lexer, RetractReader, StringMatrix}
+import zio.json.Decoder.{ JsonError, UnsafeJson }
+import zio.json.internal.{ Lexer, RetractReader, StringMatrix }
 
 /**
-  * If used on a case class field, determines the name of the JSON field.
-  * Defaults to the case class field name.
-  */
+ * If used on a case class field, determines the name of the JSON field.
+ * Defaults to the case class field name.
+ */
 final case class field(name: String) extends Annotation
 
 /**
-  * If used on a sealed class, will determine the name of the field for
-  * disambiguating classes.
-  *
-  * The default is to not use a typehint field and instead
-  * have an object with a single key that is the class name.
-  *
-  * Note that using a discriminator is less performant, uses more memory, and
-  * may be prone to DOS attacks that are impossible with the default encoding.
-  * Only use this option if you must model an externally defined schema.
-  */
+ * If used on a sealed class, will determine the name of the field for
+ * disambiguating classes.
+ *
+ * The default is to not use a typehint field and instead
+ * have an object with a single key that is the class name.
+ *
+ * Note that using a discriminator is less performant, uses more memory, and
+ * may be prone to DOS attacks that are impossible with the default encoding.
+ * Only use this option if you must model an externally defined schema.
+ */
 final case class discriminator(name: String) extends Annotation
 // TODO a strategy where the constructor is inferred from the field names, only
 // valid if there is no ambiguity in the types of fields for all case classes.
@@ -33,22 +33,22 @@ final case class discriminator(name: String) extends Annotation
 // Subtype.
 
 /**
-  * If used on a case class will determine the typehint value for disambiguating
-  * sealed traits. Defaults to the short type name.
-  */
+ * If used on a case class will determine the typehint value for disambiguating
+ * sealed traits. Defaults to the short type name.
+ */
 final case class hint(name: String) extends Annotation
 
 /**
-  * If used on a case class, will exit early if any fields are in the JSON that
-  * do not correspond to field names in the case class.
-  *
-  * This adds extra protections against a DOS attacks but means that changes in
-  * the schema will result in a hard error rather than silently ignoring those
-  * fields.
-  *
-  * Cannot be comibned with `@discriminator` since it is considered an extra
-  * field from the perspective of the case class.
-  */
+ * If used on a case class, will exit early if any fields are in the JSON that
+ * do not correspond to field names in the case class.
+ *
+ * This adds extra protections against a DOS attacks but means that changes in
+ * the schema will result in a hard error rather than silently ignoring those
+ * fields.
+ *
+ * Cannot be comibned with `@discriminator` since it is considered an extra
+ * field from the perspective of the case class.
+ */
 final class no_extra_fields extends Annotation
 
 object MagnoliaDecoder {
@@ -73,14 +73,12 @@ object MagnoliaDecoder {
     else
       new Decoder[A] {
         val names: Array[String] = ctx.parameters.map { p =>
-          p.annotations
-            .collectFirst {
-              case field(name) => name
-            }
-            .getOrElse(p.label)
+          p.annotations.collectFirst {
+            case field(name) => name
+          }.getOrElse(p.label)
         }.toArray
-        val len: Int = names.length
-        val matrix: StringMatrix = new StringMatrix(names)
+        val len: Int                = names.length
+        val matrix: StringMatrix    = new StringMatrix(names)
         val spans: Array[JsonError] = names.map(JsonError.ObjectAccess(_))
         lazy val tcs: Array[Decoder[Any]] =
           ctx.parameters.map(_.typeclass.widen[Any]).toArray
@@ -95,7 +93,7 @@ object MagnoliaDecoder {
           if (Lexer.firstObject(trace, in))
             do {
               var trace_ = trace
-              val field = Lexer.field(trace, in, matrix)
+              val field  = Lexer.field(trace, in, matrix)
               if (field != -1) {
                 val field_ = names(field)
                 trace_ = spans(field) :: trace
@@ -124,13 +122,11 @@ object MagnoliaDecoder {
 
   def dispatch[A](ctx: SealedTrait[Decoder, A]): Decoder[A] = {
     val names: Array[String] = ctx.subtypes.map { p =>
-      p.annotations
-        .collectFirst {
-          case hint(name) => name
-        }
-        .getOrElse(p.typeName.short)
+      p.annotations.collectFirst {
+        case hint(name) => name
+      }.getOrElse(p.typeName.short)
     }.toArray
-    val len: Int = names.length
+    val len: Int             = names.length
     val matrix: StringMatrix = new StringMatrix(names)
     lazy val tcs: Array[Decoder[Any]] =
       ctx.subtypes.map(_.typeclass.widen[Any]).toArray
@@ -147,7 +143,7 @@ object MagnoliaDecoder {
             if (field != -1) {
               val field_ = names(field)
               val trace_ = spans(field) :: trace
-              val a = tcs(field).unsafeDecode(trace_, in).asInstanceOf[A]
+              val a      = tcs(field).unsafeDecode(trace_, in).asInstanceOf[A]
               Lexer.char(trace, in, '}')
               return a
             } else
@@ -162,8 +158,8 @@ object MagnoliaDecoder {
       }
     else
       new Decoder[A] {
-        val hintfield = discrim.getOrElse("type")
-        val hintmatrix = new StringMatrix(Array(hintfield))
+        val hintfield               = discrim.getOrElse("type")
+        val hintmatrix              = new StringMatrix(Array(hintfield))
         val spans: Array[JsonError] = names.map(JsonError.Message(_))
 
         def unsafeDecode(trace: List[JsonError], in: RetractReader): A = {
@@ -197,5 +193,5 @@ object MagnoliaDecoder {
 // backcompat for 2.12, otherwise we'd use ArraySeq.unsafeWrapArray
 private final class ArraySeq(p: Array[Any]) extends IndexedSeq[Any] {
   def apply(i: Int): Any = p(i)
-  def length: Int = p.length
+  def length: Int        = p.length
 }

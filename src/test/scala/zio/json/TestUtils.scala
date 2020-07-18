@@ -15,7 +15,7 @@ object TestUtils {
       (ch4, h4) <- charAndHash(h3) if (((h4 + 32) * 961) ^ ((h4 + 127) * 961)) < 0
       (ch5, h5) <- charAndHash(h4) if (((h5 + 32) * 31) ^ ((h5 + 127) * 31)) < 0
       (ch6, h6) <- charAndHash(h5) if ((h6 + 32) ^ (h6 + 127)) < 0
-      (ch7, _) <- charAndHash(h6) if h6 + ch7 == 0
+      (ch7, _)  <- charAndHash(h6) if h6 + ch7 == 0
     } yield new String(Array(ch0, ch1, ch2, ch3, ch4, ch5, ch6, ch7))
   }
 
@@ -28,9 +28,9 @@ object TestUtils {
   def getResourceAsString(res: String): String = {
     val is = getClass.getClassLoader.getResourceAsStream(res)
     try {
-      val baos = new java.io.ByteArrayOutputStream()
-      val data = Array.ofDim[Byte](2048)
-      var len: Int = 0
+      val baos        = new java.io.ByteArrayOutputStream()
+      val data        = Array.ofDim[Byte](2048)
+      var len: Int    = 0
       def read(): Int = { len = is.read(data); len }
       while (read() != -1)
         baos.write(data, 0, len)
@@ -41,13 +41,12 @@ object TestUtils {
   def asChars(str: String): CharSequence =
     new internal.FastCharSequence(str.toCharArray)
 
-  def getResourceAsReader(res: String): internal.RetractReader = {
+  def getResourceAsReader(res: String): internal.RetractReader =
     new internal.WithRetractReader(
       new java.io.InputStreamReader(
         getClass.getClassLoader.getResourceAsStream(res),
         "UTF-8"
       )
     )
-  }
 
 }

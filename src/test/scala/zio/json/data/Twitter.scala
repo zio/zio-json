@@ -2,8 +2,8 @@ package zio.json.data.twitter
 
 import io.circe
 import zio.json
-import play.api.libs.{json => Play}
-import ai.x.play.json.{Jsonx => Playx}
+import play.api.libs.{ json => Play }
+import ai.x.play.json.{ Jsonx => Playx }
 import ai.x.play.json.Encoders.encoder
 
 case class Urls(

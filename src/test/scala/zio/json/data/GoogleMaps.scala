@@ -3,7 +3,7 @@ package zio.json.data.googlemaps
 import com.github.plokhotnyuk.jsoniter_scala.macros.named
 import io.circe
 import zio.json
-import play.api.libs.{json => Play}
+import play.api.libs.{ json => Play }
 
 final case class Value(
   text: String,

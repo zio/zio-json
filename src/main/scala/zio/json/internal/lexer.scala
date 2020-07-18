@@ -3,7 +3,7 @@ package zio.json.internal
 import java.nio.CharBuffer
 import java.util.Arrays
 import scala.annotation._
-import zio.json.Decoder.{JsonError, UnsafeJson}
+import zio.json.Decoder.{ JsonError, UnsafeJson }
 import scala.util.Properties.propOrNone
 
 // tries to stick to the spec, but maybe a bit loose in places (e.g. numbers)
@@ -78,9 +78,9 @@ object Lexer {
   ): Int = {
     val stream = streamingString(trace, in)
 
-    var i: Int = 0
+    var i: Int   = 0
     var bs: Long = matrix.initial
-    var c: Int = -1
+    var c: Int   = -1
     while ({ c = stream.read(); c != -1 }) {
       bs = matrix.update(bs, i, c)
       i += 1
@@ -89,9 +89,9 @@ object Lexer {
     matrix.first(bs)
   }
 
-  private[this] val ull: Array[Char] = "ull".toCharArray
+  private[this] val ull: Array[Char]  = "ull".toCharArray
   private[this] val alse: Array[Char] = "alse".toCharArray
-  private[this] val rue: Array[Char] = "rue".toCharArray
+  private[this] val rue: Array[Char]  = "rue".toCharArray
   def skipValue(trace: List[JsonError], in: RetractReader): Unit =
     (in.nextNonWhitespace(): @switch) match {
       case 'n' => readChars(trace, in, ull, "null")
@@ -299,8 +299,7 @@ object Lexer {
   // non-positional for performance
   @inline private[this] def isNumber(c: Char): Boolean =
     (c: @switch) match {
-      case '+' | '-' | '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' |
-          '9' | '.' | 'e' | 'E' =>
+      case '+' | '-' | '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | '.' | 'e' | 'E' =>
         true
       case _ => false
     }
@@ -324,9 +323,7 @@ object Lexer {
 // A Reader for the contents of a string, taking care of the escaping.
 //
 // `read` can throw extra exceptions on badly formed input.
-private final class EscapedString(trace: List[JsonError], in: OneCharReader)
-    extends java.io.Reader
-    with OneCharReader {
+private final class EscapedString(trace: List[JsonError], in: OneCharReader) extends java.io.Reader with OneCharReader {
 
   def close(): Unit = in.close()
 
@@ -362,7 +359,7 @@ private final class EscapedString(trace: List[JsonError], in: OneCharReader)
 
   // consumes 4 hex characters after current
   def nextHex4(): Int = {
-    var i: Int = 0
+    var i: Int     = 0
     var accum: Int = 0
     while (i < 4) {
       var c: Int = in.read()
@@ -392,16 +389,16 @@ final class StringMatrix(val xs: Array[String]) {
   require(xs.nonEmpty)
   require(xs.length < 64)
 
-  val width = xs.length
-  val height = xs.map(_.length).max
+  val width               = xs.length
+  val height              = xs.map(_.length).max
   val lengths: Array[Int] = xs.map(_.length)
-  val initial: Long = (0 until width).foldLeft(0L)((bs, r) => bs | (1L << r))
+  val initial: Long       = (0 until width).foldLeft(0L)((bs, r) => bs | (1L << r))
   private val matrix: Array[Int] = {
-    val m = Array.fill[Int](width * height)(-1)
+    val m           = Array.fill[Int](width * height)(-1)
     var string: Int = 0
     while (string < width) {
-      val s = xs(string)
-      val len = s.length
+      val s         = xs(string)
+      val len       = s.length
       var char: Int = 0
       while (char < len) {
         m(width * char + string) = s.codePointAt(char)
@@ -415,11 +412,11 @@ final class StringMatrix(val xs: Array[String]) {
   // must be called with increasing `char` (starting with bitset obtained from a
   // call to 'initial', char = 0)
   def update(bitset: Long, char: Int, c: Int): Long =
-    if (char >= height) 0L // too long
+    if (char >= height) 0L    // too long
     else if (bitset == 0L) 0L // everybody lost
     else {
       var latest: Long = bitset
-      val base: Int = width * char
+      val base: Int    = width * char
 
       if (bitset == initial) { // special case when it is dense since it is simple
         var string: Int = 0
@@ -432,7 +429,7 @@ final class StringMatrix(val xs: Array[String]) {
         var remaining: Long = bitset
         while (remaining != 0L) {
           val string: Int = java.lang.Long.numberOfTrailingZeros(remaining)
-          val bit: Long = 1L << string
+          val bit: Long   = 1L << string
           if (matrix(base + string) != c)
             latest = latest ^ bit
           remaining = remaining ^ bit
@@ -446,11 +443,11 @@ final class StringMatrix(val xs: Array[String]) {
   def exact(bitset: Long, length: Int): Long =
     if (length > height) 0L // too long
     else {
-      var latest: Long = bitset
+      var latest: Long    = bitset
       var remaining: Long = bitset
       while (remaining != 0L) {
         val string: Int = java.lang.Long.numberOfTrailingZeros(remaining)
-        val bit: Long = 1L << string
+        val bit: Long   = 1L << string
         if (lengths(string) != length)
           latest = latest ^ bit
         remaining = remaining ^ bit
@@ -466,7 +463,7 @@ final class StringMatrix(val xs: Array[String]) {
 // like StringBuilder but doesn't have any encoding or range checks
 final class FastStringBuilder(initial: Int) {
   private[this] var chars: Array[Char] = Array.ofDim(initial)
-  private[this] var i: Int = 0
+  private[this] var i: Int             = 0
 
   def append(c: Char): Unit = {
     if (i == chars.length)

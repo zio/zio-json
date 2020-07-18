@@ -2,8 +2,8 @@ package zio.json.data.geojson
 
 import io.circe
 import zio.json
-import play.api.libs.{json => Play}
-import ai.x.play.json.{Jsonx => Playx}
+import play.api.libs.{ json => Play }
+import ai.x.play.json.{ Jsonx => Playx }
 import ai.x.play.json.Encoders.encoder
 
 object playtuples extends Play.GeneratedReads with Play.GeneratedWrites
@@ -13,25 +13,19 @@ package generated {
 
   @json.discriminator("type")
   sealed abstract class Geometry
-  final case class Point(coordinates: (Double, Double)) extends Geometry
-  final case class MultiPoint(coordinates: List[(Double, Double)])
-      extends Geometry
-  final case class LineString(coordinates: List[(Double, Double)])
-      extends Geometry
-  final case class MultiLineString(coordinates: List[List[(Double, Double)]])
-      extends Geometry
-  final case class Polygon(coordinates: List[List[(Double, Double)]])
-      extends Geometry
-  final case class MultiPolygon(coordinates: List[List[List[(Double, Double)]]])
-      extends Geometry
+  final case class Point(coordinates: (Double, Double))                          extends Geometry
+  final case class MultiPoint(coordinates: List[(Double, Double)])               extends Geometry
+  final case class LineString(coordinates: List[(Double, Double)])               extends Geometry
+  final case class MultiLineString(coordinates: List[List[(Double, Double)]])    extends Geometry
+  final case class Polygon(coordinates: List[List[(Double, Double)]])            extends Geometry
+  final case class MultiPolygon(coordinates: List[List[List[(Double, Double)]]]) extends Geometry
   final case class GeometryCollection(
     geometries: List[Geometry] // NOTE: recursive
   ) extends Geometry
 
   @json.discriminator("type")
   sealed abstract class GeoJSON
-  final case class Feature(properties: Map[String, String], geometry: Geometry)
-      extends GeoJSON
+  final case class Feature(properties: Map[String, String], geometry: Geometry) extends GeoJSON
   final case class FeatureCollection(
     features: List[GeoJSON] // NOTE: recursive
   ) extends GeoJSON
@@ -47,14 +41,14 @@ package generated {
       circe.generic.extras.semiauto.deriveConfiguredDecoder[Geometry]
 
     // it's not clear why this needs the extras package...
-    implicit val playPoint: Play.Format[Point] = Playx.formatCaseClass[Point]
-    implicit val playMultiPoint: Play.Format[MultiPoint] = Play.Json.format[MultiPoint]
-    implicit val playLineString: Play.Format[LineString] = Play.Json.format[LineString]
-    implicit val playMultiLineString: Play.Format[MultiLineString] = Play.Json.format[MultiLineString]
-    implicit val playPolygon: Play.Format[Polygon] = Play.Json.format[Polygon]
-    implicit val playMultiPolygon: Play.Format[MultiPolygon] = Play.Json.format[MultiPolygon]
+    implicit val playPoint: Play.Format[Point]                                = Playx.formatCaseClass[Point]
+    implicit val playMultiPoint: Play.Format[MultiPoint]                      = Play.Json.format[MultiPoint]
+    implicit val playLineString: Play.Format[LineString]                      = Play.Json.format[LineString]
+    implicit val playMultiLineString: Play.Format[MultiLineString]            = Play.Json.format[MultiLineString]
+    implicit val playPolygon: Play.Format[Polygon]                            = Play.Json.format[Polygon]
+    implicit val playMultiPolygon: Play.Format[MultiPolygon]                  = Play.Json.format[MultiPolygon]
     implicit lazy val playGeometryCollection: Play.Format[GeometryCollection] = Play.Json.format[GeometryCollection]
-    implicit val playFormatter: Play.Format[Geometry] = Playx.formatSealed[Geometry]
+    implicit val playFormatter: Play.Format[Geometry]                         = Playx.formatSealed[Geometry]
 
   }
   object GeoJSON {
@@ -67,33 +61,27 @@ package generated {
     implicit lazy val circeDecoder: circe.Decoder[GeoJSON] =
       circe.generic.extras.semiauto.deriveConfiguredDecoder[GeoJSON]
 
-    implicit val playFeature: Play.Format[Feature] = Play.Json.format[Feature]
+    implicit val playFeature: Play.Format[Feature]                          = Play.Json.format[Feature]
     implicit lazy val playFeatureCollection: Play.Format[FeatureCollection] = Play.Json.format[FeatureCollection]
-    implicit val playFormatter: Play.Format[GeoJSON] = Playx.formatSealed[GeoJSON]
+    implicit val playFormatter: Play.Format[GeoJSON]                        = Playx.formatSealed[GeoJSON]
 
   }
 }
 
 package handrolled {
   sealed abstract class Geometry
-  final case class Point(coordinates: (Double, Double)) extends Geometry
-  final case class MultiPoint(coordinates: List[(Double, Double)])
-      extends Geometry
-  final case class LineString(coordinates: List[(Double, Double)])
-      extends Geometry
-  final case class MultiLineString(coordinates: List[List[(Double, Double)]])
-      extends Geometry
-  final case class Polygon(coordinates: List[List[(Double, Double)]])
-      extends Geometry
-  final case class MultiPolygon(coordinates: List[List[List[(Double, Double)]]])
-      extends Geometry
+  final case class Point(coordinates: (Double, Double))                          extends Geometry
+  final case class MultiPoint(coordinates: List[(Double, Double)])               extends Geometry
+  final case class LineString(coordinates: List[(Double, Double)])               extends Geometry
+  final case class MultiLineString(coordinates: List[List[(Double, Double)]])    extends Geometry
+  final case class Polygon(coordinates: List[List[(Double, Double)]])            extends Geometry
+  final case class MultiPolygon(coordinates: List[List[List[(Double, Double)]]]) extends Geometry
   final case class GeometryCollection(
     geometries: List[Geometry] // NOTE: recursive
   ) extends Geometry
 
   sealed abstract class GeoJSON
-  final case class Feature(properties: Map[String, String], geometry: Geometry)
-      extends GeoJSON
+  final case class Feature(properties: Map[String, String], geometry: Geometry) extends GeoJSON
   final case class FeatureCollection(
     features: List[GeoJSON] // NOTE: recursive
   ) extends GeoJSON
@@ -109,11 +97,11 @@ package handrolled {
     // custom decoder (below) which is necessary to avert a DOS attack.
     implicit lazy val zioJsonDecoder: json.Decoder[Geometry] =
       new json.Decoder[Geometry] {
-        import zio.json._, internal._, Decoder.{JsonError, UnsafeJson}
+        import zio.json._, internal._, Decoder.{ JsonError, UnsafeJson }
         import scala.annotation._
 
-        val names: Array[String] = Array("type", "coordinates", "geometries")
-        val matrix: StringMatrix = new StringMatrix(names)
+        val names: Array[String]    = Array("type", "coordinates", "geometries")
+        val matrix: StringMatrix    = new StringMatrix(names)
         val spans: Array[JsonError] = names.map(JsonError.ObjectAccess(_))
         val subtypes: StringMatrix = new StringMatrix(
           Array(
@@ -126,7 +114,7 @@ package handrolled {
             "GeometryCollection"
           )
         )
-        val coordinatesD: Decoder[JsArray] = Decoder[JsArray]
+        val coordinatesD: Decoder[JsArray]            = Decoder[JsArray]
         lazy val geometriesD: Decoder[List[Geometry]] = Decoder[List[Geometry]]
 
         def coordinates0(
@@ -175,9 +163,9 @@ package handrolled {
         ): Geometry = {
           Lexer.char(trace, in, '{')
 
-          var coordinates: JsArray = null
+          var coordinates: JsArray       = null
           var geometries: List[Geometry] = null
-          var subtype: Int = -1
+          var subtype: Int               = -1
 
           if (Lexer.firstObject(trace, in))
             do {
@@ -238,14 +226,14 @@ package handrolled {
         .copy(discriminator = Some("type"))
     implicit lazy val circeDecoder: circe.Decoder[Geometry] =
       circe.generic.extras.semiauto.deriveConfiguredDecoder[Geometry]
-    implicit val playPoint: Play.Format[Point] = Playx.formatCaseClass[Point]
-    implicit val playMultiPoint: Play.Format[MultiPoint] = Play.Json.format[MultiPoint]
-    implicit val playLineString: Play.Format[LineString] = Play.Json.format[LineString]
-    implicit val playMultiLineString: Play.Format[MultiLineString] = Play.Json.format[MultiLineString]
-    implicit val playPolygon: Play.Format[Polygon] = Play.Json.format[Polygon]
-    implicit val playMultiPolygon: Play.Format[MultiPolygon] = Play.Json.format[MultiPolygon]
+    implicit val playPoint: Play.Format[Point]                                = Playx.formatCaseClass[Point]
+    implicit val playMultiPoint: Play.Format[MultiPoint]                      = Play.Json.format[MultiPoint]
+    implicit val playLineString: Play.Format[LineString]                      = Play.Json.format[LineString]
+    implicit val playMultiLineString: Play.Format[MultiLineString]            = Play.Json.format[MultiLineString]
+    implicit val playPolygon: Play.Format[Polygon]                            = Play.Json.format[Polygon]
+    implicit val playMultiPolygon: Play.Format[MultiPolygon]                  = Play.Json.format[MultiPolygon]
     implicit lazy val playGeometryCollection: Play.Format[GeometryCollection] = Play.Json.format[GeometryCollection]
-    implicit val playFormatter: Play.Format[Geometry] = Playx.formatSealed[Geometry]
+    implicit val playFormatter: Play.Format[Geometry]                         = Playx.formatSealed[Geometry]
 
   }
   object GeoJSON {
@@ -256,12 +244,12 @@ package handrolled {
     // of a corner case.
     implicit lazy val zioJsonDecoder: json.Decoder[GeoJSON] =
       new json.Decoder[GeoJSON] {
-        import zio.json._, internal._, Decoder.{JsonError, UnsafeJson}
+        import zio.json._, internal._, Decoder.{ JsonError, UnsafeJson }
         import scala.annotation._
 
         val names: Array[String] =
           Array("type", "properties", "geometry", "features")
-        val matrix: StringMatrix = new StringMatrix(names)
+        val matrix: StringMatrix    = new StringMatrix(names)
         val spans: Array[JsonError] = names.map(JsonError.ObjectAccess(_))
         val subtypes: StringMatrix = new StringMatrix(
           Array("Feature", "FeatureCollection")
@@ -276,9 +264,9 @@ package handrolled {
           Lexer.char(trace, in, '{')
 
           var properties: Map[String, String] = null
-          var geometry: Geometry = null
-          var features: List[GeoJSON] = null
-          var subtype: Int = -1
+          var geometry: Geometry              = null
+          var features: List[GeoJSON]         = null
+          var subtype: Int                    = -1
 
           if (Lexer.firstObject(trace, in))
             do {
@@ -345,7 +333,7 @@ package handrolled {
     implicit lazy val circeDecoder: circe.Decoder[GeoJSON] =
       circe.generic.extras.semiauto.deriveConfiguredDecoder[GeoJSON]
 
-    implicit val playFeature: Play.Format[Feature] = Play.Json.format[Feature]
+    implicit val playFeature: Play.Format[Feature]                          = Play.Json.format[Feature]
     implicit lazy val playFeatureCollection: Play.Format[FeatureCollection] = Play.Json.format[FeatureCollection]
 
     implicit val playFormatter: Play.Format[GeoJSON] = Playx.formatSealed[GeoJSON]

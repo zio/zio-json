@@ -1,7 +1,7 @@
 package zio.json.internal
 
 import scalaprops._
-import Property.{implies, prop, property}
+import Property.{ implies, prop, property }
 import utest._
 
 // testOnly *StringMatrix*
@@ -21,7 +21,7 @@ object StringMatrixProps extends Scalaprops {
 
   def matches(xs: List[String], bitset: Long): List[String] = {
     var hits: List[String] = Nil
-    var i = 0
+    var i                  = 0
     while (i < xs.length) {
       if (((bitset >>> i) & 1L) == 1L)
         hits = xs(i) :: hits
@@ -30,9 +30,10 @@ object StringMatrixProps extends Scalaprops {
     hits
   }
 
-  val positiveSucceeds = property { xs: List[String] =>
-    xs.map(s => prop(matcher(xs, s).contains(s))).reduce(_ and _)
-  }(testStrings, Shrink.empty)
+  val positiveSucceeds = property { xs: List[String] => xs.map(s => prop(matcher(xs, s).contains(s))).reduce(_ and _) }(
+    testStrings,
+    Shrink.empty
+  )
 
   val negativeFails = property { xs: List[String] =>
     implies(
@@ -41,13 +42,12 @@ object StringMatrixProps extends Scalaprops {
     )
   }(testStrings, Shrink.empty)
 
-  val substringFails = property { xs: List[String] =>
-    implies(xs.length > 1, prop(matcher(xs, xs.mkString) == Nil))
-  }(testStrings, Shrink.empty)
+  val substringFails = property { xs: List[String] => implies(xs.length > 1, prop(matcher(xs, xs.mkString) == Nil)) }(
+    testStrings,
+    Shrink.empty
+  )
 
-  val trivial = property { s: String =>
-    prop(matcher(List(s), s) == List(s))
-  }(nonEmptyString, Shrink.empty)
+  val trivial = property { s: String => prop(matcher(List(s), s) == List(s)) }(nonEmptyString, Shrink.empty)
 }
 
 object StringMatrixTest extends TestSuite {

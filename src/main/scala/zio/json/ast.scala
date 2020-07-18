@@ -1,6 +1,6 @@
 package zio.json
 
-import Decoder.{JsonError, UnsafeJson}
+import Decoder.{ JsonError, UnsafeJson }
 import zio.json.internal._
 import scala.annotation._
 
@@ -22,7 +22,7 @@ final case class JsBoolean(value: Boolean) extends JsValue {
 final case class JsString(value: String) extends JsValue {
   override def toString = {
     val len = value.length
-    val sb = new StringBuilder(len)
+    val sb  = new StringBuilder(len)
     sb.append('"')
     var i = 0
     while (i < len) {

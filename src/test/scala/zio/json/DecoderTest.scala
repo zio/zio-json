@@ -4,8 +4,8 @@ import zio.json
 import io.circe
 import TestUtils._
 import scalaprops._
-import Property.{implies, prop, property}
-import org.typelevel.jawn.{ast => jawn}
+import Property.{ implies, prop, property }
+import org.typelevel.jawn.{ ast => jawn }
 import scala.collection.mutable
 
 import utest._
@@ -56,15 +56,11 @@ object DecoderTest extends TestSuite {
   val tests = Tests {
     test("eithers") {
       val bernies = List("""{"a":1}""", """{"left":1}""", """{"Left":1}""")
-      val trumps = List("""{"b":2}""", """{"right":2}""", """{"Right":2}""")
+      val trumps  = List("""{"b":2}""", """{"right":2}""", """{"Right":2}""")
 
-      bernies.foreach { s =>
-        json.parser.decode[Either[Int, Int]](s) ==> Right(Left(1))
-      }
+      bernies.foreach(s => json.parser.decode[Either[Int, Int]](s) ==> Right(Left(1)))
 
-      trumps.foreach { s =>
-        json.parser.decode[Either[Int, Int]](s) ==> Right(Right(2))
-      }
+      trumps.foreach(s => json.parser.decode[Either[Int, Int]](s) ==> Right(Right(2)))
 
     }
 
@@ -157,25 +153,25 @@ object DecoderTest extends TestSuite {
 
     test("geojson1") {
       import zio.json.data.geojson.generated._
-      val input = getResourceAsString("che.geo.json")
+      val input    = getResourceAsString("che.geo.json")
       val expected = circe.parser.decode[GeoJSON](input)
-      val got = json.parser.decode[GeoJSON](input)
+      val got      = json.parser.decode[GeoJSON](input)
       got ==> expected
     }
 
     test("geojson1 alt") {
       import zio.json.data.geojson.handrolled._
-      val input = getResourceAsString("che.geo.json")
+      val input    = getResourceAsString("che.geo.json")
       val expected = circe.parser.decode[GeoJSON](input)
-      val got = json.parser.decode[GeoJSON](input)
+      val got      = json.parser.decode[GeoJSON](input)
       got ==> expected
     }
 
     test("geojson2") {
       import zio.json.data.geojson.generated._
-      val input = getResourceAsString("che-2.geo.json")
+      val input    = getResourceAsString("che-2.geo.json")
       val expected = circe.parser.decode[GeoJSON](input)
-      val got = json.parser.decode[GeoJSON](input)
+      val got      = json.parser.decode[GeoJSON](input)
       got ==> expected
     }
 
@@ -186,7 +182,7 @@ object DecoderTest extends TestSuite {
       val expected =
         circe.parser.decode[GeoJSON](getResourceAsString("che-2.geo.json"))
       val input = getResourceAsReader("che-2.geo.json")
-      val got = json.Decoder[GeoJSON].unsafeDecode(Nil, input)
+      val got   = json.Decoder[GeoJSON].unsafeDecode(Nil, input)
       input.close()
       Right(got) ==> expected
     }
@@ -235,10 +231,10 @@ object DecoderTest extends TestSuite {
   }
 
   def testAst(name: String) = {
-    val input = getResourceAsString(s"jawn/${name}.json")
-    val expected = jawn.JParser.parseFromString(input).toEither.map(fromJawn)
-    val got = parser.decode[JsValue](input).map(normalize)
-    val gotf = s"${name}-got.json"
+    val input     = getResourceAsString(s"jawn/${name}.json")
+    val expected  = jawn.JParser.parseFromString(input).toEither.map(fromJawn)
+    val got       = parser.decode[JsValue](input).map(normalize)
+    val gotf      = s"${name}-got.json"
     val expectedf = s"${name}-expected.json"
 
     def e2s[A, B](e: Either[A, B]) =

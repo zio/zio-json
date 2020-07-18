@@ -10,16 +10,16 @@ import Decoder.JsonError
 object parser {
 
   /**
-    * Attempts to decode the raw JSON string as an `A`.
-    *
-    * On failure a human readable message is returned using a jq friendly
-    * format. For example the error
-    * `.rows[0].elements[0].distance.value(missing)"` tells us the location of a
-    * missing field named "value". We can use part of the error message in the
-    * `jq` command line tool for further inspection, e.g.
-    *
-    * {{{jq '.rows[0].elements[0].distance' input.json}}}
-    */
+   * Attempts to decode the raw JSON string as an `A`.
+   *
+   * On failure a human readable message is returned using a jq friendly
+   * format. For example the error
+   * `.rows[0].elements[0].distance.value(missing)"` tells us the location of a
+   * missing field named "value". We can use part of the error message in the
+   * `jq` command line tool for further inspection, e.g.
+   *
+   * {{{jq '.rows[0].elements[0].distance' input.json}}}
+   */
   def decode[A](str: CharSequence)(implicit D: Decoder[A]): Either[String, A] =
     D.decodeJson(str)
 }
@@ -34,7 +34,7 @@ trait Decoder[A] { self =>
     }
 
   // scalaz-deriving style MonadError combinators
-  final def widen[B >: A]: Decoder[B] = self.asInstanceOf[Decoder[B]]
+  final def widen[B >: A]: Decoder[B]                 = self.asInstanceOf[Decoder[B]]
   final def xmap[B](f: A => B, g: B => A): Decoder[B] = map(f)
   final def map[B](f: A => B): Decoder[B] =
     new Decoder[B] {
@@ -93,10 +93,10 @@ object Decoder extends GeneratedTuples with DecoderLowPriority1 with DecoderLowP
         case ObjectAccess(field) => s".$field"
         case SumType(cons)       => s"{$cons}"
       }.mkString
-    final case class Message(txt: String) extends JsonError
-    final case class ArrayAccess(i: Int) extends JsonError
+    final case class Message(txt: String)        extends JsonError
+    final case class ArrayAccess(i: Int)         extends JsonError
     final case class ObjectAccess(field: String) extends JsonError
-    final case class SumType(cons: String) extends JsonError
+    final case class SumType(cons: String)       extends JsonError
   }
 
   implicit val string: Decoder[String] = new Decoder[String] {
@@ -114,14 +114,14 @@ object Decoder extends GeneratedTuples with DecoderLowPriority1 with DecoderLowP
   }
   implicit val symbol: Decoder[Symbol] = string.map(Symbol(_))
 
-  implicit val byte: Decoder[Byte] = number(Lexer.byte)
+  implicit val byte: Decoder[Byte]   = number(Lexer.byte)
   implicit val short: Decoder[Short] = number(Lexer.short)
-  implicit val int: Decoder[Int] = number(Lexer.int)
-  implicit val long: Decoder[Long] = number(Lexer.long)
+  implicit val int: Decoder[Int]     = number(Lexer.int)
+  implicit val long: Decoder[Long]   = number(Lexer.long)
   implicit val biginteger: Decoder[java.math.BigInteger] = number(
     Lexer.biginteger
   )
-  implicit val float: Decoder[Float] = number(Lexer.float)
+  implicit val float: Decoder[Float]   = number(Lexer.float)
   implicit val double: Decoder[Double] = number(Lexer.double)
   implicit val bigdecimal: Decoder[java.math.BigDecimal] = number(
     Lexer.bigdecimal
@@ -166,14 +166,15 @@ object Decoder extends GeneratedTuples with DecoderLowPriority1 with DecoderLowP
   // supports multiple representations for compatibility with other libraries,
   // but does not support the "discriminator field" encoding with a field named
   // "value" used by some libraries.
-  implicit def either[A, B](implicit
+  implicit def either[A, B](
+    implicit
     A: Decoder[A],
     B: Decoder[B]
   ): Decoder[Either[A, B]] =
     new Decoder[Either[A, B]] {
       val names: Array[String] =
         Array("a", "Left", "left", "b", "Right", "right")
-      val matrix: StringMatrix = new StringMatrix(names)
+      val matrix: StringMatrix    = new StringMatrix(names)
       val spans: Array[JsonError] = names.map(JsonError.ObjectAccess(_))
 
       def unsafeDecode(
@@ -229,14 +230,14 @@ object Decoder extends GeneratedTuples with DecoderLowPriority1 with DecoderLowP
     builder.result()
   }
 
-  implicit def list[A](implicit A: Decoder[A]): Decoder[List[A]] =
-    new Decoder[List[A]] {
-      def unsafeDecode(trace: List[JsonError], in: RetractReader): List[A] =
-        builder(trace, in, new mutable.ListBuffer[A])
-    }
+  implicit def list[A: Decoder]: Decoder[List[A]] = new Decoder[List[A]] {
+    def unsafeDecode(trace: List[JsonError], in: RetractReader): List[A] =
+      builder(trace, in, new mutable.ListBuffer[A])
+  }
 
   // not implicit because this overlaps with decoders for lists of tuples
-  def keylist[K, A](implicit
+  def keylist[K, A](
+    implicit
     K: FieldDecoder[K],
     A: Decoder[A]
   ): Decoder[List[(K, A)]] =
@@ -246,21 +247,21 @@ object Decoder extends GeneratedTuples with DecoderLowPriority1 with DecoderLowP
         in: RetractReader
       ): List[(K, A)] = {
         val builder = new mutable.ListBuffer[(K, A)]
-        var trace_  = trace
         Lexer.char(trace, in, '{')
         if (Lexer.firstObject(trace, in))
           do {
-            val field = Lexer.string(trace, in).toString
-            trace_ = JsonError.ObjectAccess(field) :: trace
+            val field  = Lexer.string(trace, in).toString
+            val trace_ = JsonError.ObjectAccess(field) :: trace
             Lexer.char(trace_, in, ':')
             val value = A.unsafeDecode(trace_, in)
             builder += ((K.unsafeDecodeField(trace_, field), value))
-          } while (Lexer.nextObject(trace_, in))
+          } while (Lexer.nextObject(trace, in))
         builder.result()
       }
     }
 
-  implicit def sortedmap[K: FieldDecoder, V: Decoder](implicit
+  implicit def sortedmap[K: FieldDecoder, V: Decoder](
+    implicit
     O: Ordering[K]
   ): Decoder[collection.SortedMap[K, V]] =
     keylist[K, V].map(lst => collection.SortedMap.apply(lst: _*))
@@ -278,7 +279,8 @@ private[json] trait DecoderLowPriority2 {
   this: Decoder.type =>
 
   import scala.collection.generic.CanBuildFrom
-  implicit def cbf[T[_], A: Decoder](implicit
+  implicit def cbf[T[_], A: Decoder](
+    implicit
     CBF: CanBuildFrom[List[A], A, T[A]]
   ): Decoder[T[A]] = list[A].map(lst => CBF(lst).result())
 

@@ -4,33 +4,33 @@ import java.io._
 import scala.util.control.NoStackTrace
 
 /**
-  * Total, fast, number parsing.
-  *
-  * The Java and Scala standard libraries throw exceptions when we attempt to
-  * parse an invalid number. Unfortunately, exceptions are very expensive, and
-  * untrusted data can be maliciously constructed to DOS a server.
-  *
-  * This suite of functions mitigates against such attacks by building up the
-  * numbers one character at a time, which has been shown through extensive
-  * benchmarking to be orders of magnitude faster than exception-throwing stdlib
-  * parsers, for valid and invalid inputs. This approach, proposed by alexknvl,
-  * was also benchmarked against regexp-based pre-validation.
-  *
-  * Note that although the behaviour is identical to the Java stdlib when given
-  * the canonical form of a primitive (i.e. the .toString) of a number there may
-  * be differences in behaviour for non-canonical forms. e.g. the Java stdlib
-  * may reject "1.0" when parsed as an `BigInteger` but we may parse it as a
-  * `1`, although "1.1" would be rejected. Parsing of `BigDecimal` preserves the
-  * trailing zeros on the right but not on the left, e.g. "000.00001000" will be
-  * "1.000e-5", which is useful in cases where the trailing zeros denote
-  * measurement accuracy.
-  *
-  * `BigInteger`, `BigDecimal`, `Float` and `Double` have a configurable bit
-  * limit on the size of the significand, to avoid OOM style attacks, which is
-  * 128 bits by default.
-  *
-  * Results are contained in a specialisation of Option that avoids boxing.
-  */
+ * Total, fast, number parsing.
+ *
+ * The Java and Scala standard libraries throw exceptions when we attempt to
+ * parse an invalid number. Unfortunately, exceptions are very expensive, and
+ * untrusted data can be maliciously constructed to DOS a server.
+ *
+ * This suite of functions mitigates against such attacks by building up the
+ * numbers one character at a time, which has been shown through extensive
+ * benchmarking to be orders of magnitude faster than exception-throwing stdlib
+ * parsers, for valid and invalid inputs. This approach, proposed by alexknvl,
+ * was also benchmarked against regexp-based pre-validation.
+ *
+ * Note that although the behaviour is identical to the Java stdlib when given
+ * the canonical form of a primitive (i.e. the .toString) of a number there may
+ * be differences in behaviour for non-canonical forms. e.g. the Java stdlib
+ * may reject "1.0" when parsed as an `BigInteger` but we may parse it as a
+ * `1`, although "1.1" would be rejected. Parsing of `BigDecimal` preserves the
+ * trailing zeros on the right but not on the left, e.g. "000.00001000" will be
+ * "1.000e-5", which is useful in cases where the trailing zeros denote
+ * measurement accuracy.
+ *
+ * `BigInteger`, `BigDecimal`, `Float` and `Double` have a configurable bit
+ * limit on the size of the significand, to avoid OOM style attacks, which is
+ * 128 bits by default.
+ *
+ * Results are contained in a specialisation of Option that avoids boxing.
+ */
 // TODO hex radix
 // TODO octal radix
 object SafeNumbers {
@@ -85,7 +85,7 @@ sealed abstract class ByteOption {
 }
 case object ByteNone extends ByteOption {
   def isEmpty = true
-  def value = throw new java.util.NoSuchElementException
+  def value   = throw new java.util.NoSuchElementException
 }
 case class ByteSome(value: Byte) extends ByteOption {
   def isEmpty = false
@@ -97,7 +97,7 @@ sealed abstract class ShortOption {
 }
 case object ShortNone extends ShortOption {
   def isEmpty = true
-  def value = throw new java.util.NoSuchElementException
+  def value   = throw new java.util.NoSuchElementException
 }
 case class ShortSome(value: Short) extends ShortOption {
   def isEmpty = false
@@ -109,7 +109,7 @@ sealed abstract class IntOption {
 }
 case object IntNone extends IntOption {
   def isEmpty = true
-  def value = throw new java.util.NoSuchElementException
+  def value   = throw new java.util.NoSuchElementException
 }
 case class IntSome(value: Int) extends IntOption {
   def isEmpty = false
@@ -121,7 +121,7 @@ sealed abstract class LongOption {
 }
 case object LongNone extends LongOption {
   def isEmpty = true
-  def value = throw new java.util.NoSuchElementException
+  def value   = throw new java.util.NoSuchElementException
 }
 case class LongSome(value: Long) extends LongOption {
   def isEmpty = false
@@ -133,7 +133,7 @@ sealed abstract class FloatOption {
 }
 case object FloatNone extends FloatOption {
   def isEmpty = true
-  def value = throw new java.util.NoSuchElementException
+  def value   = throw new java.util.NoSuchElementException
 }
 case class FloatSome(value: Float) extends FloatOption {
   def isEmpty = false
@@ -145,7 +145,7 @@ sealed abstract class DoubleOption {
 }
 case object DoubleNone extends DoubleOption {
   def isEmpty = true
-  def value = throw new java.util.NoSuchElementException
+  def value   = throw new java.util.NoSuchElementException
 }
 case class DoubleSome(value: Double) extends DoubleOption {
   def isEmpty = false
@@ -197,7 +197,7 @@ object UnsafeNumbers {
     max_bits: Int
   ): java.math.BigInteger = {
     var current: Int = in.read()
-    var negative = false
+    var negative     = false
 
     if (current == '-') {
       negative = true
@@ -269,10 +269,10 @@ object UnsafeNumbers {
     double_(new FastStringReader(num), true, max_bits)
   def double_(in: Reader, consume: Boolean, max_bits: Int): Double = {
     var current: Int = in.read()
-    var negative = false
+    var negative     = false
 
     def readall(s: String): Unit = {
-      var i = 0
+      var i   = 0
       val len = s.length
       while (i < len) {
         current = in.read()
@@ -326,7 +326,7 @@ object UnsafeNumbers {
     max_bits: Int
   ): java.math.BigDecimal = {
     var current: Int = in.read()
-    var negative = false
+    var negative     = false
 
     if (current == '-') {
       negative = true
@@ -348,10 +348,10 @@ object UnsafeNumbers {
   ): java.math.BigDecimal = {
     var current: Int = initial
     // record the significand as Long until it overflows, then swap to BigInteger
-    var sig: Long = -1 // -1 means it hasn't been seen yet
+    var sig: Long                   = -1   // -1 means it hasn't been seen yet
     var sig_ : java.math.BigInteger = null // non-null wins over sig
-    var dot: Int = 0 // counts from the right
-    var exp: Int = 0 // implied
+    var dot: Int                    = 0    // counts from the right
+    var exp: Int                    = 0    // implied
 
     def read(): Int = {
       current = in.read()
@@ -435,7 +435,7 @@ object UnsafeNumbers {
       throw UnsafeNumber
 
     val scale = if (dot < 1) exp else exp - dot
-    val res = significand()
+    val res   = significand()
     if (scale != 0)
       res.scaleByPowerOfTen(scale)
     else
@@ -445,6 +445,6 @@ object UnsafeNumbers {
   val bigintegers: Array[java.math.BigInteger] =
     (0L to 9L).map(java.math.BigInteger.valueOf(_)).toArray
   val longunderflow: Long = Long.MinValue / 10L
-  val longoverflow: Long = Long.MaxValue / 10L
+  val longoverflow: Long  = Long.MaxValue / 10L
 
 }
