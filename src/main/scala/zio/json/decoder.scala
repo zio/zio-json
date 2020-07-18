@@ -240,14 +240,6 @@ object Decoder extends GeneratedTuples with DecoderLowPriority1 with DecoderLowP
       builder(trace, in, new mutable.ListBuffer[A]).toVector
   }
 
-  // FIXME compiles without seq but tests fails
-  // assertion failed: Right(Monster(List())) != Right(Monster(List(5XL, 2XL, XL)))
-  // maybe sth is off with cbf ?
-  implicit def seq[A: Decoder]: Decoder[Seq[A]] = new Decoder[Seq[A]] {
-    def unsafeDecode(trace: List[JsonError], in: RetractReader): Seq[A] =
-      builder(trace, in, new mutable.ListBuffer[A])
-  }
-
   // not implicit because this overlaps with decoders for lists of tuples
   def keylist[K, A](
     implicit
@@ -280,6 +272,9 @@ object Decoder extends GeneratedTuples with DecoderLowPriority1 with DecoderLowP
     keylist[K, V].map(lst => collection.SortedMap.apply(lst: _*))
 }
 
+// TODO DecoderLowPriority0 for anything with a type parameter
+// TODO document the reasoning behind implicit priorities
+
 private[json] trait DecoderLowPriority1 {
   this: Decoder.type =>
 
@@ -300,7 +295,8 @@ private[json] trait DecoderLowPriority2 {
   implicit def cbf[T[_], A: Decoder](
     implicit
     CBF: CanBuildFrom[List[A], A, T[A]]
-  ): Decoder[T[A]] = list[A].map(lst => CBF(lst).result())
+  ): Decoder[T[A]] = list[A].map(lst => CBF(Nil).++=(lst).result())
+  // CBF(lst) doesn't work on 2.13
 
 }
 
