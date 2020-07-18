@@ -235,6 +235,15 @@ object Decoder extends GeneratedTuples with DecoderLowPriority1 with DecoderLowP
       builder(trace, in, new mutable.ListBuffer[A])
   }
 
+  implicit def vector[A](implicit A: Decoder[A]): Decoder[Vector[A]] =
+    list[A].map(_.toVector)
+
+  implicit def seq[A](implicit A: Decoder[A]): Decoder[Seq[A]] =
+    list[A].map(_.toSeq)
+
+  implicit def set[A](implicit A: Decoder[A]): Decoder[Set[A]] =
+    list[A].map(_.toSet)
+
   // not implicit because this overlaps with decoders for lists of tuples
   def keylist[K, A](
     implicit
