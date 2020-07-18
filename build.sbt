@@ -50,7 +50,7 @@ inConfig(Jmh)(org.scalafmt.sbt.ScalafmtPlugin.scalafmtConfigSettings)
 sourceGenerators in Compile += Def.task {
   val dir = (sourceManaged in Compile).value
   val file = dir / "zio" / "json" / "GeneratedTuples.scala"
-  val decoders = (2 to 22).map { i =>
+  val decoders = (1 to 22).map { i =>
     val tparams = (1 to i).map(p => s"A$p").mkString(", ")
     val implicits = (1 to i).map(p => s"A$p: Decoder[A$p]").mkString(", ")
     val work = (1 to i).map { p =>
