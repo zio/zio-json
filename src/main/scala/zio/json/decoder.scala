@@ -1,7 +1,7 @@
 package zio.json
 
 import scala.annotation._
-import scala.collection.mutable.ListBuffer
+import scala.collection.mutable
 import scala.util.control.NoStackTrace
 import zio.json.internal._
 import Decoder.JsonError
@@ -214,18 +214,25 @@ object Decoder extends GeneratedTuples with DecoderLowPriority1 with DecoderLowP
       }
     }
 
+  private[json] def builder[A, T[_]](
+    trace: List[JsonError],
+    in: RetractReader,
+    builder: mutable.ReusableBuilder[A, T[A]]
+  )(implicit A: Decoder[A]): T[A] = {
+    Lexer.char(trace, in, '[')
+    var i: Int = 0
+    if (Lexer.firstArray(trace, in)) do {
+      val trace_ = JsonError.ArrayAccess(i) :: trace
+      builder += A.unsafeDecode(trace_, in)
+      i += 1
+    } while (Lexer.nextArray(trace, in))
+    builder.result()
+  }
+
   implicit def list[A](implicit A: Decoder[A]): Decoder[List[A]] =
     new Decoder[List[A]] {
-      def unsafeDecode(trace: List[JsonError], in: RetractReader): List[A] = {
-        val builder = new ListBuffer[A]
-        Lexer.char(trace, in, '[')
-        var trace_ = trace
-        if (Lexer.firstArray(trace, in)) do {
-          trace_ = JsonError.ArrayAccess(builder.length) :: trace
-          builder += A.unsafeDecode(trace_, in)
-        } while (Lexer.nextArray(trace_, in))
-        builder.result()
-      }
+      def unsafeDecode(trace: List[JsonError], in: RetractReader): List[A] =
+        builder(trace, in, new mutable.ListBuffer[A])
     }
 
   // not implicit because this overlaps with decoders for lists of tuples
@@ -238,8 +245,8 @@ object Decoder extends GeneratedTuples with DecoderLowPriority1 with DecoderLowP
         trace: List[JsonError],
         in: RetractReader
       ): List[(K, A)] = {
-        val builder: ListBuffer[(K, A)] = new ListBuffer
-        var trace_ = trace
+        val builder = new mutable.ListBuffer[(K, A)]
+        var trace_  = trace
         Lexer.char(trace, in, '{')
         if (Lexer.firstObject(trace, in))
           do {
