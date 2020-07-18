@@ -2,6 +2,7 @@ package zio.json
 
 import scala.annotation._
 import scala.collection.mutable
+import scala.collection.immutable
 import scala.util.control.NoStackTrace
 import zio.json.internal._
 import Decoder.JsonError
@@ -237,7 +238,7 @@ object Decoder extends GeneratedTuples with DecoderLowPriority1 with DecoderLowP
 
   implicit def vector[A: Decoder]: Decoder[Vector[A]] = new Decoder[Vector[A]] {
     def unsafeDecode(trace: List[JsonError], in: RetractReader): Vector[A] =
-      builder(trace, in, new mutable.ListBuffer[A]).toVector
+      builder(trace, in, new immutable.VectorBuilder[A]).toVector
   }
 
   // not implicit because this overlaps with decoders for lists of tuples
@@ -282,6 +283,7 @@ private[json] trait DecoderLowPriority1 {
   implicit def dict[K: FieldDecoder, V: Decoder]: Decoder[Map[K, V]] =
     keylist[K, V].map(_.toMap)
 
+  // TODO why is this needed? CBF should work
   implicit def set[A: Decoder]: Decoder[Set[A]] = new Decoder[Set[A]] {
     def unsafeDecode(trace: List[JsonError], in: RetractReader): Set[A] =
       builder(trace, in, new mutable.ListBuffer[A]).toSet
