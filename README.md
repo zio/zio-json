@@ -15,7 +15,7 @@ Extreme **performance** is achieved by decoding JSON directly from the input sou
 
 Best in class **security** is achieved with an aggressive *early exit* strategy that avoids costly stacktraces, even when parsing malformed numbers. Malicious (and badly formed) payloads are rejected before finishing reading.
 
-**Fast compilation** and **future proofing** is possible thanks to [Magnolia](https://propensive.com/opensource/magnolia/) which allows us to generate boilerplate in a way that will survive the exodus to Scala 3. zio-json is internally implemented using the [`java.io.Reader`](https://docs.oracle.com/en/java/javase/14/docs/api/java.base/java/io/Reader.html) interface which is making a comeback to center stage in Loom.
+**Fast compilation** and **future proofing** is possible thanks to [Magnolia](https://propensive.com/opensource/magnolia/) which allows us to generate boilerplate in a way that will survive the exodus to Scala 3. `zio-json` is internally implemented using the [`java.io.Reader`](https://docs.oracle.com/en/java/javase/14/docs/api/java.base/java/io/Reader.html) interface which is making a comeback to center stage in Loom.
 
 **Simplicity** is achieved by using well-known software patterns and avoiding bloat. The only requirement to use this library is to know about Scala's encoding of typeclasses, described in [Functional Programming for Mortals](https://leanpub.com/fpmortals/read#leanpub-auto-functionality).
 
@@ -25,7 +25,7 @@ Best in class **security** is achieved with an aggressive *early exit* strategy 
 
 ## Installation
 
-zio-json is in beta and available as a source dependency, e.g. use a git subproject in `build.sbt`
+`zio-json` is in beta and available as a source dependency, e.g. use a git subproject in `build.sbt`
 
 ```
 lazy val zio_json = ProjectRef(uri("https://github.com/zio/zio-json.git#develop"), "zio-json")
@@ -55,7 +55,7 @@ into a Scala `case class`
 case class Banana(curvature: Double)
 ```
 
-To do this, we create an *instance* of the `json.Decoder` typeclass for `Banana` using the zio-json code generator. It is best practice to put it on the companion of `Banana`, like so
+To do this, we create an *instance* of the `json.Decoder` typeclass for `Banana` using the `zio-json` code generator. It is best practice to put it on the companion of `Banana`, like so
 
 ```scala
 object Banana {
@@ -250,9 +250,9 @@ which can go into the project's utility library.
 
 # Performance
 
-The following benchmarks are freely available to run on your hardware with `sbt "jmh:run -prof gc"` and can be extended to include more niche libraries. We only compare zio-json against Circe and Play as they are the incumbent solutions used by most of the Scala ecosystem.
+The following benchmarks are freely available to run on your hardware with `sbt "jmh:run -prof gc"` and can be extended to include more niche libraries. We only compare `zio-json` against Circe and Play as they are the incumbent solutions used by most of the Scala ecosystem.
 
-zio-json, when used in legacy mode (i.e. using a `StringReader`), is typically x2 faster than Circe and x5 faster than Play. When used with Loom, zio-json has finished its work before the others even begin. The following benchmarks are therefore only for legacy mode comparisons.
+`zio-json`, when used in legacy mode (i.e. using a `StringReader`), is typically x2 faster than Circe and x5 faster than Play. When used with Loom, `zio-json` has finished its work before the others even begin. The following benchmarks are therefore only for legacy mode comparisons.
 
 There are two main factors to consider when comparing the performance of JSON libraries: memory usage and operations per second. We perform measurements in one thread at a time but in a real server situation, there are multiple threads each consuming resources.
 
@@ -300,13 +300,13 @@ circe  19609 ±  370  2873 ± 53
 play    9001 ±  182  3348 ± 67
 ```
 
-zio-json easily wins every benchmark except ops/sec for the Twitter test data where Circe matches ops/sec but loses heavily on memory usage. Play loses on every benchmark.
+`zio-json` easily wins every benchmark except ops/sec for the Twitter test data where Circe matches ops/sec but loses heavily on memory usage. Play loses on every benchmark.
 
 # Security
 
 A [Denial of Service](https://en.wikipedia.org/wiki/Denial-of-service_attack) (DOS) attack is a cyber-attack in which the perpetrator seeks to make a machine or network resource unavailable to its intended users by temporarily or indefinitely disrupting services. The vast majority of public-facing servers written in Scala are vulnerable to DOS attack.
 
-Attacks that are in the form of a valid payload are designed to be stealthy and will produce the same end-result as a legitimate payload, but will consume more resources along the way. In this section we investigate specific attacks and how zio-json mitigates against them.
+Attacks that are in the form of a valid payload are designed to be stealthy and will produce the same end-result as a legitimate payload, but will consume more resources along the way. In this section we investigate specific attacks and how `zio-json` mitigates against them.
 
 ### Resource Attack: Larger Payload
 
@@ -329,9 +329,9 @@ play    3589 ( 5756)  1344 (2260)
 
 ### Redundant Data
 
-Most JSON libraries (but not zio-json) first create a representation of the JSON message in an Abstract Syntax Tree (AST) that represents all the objects, arrays and values in a generic way. Their decoders typically read what they need from the AST.
+Most JSON libraries (but not `zio-json`) first create a representation of the JSON message in an Abstract Syntax Tree (AST) that represents all the objects, arrays and values in a generic way. Their decoders typically read what they need from the AST.
 
-An intermediate AST enables attack vectors that insert redundant data, for example in our Google Maps dataset we can add a new field called `redundant` at top-level containing a 60K `String`. If we do this, and run the benchmarks, we see that Circe is heavily impacted, with a 75% reduction in capacity and an increase in memory usage. Play is also impacted, although not as severely. zio-json's ops/sec are reduced but the memory usage is in line which means that throughput is unlikely to be affected by this kind of attack.
+An intermediate AST enables attack vectors that insert redundant data, for example in our Google Maps dataset we can add a new field called `redundant` at top-level containing a 60K `String`. If we do this, and run the benchmarks, we see that Circe is heavily impacted, with a 75% reduction in capacity and an increase in memory usage. Play is also impacted, although not as severely. `zio-json`'s ops/sec are reduced but the memory usage is in line which means that throughput is unlikely to be affected by this kind of attack.
 
 <!-- jmh:run -prof gc GoogleMaps.*Attack1 -->
 
@@ -342,7 +342,7 @@ circe  2224 ( 7456)  1655 (1533)
 play   2350 ( 3589)  1854 (1344)
 ```
 
-The reason why zio-json is not as badly affected is because it skips values that are unexpected. We can completely mitigate this kind of attack by using the `@json.no_extra_fields` annotation which results in the payload being rejected at a rate of 5.5 million ops/sec.
+The reason why `zio-json` is not as badly affected is because it skips values that are unexpected. We can completely mitigate this kind of attack by using the `@json.no_extra_fields` annotation which results in the payload being rejected at a rate of 5.5 million ops/sec.
 
 Other kinds of redundant values attacks are also possible, such as using an array of 60K full of high precision decimal numbers that require slow parsing (also known as ["near halfway numbers"](https://www.exploringbinary.com/17-digits-gets-you-there-once-youve-found-your-way/)), attacking the CPU. However, the memory attack afforded to us by a redundant `String` is already quite effective.
 
@@ -356,7 +356,7 @@ In this malicious payload, we add redundant fields that have hashcode collisions
 
 <!-- jmh:run -prof gc GoogleMaps.*Attack2 -->
 
-Again, zio-json completely mitigates this attack if the `@json.no_extra_fields` annotation is used. Note that even if Circe and Play rejected payloads of this nature, it would be too late because the attack happens at the AST layer, not the decoders. However, for the sake of comparison, let's turn off the zio-json mitigation:
+Again, `zio-json` completely mitigates this attack if the `@json.no_extra_fields` annotation is used. Note that even if Circe and Play rejected payloads of this nature, it would be too late because the attack happens at the AST layer, not the decoders. However, for the sake of comparison, let's turn off the `zio-json` mitigation:
 
 ```
        ops/sec       MB/sec
@@ -365,11 +365,11 @@ circe  1992 ( 7456)  1162 (1533)
 play   1312 ( 3589)  1636 (1344)
 ```
 
-ops/sec is down for all decoders relative to the baseline, but since zio-json and Circe memory usage is also reduced the throughput on a server might not be impacted as badly as it sounds.
+ops/sec is down for all decoders relative to the baseline, but since `zio-json` and Circe memory usage is also reduced the throughput on a server might not be impacted as badly as it sounds.
 
 However, this attack hurts Play very badly; memory usage is up compared to the baseline with throughput reduced to 40% of the baseline (22% of the original).
 
-There is a variant of this attack that can be devastating for libraries that rely on `HashMap`. In this attack, [developed by plokhotnyuk to DOS upickle and ujson](https://github.com/plokhotnyuk/jsoniter-scala/pull/325), an object is filled with many fields that have a `hashCode` of zero. This exploits two facts:
+There is a variant of this attack that can be devastating for libraries that rely on `HashMap`. In this attack, [developed by plokhotnyuk to DOS ujson](https://github.com/plokhotnyuk/jsoniter-scala/pull/325), an object is filled with many fields that have a `hashCode` of zero. This exploits two facts:
 
 - Java `String` does not cache `hashCode` of zero, recomputing every time it is requested
 - many `HashMap` implementations re-request the hashes of all objects as the number of entries increases during construction.
@@ -395,11 +395,13 @@ circe  4529 ( 7456)  2037 (1533)
 
 This attack is very effective in schemas with lots of numbers, causing ops/sec to be halved with a 33% increase in memory usage.
 
+`zio-json` is resistant to a wide range of number based attacks because it uses a from-scratch number parser that will exit early when the number of bits of any number exceeds 128 bits, which can be customised by the system property `zio.json.number.bits`.
+
 # Even Moar Performance
 
 jsonitor-scala
 
-JSON is an inefficent transport format. If your performance needs are still not met by zio-json, then you would you benefit from a port of this library supporting msgpack or protobuf.
+JSON is an inefficent transport format. If your performance needs are still not met by `zio-json`, then you would you benefit from a port of this library supporting msgpack or protobuf.
 
 For legacy services, a port supporting XML is also be possible.
 

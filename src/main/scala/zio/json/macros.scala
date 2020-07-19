@@ -86,8 +86,13 @@ object MagnoliaDecoder {
         def unsafeDecode(trace: List[JsonError], in: RetractReader): A = {
           Lexer.char(trace, in, '{')
 
-          // it would be more efficient to have a solution that didn't box
-          // primitives, but Magnolia does not expose an API for that.
+          // TODO it would be more efficient to have a solution that didn't box
+          // primitives, but Magnolia does not expose an API for that. Adding
+          // such a feature to Magnolia is the only way to avoid this, e.g. a
+          // ctx.createMutableCons that specialises on the types (with some way
+          // of noting that things have been initialised), which can be called
+          // to instantiate the case class. Would also require Decoder to be
+          // specialised.
           val ps: Array[Any] = Array.ofDim(len)
 
           if (Lexer.firstObject(trace, in))

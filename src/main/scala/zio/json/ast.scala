@@ -4,9 +4,25 @@ import Decoder.{ JsonError, UnsafeJson }
 import zio.json.internal._
 import scala.annotation._
 
+/**
+ * This AST of JSON is made available so that arbitrary JSON may be included as
+ * part of a business object, it is not used as an intermediate representation,
+ * unlike most other JSON libraries. It is not advised to `.map` or `.emap`
+ * from these decoders, since a higher performance decoder is often available.
+ *
+ * Beware of the potential for DOS attacks, since an attacker can provide much
+ * more data than is perhaps needed.
+ *
+ * Also beware of converting `JsNumber` (a `BigDecimal`) into any other kind of
+ * number, since many of the stdlib functions are non-total or are known DOS
+ * vectors (e.g. calling `.toBigInteger` on a "1e214748364" will consume an
+ * excessive amount of heap memory).
+ */
 sealed abstract class JsValue {
   def widen: JsValue = this
 }
+
+// TODO lens-like accessors for working with arbitrary json values
 
 // TODO use Encoder in toString, this is very slow
 final case class JsObject(fields: List[(String, JsValue)]) extends JsValue {

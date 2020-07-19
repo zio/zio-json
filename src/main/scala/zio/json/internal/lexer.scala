@@ -13,7 +13,7 @@ object Lexer {
   // TODO need a variant that doesn't skip whitespace, so that attack vectors
   // consisting of an infinite stream of space can exit early.
 
-  val NumberMaxBits: Int = propOrNone("json.maxbits").getOrElse("128").toInt
+  val NumberMaxBits: Int = propOrNone("zio.json.number.bits").getOrElse("128").toInt
 
   // True if we got a string (implies a retraction), False for }
   def firstObject(trace: List[JsonError], in: RetractReader): Boolean =
