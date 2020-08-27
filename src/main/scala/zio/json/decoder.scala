@@ -67,10 +67,10 @@ trait Decoder[A] { self =>
   //
   // We could use a ReaderT[List[JsonError]] but that would bring in
   // dependencies and overhead, so we pass the trace context manually.
-  def unsafeDecodeMissing(trace: List[JsonError]): A =
+  private[json] def unsafeDecodeMissing(trace: List[JsonError]): A =
     throw Decoder.UnsafeJson(JsonError.Message("missing") :: trace)
 
-  def unsafeDecode(trace: List[JsonError], in: RetractReader): A
+  private[json] def unsafeDecode(trace: List[JsonError], in: RetractReader): A
 }
 
 object Decoder extends GeneratedTuples with DecoderLowPriority1 with DecoderLowPriority2 {
