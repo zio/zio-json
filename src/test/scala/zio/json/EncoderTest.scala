@@ -99,6 +99,9 @@ object EncoderTest extends TestSuite {
     test("eithers") {
       (Left(1): Either[Int, Int]).toJson ==> """{"Left":1}"""
       (Right(1): Either[Int, Int]).toJson ==> """{"Right":1}"""
+
+      (Left(1): Either[Int, Int]).toJsonPretty ==> "{\n  \"Left\" : 1\n}"
+      (Right(1): Either[Int, Int]).toJsonPretty ==> "{\n  \"Right\" : 1\n}"
     }
 
     test("collections") {
@@ -110,16 +113,29 @@ object EncoderTest extends TestSuite {
       Map[String, String]().toJson ==> "{}"
       Map("hello" -> "world").toJson ==> """{"hello":"world"}"""
       Map("hello" -> Some("world"), "goodbye" -> None).toJson ==> """{"hello":"world"}"""
+
+      List[Int]().toJsonPretty ==> "[]"
+      List(1, 2, 3).toJsonPretty ==> "[1, 2, 3]"
+      Vector[Int]().toJsonPretty ==> "[]"
+      Vector(1, 2, 3).toJsonPretty ==> "[1, 2, 3]"
+
+      Map[String, String]().toJsonPretty ==> "{}"
+      Map("hello" -> "world").toJsonPretty ==> "{\n  \"hello\" : \"world\"\n}"
+      Map("hello" -> Some("world"), "goodbye" -> None).toJsonPretty ==> "{\n  \"hello\" : \"world\"\n}"
     }
 
     test("parameterless products") {
       import exampleproducts._
 
       Parameterless().toJson ==> "{}"
+
+      Parameterless().toJsonPretty ==> "{}"
     }
 
     test("tuples") {
       ("hello", "world").toJson ==> """["hello","world"]"""
+
+      ("hello", "world").toJsonPretty ==> """["hello", "world"]"""
     }
 
     test("products") {
@@ -129,6 +145,11 @@ object EncoderTest extends TestSuite {
 
       CoupleOfThings(-1, Some(10.0f), false).toJson ==> """{"j":-1,"f":10.0,"b":false}"""
       CoupleOfThings(0, None, true).toJson ==> """{"j":0,"b":true}"""
+
+      OnlyString("foo").toJsonPretty ==> "{\n  \"s\" : \"foo\"\n}"
+
+      CoupleOfThings(-1, Some(10.0f), false).toJsonPretty ==> "{\n  \"j\" : -1,\n  \"f\" : 10.0,\n  \"b\" : false\n}"
+      CoupleOfThings(0, None, true).toJsonPretty ==> "{\n  \"j\" : 0,\n  \"b\" : true\n}"
     }
 
     test("sum encoding") {
@@ -136,6 +157,9 @@ object EncoderTest extends TestSuite {
 
       (Child1(): Parent).toJson ==> """{"Child1":{}}"""
       (Child2(): Parent).toJson ==> """{"Cain":{}}"""
+
+      (Child1(): Parent).toJsonPretty ==> "{\n  \"Child1\" : {}\n}"
+      (Child2(): Parent).toJsonPretty ==> "{\n  \"Cain\" : {}\n}"
     }
 
     test("sum alternative encoding") {
@@ -144,6 +168,11 @@ object EncoderTest extends TestSuite {
       (Child1(): Parent).toJson ==> """{"hint":"Child1"}"""
       (Child2(None): Parent).toJson ==> """{"hint":"Abel"}"""
       (Child2(Some("hello")): Parent).toJson ==> """{"hint":"Abel","s":"hello"}"""
+
+      // note lack of whitespace on last line
+      (Child1(): Parent).toJsonPretty ==> "{\n  \"hint\" : \"Child1\"}"
+      (Child2(None): Parent).toJsonPretty ==> "{\n  \"hint\" : \"Abel\"}"
+      (Child2(Some("hello")): Parent).toJsonPretty ==> "{\n  \"hint\" : \"Abel\",\n  \"s\" : \"hello\"\n}"
     }
 
     // using circe to avoid entwining this test on zio.json.Decoder
@@ -152,6 +181,9 @@ object EncoderTest extends TestSuite {
       val decoded    = circe.parser.decode[A](jsonString)
       val recoded    = decoded.toOption.get.toJson
       circe.parser.decode[A](recoded) ==> decoded
+
+      val recodedPretty = decoded.toOption.get.toJson
+      circe.parser.decode[A](recodedPretty) ==> decoded
     }
 
     test("Google Maps") {

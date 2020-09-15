@@ -81,6 +81,12 @@ object Banana {
 
 scala> Banana(0.5).toJson
 val res: String = {"curvature":0.5}
+
+scala> Banana(0.5).toJsonPretty
+val res: String =
+{
+  "curvature" : 0.5
+}
 ```
 
 And bad JSON will produce an error in `jq` syntax with an additional piece of contextual information (in parentheses)

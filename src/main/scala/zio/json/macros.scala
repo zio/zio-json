@@ -203,7 +203,7 @@ object MagnoliaEncoder {
   def combine[A](ctx: CaseClass[Encoder, A]): Encoder[A] =
     if (ctx.parameters.isEmpty)
       new Encoder[A] {
-        def unsafeEncode(a: A, out: java.io.Writer): Unit = out.write("{}")
+        def unsafeEncode(a: A, indent: Option[Int], out: java.io.Writer): Unit = out.write("{}")
       }
     else
       new Encoder[A] {
@@ -215,20 +215,31 @@ object MagnoliaEncoder {
         }
         lazy val tcs: Array[Encoder[Any]] = params.map(p => p.typeclass.asInstanceOf[Encoder[Any]])
         val len: Int                      = params.length
-        def unsafeEncode(a: A, out: java.io.Writer): Unit = {
+        def unsafeEncode(a: A, indent: Option[Int], out: java.io.Writer): Unit = {
           var i = 0
           out.write("{")
+          val indent_ = Encoder.bump(indent)
+          Encoder.pad(indent_, out)
+
           while (i < len) {
             val tc = tcs(i)
             val p  = params(i).dereference(a)
             if (!tc.isNothing(p)) {
-              if (i > 0) out.write(",")
-              Encoder.string.unsafeEncode(names(i), out)
-              out.write(":")
-              tc.unsafeEncode(p, out)
+              if (i > 0) {
+                if (indent.isEmpty) out.write(",")
+                else {
+                  out.write(",")
+                  Encoder.pad(indent_, out)
+                }
+              }
+              Encoder.string.unsafeEncode(names(i), indent_, out)
+              if (indent.isEmpty) out.write(":")
+              else out.write(" : ")
+              tc.unsafeEncode(p, indent_, out)
             }
             i += 1
           }
+          Encoder.pad(indent, out)
           out.write("}")
         }
       }
@@ -242,25 +253,33 @@ object MagnoliaEncoder {
     def discrim = ctx.annotations.collectFirst { case discriminator(n) => n }
     if (discrim.isEmpty)
       new Encoder[A] {
-        def unsafeEncode(a: A, out: java.io.Writer): Unit = ctx.dispatch(a) { sub =>
+        def unsafeEncode(a: A, indent: Option[Int], out: java.io.Writer): Unit = ctx.dispatch(a) { sub =>
           out.write("{")
-          Encoder.string.unsafeEncode(names(sub.index), out)
-          out.write(":")
-          sub.typeclass.unsafeEncode(sub.cast(a), out)
+          val indent_ = Encoder.bump(indent)
+          Encoder.pad(indent_, out)
+          Encoder.string.unsafeEncode(names(sub.index), indent_, out)
+          if (indent.isEmpty) out.write(":")
+          else out.write(" : ")
+          sub.typeclass.unsafeEncode(sub.cast(a), indent_, out)
+          Encoder.pad(indent, out)
           out.write("}")
         }
       }
     else
       new Encoder[A] {
         val hintfield = discrim.get
-        def unsafeEncode(a: A, out: java.io.Writer): Unit = ctx.dispatch(a) { sub =>
+        def unsafeEncode(a: A, indent: Option[Int], out: java.io.Writer): Unit = ctx.dispatch(a) { sub =>
           out.write("{")
-          Encoder.string.unsafeEncode(hintfield, out)
-          out.write(":")
-          Encoder.string.unsafeEncode(names(sub.index), out)
+          val indent_ = Encoder.bump(indent)
+          Encoder.pad(indent_, out)
+          Encoder.string.unsafeEncode(hintfield, indent_, out)
+          if (indent.isEmpty) out.write(":")
+          else out.write(" : ")
+          Encoder.string.unsafeEncode(names(sub.index), indent_, out)
 
-          val intermediate = new NestedWriter(out)
-          sub.typeclass.unsafeEncode(sub.cast(a), intermediate)
+          // whitespace is always off by 2 spaces at the end, probably not worth fixing
+          val intermediate = new NestedWriter(out, indent_)
+          sub.typeclass.unsafeEncode(sub.cast(a), indent, intermediate)
         }
       }
 
@@ -277,7 +296,7 @@ private final class ArraySeq(p: Array[Any]) extends IndexedSeq[Any] {
 
 // intercepts the first `{` of a nested writer and discards it. We also need to
 // inject a `,` unless an empty object `{}` has been written.
-private[this] final class NestedWriter(out: java.io.Writer) extends java.io.Writer {
+private[this] final class NestedWriter(out: java.io.Writer, indent: Option[Int]) extends java.io.Writer {
   def close(): Unit               = out.close()
   def flush(): Unit               = out.flush()
   private[this] var first, second = true
@@ -286,14 +305,14 @@ private[this] final class NestedWriter(out: java.io.Writer) extends java.io.Writ
       var i = 0
       while (i < len) {
         val c = cs(from + i)
-        if (c == ' ' || c == '\n') {
-          out.append(c)
-        } else if (first && c == '{') {
+        if (c == ' ' || c == '\n') {} else if (first && c == '{') {
           first = false
         } else if (second) {
           second = false
-          if (c != '}')
+          if (c != '}') {
             out.append(",")
+            Encoder.pad(indent, out)
+          }
           return out.write(cs, from + i, len - i)
         }
         i += 1

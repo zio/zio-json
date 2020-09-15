@@ -88,12 +88,12 @@ sourceGenerators in Compile += Def.task {
     val tparams = (1 to i).map(p => s"A$p").mkString(", ")
     val implicits = (1 to i).map(p => s"A$p: Encoder[A$p]").mkString(", ")
     val work = (1 to i).map { p =>
-      s"A$p.unsafeEncode(t._$p, out)"
-    }.mkString("\n        out.write(\",\")\n        ")
+      s"A$p.unsafeEncode(t._$p, indent, out)"
+    }.mkString("\n        if (indent.isEmpty) out.write(\",\") else out.write(\", \")\n        ")
 
     s"""implicit def tuple${i}[$tparams](implicit $implicits): Encoder[Tuple${i}[$tparams]] =
        |    new Encoder[Tuple${i}[$tparams]] {
-       |      def unsafeEncode(t: Tuple${i}[$tparams], out: java.io.Writer): Unit = {
+       |      def unsafeEncode(t: Tuple${i}[$tparams], indent: Option[Int], out: java.io.Writer): Unit = {
        |        out.write("[")
        |        $work
        |        out.write("]")

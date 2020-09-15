@@ -20,7 +20,7 @@ import scala.annotation._
  */
 sealed abstract class JsValue {
   def widen: JsValue    = this
-  override def toString = JsValue.encoder.toJson(this)
+  override def toString = JsValue.encoder.toJson(this, None)
 }
 
 // TODO lens-like accessors for working with arbitrary json values
@@ -51,14 +51,14 @@ object JsValue {
     }
   }
   implicit val encoder: Encoder[JsValue] = new Encoder[JsValue] {
-    def unsafeEncode(a: JsValue, out: java.io.Writer): Unit =
+    def unsafeEncode(a: JsValue, indent: Option[Int], out: java.io.Writer): Unit =
       a match {
-        case j: JsObject  => JsObject.encoder.unsafeEncode(j, out)
-        case j: JsArray   => JsArray.encoder.unsafeEncode(j, out)
-        case j: JsBoolean => JsBoolean.encoder.unsafeEncode(j, out)
-        case j: JsString  => JsString.encoder.unsafeEncode(j, out)
-        case j: JsNumber  => JsNumber.encoder.unsafeEncode(j, out)
-        case JsNull       => JsNull.encoder.unsafeEncode(JsNull, out)
+        case j: JsObject  => JsObject.encoder.unsafeEncode(j, indent, out)
+        case j: JsArray   => JsArray.encoder.unsafeEncode(j, indent, out)
+        case j: JsBoolean => JsBoolean.encoder.unsafeEncode(j, indent, out)
+        case j: JsString  => JsString.encoder.unsafeEncode(j, indent, out)
+        case j: JsNumber  => JsNumber.encoder.unsafeEncode(j, indent, out)
+        case JsNull       => JsNull.encoder.unsafeEncode(JsNull, indent, out)
       }
   }
 }
@@ -70,8 +70,8 @@ object JsObject {
   }
   private lazy val obje = Encoder.keylist[String, JsValue]
   implicit val encoder: Encoder[JsObject] = new Encoder[JsObject] {
-    def unsafeEncode(a: JsObject, out: java.io.Writer): Unit =
-      obje.unsafeEncode(a.fields, out)
+    def unsafeEncode(a: JsObject, indent: Option[Int], out: java.io.Writer): Unit =
+      obje.unsafeEncode(a.fields, indent, out)
   }
 }
 object JsArray {
@@ -82,8 +82,8 @@ object JsArray {
   }
   private lazy val arre = Encoder.list[JsValue]
   implicit val encoder: Encoder[JsArray] = new Encoder[JsArray] {
-    def unsafeEncode(a: JsArray, out: java.io.Writer): Unit =
-      arre.unsafeEncode(a.elements, out)
+    def unsafeEncode(a: JsArray, indent: Option[Int], out: java.io.Writer): Unit =
+      arre.unsafeEncode(a.elements, indent, out)
   }
 }
 object JsBoolean {
@@ -92,8 +92,8 @@ object JsBoolean {
       JsBoolean(Decoder.boolean.unsafeDecode(trace, in))
   }
   implicit val encoder: Encoder[JsBoolean] = new Encoder[JsBoolean] {
-    def unsafeEncode(a: JsBoolean, out: java.io.Writer): Unit =
-      Encoder.boolean.unsafeEncode(a.value, out)
+    def unsafeEncode(a: JsBoolean, indent: Option[Int], out: java.io.Writer): Unit =
+      Encoder.boolean.unsafeEncode(a.value, indent, out)
   }
 }
 object JsString {
@@ -102,8 +102,8 @@ object JsString {
       JsString(Decoder.string.unsafeDecode(trace, in))
   }
   implicit val encoder: Encoder[JsString] = new Encoder[JsString] {
-    def unsafeEncode(a: JsString, out: java.io.Writer): Unit =
-      Encoder.string.unsafeEncode(a.value, out)
+    def unsafeEncode(a: JsString, indent: Option[Int], out: java.io.Writer): Unit =
+      Encoder.string.unsafeEncode(a.value, indent, out)
   }
 }
 object JsNumber {
@@ -112,8 +112,8 @@ object JsNumber {
       JsNumber(Decoder.bigdecimal.unsafeDecode(trace, in))
   }
   implicit val encoder: Encoder[JsNumber] = new Encoder[JsNumber] {
-    def unsafeEncode(a: JsNumber, out: java.io.Writer): Unit =
-      Encoder.bigdecimal.unsafeEncode(a.value, out)
+    def unsafeEncode(a: JsNumber, indent: Option[Int], out: java.io.Writer): Unit =
+      Encoder.bigdecimal.unsafeEncode(a.value, indent, out)
   }
 }
 trait JsNullCompanion {
@@ -127,7 +127,7 @@ trait JsNullCompanion {
     }
   }
   implicit val encoder: Encoder[JsNull.type] = new Encoder[JsNull.type] {
-    def unsafeEncode(a: JsNull.type, out: java.io.Writer): Unit =
+    def unsafeEncode(a: JsNull.type, indent: Option[Int], out: java.io.Writer): Unit =
       out.write("null")
   }
 }

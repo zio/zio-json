@@ -12,7 +12,9 @@ import scala.collection.mutable
 // testOnly *RoundtripTest
 object RoundtripTest extends Scalaprops {
 
-  def roundtrip[A: Encoder: Decoder](a: A) = prop(json.parser.decode[A](a.toJson) == Right(a))
+  def roundtrip[A: Encoder: Decoder](a: A) =
+    prop(json.parser.decode[A](a.toJson) == Right(a)) and
+      prop(json.parser.decode[A](a.toJsonPretty) == Right(a))
 
   // arbitrary strings are not guaranteed to roundtrip due to normalisation of
   // some unicode characters, but we could still test this on a subset of
