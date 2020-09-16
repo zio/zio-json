@@ -1,5 +1,3 @@
-# Superfast JSON for Scala
-
 The goal of this project is to create the best all-round JSON library for Scala:
 
 - **Performance** to handle more requests per second than the incumbents, i.e. reduced operational costs.
@@ -254,9 +252,8 @@ We can use `.emap` (for *either map*) to take the result of another `json.Decode
 Say we are using the [`refined`](https://github.com/fthomas/refined) library to ensure that a `Person` data type only holds a non-empty string in its `name` field
 
 ```scala
-import eu.timepit.refined
-import refined.api.{Refined, Validate}
-import refined.collection.NonEmpty
+import eu.timepit.refined.api.Refined
+import eu.timepit.refined.collection.NonEmpty
 
 case class Person(name: String Refined NonEmpty)
 
@@ -276,22 +273,16 @@ implicit val decodeName: json.Decoder[String Refined NonEmpty] =
 
 Now the code compiles.
 
-In fact, we do not need to call `.emap` for each `Refined` data type; we can create a *derivation rule* that works for all of them
+In fact, we do not need to provide `decodeName` for each `Refined` data type; `zio-json` comes with support out of the box, see the Integrations section below.
 
-```scala
-implicit def decodeRefined[A: json.Decoder, P]
-  (implicit V: Validate[A, P]): json.Decoder[A Refined P] =
-    json.Decoder[A].emap(refined.refineV[P](_))
-```
+## Integrations
 
-which can go into the project's utility library.
+Integrations are provided for the following external libraries which must be depended upon separately:
 
-The corresponding `json.Encoder` for all `Refined` types uses `.contramap`
+- [scalaz 7.3](https://github.com/scalaz/scalaz) with `import zio.json.compat.scalaz._`
+- [refined 0.9.15](https://github.com/fthomas/refined) with `import zio.json.compat.refined._`
 
-```scala
-implicit def encodeRefined[A: json.Encoder, B]: json.Encoder[A Refined B] =
-  json.Encoder[A].contramap(_.value)
-```
+Alternative (binary incompatible) versions are not supported; if you require support for a different version of any of these libraries, just copy the source code into your project and change the package name (and address any API changes).
 
 # Performance
 
