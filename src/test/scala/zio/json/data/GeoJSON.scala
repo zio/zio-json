@@ -133,11 +133,11 @@ package handrolled {
           js: Json.Arr
         ): (Double, Double) =
           js match {
-            case Json.Arr(Json.Num(a) :: Json.Num(b) :: Nil) =>
-              (a.doubleValue, b.doubleValue)
+            case Json.Arr(chunk) =>
+              (chunk(0).asInstanceOf[Json.Num].value.doubleValue(), chunk(1).asInstanceOf[Json.Num].value.doubleValue())
             case _ =>
               throw UnsafeJson(
-                JsonError.Message("expected coordinates") :: trace
+                trace :+ JsonError.Message("expected coordinates")
               )
           }
         def coordinates1(
@@ -147,8 +147,8 @@ package handrolled {
           js.elements.map {
             case js1: Json.Arr => coordinates0(trace, js1)
             case _ =>
-              throw UnsafeJson(JsonError.Message("expected list") :: trace)
-          }
+              throw UnsafeJson(trace :+ JsonError.Message("expected list"))
+          }.toList
         def coordinates2(
           trace: Chunk[JsonError],
           js: Json.Arr
@@ -156,8 +156,8 @@ package handrolled {
           js.elements.map {
             case js1: Json.Arr => coordinates1(trace, js1)
             case _ =>
-              throw UnsafeJson(JsonError.Message("expected list") :: trace)
-          }
+              throw UnsafeJson(trace :+ JsonError.Message("expected list"))
+          }.toList
         def coordinates3(
           trace: Chunk[JsonError],
           js: Json.Arr
@@ -165,8 +165,8 @@ package handrolled {
           js.elements.map {
             case js1: Json.Arr => coordinates2(trace, js1)
             case _ =>
-              throw UnsafeJson(JsonError.Message("expected list") :: trace)
-          }
+              throw UnsafeJson(trace :+ JsonError.Message("expected list"))
+          }.toList
 
         def unsafeDecode(
           trace: Chunk[JsonError],
@@ -183,19 +183,19 @@ package handrolled {
               val field = Lexer.field(trace, in, matrix)
               if (field == -1) Lexer.skipValue(trace, in)
               else {
-                val trace_ = spans(field) :: trace
+                val trace_ = trace :+ spans(field)
                 (field: @switch) match {
                   case 0 =>
                     if (subtype != -1)
-                      throw UnsafeJson(JsonError.Message("duplicate") :: trace_)
+                      throw UnsafeJson(trace_ :+ JsonError.Message("duplicate"))
                     subtype = Lexer.enum(trace_, in, subtypes)
                   case 1 =>
                     if (coordinates != null)
-                      throw UnsafeJson(JsonError.Message("duplicate") :: trace_)
+                      throw UnsafeJson(trace_ :+ JsonError.Message("duplicate"))
                     coordinates = coordinatesD.unsafeDecode(trace_, in)
                   case 2 =>
                     if (geometries != null)
-                      throw UnsafeJson(JsonError.Message("duplicate") :: trace_)
+                      throw UnsafeJson(trace_ :+ JsonError.Message("duplicate"))
 
                     geometries = geometriesD.unsafeDecode(trace_, in)
                 }
@@ -204,22 +204,22 @@ package handrolled {
 
           if (subtype == -1)
             throw UnsafeJson(
-              JsonError.Message("missing discriminator") :: trace
+              trace :+ JsonError.Message("missing discriminator")
             )
 
           if (subtype == 6) {
             if (geometries == null)
               throw UnsafeJson(
-                JsonError.Message("missing 'geometries' field") :: trace
+                trace :+ JsonError.Message("missing 'geometries' field")
               )
             else GeometryCollection(geometries)
           }
 
           if (coordinates == null)
             throw UnsafeJson(
-              JsonError.Message("missing 'coordinates' field") :: trace
+              trace :+ JsonError.Message("missing 'coordinates' field")
             )
-          var trace_ = spans(1) :: trace
+          var trace_ = trace :+ spans(1)
           (subtype: @switch) match {
             case 0 => Point(coordinates0(trace_, coordinates))
             case 1 => MultiPoint(coordinates1(trace_, coordinates))
@@ -288,26 +288,26 @@ package handrolled {
               val field = Lexer.field(trace, in, matrix)
               if (field == -1) Lexer.skipValue(trace, in)
               else {
-                val trace_ = spans(field) :: trace
+                val trace_ = trace :+ spans(field)
                 (field: @switch) match {
                   case 0 =>
                     if (subtype != -1)
-                      throw UnsafeJson(JsonError.Message("duplicate") :: trace_)
+                      throw UnsafeJson(trace_ :+ JsonError.Message("duplicate"))
 
                     subtype = Lexer.enum(trace_, in, subtypes)
                   case 1 =>
                     if (properties != null)
-                      throw UnsafeJson(JsonError.Message("duplicate") :: trace_)
+                      throw UnsafeJson(trace_ :+ JsonError.Message("duplicate"))
 
                     properties = propertyD.unsafeDecode(trace_, in)
                   case 2 =>
                     if (geometry != null)
-                      throw UnsafeJson(JsonError.Message("duplicate") :: trace_)
+                      throw UnsafeJson(trace_ :+ JsonError.Message("duplicate"))
 
                     geometry = geometryD.unsafeDecode(trace_, in)
                   case 3 =>
                     if (features != null)
-                      throw UnsafeJson(JsonError.Message("duplicate") :: trace_)
+                      throw UnsafeJson(trace_ :+ JsonError.Message("duplicate"))
 
                     features = featuresD.unsafeDecode(trace_, in)
                 }
@@ -317,24 +317,24 @@ package handrolled {
           if (subtype == -1)
             // we could infer the type but that would mean accepting invalid data
             throw UnsafeJson(
-              JsonError.Message("missing required fields") :: trace
+              trace :+ JsonError.Message("missing required fields")
             )
 
           if (subtype == 0) {
             if (properties == null)
               throw UnsafeJson(
-                JsonError.Message("missing 'properties' field") :: trace
+                trace :+ JsonError.Message("missing 'properties' field")
               )
             if (geometry == null)
               throw UnsafeJson(
-                JsonError.Message("missing 'geometry' field") :: trace
+                trace :+ JsonError.Message("missing 'geometry' field")
               )
             Feature(properties, geometry)
           } else {
 
             if (features == null)
               throw UnsafeJson(
-                JsonError.Message("missing 'features' field") :: trace
+                trace :+ JsonError.Message("missing 'features' field")
               )
             FeatureCollection(features)
           }

@@ -2,8 +2,10 @@ package zio.json
 
 import scala.collection.immutable
 
+import zio.Chunk
 import zio.json
 import zio.json._
+import zio.json.ast._
 import scalaprops._
 import Property.{ implies, prop, property }
 import scala.collection.mutable
@@ -38,8 +40,8 @@ object RoundtripTest extends Scalaprops {
     val entry: Gen[(String, Json)] = Gen.delay(Gen.apply2(Gen.asciiString, astGen)((a, b) => (a, b)))
     // objects and arrays should get smaller with depth to avoid infinite recursion
     val size_             = 0 min (size - 1)
-    val obj: Gen[Json] = Gen.delay(Gen.listOfN(size_, entry)).map(Json.Obj(_))
-    val arr: Gen[Json] = Gen.delay(Gen.listOfN(size_, astGen)).map(Json.Arr(_))
+    val obj: Gen[Json] = Gen.delay(Gen.listOfN(size_, entry)).map(Chunk.fromIterable(_)).map(Json.Obj(_))
+    val arr: Gen[Json] = Gen.delay(Gen.listOfN(size_, astGen)).map(Chunk.fromIterable(_)).map(Json.Arr(_))
     val boo: Gen[Json] = Gen[Boolean].map(Json.Bool(_))
     val str: Gen[Json] = Gen.asciiString.map(Json.Str(_))
     val num: Gen[Json] = for {
@@ -60,8 +62,8 @@ object RoundtripTest extends Scalaprops {
   }
 
   implicit lazy val astShrinker: Shrink[Json] = Shrink.shrink {
-    case Json.Obj(entries) => Shrink.list[(String, Json)].apply(entries).map(Json.Obj(_))
-    case Json.Arr(entries)  => Shrink.list[Json].apply(entries).map(Json.Arr(_))
+    case Json.Obj(entries) => Shrink.list[(String, Json)].apply(entries.toList).map(Chunk.fromIterable(_)).map(Json.Obj(_))
+    case Json.Arr(entries)  => Shrink.list[Json].apply(entries.toList).map(Chunk.fromIterable(_)).map(Json.Arr(_))
     case Json.Bool(_)      => Stream.empty[Json]
     case Json.Str(txt)     => strShrinker(txt).map(Json.Str(_))
     case Json.Num(_)       => Stream.empty[Json]

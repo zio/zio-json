@@ -28,7 +28,7 @@ trait JsonDecoder[+A] { self =>
     try Right(unsafeDecode(Chunk.empty, new FastStringReader(str)))
     catch {
       case JsonDecoder.UnsafeJson(trace) => Left(JsonError.render(trace))
-      case _: internal.UnexpectedEnd => Left("unexpected end of input")
+      case _: internal.UnexpectedEnd     => Left("unexpected end of input")
     }
 
   final def decodeJsonStream[R <: Blocking](stream: ZStream[R, Throwable, Char]): ZIO[R, Throwable, A] =
@@ -37,7 +37,7 @@ trait JsonDecoder[+A] { self =>
         try unsafeDecode(Chunk.empty, new zio.json.internal.WithRetractReader(reader))
         catch {
           case JsonDecoder.UnsafeJson(trace) => throw new Exception(JsonError.render(trace))
-          case _: internal.UnexpectedEnd => throw new Exception("unexpected end of input")
+          case _: internal.UnexpectedEnd     => throw new Exception("unexpected end of input")
         }
       }
     }
@@ -264,6 +264,14 @@ private[json] trait DecoderLowPriority0 extends DecoderLowPriority1 { this: Json
       builder(trace, in, zio.ChunkBuilder.make[A]())
   }
 
+  implicit def hashSet[A: JsonDecoder]: JsonDecoder[immutable.HashSet[A]] =
+    list[A].map(lst => immutable.HashSet(lst: _*))
+
+  implicit def hashMap[K: FieldJsonDecoder, V: JsonDecoder]: JsonDecoder[immutable.HashMap[K, V]] =
+    keyValueChunk[K, V].map(lst => immutable.HashMap(lst: _*))
+}
+
+private[json] trait DecoderLowPriority1 extends DecoderLowPriority2 { this: JsonDecoder.type =>
   implicit def list[A: JsonDecoder]: JsonDecoder[List[A]] = new JsonDecoder[List[A]] {
     def unsafeDecode(trace: Chunk[JsonError], in: RetractReader): List[A] =
       builder(trace, in, new mutable.ListBuffer[A])
@@ -274,18 +282,11 @@ private[json] trait DecoderLowPriority0 extends DecoderLowPriority1 { this: Json
       builder(trace, in, new immutable.VectorBuilder[A]).toVector
   }
 
-  implicit def hashSet[A: JsonDecoder]: JsonDecoder[immutable.HashSet[A]] =
-    list[A].map(lst => immutable.HashSet(lst: _*))
-
-  implicit def hashMap[K: FieldJsonDecoder, V: JsonDecoder]: JsonDecoder[immutable.HashMap[K, V]] =
-    keyValueChunk[K, V].map(lst => immutable.HashMap(lst: _*))
-
-  implicit def sortedMap[K: FieldJsonDecoder: Ordering, V: JsonDecoder]: JsonDecoder[collection.SortedMap[K, V]] =
-    keyValueChunk[K, V].map(lst => collection.SortedMap.apply(lst: _*))
-
   implicit def sortedSet[A: Ordering: JsonDecoder]: JsonDecoder[immutable.SortedSet[A]] =
     list[A].map(lst => immutable.SortedSet(lst: _*))
 
+  implicit def sortedMap[K: FieldJsonDecoder: Ordering, V: JsonDecoder]: JsonDecoder[collection.SortedMap[K, V]] =
+    keyValueChunk[K, V].map(lst => collection.SortedMap.apply(lst: _*))
 }
 
 // We have a hierarchy of implicits for two reasons:
@@ -299,10 +300,10 @@ private[json] trait DecoderLowPriority0 extends DecoderLowPriority1 { this: Json
 //    optimised instances, and a fallback for the more general case that would
 //    otherwise conflict in a lower priority scope. A good example of this is to
 //    have specialised decoders for collection types, falling back to BuildFrom.
-private[json] trait DecoderLowPriority1 {
+private[json] trait DecoderLowPriority2 {
   this: JsonDecoder.type =>
 
-  implicit def seq[A: JsonDecoder]: JsonDecoder[Seq[A]] = list[A]
+  def seq[A: JsonDecoder]: JsonDecoder[Seq[A]] = list[A]
 
   // not implicit because this overlaps with decoders for lists of tuples
   def keyValueChunk[K, A](

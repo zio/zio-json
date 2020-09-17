@@ -43,10 +43,10 @@ trait Encoder[-A] { self =>
                        override def write(buffer: Array[Char], offset: Int, len: Int): Unit =
                          runtime.unsafeRun(queue.offer(Chunk.fromArray(buffer).drop(offset).take(len)))
 
-                        override def close(): Unit = 
-                          runtime.unsafeRun(queue.shutdown)
+                       override def close(): Unit =
+                         runtime.unsafeRun(queue.shutdown)
 
-                        override def flush(): Unit = ()
+                       override def flush(): Unit = ()
                      }, Stream.DefaultChunkSize)
                    }
                  }
@@ -154,14 +154,16 @@ object Encoder extends GeneratedTupleEncoders with EncoderLowPriority0 {
 private[json] trait EncoderLowPriority0 extends EncoderLowPriority1 { this: Encoder.type =>
   implicit def chunk[A: Encoder]: Encoder[Chunk[A]] = seq[A]
 
-  implicit def list[A: Encoder]: Encoder[List[A]]     = seq[A]
-  implicit def vector[A: Encoder]: Encoder[Vector[A]] = seq[A]
-
   implicit def hashSet[A: Encoder]: Encoder[immutable.HashSet[A]] =
     list[A].contramap(_.toList)
 
   implicit def hashMap[K: FieldEncoder, V: Encoder]: Encoder[immutable.HashMap[K, V]] =
     keyValueChunk[K, V].contramap(Chunk.fromIterable(_))
+}
+
+private[json] trait EncoderLowPriority1 extends EncoderLowPriority2 { this: Encoder.type =>
+  implicit def list[A: Encoder]: Encoder[List[A]]     = seq[A]
+  implicit def vector[A: Encoder]: Encoder[Vector[A]] = seq[A]
 
   // TODO these could be optimised...
   implicit def sortedMap[K: FieldEncoder, V: Encoder]: Encoder[collection.SortedMap[K, V]] =
@@ -171,8 +173,8 @@ private[json] trait EncoderLowPriority0 extends EncoderLowPriority1 { this: Enco
     list[A].contramap(_.toList)
 }
 
-private[json] trait EncoderLowPriority1 { this: Encoder.type =>
-  implicit def seq[A](implicit A: Encoder[A]): Encoder[Seq[A]] = new Encoder[Seq[A]] {
+private[json] trait EncoderLowPriority2 { this: Encoder.type =>
+  def seq[A](implicit A: Encoder[A]): Encoder[Seq[A]] = new Encoder[Seq[A]] {
     def unsafeEncode(as: Seq[A], indent: Option[Int], out: java.io.Writer): Unit = {
       out.write("[")
       var first = true
