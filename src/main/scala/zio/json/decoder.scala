@@ -13,6 +13,16 @@ import zio.blocking._
 import zio.stream.ZStream
 
 trait Decoder[+A] { self =>
+  final def <>[A1 >: A](that: => Decoder[A1]): Decoder[A1] = self.orElse(that)
+
+  final def <+>[B](that: => Decoder[B]): Decoder[Either[A, B]] = self.orElseEither(that)
+
+  final def <*> [B](that: => Decoder[B]): Decoder[(A, B)] = self.zip(that)
+
+  final def *> [B](that: => Decoder[B]): Decoder[B] = self.zipWith(that)((_, b) => b)
+
+  final def <* [B](that: => Decoder[B]): Decoder[A] = self.zipWith(that)((a, _) => a)
+
   // note that the string may not be fully consumed
   final def decodeJson(str: CharSequence): Either[String, A] =
     try Right(unsafeDecode(Chunk.empty, new FastStringReader(str)))
@@ -32,23 +42,36 @@ trait Decoder[+A] { self =>
       }
     }
 
+  final def orElse[A1 >: A](that: => Decoder[A1]): Decoder[A1] = 
+    new Decoder[A1] {
+      def unsafeDecode(trace: Chunk[JsonError], in: RetractReader): A1 = {
+        val in2 = new zio.json.internal.WithRecordingReader(in, 0)
+
+        try self.unsafeDecode(trace, in2)
+        catch {
+          case Decoder.UnsafeJson(_)     => 
+            in2.rewind() 
+            that.unsafeDecode(trace,in2)
+
+          case _: internal.UnexpectedEnd => 
+            in2.rewind()
+            that.unsafeDecode(trace, in2)
+        }
+      }
+    }
+
+  final def orElseEither[B](that: => Decoder[B]): Decoder[Either[A, B]] = 
+    self.map(Left(_)).orElse(that.map(Right(_)))
+
   // scalaz-deriving style MonadError combinators
   final def map[B](f: A => B): Decoder[B] =
     new Decoder[B] {
-      override def unsafeDecodeMissing(trace: Chunk[JsonError]): B =
-        f(self.unsafeDecodeMissing(trace))
       def unsafeDecode(trace: Chunk[JsonError], in: RetractReader): B =
         f(self.unsafeDecode(trace, in))
     }
 
   final def mapOrFail[B](f: A => Either[String, B]): Decoder[B] =
     new Decoder[B] {
-      override def unsafeDecodeMissing(trace: Chunk[JsonError]): B =
-        f(self.unsafeDecodeMissing(trace)) match {
-          case Left(err) =>
-            throw Decoder.UnsafeJson(trace :+ JsonError.Message(err))
-          case Right(b) => b
-        }
       def unsafeDecode(trace: Chunk[JsonError], in: RetractReader): B =
         f(self.unsafeDecode(trace, in)) match {
           case Left(err) =>
@@ -56,6 +79,11 @@ trait Decoder[+A] { self =>
           case Right(b) => b
         }
     }
+
+  final def zip[B](that: => Decoder[B]): Decoder[(A, B)] = Decoder.tuple2(this, that)
+
+  final def zipWith[B, C](that: => Decoder[B])(f: (A, B) => C): Decoder[C] = 
+    self.zip(that).map(f.tupled)
 
   // The unsafe* methods are internal and should only be used by generated
   // decoders and web frameworks.
