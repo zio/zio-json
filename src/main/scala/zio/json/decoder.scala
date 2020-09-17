@@ -8,24 +8,6 @@ import zio.json.internal._
 import zio.Chunk
 import Decoder.JsonError
 
-// convenience to match the circe api
-object parser {
-
-  /**
-   * Attempts to decode the raw JSON string as an `A`.
-   *
-   * On failure a human readable message is returned using a jq friendly
-   * format. For example the error
-   * `.rows[0].elements[0].distance.value(missing)"` tells us the location of a
-   * missing field named "value". We can use part of the error message in the
-   * `jq` command line tool for further inspection, e.g.
-   *
-   * {{{jq '.rows[0].elements[0].distance' input.json}}}
-   */
-  def decode[A](str: CharSequence)(implicit D: Decoder[A]): Either[String, A] =
-    D.decodeJson(str)
-}
-
 trait Decoder[+A] { self =>
   // note that the string may not be fully consumed
   final def decodeJson(str: CharSequence): Either[String, A] =
@@ -249,11 +231,17 @@ private[json] trait DecoderLowPriority0 extends DecoderLowPriority1 { this: Deco
       builder(trace, in, new immutable.VectorBuilder[A]).toVector
   }
 
-  implicit def hashset[A: Decoder]: Decoder[immutable.HashSet[A]] =
+  implicit def hashSet[A: Decoder]: Decoder[immutable.HashSet[A]] =
     list[A].map(lst => immutable.HashSet(lst: _*))
 
-  implicit def hashmap[K: FieldDecoder, V: Decoder]: Decoder[immutable.HashMap[K, V]] =
+  implicit def hashMap[K: FieldDecoder, V: Decoder]: Decoder[immutable.HashMap[K, V]] =
     keyValueChunk[K, V].map(lst => immutable.HashMap(lst: _*))
+
+  implicit def sortedMap[K: FieldDecoder: Ordering, V: Decoder]: Decoder[collection.SortedMap[K, V]] =
+    keyValueChunk[K, V].map(lst => collection.SortedMap.apply(lst: _*))
+
+  implicit def sortedSet[A: Ordering: Decoder]: Decoder[immutable.SortedSet[A]] =
+    list[A].map(lst => immutable.SortedSet(lst: _*))
 
 }
 
@@ -298,16 +286,12 @@ private[json] trait DecoderLowPriority1 {
       }
     }
 
-  implicit def sortedmap[K: FieldDecoder: Ordering, V: Decoder]: Decoder[collection.SortedMap[K, V]] =
-    keyValueChunk[K, V].map(lst => collection.SortedMap.apply(lst: _*))
-
-  implicit def map[K: FieldDecoder, V: Decoder]: Decoder[Map[K, V]] = hashmap[K, V]
+  implicit def map[K: FieldDecoder, V: Decoder]: Decoder[Map[K, V]] =
+    keyValueChunk[K, V].map(lst => Map.apply(lst: _*))
 
   // TODO these could be optimised...
-  implicit def set[A: Decoder]: Decoder[Set[A]] = hashset[A]
-  implicit def sortedset[A: Ordering: Decoder]: Decoder[immutable.SortedSet[A]] =
-    list[A].map(lst => immutable.SortedSet(lst: _*))
-
+  implicit def set[A: Decoder]: Decoder[Set[A]] =
+    list[A].map(lst => immutable.HashSet(lst: _*))
 }
 
 /** When decoding a JSON Object, we only allow the keys that implement this interface. */

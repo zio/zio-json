@@ -117,11 +117,18 @@ private[json] trait EncoderLowPriority0 extends EncoderLowPriority1 { this: Enco
   implicit def list[A: Encoder]: Encoder[List[A]]     = seq[A]
   implicit def vector[A: Encoder]: Encoder[Vector[A]] = seq[A]
 
-  implicit def hashset[A: Encoder]: Encoder[immutable.HashSet[A]] =
+  implicit def hashSet[A: Encoder]: Encoder[immutable.HashSet[A]] =
     list[A].contramap(_.toList)
 
-  implicit def hashmap[K: FieldEncoder, V: Encoder]: Encoder[immutable.HashMap[K, V]] =
+  implicit def hashMap[K: FieldEncoder, V: Encoder]: Encoder[immutable.HashMap[K, V]] =
     keyValueChunk[K, V].contramap(Chunk.fromIterable(_))
+
+  // TODO these could be optimised...
+  implicit def sortedMap[K: FieldEncoder, V: Encoder]: Encoder[collection.SortedMap[K, V]] =
+    keyValueChunk[K, V].contramap(Chunk.fromIterable(_))
+
+  implicit def sortedSet[A: Ordering: Encoder]: Encoder[immutable.SortedSet[A]] =
+    list[A].contramap(_.toList)
 }
 
 private[json] trait EncoderLowPriority1 { this: Encoder.type =>
@@ -175,16 +182,10 @@ private[json] trait EncoderLowPriority1 { this: Encoder.type =>
     }
   }
 
-  // TODO these could be optimised...
-  implicit def sortedmap[K: FieldEncoder, V: Encoder]: Encoder[collection.SortedMap[K, V]] =
-    keyValueChunk[K, V].contramap(Chunk.fromIterable(_))
   implicit def map[K: FieldEncoder, V: Encoder]: Encoder[Map[K, V]] =
     keyValueChunk[K, V].contramap(Chunk.fromIterable(_))
   implicit def set[A: Encoder]: Encoder[Set[A]] =
     list[A].contramap(_.toList)
-  implicit def sortedset[A: Ordering: Encoder]: Encoder[immutable.SortedSet[A]] =
-    list[A].contramap(_.toList)
-
 }
 
 /** When encoding a JSON Object, we only allow keys that implement this interface. */
