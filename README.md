@@ -69,12 +69,12 @@ scala> json.parser.decode[Banana]("""{"curvature":0.5}""")
 val res: Either[String, Banana] = Right(Banana(0.5))
 ```
 
-Likewise, to produce JSON from our data we define a `json.Encoder`
+Likewise, to produce JSON from our data we define a `json.JsonEncoder`
 
 ```scala
 object Banana {
   ...
-  implicit val encoder: json.Encoder[Banana] = json.DeriveEncoder.gen[Banana]
+  implicit val encoder: json.JsonEncoder[Banana] = json.DeriveEncoder.gen[Banana]
 }
 
 scala> Banana(0.5).toJson
@@ -107,7 +107,7 @@ we can generate the encoder and decoder for the entire `sealed` family
 ```scala
 object Fruit {
   implicit val decoder: json.JsonDecoder[Fruit] = json.DeriveJsonDecoder.gen[Fruit]
-  implicit val encoder: json.Encoder[Fruit] = json.DeriveEncoder.gen[Fruit]
+  implicit val encoder: json.JsonEncoder[Fruit] = json.DeriveEncoder.gen[Fruit]
 }
 ```
 
@@ -185,11 +185,11 @@ trait JsonDecoder[+A] {
 }
 ```
 
-Similarly, we can reuse an existing `json.Encoder`
+Similarly, we can reuse an existing `json.JsonEncoder`
 
 ```scala
-trait Encoder[-A] {
-  def contramap[B](f: B => A): Encoder[B]
+trait JsonEncoder[-A] {
+  def contramap[B](f: B => A): JsonEncoder[B]
   ...
 }
 ```
@@ -220,12 +220,12 @@ object FruitCount {
 
 and now the `json.JsonDecoder` for `FruitCount` just expects a raw `Int`.
 
-Every time we use a `.map` to create a `json.JsonDecoder` we can usually create a `json.Encoder` with `.contramap`
+Every time we use a `.map` to create a `json.JsonDecoder` we can usually create a `json.JsonEncoder` with `.contramap`
 
 ```scala
 object FruitCount {
   ...
-  implicit val encoder: json.Encoder[FruitCount] = json.Encoder[Int].contramap(_.value)
+  implicit val encoder: json.JsonEncoder[FruitCount] = json.JsonEncoder[Int].contramap(_.value)
 }
 ```
 

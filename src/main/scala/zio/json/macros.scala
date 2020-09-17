@@ -199,28 +199,28 @@ object DeriveJsonDecoder {
 }
 
 object DeriveEncoder {
-  type Typeclass[-A] = Encoder[A]
+  type Typeclass[-A] = JsonEncoder[A]
 
-  def combine[A](ctx: CaseClass[Encoder, A]): Encoder[A] =
+  def combine[A](ctx: CaseClass[JsonEncoder, A]): JsonEncoder[A] =
     if (ctx.parameters.isEmpty)
-      new Encoder[A] {
+      new JsonEncoder[A] {
         def unsafeEncode(a: A, indent: Option[Int], out: java.io.Writer): Unit = out.write("{}")
       }
     else
-      new Encoder[A] {
+      new JsonEncoder[A] {
         val params = ctx.parameters.toArray
         val names: Array[String] = params.map { p =>
           p.annotations.collectFirst {
             case field(name) => name
           }.getOrElse(p.label)
         }
-        lazy val tcs: Array[Encoder[Any]] = params.map(p => p.typeclass.asInstanceOf[Encoder[Any]])
-        val len: Int                      = params.length
+        lazy val tcs: Array[JsonEncoder[Any]] = params.map(p => p.typeclass.asInstanceOf[JsonEncoder[Any]])
+        val len: Int                          = params.length
         def unsafeEncode(a: A, indent: Option[Int], out: java.io.Writer): Unit = {
           var i = 0
           out.write("{")
-          val indent_ = Encoder.bump(indent)
-          Encoder.pad(indent_, out)
+          val indent_ = JsonEncoder.bump(indent)
+          JsonEncoder.pad(indent_, out)
 
           while (i < len) {
             val tc = tcs(i)
@@ -230,22 +230,22 @@ object DeriveEncoder {
                 if (indent.isEmpty) out.write(",")
                 else {
                   out.write(",")
-                  Encoder.pad(indent_, out)
+                  JsonEncoder.pad(indent_, out)
                 }
               }
-              Encoder.string.unsafeEncode(names(i), indent_, out)
+              JsonEncoder.string.unsafeEncode(names(i), indent_, out)
               if (indent.isEmpty) out.write(":")
               else out.write(" : ")
               tc.unsafeEncode(p, indent_, out)
             }
             i += 1
           }
-          Encoder.pad(indent, out)
+          JsonEncoder.pad(indent, out)
           out.write("}")
         }
       }
 
-  def dispatch[A](ctx: SealedTrait[Encoder, A]): Encoder[A] = {
+  def dispatch[A](ctx: SealedTrait[JsonEncoder, A]): JsonEncoder[A] = {
     val names: Array[String] = ctx.subtypes.map { p =>
       p.annotations.collectFirst {
         case hint(name) => name
@@ -253,30 +253,30 @@ object DeriveEncoder {
     }.toArray
     def discrim = ctx.annotations.collectFirst { case discriminator(n) => n }
     if (discrim.isEmpty)
-      new Encoder[A] {
+      new JsonEncoder[A] {
         def unsafeEncode(a: A, indent: Option[Int], out: java.io.Writer): Unit = ctx.dispatch(a) { sub =>
           out.write("{")
-          val indent_ = Encoder.bump(indent)
-          Encoder.pad(indent_, out)
-          Encoder.string.unsafeEncode(names(sub.index), indent_, out)
+          val indent_ = JsonEncoder.bump(indent)
+          JsonEncoder.pad(indent_, out)
+          JsonEncoder.string.unsafeEncode(names(sub.index), indent_, out)
           if (indent.isEmpty) out.write(":")
           else out.write(" : ")
           sub.typeclass.unsafeEncode(sub.cast(a), indent_, out)
-          Encoder.pad(indent, out)
+          JsonEncoder.pad(indent, out)
           out.write("}")
         }
       }
     else
-      new Encoder[A] {
+      new JsonEncoder[A] {
         val hintfield = discrim.get
         def unsafeEncode(a: A, indent: Option[Int], out: java.io.Writer): Unit = ctx.dispatch(a) { sub =>
           out.write("{")
-          val indent_ = Encoder.bump(indent)
-          Encoder.pad(indent_, out)
-          Encoder.string.unsafeEncode(hintfield, indent_, out)
+          val indent_ = JsonEncoder.bump(indent)
+          JsonEncoder.pad(indent_, out)
+          JsonEncoder.string.unsafeEncode(hintfield, indent_, out)
           if (indent.isEmpty) out.write(":")
           else out.write(" : ")
-          Encoder.string.unsafeEncode(names(sub.index), indent_, out)
+          JsonEncoder.string.unsafeEncode(names(sub.index), indent_, out)
 
           // whitespace is always off by 2 spaces at the end, probably not worth fixing
           val intermediate = new NestedWriter(out, indent_)
@@ -286,7 +286,7 @@ object DeriveEncoder {
 
   }
 
-  def gen[A]: Encoder[A] = macro Magnolia.gen[A]
+  def gen[A]: JsonEncoder[A] = macro Magnolia.gen[A]
 }
 
 // backcompat for 2.12, otherwise we'd use ArraySeq.unsafeWrapArray
@@ -312,7 +312,7 @@ private[this] final class NestedWriter(out: java.io.Writer, indent: Option[Int])
           second = false
           if (c != '}') {
             out.append(",")
-            Encoder.pad(indent, out)
+            JsonEncoder.pad(indent, out)
           }
           return out.write(cs, from + i, len - i)
         }

@@ -20,19 +20,19 @@ object EncoderTest extends TestSuite {
   object exampleproducts {
     case class Parameterless()
     object Parameterless {
-      implicit val encoder: json.Encoder[Parameterless] =
+      implicit val encoder: json.JsonEncoder[Parameterless] =
         json.DeriveEncoder.gen[Parameterless]
     }
 
     case class OnlyString(s: String)
     object OnlyString {
-      implicit val encoder: json.Encoder[OnlyString] =
+      implicit val encoder: json.JsonEncoder[OnlyString] =
         json.DeriveEncoder.gen[OnlyString]
     }
 
     case class CoupleOfThings(@json.field("j") i: Int, f: Option[Float], b: Boolean)
     object CoupleOfThings {
-      implicit val encoder: json.Encoder[CoupleOfThings] =
+      implicit val encoder: json.JsonEncoder[CoupleOfThings] =
         json.DeriveEncoder.gen[CoupleOfThings]
     }
   }
@@ -41,7 +41,7 @@ object EncoderTest extends TestSuite {
 
     sealed abstract class Parent
     object Parent {
-      implicit val encoder: json.Encoder[Parent] = json.DeriveEncoder.gen[Parent]
+      implicit val encoder: json.JsonEncoder[Parent] = json.DeriveEncoder.gen[Parent]
     }
     case class Child1() extends Parent
     @json.hint("Cain")
@@ -53,7 +53,7 @@ object EncoderTest extends TestSuite {
     @json.discriminator("hint")
     sealed abstract class Parent
     object Parent {
-      implicit val encoder: json.Encoder[Parent] = json.DeriveEncoder.gen[Parent]
+      implicit val encoder: json.JsonEncoder[Parent] = json.DeriveEncoder.gen[Parent]
     }
     case class Child1() extends Parent
     @json.hint("Abel")
@@ -176,7 +176,7 @@ object EncoderTest extends TestSuite {
     }
 
     // using circe to avoid entwining this test on zio.json.JsonDecoder
-    def testRoundtrip[A: circe.Decoder: Encoder](res: String) = {
+    def testRoundtrip[A: circe.Decoder: JsonEncoder](res: String) = {
       val jsonString = getResourceAsString(res)
       val decoded    = circe.parser.decode[A](jsonString)
       val recoded    = decoded.toOption.get.toJson

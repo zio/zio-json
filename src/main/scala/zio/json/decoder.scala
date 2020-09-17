@@ -267,7 +267,7 @@ private[json] trait DecoderLowPriority0 extends DecoderLowPriority1 { this: Json
   implicit def hashSet[A: JsonDecoder]: JsonDecoder[immutable.HashSet[A]] =
     list[A].map(lst => immutable.HashSet(lst: _*))
 
-  implicit def hashMap[K: FieldJsonDecoder, V: JsonDecoder]: JsonDecoder[immutable.HashMap[K, V]] =
+  implicit def hashMap[K: JsonFieldDecoder, V: JsonDecoder]: JsonDecoder[immutable.HashMap[K, V]] =
     keyValueChunk[K, V].map(lst => immutable.HashMap(lst: _*))
 }
 
@@ -285,7 +285,7 @@ private[json] trait DecoderLowPriority1 extends DecoderLowPriority2 { this: Json
   implicit def sortedSet[A: Ordering: JsonDecoder]: JsonDecoder[immutable.SortedSet[A]] =
     list[A].map(lst => immutable.SortedSet(lst: _*))
 
-  implicit def sortedMap[K: FieldJsonDecoder: Ordering, V: JsonDecoder]: JsonDecoder[collection.SortedMap[K, V]] =
+  implicit def sortedMap[K: JsonFieldDecoder: Ordering, V: JsonDecoder]: JsonDecoder[collection.SortedMap[K, V]] =
     keyValueChunk[K, V].map(lst => collection.SortedMap.apply(lst: _*))
 }
 
@@ -308,7 +308,7 @@ private[json] trait DecoderLowPriority2 {
   // not implicit because this overlaps with decoders for lists of tuples
   def keyValueChunk[K, A](
     implicit
-    K: FieldJsonDecoder[K],
+    K: JsonFieldDecoder[K],
     A: JsonDecoder[A]
   ): JsonDecoder[Chunk[(K, A)]] =
     new JsonDecoder[Chunk[(K, A)]] {
@@ -330,7 +330,7 @@ private[json] trait DecoderLowPriority2 {
       }
     }
 
-  implicit def map[K: FieldJsonDecoder, V: JsonDecoder]: JsonDecoder[Map[K, V]] =
+  implicit def map[K: JsonFieldDecoder, V: JsonDecoder]: JsonDecoder[Map[K, V]] =
     keyValueChunk[K, V].map(lst => Map.apply(lst: _*))
 
   // TODO these could be optimised...
@@ -339,14 +339,14 @@ private[json] trait DecoderLowPriority2 {
 }
 
 /** When decoding a JSON Object, we only allow the keys that implement this interface. */
-trait FieldJsonDecoder[+A] { self =>
-  final def map[B](f: A => B): FieldJsonDecoder[B] =
-    new FieldJsonDecoder[B] {
+trait JsonFieldDecoder[+A] { self =>
+  final def map[B](f: A => B): JsonFieldDecoder[B] =
+    new JsonFieldDecoder[B] {
       def unsafeDecodeField(trace: Chunk[JsonError], in: String): B =
         f(self.unsafeDecodeField(trace, in))
     }
-  final def mapOrFail[B](f: A => Either[String, B]): FieldJsonDecoder[B] =
-    new FieldJsonDecoder[B] {
+  final def mapOrFail[B](f: A => Either[String, B]): JsonFieldDecoder[B] =
+    new JsonFieldDecoder[B] {
       def unsafeDecodeField(trace: Chunk[JsonError], in: String): B =
         f(self.unsafeDecodeField(trace, in)) match {
           case Left(err) =>
@@ -357,8 +357,8 @@ trait FieldJsonDecoder[+A] { self =>
 
   def unsafeDecodeField(trace: Chunk[JsonError], in: String): A
 }
-object FieldJsonDecoder {
-  implicit val string: FieldJsonDecoder[String] = new FieldJsonDecoder[String] {
+object JsonFieldDecoder {
+  implicit val string: JsonFieldDecoder[String] = new JsonFieldDecoder[String] {
     def unsafeDecodeField(trace: Chunk[JsonError], in: String): String = in
   }
 }

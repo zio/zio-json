@@ -18,7 +18,7 @@ final case class Nested(n: Option[Nested])
 object Nested {
   implicit lazy val zioJsonJsonDecoder: json.JsonDecoder[Nested] =
     json.DeriveJsonDecoder.gen
-  implicit lazy val zioJsonEncoder: json.Encoder[Nested] =
+  implicit lazy val zioJsonEncoder: json.JsonEncoder[Nested] =
     json.DeriveEncoder.gen
 
   implicit val customConfig: circe.generic.extras.Configuration =

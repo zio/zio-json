@@ -19,7 +19,7 @@ object RefinedTest extends TestSuite {
 
   object Person {
     implicit val decoder: json.JsonDecoder[Person] = json.DeriveJsonDecoder.gen[Person]
-    implicit val encoder: json.Encoder[Person] = json.DeriveEncoder.gen[Person]
+    implicit val encoder: json.JsonEncoder[Person] = json.DeriveEncoder.gen[Person]
   }
 
   val tests = Tests {

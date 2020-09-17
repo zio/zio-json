@@ -99,13 +99,13 @@ sourceGenerators in Compile += Def.task {
   val file = dir / "zio" / "json" / "GeneratedTupleEncoders.scala"
   val encoders = (1 to 22).map { i =>
     val tparams = (1 to i).map(p => s"A$p").mkString(", ")
-    val implicits = (1 to i).map(p => s"A$p: Encoder[A$p]").mkString(", ")
+    val implicits = (1 to i).map(p => s"A$p: JsonEncoder[A$p]").mkString(", ")
     val work = (1 to i).map { p =>
       s"A$p.unsafeEncode(t._$p, indent, out)"
     }.mkString("\n        if (indent.isEmpty) out.write(\",\") else out.write(\", \")\n        ")
 
-    s"""implicit def tuple${i}[$tparams](implicit $implicits): Encoder[Tuple${i}[$tparams]] =
-       |    new Encoder[Tuple${i}[$tparams]] {
+    s"""implicit def tuple${i}[$tparams](implicit $implicits): JsonEncoder[Tuple${i}[$tparams]] =
+       |    new JsonEncoder[Tuple${i}[$tparams]] {
        |      def unsafeEncode(t: Tuple${i}[$tparams], indent: Option[Int], out: java.io.Writer): Unit = {
        |        out.write("[")
        |        $work
@@ -117,7 +117,7 @@ sourceGenerators in Compile += Def.task {
     file,
     s"""package zio.json
        |
-       |private[json] trait GeneratedTupleEncoders { this: Encoder.type =>
+       |private[json] trait GeneratedTupleEncoders { this: JsonEncoder.type =>
        |  ${encoders.mkString("\n\n  ")}
        |}""".stripMargin)
   Seq(file)

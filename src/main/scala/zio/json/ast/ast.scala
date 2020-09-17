@@ -1,7 +1,7 @@
-package zio.json.ast 
+package zio.json.ast
 
 import zio.Chunk
-import zio.json._ 
+import zio.json._
 import zio.json.JsonDecoder.{ JsonError, UnsafeJson }
 import zio.json.internal._
 import scala.annotation._
@@ -36,8 +36,8 @@ object Json {
       def unsafeDecode(trace: Chunk[JsonError], in: RetractReader): Obj =
         Obj(objd.unsafeDecode(trace, in))
     }
-    private lazy val obje = Encoder.keyValueChunk[String, Json]
-    implicit val encoder: Encoder[Obj] = new Encoder[Obj] {
+    private lazy val obje = JsonEncoder.keyValueChunk[String, Json]
+    implicit val encoder: JsonEncoder[Obj] = new JsonEncoder[Obj] {
       def unsafeEncode(a: Obj, indent: Option[Int], out: java.io.Writer): Unit =
         obje.unsafeEncode(a.fields, indent, out)
     }
@@ -49,8 +49,8 @@ object Json {
       def unsafeDecode(trace: Chunk[JsonError], in: RetractReader): Arr =
         Arr(arrd.unsafeDecode(trace, in))
     }
-    private lazy val arre = Encoder.chunk[Json]
-    implicit val encoder: Encoder[Arr] = new Encoder[Arr] {
+    private lazy val arre = JsonEncoder.chunk[Json]
+    implicit val encoder: JsonEncoder[Arr] = new JsonEncoder[Arr] {
       def unsafeEncode(a: Arr, indent: Option[Int], out: java.io.Writer): Unit =
         arre.unsafeEncode(a.elements, indent, out)
     }
@@ -61,9 +61,9 @@ object Json {
       def unsafeDecode(trace: Chunk[JsonError], in: RetractReader): Bool =
         Bool(JsonDecoder.boolean.unsafeDecode(trace, in))
     }
-    implicit val encoder: Encoder[Bool] = new Encoder[Bool] {
+    implicit val encoder: JsonEncoder[Bool] = new JsonEncoder[Bool] {
       def unsafeEncode(a: Bool, indent: Option[Int], out: java.io.Writer): Unit =
-        Encoder.boolean.unsafeEncode(a.value, indent, out)
+        JsonEncoder.boolean.unsafeEncode(a.value, indent, out)
     }
   }
   final case class Str(value: String) extends Json
@@ -72,9 +72,9 @@ object Json {
       def unsafeDecode(trace: Chunk[JsonError], in: RetractReader): Str =
         Str(JsonDecoder.string.unsafeDecode(trace, in))
     }
-    implicit val encoder: Encoder[Str] = new Encoder[Str] {
+    implicit val encoder: JsonEncoder[Str] = new JsonEncoder[Str] {
       def unsafeEncode(a: Str, indent: Option[Int], out: java.io.Writer): Unit =
-        Encoder.string.unsafeEncode(a.value, indent, out)
+        JsonEncoder.string.unsafeEncode(a.value, indent, out)
     }
   }
   final case class Num(value: java.math.BigDecimal) extends Json
@@ -83,9 +83,9 @@ object Json {
       def unsafeDecode(trace: Chunk[JsonError], in: RetractReader): Num =
         Num(JsonDecoder.bigDecimal.unsafeDecode(trace, in))
     }
-    implicit val encoder: Encoder[Num] = new Encoder[Num] {
+    implicit val encoder: JsonEncoder[Num] = new JsonEncoder[Num] {
       def unsafeEncode(a: Num, indent: Option[Int], out: java.io.Writer): Unit =
-        Encoder.bigDecimal.unsafeEncode(a.value, indent, out)
+        JsonEncoder.bigDecimal.unsafeEncode(a.value, indent, out)
     }
   }
   case object Null extends Json {
@@ -96,7 +96,7 @@ object Json {
         Null
       }
     }
-    implicit val encoder: Encoder[Null.type] = new Encoder[Null.type] {
+    implicit val encoder: JsonEncoder[Null.type] = new JsonEncoder[Null.type] {
       def unsafeEncode(a: Null.type, indent: Option[Int], out: java.io.Writer): Unit =
         out.write("null")
     }
@@ -119,7 +119,7 @@ object Json {
       }
     }
   }
-  implicit val encoder: Encoder[Json] = new Encoder[Json] {
+  implicit val encoder: JsonEncoder[Json] = new JsonEncoder[Json] {
     def unsafeEncode(a: Json, indent: Option[Int], out: java.io.Writer): Unit =
       a match {
         case j: Obj  => Obj.encoder.unsafeEncode(j, indent, out)
