@@ -26,6 +26,7 @@ libraryDependencies += "eu.timepit" %% "refined" % "0.9.15" intransitive()
 
 libraryDependencies ++= Seq(
   "dev.zio" %% "zio"          % zioVersion,
+  "dev.zio" %% "zio-streams"  % zioVersion,
   "dev.zio" %% "zio-test"     % zioVersion % "test",
   "dev.zio" %% "zio-test-sbt" % zioVersion % "test"
 )

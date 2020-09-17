@@ -4,14 +4,35 @@ import scala.annotation._
 import scala.collection.mutable
 import scala.collection.immutable
 
-import zio.Chunk
+import zio.{ Chunk, Managed, Queue, UIO, ZIO, ZManaged }
+import zio.blocking._
+import zio.stream._
+
+import java.io.{ BufferedWriter, Writer }
 
 trait Encoder[-A] { self =>
   def toJson(a: A, indent: Option[Int]): String = {
-    val writer = new internal.FastStringWriter(64)
+    val writer = new zio.json.internal.FastStringWriter(64)
     unsafeEncode(a, indent, writer)
     writer.toString
   }
+
+  def toJsonStream(a: A, indent: Option[Int]): ZStream[Blocking, Nothing, Char] =
+    ZStream.unwrapManaged {
+      (for {
+        runtime <- ZIO.runtime[Blocking].toManaged_
+        queue   <- Queue.bounded[Chunk[Char]](1).toManaged_
+        writer <- ZManaged.fromAutoCloseable {
+                   ZIO.effectTotal {
+                     new java.io.BufferedWriter(new Writer {
+                       override def write(buffer: Array[Char], offset: Int, len: Int): Unit =
+                         runtime.unsafeRun(queue.offer(Chunk.fromArray(buffer).drop(offset).take(len)))
+                     }, Stream.DefaultChunkSize)
+                   }
+                 }
+        fiber <- effectBlocking { unsafeEncode(a, indent, writer); runtime.unsafeRun(queue.shutdown) }.toManaged_.fork
+      } yield ZStream.fromChunkQueue(queue))
+    }
 
   // scalaz-deriving style Contravariant combinators
   final def contramap[B](f: B => A): Encoder[B] = new Encoder[B] {
