@@ -14,7 +14,7 @@ case class Urls(
 )
 object Urls {
   implicit val jJsonDecoder: json.JsonDecoder[Urls] = json.DeriveJsonDecoder.gen[Urls]
-  implicit val jEncoder: json.JsonEncoder[Urls] = json.DeriveEncoder.gen[Urls]
+  implicit val jEncoder: json.JsonEncoder[Urls] = json.DeriveJsonEncoder.gen[Urls]
   implicit val customConfig: circe.generic.extras.Configuration =
     circe.generic.extras.Configuration.default
   implicit val circeJsonDecoder: circe.Decoder[Urls] =
@@ -26,7 +26,7 @@ object Urls {
 case class Url(urls: List[Urls])
 object Url {
   implicit val jJsonDecoder: json.JsonDecoder[Url] = json.DeriveJsonDecoder.gen[Url]
-  implicit val jEncoder: json.JsonEncoder[Url] = json.DeriveEncoder.gen[Url]
+  implicit val jEncoder: json.JsonEncoder[Url] = json.DeriveJsonEncoder.gen[Url]
   implicit val customConfig: circe.generic.extras.Configuration =
     circe.generic.extras.Configuration.default
   implicit val circeJsonDecoder: circe.Decoder[Url] =
@@ -39,7 +39,7 @@ object Url {
 case class UserEntities(url: Url, description: Url)
 object UserEntities {
   implicit val jJsonDecoder: json.JsonDecoder[UserEntities] = json.DeriveJsonDecoder.gen[UserEntities]
-  implicit val jEncoder: json.JsonEncoder[UserEntities] = json.DeriveEncoder.gen[UserEntities]
+  implicit val jEncoder: json.JsonEncoder[UserEntities] = json.DeriveJsonEncoder.gen[UserEntities]
   implicit val customConfig: circe.generic.extras.Configuration =
     circe.generic.extras.Configuration.default
   implicit val circeJsonDecoder: circe.Decoder[UserEntities] =
@@ -59,7 +59,7 @@ case class UserMentions(
 )
 object UserMentions {
   implicit val jJsonDecoder: json.JsonDecoder[UserMentions] = json.DeriveJsonDecoder.gen[UserMentions]
-  implicit val jEncoder: json.JsonEncoder[UserMentions] = json.DeriveEncoder.gen[UserMentions]
+  implicit val jEncoder: json.JsonEncoder[UserMentions] = json.DeriveJsonEncoder.gen[UserMentions]
   implicit val customConfig: circe.generic.extras.Configuration =
     circe.generic.extras.Configuration.default
   implicit val circeJsonDecoder: circe.Decoder[UserMentions] =
@@ -116,7 +116,7 @@ case class User(
 )
 object User {
   implicit val jJsonDecoder: json.JsonDecoder[User] = json.DeriveJsonDecoder.gen[User]
-  implicit val jEncoder: json.JsonEncoder[User] = json.DeriveEncoder.gen[User]
+  implicit val jEncoder: json.JsonEncoder[User] = json.DeriveJsonEncoder.gen[User]
   implicit val customConfig: circe.generic.extras.Configuration =
     circe.generic.extras.Configuration.default
   implicit val circeJsonDecoder: circe.Decoder[User] =
@@ -134,7 +134,7 @@ case class Entities(
 )
 object Entities {
   implicit val jJsonDecoder: json.JsonDecoder[Entities] = json.DeriveJsonDecoder.gen[Entities]
-  implicit val jEncoder: json.JsonEncoder[Entities] = json.DeriveEncoder.gen[Entities]
+  implicit val jEncoder: json.JsonEncoder[Entities] = json.DeriveJsonEncoder.gen[Entities]
   implicit val customConfig: circe.generic.extras.Configuration =
     circe.generic.extras.Configuration.default
   implicit val circeJsonDecoder: circe.Decoder[Entities] =
@@ -174,7 +174,7 @@ object RetweetedStatus {
   implicit val jJsonDecoder: json.JsonDecoder[RetweetedStatus] =
     json.DeriveJsonDecoder.gen[RetweetedStatus]
   implicit val jEncoder: json.JsonEncoder[RetweetedStatus] =
-    json.DeriveEncoder.gen[RetweetedStatus]
+    json.DeriveJsonEncoder.gen[RetweetedStatus]
   implicit val customConfig: circe.generic.extras.Configuration =
     circe.generic.extras.Configuration.default
   implicit val circeJsonDecoder: circe.Decoder[RetweetedStatus] =
@@ -215,7 +215,7 @@ case class Tweet(
 
 object Tweet {
   implicit val zioJsonJsonDecoder: json.JsonDecoder[Tweet] = json.DeriveJsonDecoder.gen[Tweet]
-  implicit val zioJsonEncoder: json.JsonEncoder[Tweet] = json.DeriveEncoder.gen[Tweet]
+  implicit val zioJsonEncoder: json.JsonEncoder[Tweet] = json.DeriveJsonEncoder.gen[Tweet]
   implicit val customConfig: circe.generic.extras.Configuration =
     circe.generic.extras.Configuration.default
   implicit val circeJsonDecoder: circe.Decoder[Tweet] =

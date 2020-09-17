@@ -21,19 +21,19 @@ object EncoderTest extends TestSuite {
     case class Parameterless()
     object Parameterless {
       implicit val encoder: json.JsonEncoder[Parameterless] =
-        json.DeriveEncoder.gen[Parameterless]
+        json.DeriveJsonEncoder.gen[Parameterless]
     }
 
     case class OnlyString(s: String)
     object OnlyString {
       implicit val encoder: json.JsonEncoder[OnlyString] =
-        json.DeriveEncoder.gen[OnlyString]
+        json.DeriveJsonEncoder.gen[OnlyString]
     }
 
     case class CoupleOfThings(@json.field("j") i: Int, f: Option[Float], b: Boolean)
     object CoupleOfThings {
       implicit val encoder: json.JsonEncoder[CoupleOfThings] =
-        json.DeriveEncoder.gen[CoupleOfThings]
+        json.DeriveJsonEncoder.gen[CoupleOfThings]
     }
   }
 
@@ -41,7 +41,7 @@ object EncoderTest extends TestSuite {
 
     sealed abstract class Parent
     object Parent {
-      implicit val encoder: json.JsonEncoder[Parent] = json.DeriveEncoder.gen[Parent]
+      implicit val encoder: json.JsonEncoder[Parent] = json.DeriveJsonEncoder.gen[Parent]
     }
     case class Child1() extends Parent
     @json.hint("Cain")
@@ -53,7 +53,7 @@ object EncoderTest extends TestSuite {
     @json.discriminator("hint")
     sealed abstract class Parent
     object Parent {
-      implicit val encoder: json.JsonEncoder[Parent] = json.DeriveEncoder.gen[Parent]
+      implicit val encoder: json.JsonEncoder[Parent] = json.DeriveJsonEncoder.gen[Parent]
     }
     case class Child1() extends Parent
     @json.hint("Abel")

@@ -74,7 +74,7 @@ Likewise, to produce JSON from our data we define a `json.JsonEncoder`
 ```scala
 object Banana {
   ...
-  implicit val encoder: json.JsonEncoder[Banana] = json.DeriveEncoder.gen[Banana]
+  implicit val encoder: json.JsonEncoder[Banana] = json.DeriveJsonEncoder.gen[Banana]
 }
 
 scala> Banana(0.5).toJson
@@ -107,7 +107,7 @@ we can generate the encoder and decoder for the entire `sealed` family
 ```scala
 object Fruit {
   implicit val decoder: json.JsonDecoder[Fruit] = json.DeriveJsonDecoder.gen[Fruit]
-  implicit val encoder: json.JsonEncoder[Fruit] = json.DeriveEncoder.gen[Fruit]
+  implicit val encoder: json.JsonEncoder[Fruit] = json.DeriveJsonEncoder.gen[Fruit]
 }
 ```
 
@@ -443,6 +443,6 @@ This attack is very effective in schemas with lots of numbers, causing ops/sec t
 
 # Even Moar Performance
 
-If `zio-json` isn't fast enough for you, then try out [jsoniter-scala](https://github.com/plokhotnyuk/jsoniter-scala); whereas `zio-json` has picked a blend of goals, jsoniter has gone for raw performance. Caveat emptor.
+If `zio-json` isn't fast enough for you, then try out [jsoniter-scala](https://github.com/plokhotnyuk/jsoniter-scala); whereas `zio-json` is fully integrated into ZIO, including streams and transducer support, jsoniter is library agnostic.
 
 JSON is an inefficent transport format and everybody would benefit from a port of this library to msgpack or protobuf. For legacy services, a port supporting XML is also be possible.

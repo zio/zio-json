@@ -62,9 +62,9 @@ trait JsonEncoder[-A] { self =>
     }
 
   // override and return `true` when this value may be skipped from JSON Objects
-  def isNothing(a: A): Boolean = false
+  private[zio] def isNothing(a: A): Boolean = false
 
-  def unsafeEncode(a: A, indent: Option[Int], out: java.io.Writer): Unit
+  private[zio] def unsafeEncode(a: A, indent: Option[Int], out: java.io.Writer): Unit
 }
 
 object JsonEncoder extends GeneratedTupleEncoders with EncoderLowPriority0 {

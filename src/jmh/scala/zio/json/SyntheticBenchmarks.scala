@@ -19,7 +19,7 @@ object Nested {
   implicit lazy val zioJsonJsonDecoder: json.JsonDecoder[Nested] =
     json.DeriveJsonDecoder.gen
   implicit lazy val zioJsonEncoder: json.JsonEncoder[Nested] =
-    json.DeriveEncoder.gen
+    json.DeriveJsonEncoder.gen
 
   implicit val customConfig: circe.generic.extras.Configuration =
     circe.generic.extras.Configuration.default

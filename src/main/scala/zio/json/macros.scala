@@ -198,7 +198,7 @@ object DeriveJsonDecoder {
   def gen[A]: JsonDecoder[A] = macro Magnolia.gen[A]
 }
 
-object DeriveEncoder {
+object DeriveJsonEncoder {
   type Typeclass[-A] = JsonEncoder[A]
 
   def combine[A](ctx: CaseClass[JsonEncoder, A]): JsonEncoder[A] =
