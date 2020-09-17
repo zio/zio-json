@@ -1,5 +1,7 @@
 package zio.json
 
+import zio.Chunk
+
 import Decoder.{ JsonError, UnsafeJson }
 import zio.json.internal._
 import scala.annotation._
@@ -17,6 +19,7 @@ import scala.annotation._
  * number, since many of the stdlib functions are non-total or are known DOS
  * vectors (e.g. calling `.toBigInteger` on a "1e214748364" will consume an
  * excessive amount of heap memory).
+ * JsonValue / JsValue / JValue
  */
 sealed abstract class JsValue {
   def widen: JsValue    = this
@@ -25,16 +28,16 @@ sealed abstract class JsValue {
 
 // TODO lens-like accessors for working with arbitrary json values
 
-final case class JsObject(fields: List[(String, JsValue)]) extends JsValue
-final case class JsArray(elements: List[JsValue])          extends JsValue
-final case class JsBoolean(value: Boolean)                 extends JsValue
-final case class JsString(value: String)                   extends JsValue
-final case class JsNumber(value: java.math.BigDecimal)     extends JsValue
-final case object JsNull                                   extends JsValue with JsNullCompanion
+final case class JsObject(fields: Chunk[(String, JsValue)]) extends JsValue
+final case class JsArray(elements: Chunk[JsValue])          extends JsValue
+final case class JsBoolean(value: Boolean)                  extends JsValue
+final case class JsString(value: String)                    extends JsValue
+final case class JsNumber(value: java.math.BigDecimal)      extends JsValue
+final case object JsNull                                    extends JsValue with JsNullCompanion
 
 object JsValue {
   implicit val decoder: Decoder[JsValue] = new Decoder[JsValue] {
-    def unsafeDecode(trace: List[JsonError], in: RetractReader): JsValue = {
+    def unsafeDecode(trace: Chunk[JsonError], in: RetractReader): JsValue = {
       val c = in.nextNonWhitespace()
       in.retract()
       (c: @switch) match {
@@ -46,7 +49,7 @@ object JsValue {
         case '-' | '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' =>
           JsNumber.decoder.unsafeDecode(trace, in)
         case c =>
-          throw UnsafeJson(JsonError.Message(s"unexpected '$c'") :: trace)
+          throw UnsafeJson(trace :+ JsonError.Message(s"unexpected '$c'"))
       }
     }
   }
@@ -65,7 +68,7 @@ object JsValue {
 object JsObject {
   private lazy val objd = Decoder.keylist[String, JsValue]
   implicit val decoder: Decoder[JsObject] = new Decoder[JsObject] {
-    def unsafeDecode(trace: List[JsonError], in: RetractReader): JsObject =
+    def unsafeDecode(trace: Chunk[JsonError], in: RetractReader): JsObject =
       JsObject(objd.unsafeDecode(trace, in))
   }
   private lazy val obje = Encoder.keylist[String, JsValue]
@@ -75,12 +78,12 @@ object JsObject {
   }
 }
 object JsArray {
-  private lazy val arrd = Decoder.list[JsValue]
+  private lazy val arrd = Decoder.chunk[JsValue]
   implicit val decoder: Decoder[JsArray] = new Decoder[JsArray] {
-    def unsafeDecode(trace: List[JsonError], in: RetractReader): JsArray =
+    def unsafeDecode(trace: Chunk[JsonError], in: RetractReader): JsArray =
       JsArray(arrd.unsafeDecode(trace, in))
   }
-  private lazy val arre = Encoder.list[JsValue]
+  private lazy val arre = Encoder.chunk[JsValue]
   implicit val encoder: Encoder[JsArray] = new Encoder[JsArray] {
     def unsafeEncode(a: JsArray, indent: Option[Int], out: java.io.Writer): Unit =
       arre.unsafeEncode(a.elements, indent, out)
@@ -88,7 +91,7 @@ object JsArray {
 }
 object JsBoolean {
   implicit val decoder: Decoder[JsBoolean] = new Decoder[JsBoolean] {
-    def unsafeDecode(trace: List[JsonError], in: RetractReader): JsBoolean =
+    def unsafeDecode(trace: Chunk[JsonError], in: RetractReader): JsBoolean =
       JsBoolean(Decoder.boolean.unsafeDecode(trace, in))
   }
   implicit val encoder: Encoder[JsBoolean] = new Encoder[JsBoolean] {
@@ -98,7 +101,7 @@ object JsBoolean {
 }
 object JsString {
   implicit val decoder: Decoder[JsString] = new Decoder[JsString] {
-    def unsafeDecode(trace: List[JsonError], in: RetractReader): JsString =
+    def unsafeDecode(trace: Chunk[JsonError], in: RetractReader): JsString =
       JsString(Decoder.string.unsafeDecode(trace, in))
   }
   implicit val encoder: Encoder[JsString] = new Encoder[JsString] {
@@ -108,7 +111,7 @@ object JsString {
 }
 object JsNumber {
   implicit val decoder: Decoder[JsNumber] = new Decoder[JsNumber] {
-    def unsafeDecode(trace: List[JsonError], in: RetractReader): JsNumber =
+    def unsafeDecode(trace: Chunk[JsonError], in: RetractReader): JsNumber =
       JsNumber(Decoder.bigdecimal.unsafeDecode(trace, in))
   }
   implicit val encoder: Encoder[JsNumber] = new Encoder[JsNumber] {
@@ -121,7 +124,7 @@ trait JsNullCompanion {
 
   private[this] val nullChars: Array[Char] = "null".toCharArray
   implicit val decoder: Decoder[JsNull.type] = new Decoder[JsNull.type] {
-    def unsafeDecode(trace: List[JsonError], in: RetractReader): JsNull.type = {
+    def unsafeDecode(trace: Chunk[JsonError], in: RetractReader): JsNull.type = {
       Lexer.readChars(trace, in, nullChars, "null")
       JsNull
     }

@@ -5,6 +5,7 @@ import scala.reflect.macros.whitebox
 
 import magnolia._
 
+import zio.Chunk
 import zio.json.Decoder.{ JsonError, UnsafeJson }
 import zio.json.internal.{ Lexer, RetractReader, StringMatrix }
 
@@ -53,7 +54,7 @@ final case class hint(name: String) extends Annotation
  */
 final class no_extra_fields extends Annotation
 
-object MagnoliaDecoder {
+object DeriveDecoder {
   type Typeclass[+A] = Decoder[A]
 
   def combine[A](ctx: CaseClass[Decoder, A]): Decoder[A] = {
@@ -62,7 +63,7 @@ object MagnoliaDecoder {
     }.isDefined
     if (ctx.parameters.isEmpty)
       new Decoder[A] {
-        def unsafeDecode(trace: List[JsonError], in: RetractReader): A = {
+        def unsafeDecode(trace: Chunk[JsonError], in: RetractReader): A = {
           if (no_extra) {
             Lexer.char(trace, in, '{')
             Lexer.char(trace, in, '}')
@@ -85,7 +86,7 @@ object MagnoliaDecoder {
         lazy val tcs: Array[Decoder[Any]] =
           ctx.parameters.map(_.typeclass).toArray
 
-        def unsafeDecode(trace: List[JsonError], in: RetractReader): A = {
+        def unsafeDecode(trace: Chunk[JsonError], in: RetractReader): A = {
           Lexer.char(trace, in, '{')
 
           // TODO it would be more efficient to have a solution that didn't box
@@ -103,13 +104,13 @@ object MagnoliaDecoder {
               val field  = Lexer.field(trace, in, matrix)
               if (field != -1) {
                 val field_ = names(field)
-                trace_ = spans(field) :: trace
+                trace_ = trace :+ spans(field)
                 if (ps(field) != null)
-                  throw UnsafeJson(JsonError.Message("duplicate") :: trace_)
+                  throw UnsafeJson(trace :+ JsonError.Message("duplicate"))
                 ps(field) = tcs(field).unsafeDecode(trace_, in)
               } else if (no_extra) {
                 throw UnsafeJson(
-                  JsonError.Message(s"invalid extra field") :: trace
+                  trace :+ JsonError.Message(s"invalid extra field")
                 )
               } else
                 Lexer.skipValue(trace_, in)
@@ -118,7 +119,7 @@ object MagnoliaDecoder {
           var i = 0
           while (i < len) {
             if (ps(i) == null)
-              ps(i) = tcs(i).unsafeDecodeMissing(spans(i) :: trace)
+              ps(i) = tcs(i).unsafeDecodeMissing(trace :+ spans(i))
             i += 1
           }
 
@@ -142,24 +143,24 @@ object MagnoliaDecoder {
     if (discrim.isEmpty)
       new Decoder[A] {
         val spans: Array[JsonError] = names.map(JsonError.ObjectAccess(_))
-        def unsafeDecode(trace: List[JsonError], in: RetractReader): A = {
+        def unsafeDecode(trace: Chunk[JsonError], in: RetractReader): A = {
           Lexer.char(trace, in, '{')
           // we're not allowing extra fields in this encoding
           if (Lexer.firstObject(trace, in)) {
             val field = Lexer.field(trace, in, matrix)
             if (field != -1) {
               val field_ = names(field)
-              val trace_ = spans(field) :: trace
+              val trace_ = trace :+ spans(field)
               val a      = tcs(field).unsafeDecode(trace_, in).asInstanceOf[A]
               Lexer.char(trace, in, '}')
               return a
             } else
               throw UnsafeJson(
-                JsonError.Message("invalid disambiguator") :: trace
+                trace :+ JsonError.Message("invalid disambiguator")
               )
           } else
             throw UnsafeJson(
-              JsonError.Message("expected non-empty object") :: trace
+              trace :+ JsonError.Message("expected non-empty object")
             )
         }
       }
@@ -169,7 +170,7 @@ object MagnoliaDecoder {
         val hintmatrix              = new StringMatrix(Array(hintfield))
         val spans: Array[JsonError] = names.map(JsonError.Message(_))
 
-        def unsafeDecode(trace: List[JsonError], in: RetractReader): A = {
+        def unsafeDecode(trace: Chunk[JsonError], in: RetractReader): A = {
           val in_ = internal.RecordingReader(in)
           Lexer.char(trace, in_, '{')
           if (Lexer.firstObject(trace, in_))
@@ -178,17 +179,17 @@ object MagnoliaDecoder {
                 val field = Lexer.enum(trace, in_, matrix)
                 if (field == -1)
                   throw UnsafeJson(
-                    JsonError.Message(s"invalid disambiguator") :: trace
+                    trace :+ JsonError.Message(s"invalid disambiguator")
                   )
                 in_.rewind()
-                val trace_ = spans(field) :: trace
+                val trace_ = trace :+ spans(field)
                 return tcs(field).unsafeDecode(trace_, in_).asInstanceOf[A]
               } else
                 Lexer.skipValue(trace, in_)
             } while (Lexer.nextObject(trace, in_))
 
           throw UnsafeJson(
-            JsonError.Message(s"missing hint '$hintfield'") :: trace
+            trace :+ JsonError.Message(s"missing hint '$hintfield'")
           )
         }
       }
@@ -197,7 +198,7 @@ object MagnoliaDecoder {
   def gen[A]: Decoder[A] = macro Magnolia.gen[A]
 }
 
-object MagnoliaEncoder {
+object DeriveEncoder {
   type Typeclass[-A] = Encoder[A]
 
   def combine[A](ctx: CaseClass[Encoder, A]): Encoder[A] =

@@ -23,8 +23,8 @@ final case class DistanceMatrix(
 )
 
 object Value {
-  implicit val zioJsonDecoder: json.Decoder[Value] = json.MagnoliaDecoder.gen[Value]
-  implicit val zioJsonEncoder: json.Encoder[Value] = json.MagnoliaEncoder.gen[Value]
+  implicit val zioJsonDecoder: json.Decoder[Value] = json.DeriveDecoder.gen[Value]
+  implicit val zioJsonEncoder: json.Encoder[Value] = json.DeriveEncoder.gen[Value]
 
   implicit val customConfig: circe.generic.extras.Configuration =
     circe.generic.extras.Configuration.default
@@ -55,8 +55,8 @@ object Value {
 
 }
 object Elements {
-  implicit val zioJsonDecoder: json.Decoder[Elements] = json.MagnoliaDecoder.gen[Elements]
-  implicit val zioJsonEncoder: json.Encoder[Elements] = json.MagnoliaEncoder.gen[Elements]
+  implicit val zioJsonDecoder: json.Decoder[Elements] = json.DeriveDecoder.gen[Elements]
+  implicit val zioJsonEncoder: json.Encoder[Elements] = json.DeriveEncoder.gen[Elements]
 
   implicit val customConfig: circe.generic.extras.Configuration =
     circe.generic.extras.Configuration.default
@@ -70,8 +70,8 @@ object Elements {
 
 }
 object Rows {
-  implicit val zioJsonDecoder: json.Decoder[Rows] = json.MagnoliaDecoder.gen[Rows]
-  implicit val zioJsonEncoder: json.Encoder[Rows] = json.MagnoliaEncoder.gen[Rows]
+  implicit val zioJsonDecoder: json.Decoder[Rows] = json.DeriveDecoder.gen[Rows]
+  implicit val zioJsonEncoder: json.Encoder[Rows] = json.DeriveEncoder.gen[Rows]
 
   implicit val customConfig: circe.generic.extras.Configuration =
     circe.generic.extras.Configuration.default
@@ -86,9 +86,9 @@ object Rows {
 }
 object DistanceMatrix {
   implicit val zioJsonDecoder: json.Decoder[DistanceMatrix] =
-    json.MagnoliaDecoder.gen[DistanceMatrix]
+    json.DeriveDecoder.gen[DistanceMatrix]
   implicit val zioJsonEncoder: json.Encoder[DistanceMatrix] =
-    json.MagnoliaEncoder.gen[DistanceMatrix]
+    json.DeriveEncoder.gen[DistanceMatrix]
 
   implicit val customConfig: circe.generic.extras.Configuration =
     circe.generic.extras.Configuration.default

@@ -65,14 +65,14 @@ sourceGenerators in Compile += Def.task {
     val tparams = (1 to i).map(p => s"A$p").mkString(", ")
     val implicits = (1 to i).map(p => s"A$p: Decoder[A$p]").mkString(", ")
     val work = (1 to i).map { p =>
-      s"val a$p = A$p.unsafeDecode(traces($p) :: trace, in)"
+      s"val a$p = A$p.unsafeDecode(trace :+ traces($p), in)"
     }.mkString("\n        Lexer.char(trace, in, ',')\n        ")
     val returns = (1 to i).map(p => s"a$p").mkString(", ")
 
     s"""implicit def tuple${i}[$tparams](implicit $implicits): Decoder[Tuple${i}[$tparams]] =
        |    new Decoder[Tuple${i}[$tparams]] {
        |      val traces: Array[JsonError] = (0 to $i).map(JsonError.ArrayAccess(_)).toArray
-       |      def unsafeDecode(trace: List[JsonError], in: RetractReader): Tuple${i}[$tparams] = {
+       |      def unsafeDecode(trace: Chunk[JsonError], in: RetractReader): Tuple${i}[$tparams] = {
        |        Lexer.char(trace, in, '[')
        |        $work
        |        Lexer.char(trace, in, ']')

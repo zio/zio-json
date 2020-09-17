@@ -37,7 +37,7 @@ All of the following code snippets assume that the following imports have been d
 
 ```scala
 import zio.json
-import json.syntax._
+import zio.json._
 ```
 
 ## Simple Example
@@ -58,7 +58,7 @@ To do this, we create an *instance* of the `json.Decoder` typeclass for `Banana`
 
 ```scala
 object Banana {
-  implicit val decoder: json.Decoder[Banana] = json.MagnoliaDecoder.gen
+  implicit val decoder: json.Decoder[Banana] = json.DeriveDecoder.gen[Banana]
 }
 ```
 
@@ -74,7 +74,7 @@ Likewise, to produce JSON from our data we define a `json.Encoder`
 ```scala
 object Banana {
   ...
-  implicit val encoder: json.Encoder[Banana] = json.MagnoliaEncoder.gen
+  implicit val encoder: json.Encoder[Banana] = json.DeriveEncoder.gen[Banana]
 }
 
 scala> Banana(0.5).toJson
@@ -106,8 +106,8 @@ we can generate the encoder and decoder for the entire `sealed` family
 
 ```scala
 object Fruit {
-  implicit val decoder: json.Decoder[Fruit] = json.MagnoliaDecoder.gen
-  implicit val encoder: json.Encoder[Fruit] = json.MagnoliaEncoder.gen
+  implicit val decoder: json.Decoder[Fruit] = json.DeriveDecoder.gen[Fruit]
+  implicit val encoder: json.Encoder[Fruit] = json.DeriveEncoder.gen[Fruit]
 }
 ```
 
@@ -178,9 +178,9 @@ is discouraged for performance reasons. However, if we have no choice in the mat
 Sometimes it is easier to reuse an existing `json.Decoder` rather than generate a new one. This can be accomplished using convenience methods on the `json.Decoder` typeclass to *derive* new decoders:
 
 ```scala
-trait Decoder[A] {
+trait Decoder[+A] {
   def map[B](f: A => B): Decoder[B]
-  def emap[B](f: A => Either[String, B]): Decoder[B]
+  def mapOrFail[B](f: A => Either[String, B]): Decoder[B]
   ...
 }
 ```
@@ -188,7 +188,7 @@ trait Decoder[A] {
 Similarly, we can reuse an existing `json.Encoder`
 
 ```scala
-trait Encoder[A] {
+trait Encoder[-A] {
   def contramap[B](f: B => A): Encoder[B]
   ...
 }
@@ -245,9 +245,9 @@ which parses the following JSON
 ["hello",1,true]
 ```
 
-### `.emap`
+### `.mapOrFail`
 
-We can use `.emap` (for *either map*) to take the result of another `json.Decoder` and try to convert it into our custom data type, failing with a message if there is an error.
+We can use `.mapOrFail` to take the result of another `json.Decoder` and try to convert it into our custom data type, failing with a message if there is an error.
 
 Say we are using the [`refined`](https://github.com/fthomas/refined) library to ensure that a `Person` data type only holds a non-empty string in its `name` field
 
@@ -258,17 +258,17 @@ import eu.timepit.refined.collection.NonEmpty
 case class Person(name: String Refined NonEmpty)
 
 object Person {
-  implicit val decoder: json.Decoder[Person] = json.MagnoliaDecoder.gen
+  implicit val decoder: json.Decoder[Person] = json.DeriveDecoder.gen
 }
 ```
 
 we will get a compiletime error because there is no `json.Decoder[String Refined NonEmpty]`.
 
-However, we can derive one by requesting the `json.Decoder[String]` and calling `.emap`, supplying the constructor for our special `String Refined NonEmpty` type
+However, we can derive one by requesting the `json.Decoder[String]` and calling `.mapOrFail`, supplying the constructor for our special `String Refined NonEmpty` type
 
 ```scala
 implicit val decodeName: json.Decoder[String Refined NonEmpty] =
-  json.Decoder[String].emap(refined.refineV[NonEmpty](_))
+  json.Decoder[String].mapOrFail(refined.refineV[NonEmpty](_))
 ```
 
 Now the code compiles.

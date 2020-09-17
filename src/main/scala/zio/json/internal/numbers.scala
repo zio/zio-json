@@ -33,7 +33,7 @@ import scala.util.control.NoStackTrace
  */
 // TODO hex radix
 // TODO octal radix
-object SafeNumbers {
+private[zio] object SafeNumbers {
   import UnsafeNumbers.UnsafeNumber
 
   def byte(num: String): ByteOption =

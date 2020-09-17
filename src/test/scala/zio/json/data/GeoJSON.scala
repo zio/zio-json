@@ -32,9 +32,9 @@ package generated {
 
   object Geometry {
     implicit lazy val zioJsonDecoder: json.Decoder[Geometry] =
-      json.MagnoliaDecoder.gen[Geometry]
+      json.DeriveDecoder.gen[Geometry]
     implicit lazy val zioJsonEncoder: json.Encoder[Geometry] =
-      json.MagnoliaEncoder.gen[Geometry]
+      json.DeriveEncoder.gen[Geometry]
 
     implicit val customConfig: circe.generic.extras.Configuration =
       circe.generic.extras.Configuration.default
@@ -57,9 +57,9 @@ package generated {
   }
   object GeoJSON {
     implicit lazy val zioJsonDecoder: json.Decoder[GeoJSON] =
-      json.MagnoliaDecoder.gen[GeoJSON]
+      json.DeriveDecoder.gen[GeoJSON]
     implicit lazy val zioJsonEncoder: json.Encoder[GeoJSON] =
-      json.MagnoliaEncoder.gen[GeoJSON]
+      json.DeriveEncoder.gen[GeoJSON]
 
     implicit val customConfig: circe.generic.extras.Configuration =
       circe.generic.extras.Configuration.default
@@ -126,7 +126,7 @@ package handrolled {
         lazy val geometriesD: Decoder[List[Geometry]] = Decoder[List[Geometry]]
 
         def coordinates0(
-          trace: List[JsonError],
+          trace: Chunk[JsonError],
           js: JsArray
         ): (Double, Double) =
           js match {
@@ -138,7 +138,7 @@ package handrolled {
               )
           }
         def coordinates1(
-          trace: List[JsonError],
+          trace: Chunk[JsonError],
           js: JsArray
         ): List[(Double, Double)] =
           js.elements.map {
@@ -147,7 +147,7 @@ package handrolled {
               throw UnsafeJson(JsonError.Message("expected list") :: trace)
           }
         def coordinates2(
-          trace: List[JsonError],
+          trace: Chunk[JsonError],
           js: JsArray
         ): List[List[(Double, Double)]] =
           js.elements.map {
@@ -156,7 +156,7 @@ package handrolled {
               throw UnsafeJson(JsonError.Message("expected list") :: trace)
           }
         def coordinates3(
-          trace: List[JsonError],
+          trace: Chunk[JsonError],
           js: JsArray
         ): List[List[List[(Double, Double)]]] =
           js.elements.map {
@@ -166,7 +166,7 @@ package handrolled {
           }
 
         def unsafeDecode(
-          trace: List[JsonError],
+          trace: Chunk[JsonError],
           in: RetractReader
         ): Geometry = {
           Lexer.char(trace, in, '{')
@@ -229,7 +229,7 @@ package handrolled {
 
       }
     implicit lazy val zioJsonEncoder: json.Encoder[Geometry] =
-      json.MagnoliaEncoder.gen[Geometry]
+      json.DeriveEncoder.gen[Geometry]
 
     implicit val customConfig: circe.generic.extras.Configuration =
       circe.generic.extras.Configuration.default
@@ -272,7 +272,7 @@ package handrolled {
         lazy val featuresD: Decoder[List[GeoJSON]] =
           Decoder[List[GeoJSON]] // recursive
 
-        def unsafeDecode(trace: List[JsonError], in: RetractReader): GeoJSON = {
+        def unsafeDecode(trace: Chunk[JsonError], in: RetractReader): GeoJSON = {
           Lexer.char(trace, in, '{')
 
           var properties: Map[String, String] = null
@@ -339,7 +339,7 @@ package handrolled {
 
       }
     implicit lazy val zioJsonEncoder: json.Encoder[GeoJSON] =
-      json.MagnoliaEncoder.gen[GeoJSON]
+      json.DeriveEncoder.gen[GeoJSON]
 
     implicit val customConfig: circe.generic.extras.Configuration =
       circe.generic.extras.Configuration.default

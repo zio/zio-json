@@ -118,7 +118,7 @@ private[json] trait EncoderLowPriority0 extends EncoderLowPriority1 { this: Enco
     list[A].contramap(_.toList)
 
   implicit def hashmap[K: FieldEncoder, V: Encoder]: Encoder[immutable.HashMap[K, V]] =
-    keylist[K, V].contramap(_.toList)
+    keylist[K, V].contramap(Chunk.fromIterable(_))
 }
 
 private[json] trait EncoderLowPriority1 { this: Encoder.type =>
@@ -144,8 +144,8 @@ private[json] trait EncoderLowPriority1 { this: Encoder.type =>
     implicit
     K: FieldEncoder[K],
     A: Encoder[A]
-  ): Encoder[List[(K, A)]] = new Encoder[List[(K, A)]] {
-    def unsafeEncode(kvs: List[(K, A)], indent: Option[Int], out: java.io.Writer): Unit = {
+  ): Encoder[Chunk[(K, A)]] = new Encoder[Chunk[(K, A)]] {
+    def unsafeEncode(kvs: Chunk[(K, A)], indent: Option[Int], out: java.io.Writer): Unit = {
       if (kvs.isEmpty) return out.write("{}")
 
       out.write("{")
@@ -177,9 +177,9 @@ private[json] trait EncoderLowPriority1 { this: Encoder.type =>
 
   // TODO these could be optimised...
   implicit def sortedmap[K: FieldEncoder, V: Encoder]: Encoder[collection.SortedMap[K, V]] =
-    keylist[K, V].contramap(_.toList)
+    keylist[K, V].contramap(Chunk.fromIterable(_))
   implicit def map[K: FieldEncoder, V: Encoder]: Encoder[Map[K, V]] =
-    keylist[K, V].contramap(_.toList)
+    keylist[K, V].contramap(Chunk.fromIterable(_))
   implicit def set[A: Encoder]: Encoder[Set[A]] =
     list[A].contramap(_.toList)
   implicit def sortedset[A: Ordering: Encoder]: Encoder[immutable.SortedSet[A]] =
@@ -188,13 +188,11 @@ private[json] trait EncoderLowPriority1 { this: Encoder.type =>
 }
 
 /** When encoding a JSON Object, we only allow keys that implement this interface. */
-trait FieldEncoder[A] { self =>
+trait FieldEncoder[-A] { self =>
 
-  final def narrow[B <: A]: FieldEncoder[B] = self.asInstanceOf[FieldEncoder[B]]
   final def contramap[B](f: B => A): FieldEncoder[B] = new FieldEncoder[B] {
     override def unsafeEncodeField(in: B): String = self.unsafeEncodeField(f(in))
   }
-  final def xmap[B](f: A => B, g: B => A): FieldEncoder[B] = contramap(g)
 
   def unsafeEncodeField(in: A): String
 }
