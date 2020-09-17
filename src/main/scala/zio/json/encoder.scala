@@ -11,14 +11,14 @@ import zio.stream._
 import java.io.{ BufferedWriter, Writer }
 
 trait Encoder[-A] { self =>
-  def toJson(a: A, indent: Option[Int]): String = {
+  final def encodeJson(a: A, indent: Option[Int]): String = {
     val writer = new zio.json.internal.FastStringWriter(64)
     unsafeEncode(a, indent, writer)
     writer.toString
   }
 
   // TODO: Use `Take` so we can push errors into the stream
-  def toJsonStream(a: A, indent: Option[Int]): ZStream[Blocking, Nothing, Char] =
+  final def encodeJsonStream(a: A, indent: Option[Int]): ZStream[Blocking, Nothing, Char] =
     ZStream.unwrapManaged {
       (for {
         runtime <- ZIO.runtime[Any].toManaged_

@@ -23,7 +23,7 @@ import scala.annotation._
  */
 sealed abstract class JsValue {
   def widen: JsValue    = this
-  override def toString = JsValue.encoder.toJson(this, None)
+  override def toString = JsValue.encoder.encodeJson(this, None)
 }
 
 // TODO lens-like accessors for working with arbitrary json values

@@ -4,9 +4,13 @@ import scala.annotation._
 import scala.collection.mutable
 import scala.collection.immutable
 import scala.util.control.NoStackTrace
-import zio.json.internal._
-import zio.Chunk
+
 import Decoder.JsonError
+
+import zio.json.internal._
+import zio.{ Chunk, ZIO }
+import zio.blocking._
+import zio.stream.ZStream
 
 trait Decoder[+A] { self =>
   // note that the string may not be fully consumed
@@ -15,6 +19,17 @@ trait Decoder[+A] { self =>
     catch {
       case Decoder.UnsafeJson(trace) => Left(JsonError.render(trace))
       case _: internal.UnexpectedEnd => Left("unexpected end of input")
+    }
+
+  final def decodeJsonStream[R <: Blocking](stream: ZStream[R, Throwable, Char]): ZIO[R, Throwable, A] =
+    stream.toReader.use { reader =>
+      effectBlocking {
+        try unsafeDecode(Chunk.empty, new zio.json.internal.WithRetractReader(reader))
+        catch {
+          case Decoder.UnsafeJson(trace) => throw new Exception(JsonError.render(trace))
+          case _: internal.UnexpectedEnd => throw new Exception("unexpected end of input")
+        }
+      }
     }
 
   // scalaz-deriving style MonadError combinators
