@@ -17,10 +17,11 @@ trait Encoder[-A] { self =>
     writer.toString
   }
 
+  // TODO: Use `Take` so we can push errors into the stream
   def toJsonStream(a: A, indent: Option[Int]): ZStream[Blocking, Nothing, Char] =
     ZStream.unwrapManaged {
       (for {
-        runtime <- ZIO.runtime[Blocking].toManaged_
+        runtime <- ZIO.runtime[Any].toManaged_
         queue   <- Queue.bounded[Chunk[Char]](1).toManaged_
         writer <- ZManaged.fromAutoCloseable {
                    ZIO.effectTotal {
@@ -30,7 +31,13 @@ trait Encoder[-A] { self =>
                      }, Stream.DefaultChunkSize)
                    }
                  }
-        fiber <- effectBlocking { unsafeEncode(a, indent, writer); runtime.unsafeRun(queue.shutdown) }.toManaged_.fork
+        _ <- effectBlocking {
+              try {
+                unsafeEncode(a, indent, writer); runtime.unsafeRun(queue.shutdown)
+              } catch {
+                case _: Throwable => runtime.unsafeRun(queue.shutdown)
+              }
+            }.toManaged_.fork
       } yield ZStream.fromChunkQueue(queue))
     }
 
