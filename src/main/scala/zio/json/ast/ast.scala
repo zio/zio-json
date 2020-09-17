@@ -1,8 +1,8 @@
-package zio.json
+package zio.json.ast 
 
 import zio.Chunk
-
-import Decoder.{ JsonError, UnsafeJson }
+import zio.json._ 
+import zio.json.Decoder.{ JsonError, UnsafeJson }
 import zio.json.internal._
 import scala.annotation._
 

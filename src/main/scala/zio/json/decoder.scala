@@ -17,11 +17,11 @@ trait Decoder[+A] { self =>
 
   final def <+>[B](that: => Decoder[B]): Decoder[Either[A, B]] = self.orElseEither(that)
 
-  final def <*> [B](that: => Decoder[B]): Decoder[(A, B)] = self.zip(that)
+  final def <*>[B](that: => Decoder[B]): Decoder[(A, B)] = self.zip(that)
 
-  final def *> [B](that: => Decoder[B]): Decoder[B] = self.zipWith(that)((_, b) => b)
+  final def *>[B](that: => Decoder[B]): Decoder[B] = self.zipWith(that)((_, b) => b)
 
-  final def <* [B](that: => Decoder[B]): Decoder[A] = self.zipWith(that)((a, _) => a)
+  final def <*[B](that: => Decoder[B]): Decoder[A] = self.zipWith(that)((a, _) => a)
 
   // note that the string may not be fully consumed
   final def decodeJson(str: CharSequence): Either[String, A] =
@@ -42,25 +42,25 @@ trait Decoder[+A] { self =>
       }
     }
 
-  final def orElse[A1 >: A](that: => Decoder[A1]): Decoder[A1] = 
+  final def orElse[A1 >: A](that: => Decoder[A1]): Decoder[A1] =
     new Decoder[A1] {
       def unsafeDecode(trace: Chunk[JsonError], in: RetractReader): A1 = {
         val in2 = new zio.json.internal.WithRecordingReader(in, 0)
 
         try self.unsafeDecode(trace, in2)
         catch {
-          case Decoder.UnsafeJson(_)     => 
-            in2.rewind() 
-            that.unsafeDecode(trace,in2)
+          case Decoder.UnsafeJson(_) =>
+            in2.rewind()
+            that.unsafeDecode(trace, in2)
 
-          case _: internal.UnexpectedEnd => 
+          case _: internal.UnexpectedEnd =>
             in2.rewind()
             that.unsafeDecode(trace, in2)
         }
       }
     }
 
-  final def orElseEither[B](that: => Decoder[B]): Decoder[Either[A, B]] = 
+  final def orElseEither[B](that: => Decoder[B]): Decoder[Either[A, B]] =
     self.map(Left(_)).orElse(that.map(Right(_)))
 
   // scalaz-deriving style MonadError combinators
@@ -82,7 +82,7 @@ trait Decoder[+A] { self =>
 
   final def zip[B](that: => Decoder[B]): Decoder[(A, B)] = Decoder.tuple2(this, that)
 
-  final def zipWith[B, C](that: => Decoder[B])(f: (A, B) => C): Decoder[C] = 
+  final def zipWith[B, C](that: => Decoder[B])(f: (A, B) => C): Decoder[C] =
     self.zip(that).map(f.tupled)
 
   // The unsafe* methods are internal and should only be used by generated

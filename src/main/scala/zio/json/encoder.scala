@@ -11,6 +11,20 @@ import zio.stream._
 import java.io.{ BufferedWriter, Writer }
 
 trait Encoder[-A] { self =>
+  final def both[B](that: => Encoder[B]): Encoder[(A, B)] = Encoder.tuple2(self, that)
+
+  final def bothWith[B, C](that: => Encoder[B])(f: C => (A, B)): Encoder[C] = self.both(that).contramap(f)
+
+  final def contramap[B](f: B => A): Encoder[B] = new Encoder[B] {
+    override def unsafeEncode(b: B, indent: Option[Int], out: java.io.Writer): Unit =
+      self.unsafeEncode(f(b), indent, out)
+    override def isNothing(b: B): Boolean = self.isNothing(f(b))
+  }
+
+  final def either[B](that: => Encoder[B]): Encoder[Either[A, B]] = Encoder.either[A, B](self, that)
+
+  final def eitherWith[B, C](that: => Encoder[B])(f: C => Either[A, B]): Encoder[C] = self.either(that).contramap(f)
+
   final def encodeJson(a: A, indent: Option[Int]): String = {
     val writer = new zio.json.internal.FastStringWriter(64)
     unsafeEncode(a, indent, writer)
@@ -41,17 +55,10 @@ trait Encoder[-A] { self =>
       } yield ZStream.fromChunkQueue(queue))
     }
 
-  // scalaz-deriving style Contravariant combinators
-  final def contramap[B](f: B => A): Encoder[B] = new Encoder[B] {
-    override def unsafeEncode(b: B, indent: Option[Int], out: java.io.Writer): Unit =
-      self.unsafeEncode(f(b), indent, out)
-    override def isNothing(b: B): Boolean = self.isNothing(f(b))
-  }
-
-  def unsafeEncode(a: A, indent: Option[Int], out: java.io.Writer): Unit
-
   // override and return `true` when this value may be skipped from JSON Objects
   def isNothing(a: A): Boolean = false
+
+  def unsafeEncode(a: A, indent: Option[Int], out: java.io.Writer): Unit
 }
 
 object Encoder extends GeneratedTupleEncoders with EncoderLowPriority0 {
