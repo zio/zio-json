@@ -10,6 +10,6 @@ object refined {
     json.Encoder[A].contramap(_.value)
 
   implicit def decodeRefined[A: json.Decoder, P](implicit V: Validate[A, P]): json.Decoder[A Refined P] =
-    json.Decoder[A].emap(refineV[P](_))
+    json.Decoder[A].mapOrFail(refineV[P](_))
 
 }

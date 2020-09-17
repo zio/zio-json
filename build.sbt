@@ -1,6 +1,8 @@
 organization := "dev.zio"
 name := "zio-json"
 
+val zioVersion = "1.0.1"
+
 crossScalaVersions := Seq("2.12.11", "2.13.3")
 scalaVersion := crossScalaVersions.value.last
 
@@ -22,7 +24,13 @@ libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value %
 libraryDependencies += "org.scalaz" %% "scalaz-core" % "7.3.2" intransitive()
 libraryDependencies += "eu.timepit" %% "refined" % "0.9.15" intransitive()
 
-testFrameworks += new TestFramework("scalaprops.ScalapropsFramework")
+libraryDependencies ++= Seq(
+  "dev.zio" %% "zio"          % zioVersion,
+  "dev.zio" %% "zio-test"     % zioVersion % "test",
+  "dev.zio" %% "zio-test-sbt" % zioVersion % "test"
+)
+
+testFrameworks ++= Seq(new TestFramework("scalaprops.ScalapropsFramework"), new TestFramework("zio.test.sbt.ZTestFramework"))
 libraryDependencies += "com.github.scalaprops" %% "scalaprops" % "0.8.0" % "test"
 parallelExecution in Test := false // scalaprops does not support parallel execution
 

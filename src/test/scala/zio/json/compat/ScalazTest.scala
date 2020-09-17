@@ -1,6 +1,7 @@
 package zio.json.compat
 
-import zio.json, json.syntax._
+import zio.json
+import zio.json._
 import zio.json.TestUtils._
 
 import utest._

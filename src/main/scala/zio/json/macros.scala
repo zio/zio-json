@@ -54,7 +54,7 @@ final case class hint(name: String) extends Annotation
 final class no_extra_fields extends Annotation
 
 object MagnoliaDecoder {
-  type Typeclass[A] = Decoder[A]
+  type Typeclass[+A] = Decoder[A]
 
   def combine[A](ctx: CaseClass[Decoder, A]): Decoder[A] = {
     val no_extra = ctx.annotations.collectFirst {
@@ -83,7 +83,7 @@ object MagnoliaDecoder {
         val matrix: StringMatrix    = new StringMatrix(names)
         val spans: Array[JsonError] = names.map(JsonError.ObjectAccess(_))
         lazy val tcs: Array[Decoder[Any]] =
-          ctx.parameters.map(_.typeclass.widen[Any]).toArray
+          ctx.parameters.map(_.typeclass).toArray
 
         def unsafeDecode(trace: List[JsonError], in: RetractReader): A = {
           Lexer.char(trace, in, '{')
@@ -136,7 +136,7 @@ object MagnoliaDecoder {
     val len: Int             = names.length
     val matrix: StringMatrix = new StringMatrix(names)
     lazy val tcs: Array[Decoder[Any]] =
-      ctx.subtypes.map(_.typeclass.widen[Any]).toArray
+      ctx.subtypes.map(_.typeclass).toArray
 
     def discrim = ctx.annotations.collectFirst { case discriminator(n) => n }
     if (discrim.isEmpty)
@@ -198,7 +198,7 @@ object MagnoliaDecoder {
 }
 
 object MagnoliaEncoder {
-  type Typeclass[A] = Encoder[A]
+  type Typeclass[-A] = Encoder[A]
 
   def combine[A](ctx: CaseClass[Encoder, A]): Encoder[A] =
     if (ctx.parameters.isEmpty)

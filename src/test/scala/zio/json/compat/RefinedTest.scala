@@ -1,6 +1,7 @@
 package zio.json.compat
 
-import zio.json, json.syntax._
+import zio.json
+import zio.json._
 import zio.json.TestUtils._
 import eu.timepit.refined.api.{ Refined }
 
@@ -17,8 +18,8 @@ object RefinedTest extends TestSuite {
   case class Person(name: String Refined NonEmpty)
 
   object Person {
-    implicit val decoder: json.Decoder[Person] = json.MagnoliaDecoder.gen
-    implicit val encoder: json.Encoder[Person] = json.MagnoliaEncoder.gen
+    implicit val decoder: json.Decoder[Person] = json.MagnoliaDecoder.gen[Person]
+    implicit val encoder: json.Encoder[Person] = json.MagnoliaEncoder.gen[Person]
   }
 
   val tests = Tests {

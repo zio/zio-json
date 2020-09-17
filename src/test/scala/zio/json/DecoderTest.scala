@@ -21,14 +21,14 @@ object DecoderTest extends TestSuite {
     case class Parameterless()
     object Parameterless {
       implicit val decoder: json.Decoder[Parameterless] =
-        json.MagnoliaDecoder.gen
+        json.MagnoliaDecoder.gen[Parameterless]
     }
 
     @json.no_extra_fields
     case class OnlyString(s: String)
     object OnlyString {
       implicit val decoder: json.Decoder[OnlyString] =
-        json.MagnoliaDecoder.gen
+        json.MagnoliaDecoder.gen[OnlyString]
     }
   }
 
@@ -36,7 +36,7 @@ object DecoderTest extends TestSuite {
 
     sealed abstract class Parent
     object Parent {
-      implicit val decoder: json.Decoder[Parent] = json.MagnoliaDecoder.gen
+      implicit val decoder: json.Decoder[Parent] = json.MagnoliaDecoder.gen[Parent]
     }
     case class Child1() extends Parent
     case class Child2() extends Parent
@@ -47,7 +47,7 @@ object DecoderTest extends TestSuite {
     @json.discriminator("hint")
     sealed abstract class Parent
     object Parent {
-      implicit val decoder: json.Decoder[Parent] = json.MagnoliaDecoder.gen
+      implicit val decoder: json.Decoder[Parent] = json.MagnoliaDecoder.gen[Parent]
     }
     @json.hint("Cain")
     case class Child1() extends Parent

@@ -3,8 +3,7 @@ package zio.json
 import scala.collection.immutable
 
 import zio.json
-import json._
-import json.syntax._
+import zio.json._
 import scalaprops._
 import Property.{ implies, prop, property }
 import scala.collection.mutable

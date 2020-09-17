@@ -32,9 +32,9 @@ package generated {
 
   object Geometry {
     implicit lazy val zioJsonDecoder: json.Decoder[Geometry] =
-      json.MagnoliaDecoder.gen
+      json.MagnoliaDecoder.gen[Geometry]
     implicit lazy val zioJsonEncoder: json.Encoder[Geometry] =
-      json.MagnoliaEncoder.gen
+      json.MagnoliaEncoder.gen[Geometry]
 
     implicit val customConfig: circe.generic.extras.Configuration =
       circe.generic.extras.Configuration.default
@@ -57,9 +57,9 @@ package generated {
   }
   object GeoJSON {
     implicit lazy val zioJsonDecoder: json.Decoder[GeoJSON] =
-      json.MagnoliaDecoder.gen
+      json.MagnoliaDecoder.gen[GeoJSON]
     implicit lazy val zioJsonEncoder: json.Encoder[GeoJSON] =
-      json.MagnoliaEncoder.gen
+      json.MagnoliaEncoder.gen[GeoJSON]
 
     implicit val customConfig: circe.generic.extras.Configuration =
       circe.generic.extras.Configuration.default
@@ -229,7 +229,7 @@ package handrolled {
 
       }
     implicit lazy val zioJsonEncoder: json.Encoder[Geometry] =
-      json.MagnoliaEncoder.gen
+      json.MagnoliaEncoder.gen[Geometry]
 
     implicit val customConfig: circe.generic.extras.Configuration =
       circe.generic.extras.Configuration.default
@@ -339,7 +339,7 @@ package handrolled {
 
       }
     implicit lazy val zioJsonEncoder: json.Encoder[GeoJSON] =
-      json.MagnoliaEncoder.gen
+      json.MagnoliaEncoder.gen[GeoJSON]
 
     implicit val customConfig: circe.generic.extras.Configuration =
       circe.generic.extras.Configuration.default

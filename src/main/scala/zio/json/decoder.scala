@@ -5,6 +5,7 @@ import scala.collection.mutable
 import scala.collection.immutable
 import scala.util.control.NoStackTrace
 import zio.json.internal._
+import zio.Chunk
 import Decoder.JsonError
 
 // convenience to match the circe api
@@ -25,7 +26,7 @@ object parser {
     D.decodeJson(str)
 }
 
-trait Decoder[A] { self =>
+trait Decoder[+A] { self =>
   // note that the string may not be fully consumed
   final def decodeJson(str: CharSequence): Either[String, A] =
     try Right(unsafeDecode(Nil, new FastStringReader(str)))
@@ -35,8 +36,6 @@ trait Decoder[A] { self =>
     }
 
   // scalaz-deriving style MonadError combinators
-  final def widen[B >: A]: Decoder[B]                 = self.asInstanceOf[Decoder[B]]
-  final def xmap[B](f: A => B, g: B => A): Decoder[B] = map(f)
   final def map[B](f: A => B): Decoder[B] =
     new Decoder[B] {
       override def unsafeDecodeMissing(trace: List[JsonError]): B =
@@ -44,7 +43,8 @@ trait Decoder[A] { self =>
       def unsafeDecode(trace: List[JsonError], in: RetractReader): B =
         f(self.unsafeDecode(trace, in))
     }
-  final def emap[B](f: A => Either[String, B]): Decoder[B] =
+
+  final def mapOrFail[B](f: A => Either[String, B]): Decoder[B] =
     new Decoder[B] {
       override def unsafeDecodeMissing(trace: List[JsonError]): B =
         f(self.unsafeDecodeMissing(trace)) match {
@@ -67,13 +67,13 @@ trait Decoder[A] { self =>
   //
   // We could use a ReaderT[List[JsonError]] but that would bring in
   // dependencies and overhead, so we pass the trace context manually.
-  def unsafeDecodeMissing(trace: List[JsonError]): A =
+  private[zio] def unsafeDecodeMissing(trace: List[JsonError]): A =
     throw Decoder.UnsafeJson(JsonError.Message("missing") :: trace)
 
-  def unsafeDecode(trace: List[JsonError], in: RetractReader): A
+  private[zio] def unsafeDecode(trace: List[JsonError], in: RetractReader): A
 }
 
-object Decoder extends GeneratedTupleDecoders with DecoderLowPriority1 {
+object Decoder extends GeneratedTupleDecoders with DecoderLowPriority0 {
   def apply[A](implicit a: Decoder[A]): Decoder[A] = a
 
   // Design note: we could require the position in the stream here to improve
@@ -109,7 +109,7 @@ object Decoder extends GeneratedTupleDecoders with DecoderLowPriority1 {
       Lexer.boolean(trace, in)
   }
 
-  implicit val char: Decoder[Char] = string.emap {
+  implicit val char: Decoder[Char] = string.mapOrFail {
     case str if str.length == 1 => Right(str(0))
     case other                  => Left("expected one character")
   }
@@ -219,7 +219,7 @@ object Decoder extends GeneratedTupleDecoders with DecoderLowPriority1 {
   private[json] def builder[A, T[_]](
     trace: List[JsonError],
     in: RetractReader,
-    builder: mutable.ReusableBuilder[A, T[A]]
+    builder: mutable.Builder[A, T[A]]
   )(implicit A: Decoder[A]): T[A] = {
     Lexer.char(trace, in, '[')
     var i: Int = 0
@@ -230,6 +230,20 @@ object Decoder extends GeneratedTupleDecoders with DecoderLowPriority1 {
     } while (Lexer.nextArray(trace, in))
     builder.result()
   }
+
+}
+
+private[json] trait DecoderLowPriority0 extends DecoderLowPriority1 { this: Decoder.type =>
+  implicit def chunk[A: Decoder]: Decoder[Chunk[A]] = new Decoder[Chunk[A]] {
+    def unsafeDecode(trace: List[JsonError], in: RetractReader): Chunk[A] =
+      builder(trace, in, zio.ChunkBuilder.make[A]())
+  }
+
+  implicit def hashset[A: Decoder]: Decoder[immutable.HashSet[A]] =
+    list[A].map(lst => immutable.HashSet(lst: _*))
+
+  implicit def hashmap[K: FieldDecoder, V: Decoder]: Decoder[immutable.HashMap[K, V]] =
+    keylist[K, V].map(lst => immutable.HashMap(lst: _*))
 
 }
 
@@ -257,7 +271,7 @@ private[json] trait DecoderLowPriority1 {
       builder(trace, in, new immutable.VectorBuilder[A]).toVector
   }
 
-  implicit def seq[A: Decoder]: Decoder[Seq[A]] = list[A].widen
+  implicit def seq[A: Decoder]: Decoder[Seq[A]] = list[A]
 
   // not implicit because this overlaps with decoders for lists of tuples
   def keylist[K, A](
@@ -287,15 +301,10 @@ private[json] trait DecoderLowPriority1 {
   implicit def sortedmap[K: FieldDecoder: Ordering, V: Decoder]: Decoder[collection.SortedMap[K, V]] =
     keylist[K, V].map(lst => collection.SortedMap.apply(lst: _*))
 
-  implicit def map[K: FieldDecoder, V: Decoder]: Decoder[Map[K, V]] = hashmap[K, V].widen
-
-  implicit def hashmap[K: FieldDecoder, V: Decoder]: Decoder[immutable.HashMap[K, V]] =
-    keylist[K, V].map(lst => immutable.HashMap(lst: _*))
+  implicit def map[K: FieldDecoder, V: Decoder]: Decoder[Map[K, V]] = hashmap[K, V]
 
   // TODO these could be optimised...
-  implicit def set[A: Decoder]: Decoder[Set[A]] = hashset[A].widen
-  implicit def hashset[A: Decoder]: Decoder[immutable.HashSet[A]] =
-    list[A].map(lst => immutable.HashSet(lst: _*))
+  implicit def set[A: Decoder]: Decoder[Set[A]] = hashset[A]
   implicit def sortedset[A: Ordering: Decoder]: Decoder[immutable.SortedSet[A]] =
     list[A].map(lst => immutable.SortedSet(lst: _*))
 
@@ -311,7 +320,7 @@ trait FieldDecoder[A] { self =>
       def unsafeDecodeField(trace: List[JsonError], in: String): B =
         f(self.unsafeDecodeField(trace, in))
     }
-  final def emap[B](f: A => Either[String, B]): FieldDecoder[B] =
+  final def mapOrFail[B](f: A => Either[String, B]): FieldDecoder[B] =
     new FieldDecoder[B] {
       def unsafeDecodeField(trace: List[JsonError], in: String): B =
         f(self.unsafeDecodeField(trace, in)) match {
