@@ -23,20 +23,20 @@ final case class DistanceMatrix(
 )
 
 object Value {
-  implicit val zioJsonDecoder: json.Decoder[Value] = json.DeriveDecoder.gen[Value]
+  implicit val zioJsonJsonDecoder: json.JsonDecoder[Value] = json.DeriveJsonDecoder.gen[Value]
   implicit val zioJsonEncoder: json.Encoder[Value] = json.DeriveEncoder.gen[Value]
 
   implicit val customConfig: circe.generic.extras.Configuration =
     circe.generic.extras.Configuration.default
-  implicit val circeDecoder: circe.Decoder[Value] =
+  implicit val circeJsonDecoder: circe.Decoder[Value] =
     circe.generic.extras.semiauto.deriveConfiguredDecoder[Value]
   implicit val circeEncoder: circe.Encoder[Value] =
     circe.generic.extras.semiauto.deriveConfiguredEncoder[Value]
 
   // play macros don't support custom field
-  // implicit val playDecoder: Play.Reads[Value] = Play.Json.reads[Value]
+  // implicit val playJsonDecoder: Play.Reads[Value] = Play.Json.reads[Value]
 
-  implicit val playDecoder: Play.Reads[Value] = {
+  implicit val playJsonDecoder: Play.Reads[Value] = {
     import play.api.libs.json._
     import play.api.libs.json.Reads._
     import play.api.libs.functional.syntax._
@@ -55,49 +55,49 @@ object Value {
 
 }
 object Elements {
-  implicit val zioJsonDecoder: json.Decoder[Elements] = json.DeriveDecoder.gen[Elements]
+  implicit val zioJsonJsonDecoder: json.JsonDecoder[Elements] = json.DeriveJsonDecoder.gen[Elements]
   implicit val zioJsonEncoder: json.Encoder[Elements] = json.DeriveEncoder.gen[Elements]
 
   implicit val customConfig: circe.generic.extras.Configuration =
     circe.generic.extras.Configuration.default
-  implicit val circeDecoder: circe.Decoder[Elements] =
+  implicit val circeJsonDecoder: circe.Decoder[Elements] =
     circe.generic.extras.semiauto.deriveConfiguredDecoder[Elements]
   implicit val circeEncoder: circe.Encoder[Elements] =
     circe.generic.extras.semiauto.deriveConfiguredEncoder[Elements]
 
-  implicit val playDecoder: Play.Reads[Elements]  = Play.Json.reads[Elements]
+  implicit val playJsonDecoder: Play.Reads[Elements]  = Play.Json.reads[Elements]
   implicit val playEncoder: Play.Writes[Elements] = Play.Json.writes[Elements]
 
 }
 object Rows {
-  implicit val zioJsonDecoder: json.Decoder[Rows] = json.DeriveDecoder.gen[Rows]
+  implicit val zioJsonJsonDecoder: json.JsonDecoder[Rows] = json.DeriveJsonDecoder.gen[Rows]
   implicit val zioJsonEncoder: json.Encoder[Rows] = json.DeriveEncoder.gen[Rows]
 
   implicit val customConfig: circe.generic.extras.Configuration =
     circe.generic.extras.Configuration.default
-  implicit val circeDecoder: circe.Decoder[Rows] =
+  implicit val circeJsonDecoder: circe.Decoder[Rows] =
     circe.generic.extras.semiauto.deriveConfiguredDecoder[Rows]
   implicit val circeEncoder: circe.Encoder[Rows] =
     circe.generic.extras.semiauto.deriveConfiguredEncoder[Rows]
 
-  implicit val playDecoder: Play.Reads[Rows]  = Play.Json.reads[Rows]
+  implicit val playJsonDecoder: Play.Reads[Rows]  = Play.Json.reads[Rows]
   implicit val playEncoder: Play.Writes[Rows] = Play.Json.writes[Rows]
 
 }
 object DistanceMatrix {
-  implicit val zioJsonDecoder: json.Decoder[DistanceMatrix] =
-    json.DeriveDecoder.gen[DistanceMatrix]
+  implicit val zioJsonJsonDecoder: json.JsonDecoder[DistanceMatrix] =
+    json.DeriveJsonDecoder.gen[DistanceMatrix]
   implicit val zioJsonEncoder: json.Encoder[DistanceMatrix] =
     json.DeriveEncoder.gen[DistanceMatrix]
 
   implicit val customConfig: circe.generic.extras.Configuration =
     circe.generic.extras.Configuration.default
-  implicit val circeDecoder: circe.Decoder[DistanceMatrix] =
+  implicit val circeJsonDecoder: circe.Decoder[DistanceMatrix] =
     circe.generic.extras.semiauto.deriveConfiguredDecoder[DistanceMatrix]
   implicit val circeEncoder: circe.Encoder[DistanceMatrix] =
     circe.generic.extras.semiauto.deriveConfiguredEncoder[DistanceMatrix]
 
-  implicit val playDecoder: Play.Reads[DistanceMatrix] =
+  implicit val playJsonDecoder: Play.Reads[DistanceMatrix] =
     Play.Json.reads[DistanceMatrix]
   implicit val playEncoder: Play.Writes[DistanceMatrix] =
     Play.Json.writes[DistanceMatrix]

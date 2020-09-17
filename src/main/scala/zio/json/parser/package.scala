@@ -14,6 +14,6 @@ package object parser {
    *
    * {{{jq '.rows[0].elements[0].distance' input.json}}}
    */
-  def decode[A](str: CharSequence)(implicit D: Decoder[A]): Either[String, A] =
+  def decode[A](str: CharSequence)(implicit D: JsonDecoder[A]): Either[String, A] =
     D.decodeJson(str)
 }

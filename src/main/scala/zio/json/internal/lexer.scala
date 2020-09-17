@@ -4,7 +4,7 @@ import scala.annotation._
 import scala.util.Properties.propOrNone
 
 import zio.Chunk
-import zio.json.Decoder.{ JsonError, UnsafeJson }
+import zio.json.JsonDecoder.{ JsonError, UnsafeJson }
 
 // tries to stick to the spec, but maybe a bit loose in places (e.g. numbers)
 //

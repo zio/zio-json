@@ -6,7 +6,7 @@ import scala.reflect.macros.whitebox
 import magnolia._
 
 import zio.Chunk
-import zio.json.Decoder.{ JsonError, UnsafeJson }
+import zio.json.JsonDecoder.{ JsonError, UnsafeJson }
 import zio.json.internal.{ Lexer, RetractReader, StringMatrix }
 
 /**
@@ -54,15 +54,15 @@ final case class hint(name: String) extends Annotation
  */
 final class no_extra_fields extends Annotation
 
-object DeriveDecoder {
-  type Typeclass[+A] = Decoder[A]
+object DeriveJsonDecoder {
+  type Typeclass[+A] = JsonDecoder[A]
 
-  def combine[A](ctx: CaseClass[Decoder, A]): Decoder[A] = {
+  def combine[A](ctx: CaseClass[JsonDecoder, A]): JsonDecoder[A] = {
     val no_extra = ctx.annotations.collectFirst {
       case _: no_extra_fields => ()
     }.isDefined
     if (ctx.parameters.isEmpty)
-      new Decoder[A] {
+      new JsonDecoder[A] {
         def unsafeDecode(trace: Chunk[JsonError], in: RetractReader): A = {
           if (no_extra) {
             Lexer.char(trace, in, '{')
@@ -74,7 +74,7 @@ object DeriveDecoder {
         }
       }
     else
-      new Decoder[A] {
+      new JsonDecoder[A] {
         val names: Array[String] = ctx.parameters.map { p =>
           p.annotations.collectFirst {
             case field(name) => name
@@ -83,7 +83,7 @@ object DeriveDecoder {
         val len: Int                = names.length
         val matrix: StringMatrix    = new StringMatrix(names)
         val spans: Array[JsonError] = names.map(JsonError.ObjectAccess(_))
-        lazy val tcs: Array[Decoder[Any]] =
+        lazy val tcs: Array[JsonDecoder[Any]] =
           ctx.parameters.map(_.typeclass).toArray
 
         def unsafeDecode(trace: Chunk[JsonError], in: RetractReader): A = {
@@ -94,7 +94,7 @@ object DeriveDecoder {
           // such a feature to Magnolia is the only way to avoid this, e.g. a
           // ctx.createMutableCons that specialises on the types (with some way
           // of noting that things have been initialised), which can be called
-          // to instantiate the case class. Would also require Decoder to be
+          // to instantiate the case class. Would also require JsonDecoder to be
           // specialised.
           val ps: Array[Any] = Array.ofDim(len)
 
@@ -128,7 +128,7 @@ object DeriveDecoder {
       }
   }
 
-  def dispatch[A](ctx: SealedTrait[Decoder, A]): Decoder[A] = {
+  def dispatch[A](ctx: SealedTrait[JsonDecoder, A]): JsonDecoder[A] = {
     val names: Array[String] = ctx.subtypes.map { p =>
       p.annotations.collectFirst {
         case hint(name) => name
@@ -136,12 +136,12 @@ object DeriveDecoder {
     }.toArray
     val len: Int             = names.length
     val matrix: StringMatrix = new StringMatrix(names)
-    lazy val tcs: Array[Decoder[Any]] =
+    lazy val tcs: Array[JsonDecoder[Any]] =
       ctx.subtypes.map(_.typeclass).toArray
 
     def discrim = ctx.annotations.collectFirst { case discriminator(n) => n }
     if (discrim.isEmpty)
-      new Decoder[A] {
+      new JsonDecoder[A] {
         val spans: Array[JsonError] = names.map(JsonError.ObjectAccess(_))
         def unsafeDecode(trace: Chunk[JsonError], in: RetractReader): A = {
           Lexer.char(trace, in, '{')
@@ -165,7 +165,7 @@ object DeriveDecoder {
         }
       }
     else
-      new Decoder[A] {
+      new JsonDecoder[A] {
         val hintfield               = discrim.get
         val hintmatrix              = new StringMatrix(Array(hintfield))
         val spans: Array[JsonError] = names.map(JsonError.Message(_))
@@ -195,7 +195,7 @@ object DeriveDecoder {
       }
   }
 
-  def gen[A]: Decoder[A] = macro Magnolia.gen[A]
+  def gen[A]: JsonDecoder[A] = macro Magnolia.gen[A]
 }
 
 object DeriveEncoder {

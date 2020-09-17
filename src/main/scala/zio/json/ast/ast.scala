@@ -2,7 +2,7 @@ package zio.json.ast
 
 import zio.Chunk
 import zio.json._ 
-import zio.json.Decoder.{ JsonError, UnsafeJson }
+import zio.json.JsonDecoder.{ JsonError, UnsafeJson }
 import zio.json.internal._
 import scala.annotation._
 
@@ -31,8 +31,8 @@ object Json {
   // TODO lens-like accessors for working with arbitrary json values
   final case class Obj(fields: Chunk[(String, Json)]) extends Json
   object Obj {
-    private lazy val objd = Decoder.keyValueChunk[String, Json]
-    implicit val decoder: Decoder[Obj] = new Decoder[Obj] {
+    private lazy val objd = JsonDecoder.keyValueChunk[String, Json]
+    implicit val decoder: JsonDecoder[Obj] = new JsonDecoder[Obj] {
       def unsafeDecode(trace: Chunk[JsonError], in: RetractReader): Obj =
         Obj(objd.unsafeDecode(trace, in))
     }
@@ -44,8 +44,8 @@ object Json {
   }
   final case class Arr(elements: Chunk[Json]) extends Json
   object Arr {
-    private lazy val arrd = Decoder.chunk[Json]
-    implicit val decoder: Decoder[Arr] = new Decoder[Arr] {
+    private lazy val arrd = JsonDecoder.chunk[Json]
+    implicit val decoder: JsonDecoder[Arr] = new JsonDecoder[Arr] {
       def unsafeDecode(trace: Chunk[JsonError], in: RetractReader): Arr =
         Arr(arrd.unsafeDecode(trace, in))
     }
@@ -57,9 +57,9 @@ object Json {
   }
   final case class Bool(value: Boolean) extends Json
   object Bool {
-    implicit val decoder: Decoder[Bool] = new Decoder[Bool] {
+    implicit val decoder: JsonDecoder[Bool] = new JsonDecoder[Bool] {
       def unsafeDecode(trace: Chunk[JsonError], in: RetractReader): Bool =
-        Bool(Decoder.boolean.unsafeDecode(trace, in))
+        Bool(JsonDecoder.boolean.unsafeDecode(trace, in))
     }
     implicit val encoder: Encoder[Bool] = new Encoder[Bool] {
       def unsafeEncode(a: Bool, indent: Option[Int], out: java.io.Writer): Unit =
@@ -68,9 +68,9 @@ object Json {
   }
   final case class Str(value: String) extends Json
   object Str {
-    implicit val decoder: Decoder[Str] = new Decoder[Str] {
+    implicit val decoder: JsonDecoder[Str] = new JsonDecoder[Str] {
       def unsafeDecode(trace: Chunk[JsonError], in: RetractReader): Str =
-        Str(Decoder.string.unsafeDecode(trace, in))
+        Str(JsonDecoder.string.unsafeDecode(trace, in))
     }
     implicit val encoder: Encoder[Str] = new Encoder[Str] {
       def unsafeEncode(a: Str, indent: Option[Int], out: java.io.Writer): Unit =
@@ -79,9 +79,9 @@ object Json {
   }
   final case class Num(value: java.math.BigDecimal) extends Json
   object Num {
-    implicit val decoder: Decoder[Num] = new Decoder[Num] {
+    implicit val decoder: JsonDecoder[Num] = new JsonDecoder[Num] {
       def unsafeDecode(trace: Chunk[JsonError], in: RetractReader): Num =
-        Num(Decoder.bigDecimal.unsafeDecode(trace, in))
+        Num(JsonDecoder.bigDecimal.unsafeDecode(trace, in))
     }
     implicit val encoder: Encoder[Num] = new Encoder[Num] {
       def unsafeEncode(a: Num, indent: Option[Int], out: java.io.Writer): Unit =
@@ -90,7 +90,7 @@ object Json {
   }
   case object Null extends Json {
     private[this] val nullChars: Array[Char] = "null".toCharArray
-    implicit val decoder: Decoder[Null.type] = new Decoder[Null.type] {
+    implicit val decoder: JsonDecoder[Null.type] = new JsonDecoder[Null.type] {
       def unsafeDecode(trace: Chunk[JsonError], in: RetractReader): Null.type = {
         Lexer.readChars(trace, in, nullChars, "null")
         Null
@@ -102,7 +102,7 @@ object Json {
     }
   }
 
-  implicit val decoder: Decoder[Json] = new Decoder[Json] {
+  implicit val decoder: JsonDecoder[Json] = new JsonDecoder[Json] {
     def unsafeDecode(trace: Chunk[JsonError], in: RetractReader): Json = {
       val c = in.nextNonWhitespace()
       in.retract()

@@ -42,6 +42,11 @@ trait Encoder[-A] { self =>
                      new java.io.BufferedWriter(new Writer {
                        override def write(buffer: Array[Char], offset: Int, len: Int): Unit =
                          runtime.unsafeRun(queue.offer(Chunk.fromArray(buffer).drop(offset).take(len)))
+
+                        override def close(): Unit = 
+                          runtime.unsafeRun(queue.shutdown)
+
+                        override def flush(): Unit = ()
                      }, Stream.DefaultChunkSize)
                    }
                  }

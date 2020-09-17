@@ -6,6 +6,9 @@ import play.api.libs.{ json => Play }
 import ai.x.play.json.{ Jsonx => Playx }
 import ai.x.play.json.Encoders.encoder
 
+import zio.json.ast._
+import zio.Chunk
+
 object playtuples extends Play.GeneratedReads with Play.GeneratedWrites
 import playtuples._
 
@@ -31,15 +34,15 @@ package generated {
   ) extends GeoJSON
 
   object Geometry {
-    implicit lazy val zioJsonDecoder: json.Decoder[Geometry] =
-      json.DeriveDecoder.gen[Geometry]
+    implicit lazy val zioJsonJsonDecoder: json.JsonDecoder[Geometry] =
+      json.DeriveJsonDecoder.gen[Geometry]
     implicit lazy val zioJsonEncoder: json.Encoder[Geometry] =
       json.DeriveEncoder.gen[Geometry]
 
     implicit val customConfig: circe.generic.extras.Configuration =
       circe.generic.extras.Configuration.default
         .copy(discriminator = Some("type"))
-    implicit lazy val circeDecoder: circe.Decoder[Geometry] =
+    implicit lazy val circeJsonDecoder: circe.Decoder[Geometry] =
       circe.generic.extras.semiauto.deriveConfiguredDecoder[Geometry]
     implicit lazy val circeEncoder: circe.Encoder[Geometry] =
       circe.generic.extras.semiauto.deriveConfiguredEncoder[Geometry]
@@ -56,15 +59,15 @@ package generated {
 
   }
   object GeoJSON {
-    implicit lazy val zioJsonDecoder: json.Decoder[GeoJSON] =
-      json.DeriveDecoder.gen[GeoJSON]
+    implicit lazy val zioJsonJsonDecoder: json.JsonDecoder[GeoJSON] =
+      json.DeriveJsonDecoder.gen[GeoJSON]
     implicit lazy val zioJsonEncoder: json.Encoder[GeoJSON] =
       json.DeriveEncoder.gen[GeoJSON]
 
     implicit val customConfig: circe.generic.extras.Configuration =
       circe.generic.extras.Configuration.default
         .copy(discriminator = Some("type"))
-    implicit lazy val circeDecoder: circe.Decoder[GeoJSON] =
+    implicit lazy val circeJsonDecoder: circe.Decoder[GeoJSON] =
       circe.generic.extras.semiauto.deriveConfiguredDecoder[GeoJSON]
     implicit lazy val circeEncoder: circe.Encoder[GeoJSON] =
       circe.generic.extras.semiauto.deriveConfiguredEncoder[GeoJSON]
@@ -101,11 +104,11 @@ package handrolled {
     // brackets to decide what needs to be decoded.
     //
     // This should be considered an extremely advanced example of how to write
-    // custom decoders and is not a requirement to use the Decoder[GeoJSON]
+    // custom decoders and is not a requirement to use the JsonDecoder[GeoJSON]
     // custom decoder (below) which is necessary to avert a DOS attack.
-    implicit lazy val zioJsonDecoder: json.Decoder[Geometry] =
-      new json.Decoder[Geometry] {
-        import zio.json._, internal._, Decoder.{ JsonError, UnsafeJson }
+    implicit lazy val zioJsonJsonDecoder: json.JsonDecoder[Geometry] =
+      new json.JsonDecoder[Geometry] {
+        import zio.json._, internal._, JsonDecoder.{ JsonError, UnsafeJson }
         import scala.annotation._
 
         val names: Array[String]    = Array("type", "coordinates", "geometries")
@@ -122,15 +125,15 @@ package handrolled {
             "GeometryCollection"
           )
         )
-        val coordinatesD: Decoder[JsArray]            = Decoder[JsArray]
-        lazy val geometriesD: Decoder[List[Geometry]] = Decoder[List[Geometry]]
+        val coordinatesD: JsonDecoder[Json.Arr]            = JsonDecoder[Json.Arr]
+        lazy val geometriesD: JsonDecoder[List[Geometry]] = JsonDecoder[List[Geometry]]
 
         def coordinates0(
           trace: Chunk[JsonError],
-          js: JsArray
+          js: Json.Arr
         ): (Double, Double) =
           js match {
-            case JsArray(JsNumber(a) :: JsNumber(b) :: Nil) =>
+            case Json.Arr(Json.Num(a) :: Json.Num(b) :: Nil) =>
               (a.doubleValue, b.doubleValue)
             case _ =>
               throw UnsafeJson(
@@ -139,28 +142,28 @@ package handrolled {
           }
         def coordinates1(
           trace: Chunk[JsonError],
-          js: JsArray
+          js: Json.Arr
         ): List[(Double, Double)] =
           js.elements.map {
-            case js1: JsArray => coordinates0(trace, js1)
+            case js1: Json.Arr => coordinates0(trace, js1)
             case _ =>
               throw UnsafeJson(JsonError.Message("expected list") :: trace)
           }
         def coordinates2(
           trace: Chunk[JsonError],
-          js: JsArray
+          js: Json.Arr
         ): List[List[(Double, Double)]] =
           js.elements.map {
-            case js1: JsArray => coordinates1(trace, js1)
+            case js1: Json.Arr => coordinates1(trace, js1)
             case _ =>
               throw UnsafeJson(JsonError.Message("expected list") :: trace)
           }
         def coordinates3(
           trace: Chunk[JsonError],
-          js: JsArray
+          js: Json.Arr
         ): List[List[List[(Double, Double)]]] =
           js.elements.map {
-            case js1: JsArray => coordinates2(trace, js1)
+            case js1: Json.Arr => coordinates2(trace, js1)
             case _ =>
               throw UnsafeJson(JsonError.Message("expected list") :: trace)
           }
@@ -171,7 +174,7 @@ package handrolled {
         ): Geometry = {
           Lexer.char(trace, in, '{')
 
-          var coordinates: JsArray       = null
+          var coordinates: Json.Arr       = null
           var geometries: List[Geometry] = null
           var subtype: Int               = -1
 
@@ -234,7 +237,7 @@ package handrolled {
     implicit val customConfig: circe.generic.extras.Configuration =
       circe.generic.extras.Configuration.default
         .copy(discriminator = Some("type"))
-    implicit lazy val circeDecoder: circe.Decoder[Geometry] =
+    implicit lazy val circeJsonDecoder: circe.Decoder[Geometry] =
       circe.generic.extras.semiauto.deriveConfiguredDecoder[Geometry]
     implicit lazy val circeEncoder: circe.Encoder[Geometry] =
       circe.generic.extras.semiauto.deriveConfiguredEncoder[Geometry]
@@ -254,9 +257,9 @@ package handrolled {
     // the object. This is only needed because the contents of the GeoJSON is
     // potentially complex and even skipping over it is expensive... it's a bit
     // of a corner case.
-    implicit lazy val zioJsonDecoder: json.Decoder[GeoJSON] =
-      new json.Decoder[GeoJSON] {
-        import zio.json._, internal._, Decoder.{ JsonError, UnsafeJson }
+    implicit lazy val zioJsonJsonDecoder: json.JsonDecoder[GeoJSON] =
+      new json.JsonDecoder[GeoJSON] {
+        import zio.json._, internal._, JsonDecoder.{ JsonError, UnsafeJson }
         import scala.annotation._
 
         val names: Array[String] =
@@ -266,11 +269,11 @@ package handrolled {
         val subtypes: StringMatrix = new StringMatrix(
           Array("Feature", "FeatureCollection")
         )
-        val propertyD: Decoder[Map[String, String]] =
-          Decoder[Map[String, String]]
-        val geometryD: Decoder[Geometry] = Decoder[Geometry]
-        lazy val featuresD: Decoder[List[GeoJSON]] =
-          Decoder[List[GeoJSON]] // recursive
+        val propertyD: JsonDecoder[Map[String, String]] =
+          JsonDecoder[Map[String, String]]
+        val geometryD: JsonDecoder[Geometry] = JsonDecoder[Geometry]
+        lazy val featuresD: JsonDecoder[List[GeoJSON]] =
+          JsonDecoder[List[GeoJSON]] // recursive
 
         def unsafeDecode(trace: Chunk[JsonError], in: RetractReader): GeoJSON = {
           Lexer.char(trace, in, '{')
@@ -344,7 +347,7 @@ package handrolled {
     implicit val customConfig: circe.generic.extras.Configuration =
       circe.generic.extras.Configuration.default
         .copy(discriminator = Some("type"))
-    implicit lazy val circeDecoder: circe.Decoder[GeoJSON] =
+    implicit lazy val circeJsonDecoder: circe.Decoder[GeoJSON] =
       circe.generic.extras.semiauto.deriveConfiguredDecoder[GeoJSON]
     implicit lazy val circeEncoder: circe.Encoder[GeoJSON] =
       circe.generic.extras.semiauto.deriveConfiguredEncoder[GeoJSON]

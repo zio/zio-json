@@ -64,14 +64,14 @@ sourceGenerators in Compile += Def.task {
   val file = dir / "zio" / "json" / "GeneratedTupleDecoders.scala"
   val decoders = (1 to 22).map { i =>
     val tparams = (1 to i).map(p => s"A$p").mkString(", ")
-    val implicits = (1 to i).map(p => s"A$p: Decoder[A$p]").mkString(", ")
+    val implicits = (1 to i).map(p => s"A$p: JsonDecoder[A$p]").mkString(", ")
     val work = (1 to i).map { p =>
       s"val a$p = A$p.unsafeDecode(trace :+ traces($p), in)"
     }.mkString("\n        Lexer.char(trace, in, ',')\n        ")
     val returns = (1 to i).map(p => s"a$p").mkString(", ")
 
-    s"""implicit def tuple${i}[$tparams](implicit $implicits): Decoder[Tuple${i}[$tparams]] =
-       |    new Decoder[Tuple${i}[$tparams]] {
+    s"""implicit def tuple${i}[$tparams](implicit $implicits): JsonDecoder[Tuple${i}[$tparams]] =
+       |    new JsonDecoder[Tuple${i}[$tparams]] {
        |      val traces: Array[JsonError] = (0 to $i).map(JsonError.ArrayAccess(_)).toArray
        |      def unsafeDecode(trace: Chunk[JsonError], in: RetractReader): Tuple${i}[$tparams] = {
        |        Lexer.char(trace, in, '[')
@@ -85,9 +85,10 @@ sourceGenerators in Compile += Def.task {
     file,
     s"""package zio.json
        |
+       |import zio.Chunk
        |import zio.json.internal._
        |
-       |private[json] trait GeneratedTupleDecoders { this: Decoder.type =>
+       |private[json] trait GeneratedTupleDecoders { this: JsonDecoder.type =>
        |  ${decoders.mkString("\n\n  ")}
        |}""".stripMargin)
   Seq(file)

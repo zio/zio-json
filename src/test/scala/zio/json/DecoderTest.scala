@@ -2,7 +2,9 @@ package zio.json
 
 import scala.collection.immutable
 
+import zio.Chunk
 import zio.json
+import zio.json.ast._
 import io.circe
 import TestUtils._
 import scalaprops._
@@ -20,15 +22,15 @@ object DecoderTest extends TestSuite {
   object exampleproducts {
     case class Parameterless()
     object Parameterless {
-      implicit val decoder: json.Decoder[Parameterless] =
-        json.DeriveDecoder.gen[Parameterless]
+      implicit val decoder: json.JsonDecoder[Parameterless] =
+        json.DeriveJsonDecoder.gen[Parameterless]
     }
 
     @json.no_extra_fields
     case class OnlyString(s: String)
     object OnlyString {
-      implicit val decoder: json.Decoder[OnlyString] =
-        json.DeriveDecoder.gen[OnlyString]
+      implicit val decoder: json.JsonDecoder[OnlyString] =
+        json.DeriveJsonDecoder.gen[OnlyString]
     }
   }
 
@@ -36,7 +38,7 @@ object DecoderTest extends TestSuite {
 
     sealed abstract class Parent
     object Parent {
-      implicit val decoder: json.Decoder[Parent] = json.DeriveDecoder.gen[Parent]
+      implicit val decoder: json.JsonDecoder[Parent] = json.DeriveJsonDecoder.gen[Parent]
     }
     case class Child1() extends Parent
     case class Child2() extends Parent
@@ -47,7 +49,7 @@ object DecoderTest extends TestSuite {
     @json.discriminator("hint")
     sealed abstract class Parent
     object Parent {
-      implicit val decoder: json.Decoder[Parent] = json.DeriveDecoder.gen[Parent]
+      implicit val decoder: json.JsonDecoder[Parent] = json.DeriveJsonDecoder.gen[Parent]
     }
     @json.hint("Cain")
     case class Child1() extends Parent
@@ -144,10 +146,10 @@ object DecoderTest extends TestSuite {
     }
 
     test("googleMapsAst") {
-      parser.decode[JsValue](
+      parser.decode[Json](
         getResourceAsString("google_maps_api_response.json")
       ) ==>
-        parser.decode[JsValue](
+        parser.decode[Json](
           getResourceAsString("google_maps_api_compact_response.json")
         )
     }
@@ -191,7 +193,7 @@ object DecoderTest extends TestSuite {
       val expected =
         circe.parser.decode[GeoJSON](getResourceAsString("che-2.geo.json"))
       val input = getResourceAsReader("che-2.geo.json")
-      val got   = json.Decoder[GeoJSON].unsafeDecode(Nil, input)
+      val got   = json.JsonDecoder[GeoJSON].unsafeDecode(Chunk.empty, input)
       input.close()
       Right(got) ==> expected
     }
@@ -279,7 +281,7 @@ object DecoderTest extends TestSuite {
   def testAst(name: String) = {
     val input     = getResourceAsString(s"jawn/${name}.json")
     val expected  = jawn.JParser.parseFromString(input).toEither.map(fromJawn)
-    val got       = parser.decode[JsValue](input).map(normalize)
+    val got       = parser.decode[Json](input).map(normalize)
     val gotf      = s"${name}-got.json"
     val expectedf = s"${name}-expected.json"
 
@@ -299,34 +301,34 @@ object DecoderTest extends TestSuite {
   }
 
   // reorder objects to match jawn's lossy AST (and dedupe)
-  def normalize(ast: JsValue): JsValue =
+  def normalize(ast: Json): Json =
     ast match {
-      case JsObject(values) =>
-        JsObject(
+      case Json.Obj(values) =>
+        Json.Obj(
           values
             .distinctBy(_._1)
             .map { case (k, v) => (k, normalize(v)) }
             .sortBy(_._1)
         )
-      case JsArray(values) => JsArray(values.map(normalize(_)))
+      case Json.Arr(values) => Json.Arr(values.map(normalize(_)))
       case other           => other
     }
 
-  def fromJawn(ast: jawn.JValue): JsValue =
+  def fromJawn(ast: jawn.JValue): Json =
     ast match {
-      case jawn.JNull      => JsNull
-      case jawn.JTrue      => JsBoolean(true)
-      case jawn.JFalse     => JsBoolean(false)
-      case jawn.JString(s) => JsString(s)
+      case jawn.JNull      => Json.Null
+      case jawn.JTrue      => Json.Bool(true)
+      case jawn.JFalse     => Json.Bool(false)
+      case jawn.JString(s) => Json.Str(s)
       case jawn.LongNum(i) =>
-        JsNumber(new java.math.BigDecimal(java.math.BigInteger.valueOf(i)))
-      case jawn.DoubleNum(d) => JsNumber(new java.math.BigDecimal(d))
+        Json.Num(new java.math.BigDecimal(java.math.BigInteger.valueOf(i)))
+      case jawn.DoubleNum(d) => Json.Num(new java.math.BigDecimal(d))
       case jawn.DeferLong(i) =>
-        JsNumber(new java.math.BigDecimal(new java.math.BigInteger(i)))
-      case jawn.DeferNum(n) => JsNumber(new java.math.BigDecimal(n))
-      case jawn.JArray(vs)  => JsArray(vs.toList.map(fromJawn))
+        Json.Num(new java.math.BigDecimal(new java.math.BigInteger(i)))
+      case jawn.DeferNum(n) => Json.Num(new java.math.BigDecimal(n))
+      case jawn.JArray(vs)  => Json.Arr(Chunk.fromArray(vs).map(fromJawn))
       case jawn.JObject(es) =>
-        JsObject(es.toList.sortBy(_._1).map { case (k, v) => (k, fromJawn(v)) })
+        Json.Obj(Chunk.fromIterable(es).sortBy(_._1).map { case (k, v) => (k, fromJawn(v)) })
     }
 
 }

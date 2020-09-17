@@ -128,8 +128,8 @@ class TwitterAPIBenchmarks {
 
 object TwitterAPIBenchmarks {
   // these avoid the List implicit from being recreated every time
-  implicit val zListTweet: json.Decoder[List[Tweet]] =
-    json.Decoder.list[Tweet]
+  implicit val zListTweet: json.JsonDecoder[List[Tweet]] =
+    json.JsonDecoder.list[Tweet]
   implicit val cListTweet: circe.Decoder[List[Tweet]] =
     circe.Decoder.decodeList[Tweet]
   implicit val codec: JsonValueCodec[List[Tweet]] =

@@ -175,7 +175,7 @@ object EncoderTest extends TestSuite {
       (Child2(Some("hello")): Parent).toJsonPretty ==> "{\n  \"hint\" : \"Abel\",\n  \"s\" : \"hello\"\n}"
     }
 
-    // using circe to avoid entwining this test on zio.json.Decoder
+    // using circe to avoid entwining this test on zio.json.JsonDecoder
     def testRoundtrip[A: circe.Decoder: Encoder](res: String) = {
       val jsonString = getResourceAsString(res)
       val decoded    = circe.parser.decode[A](jsonString)
