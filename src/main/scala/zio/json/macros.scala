@@ -320,3 +320,23 @@ private[this] final class NestedWriter(out: java.io.Writer, indent: Option[Int])
       }
     } else out.write(cs, from, len)
 }
+
+object DeriveJsonCodec {
+  def gen[A]: JsonCodec[A] = macro Magnolia.gen[A]
+
+  type Typeclass[A] = JsonCodec[A]
+
+  def combine[A](ctx: CaseClass[JsonCodec, A]): JsonCodec[A] = {
+    val encoder = DeriveJsonEncoder.combine(ctx.asInstanceOf[CaseClass[JsonEncoder, A]])
+    val decoder = DeriveJsonDecoder.combine(ctx.asInstanceOf[CaseClass[JsonDecoder, A]])
+
+    JsonCodec(encoder, decoder)
+  }
+
+  def dispatch[A](ctx: SealedTrait[JsonCodec, A]): JsonCodec[A] = {
+    val encoder = DeriveJsonEncoder.dispatch(ctx.asInstanceOf[SealedTrait[JsonEncoder, A]])
+    val decoder = DeriveJsonDecoder.dispatch(ctx.asInstanceOf[SealedTrait[JsonDecoder, A]])
+
+    JsonCodec(encoder, decoder)
+  }
+}

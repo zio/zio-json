@@ -9,7 +9,7 @@ trait JsonCodec[A] extends JsonDecoder[A] with JsonEncoder[A]
 object JsonCodec {
   def apply[A](implicit jsonCodec: JsonCodec[A]): JsonCodec[A] = jsonCodec
 
-  implicit def fromEncoderDecoder[A](implicit encoder: JsonEncoder[A], decoder: JsonDecoder[A]): JsonCodec[A] =
+  implicit def apply[A](implicit encoder: JsonEncoder[A], decoder: JsonDecoder[A]): JsonCodec[A] =
     new JsonCodec[A] {
       private[zio] def unsafeDecode(trace: Chunk[JsonError], in: RetractReader): A =
         decoder.unsafeDecode(trace, in)
