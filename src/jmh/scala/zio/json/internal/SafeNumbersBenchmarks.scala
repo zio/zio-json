@@ -183,11 +183,11 @@ class SafeNumbersBenchBigDecimal {
 
   @Benchmark
   def decodeFommilValid(): Array[Option[java.math.BigDecimal]] =
-    valids.map(SafeNumbers.bigdecimal(_))
+    valids.map(SafeNumbers.bigDecimal(_))
 
   @Benchmark
   def decodeFommilUnsafeValid(): Array[java.math.BigDecimal] =
-    valids.map(UnsafeNumbers.bigdecimal(_, 128))
+    valids.map(UnsafeNumbers.bigDecimal(_, 128))
 
   @Benchmark
   def decodeStdlibInvalid(): Array[Option[java.math.BigDecimal]] =
@@ -195,6 +195,6 @@ class SafeNumbersBenchBigDecimal {
 
   @Benchmark
   def decodeFommilInvalid(): Array[Option[java.math.BigDecimal]] =
-    invalids.map(SafeNumbers.bigdecimal(_))
+    invalids.map(SafeNumbers.bigDecimal(_))
 
 }

@@ -8,7 +8,7 @@ object SafeNumbersTest extends Scalaprops {
   implicit def shrinker[A]: Shrink[A] = Shrink.empty[A]
 
   val validBigDecimal = property { i: java.math.BigDecimal =>
-    prop(SafeNumbers.bigdecimal(i.toString, 2048) == Some(i))
+    prop(SafeNumbers.bigDecimal(i.toString, 2048) == Some(i))
   }
 
   val invalidBigDecimalEdgeCases =
@@ -24,7 +24,7 @@ object SafeNumbersTest extends Scalaprops {
       "Infinity",
       "+Infinity",
       "-Infinity"
-    ).map(s => prop(SafeNumbers.bigdecimal(s) == None)).reduce(_ and _)
+    ).map(s => prop(SafeNumbers.bigDecimal(s) == None)).reduce(_ and _)
 
   val validBigDecimalEdgeCases =
     List(
@@ -38,13 +38,13 @@ object SafeNumbersTest extends Scalaprops {
       "000.00001000" // various trailing zeros, should be preserved
     ).map { s =>
       (prop(
-        SafeNumbers.bigdecimal(s).toString == Some(
+        SafeNumbers.bigDecimal(s).toString == Some(
           new java.math.BigDecimal(s)
         ).toString
       ))
     }.reduce(_ and _)
 
-  val invalidBigDecimalText = property { s: String => prop(SafeNumbers.bigdecimal(s) == None) }(
+  val invalidBigDecimalText = property { s: String => prop(SafeNumbers.bigDecimal(s) == None) }(
     Gen.alphaLowerString,
     Shrink.empty
   )
@@ -58,21 +58,21 @@ object SafeNumbersTest extends Scalaprops {
       "9223372036854775806",
       "-9223372036854775809",
       "9223372036854775808"
-    ).map(s => prop(SafeNumbers.biginteger(s) == Some(new java.math.BigInteger(s))))
+    ).map(s => prop(SafeNumbers.bigInteger(s) == Some(new java.math.BigInteger(s))))
       .reduce(_ and _)
 
   val invalidBigIntegerEdgeCases =
     prop(
       List("0foo", "01foo", "0.1", "", "1 ")
-        .map(SafeNumbers.biginteger(_))
+        .map(SafeNumbers.bigInteger(_))
         .forall(_.isEmpty)
     )
 
   val validBigInteger = property { i: java.math.BigInteger =>
-    prop(SafeNumbers.biginteger(i.toString, 2048) == Some(i))
+    prop(SafeNumbers.bigInteger(i.toString, 2048) == Some(i))
   }
 
-  val invalidBigIntegerText = property { s: String => prop(SafeNumbers.biginteger(s) == None) }(
+  val invalidBigIntegerText = property { s: String => prop(SafeNumbers.bigInteger(s) == None) }(
     Gen.alphaLowerString,
     Shrink.empty
   )

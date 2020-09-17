@@ -66,12 +66,12 @@ object JsValue {
   }
 }
 object JsObject {
-  private lazy val objd = Decoder.keylist[String, JsValue]
+  private lazy val objd = Decoder.keyValueChunk[String, JsValue]
   implicit val decoder: Decoder[JsObject] = new Decoder[JsObject] {
     def unsafeDecode(trace: Chunk[JsonError], in: RetractReader): JsObject =
       JsObject(objd.unsafeDecode(trace, in))
   }
-  private lazy val obje = Encoder.keylist[String, JsValue]
+  private lazy val obje = Encoder.keyValueChunk[String, JsValue]
   implicit val encoder: Encoder[JsObject] = new Encoder[JsObject] {
     def unsafeEncode(a: JsObject, indent: Option[Int], out: java.io.Writer): Unit =
       obje.unsafeEncode(a.fields, indent, out)
@@ -112,11 +112,11 @@ object JsString {
 object JsNumber {
   implicit val decoder: Decoder[JsNumber] = new Decoder[JsNumber] {
     def unsafeDecode(trace: Chunk[JsonError], in: RetractReader): JsNumber =
-      JsNumber(Decoder.bigdecimal.unsafeDecode(trace, in))
+      JsNumber(Decoder.bigDecimal.unsafeDecode(trace, in))
   }
   implicit val encoder: Encoder[JsNumber] = new Encoder[JsNumber] {
     def unsafeEncode(a: JsNumber, indent: Option[Int], out: java.io.Writer): Unit =
-      Encoder.bigdecimal.unsafeEncode(a.value, indent, out)
+      Encoder.bigDecimal.unsafeEncode(a.value, indent, out)
   }
 }
 trait JsNullCompanion {

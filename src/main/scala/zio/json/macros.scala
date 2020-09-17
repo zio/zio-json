@@ -98,7 +98,7 @@ object DeriveDecoder {
           // specialised.
           val ps: Array[Any] = Array.ofDim(len)
 
-          if (Lexer.firstObject(trace, in))
+          if (Lexer.firstField(trace, in))
             do {
               var trace_ = trace
               val field  = Lexer.field(trace, in, matrix)
@@ -114,7 +114,7 @@ object DeriveDecoder {
                 )
               } else
                 Lexer.skipValue(trace_, in)
-            } while (Lexer.nextObject(trace, in))
+            } while (Lexer.nextField(trace, in))
 
           var i = 0
           while (i < len) {
@@ -146,7 +146,7 @@ object DeriveDecoder {
         def unsafeDecode(trace: Chunk[JsonError], in: RetractReader): A = {
           Lexer.char(trace, in, '{')
           // we're not allowing extra fields in this encoding
-          if (Lexer.firstObject(trace, in)) {
+          if (Lexer.firstField(trace, in)) {
             val field = Lexer.field(trace, in, matrix)
             if (field != -1) {
               val field_ = names(field)
@@ -173,7 +173,7 @@ object DeriveDecoder {
         def unsafeDecode(trace: Chunk[JsonError], in: RetractReader): A = {
           val in_ = internal.RecordingReader(in)
           Lexer.char(trace, in_, '{')
-          if (Lexer.firstObject(trace, in_))
+          if (Lexer.firstField(trace, in_))
             do {
               if (Lexer.field(trace, in_, hintmatrix) != -1) {
                 val field = Lexer.enum(trace, in_, matrix)
@@ -186,7 +186,7 @@ object DeriveDecoder {
                 return tcs(field).unsafeDecode(trace_, in_).asInstanceOf[A]
               } else
                 Lexer.skipValue(trace, in_)
-            } while (Lexer.nextObject(trace, in_))
+            } while (Lexer.nextField(trace, in_))
 
           throw UnsafeJson(
             trace :+ JsonError.Message(s"missing hint '$hintfield'")

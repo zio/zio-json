@@ -175,7 +175,7 @@ package handrolled {
           var geometries: List[Geometry] = null
           var subtype: Int               = -1
 
-          if (Lexer.firstObject(trace, in))
+          if (Lexer.firstField(trace, in))
             do {
               val field = Lexer.field(trace, in, matrix)
               if (field == -1) Lexer.skipValue(trace, in)
@@ -197,7 +197,7 @@ package handrolled {
                     geometries = geometriesD.unsafeDecode(trace_, in)
                 }
               }
-            } while (Lexer.nextObject(trace, in))
+            } while (Lexer.nextField(trace, in))
 
           if (subtype == -1)
             throw UnsafeJson(
@@ -280,7 +280,7 @@ package handrolled {
           var features: List[GeoJSON]         = null
           var subtype: Int                    = -1
 
-          if (Lexer.firstObject(trace, in))
+          if (Lexer.firstField(trace, in))
             do {
               val field = Lexer.field(trace, in, matrix)
               if (field == -1) Lexer.skipValue(trace, in)
@@ -309,7 +309,7 @@ package handrolled {
                     features = featuresD.unsafeDecode(trace_, in)
                 }
               }
-            } while (Lexer.nextObject(trace, in))
+            } while (Lexer.nextField(trace, in))
 
           if (subtype == -1)
             // we could infer the type but that would mean accepting invalid data

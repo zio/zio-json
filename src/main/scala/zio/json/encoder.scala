@@ -65,13 +65,13 @@ object Encoder extends GeneratedTupleEncoders with EncoderLowPriority0 {
   implicit val short: Encoder[Short]                     = explicit(_.toString)
   implicit val int: Encoder[Int]                         = explicit(_.toString)
   implicit val long: Encoder[Long]                       = explicit(_.toString)
-  implicit val biginteger: Encoder[java.math.BigInteger] = explicit(_.toString)
+  implicit val bigInteger: Encoder[java.math.BigInteger] = explicit(_.toString)
   implicit val double: Encoder[Double] = explicit { n =>
     if (n.isNaN || n.isInfinite) s""""$n""""
     else n.toString
   }
   implicit val float: Encoder[Float]                     = double.contramap(_.toDouble)
-  implicit val bigdecimal: Encoder[java.math.BigDecimal] = explicit(_.toString)
+  implicit val bigDecimal: Encoder[java.math.BigDecimal] = explicit(_.toString)
 
   implicit def option[A](implicit A: Encoder[A]): Encoder[Option[A]] = new Encoder[Option[A]] {
     def unsafeEncode(oa: Option[A], indent: Option[Int], out: java.io.Writer): Unit = oa match {
@@ -114,17 +114,17 @@ object Encoder extends GeneratedTupleEncoders with EncoderLowPriority0 {
 private[json] trait EncoderLowPriority0 extends EncoderLowPriority1 { this: Encoder.type =>
   implicit def chunk[A: Encoder]: Encoder[Chunk[A]] = seq[A]
 
+  implicit def list[A: Encoder]: Encoder[List[A]]     = seq[A]
+  implicit def vector[A: Encoder]: Encoder[Vector[A]] = seq[A]
+
   implicit def hashset[A: Encoder]: Encoder[immutable.HashSet[A]] =
     list[A].contramap(_.toList)
 
   implicit def hashmap[K: FieldEncoder, V: Encoder]: Encoder[immutable.HashMap[K, V]] =
-    keylist[K, V].contramap(Chunk.fromIterable(_))
+    keyValueChunk[K, V].contramap(Chunk.fromIterable(_))
 }
 
 private[json] trait EncoderLowPriority1 { this: Encoder.type =>
-
-  implicit def list[A: Encoder]: Encoder[List[A]]     = seq[A]
-  implicit def vector[A: Encoder]: Encoder[Vector[A]] = seq[A]
   implicit def seq[A](implicit A: Encoder[A]): Encoder[Seq[A]] = new Encoder[Seq[A]] {
     def unsafeEncode(as: Seq[A], indent: Option[Int], out: java.io.Writer): Unit = {
       out.write("[")
@@ -140,7 +140,7 @@ private[json] trait EncoderLowPriority1 { this: Encoder.type =>
   }
 
   // not implicit because this overlaps with encoders for lists of tuples
-  def keylist[K, A](
+  def keyValueChunk[K, A](
     implicit
     K: FieldEncoder[K],
     A: Encoder[A]
@@ -177,9 +177,9 @@ private[json] trait EncoderLowPriority1 { this: Encoder.type =>
 
   // TODO these could be optimised...
   implicit def sortedmap[K: FieldEncoder, V: Encoder]: Encoder[collection.SortedMap[K, V]] =
-    keylist[K, V].contramap(Chunk.fromIterable(_))
+    keyValueChunk[K, V].contramap(Chunk.fromIterable(_))
   implicit def map[K: FieldEncoder, V: Encoder]: Encoder[Map[K, V]] =
-    keylist[K, V].contramap(Chunk.fromIterable(_))
+    keyValueChunk[K, V].contramap(Chunk.fromIterable(_))
   implicit def set[A: Encoder]: Encoder[Set[A]] =
     list[A].contramap(_.toList)
   implicit def sortedset[A: Ordering: Encoder]: Encoder[immutable.SortedSet[A]] =

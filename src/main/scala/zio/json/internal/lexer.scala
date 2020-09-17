@@ -16,7 +16,7 @@ private[zio] object Lexer {
   val NumberMaxBits: Int = propOrNone("zio.json.number.bits").getOrElse("128").toInt
 
   // True if we got a string (implies a retraction), False for }
-  def firstObject(trace: Chunk[JsonError], in: RetractReader): Boolean =
+  def firstField(trace: Chunk[JsonError], in: RetractReader): Boolean =
     (in.nextNonWhitespace(): @switch) match {
       case '"' =>
         in.retract()
@@ -29,7 +29,7 @@ private[zio] object Lexer {
     }
 
   // True if we got a comma, and False for }
-  def nextObject(trace: Chunk[JsonError], in: OneCharReader): Boolean =
+  def nextField(trace: Chunk[JsonError], in: OneCharReader): Boolean =
     (in.nextNonWhitespace(): @switch) match {
       case ',' => true
       case '}' => false
@@ -40,14 +40,14 @@ private[zio] object Lexer {
     }
 
   // True if we got anything besides a ], False for ]
-  def firstArray(trace: Chunk[JsonError], in: RetractReader): Boolean =
+  def firstArrayElement(trace: Chunk[JsonError], in: RetractReader): Boolean =
     (in.nextNonWhitespace(): @switch) match {
       case ']' => false
       case _ =>
         in.retract()
         true
     }
-  def nextArray(trace: Chunk[JsonError], in: OneCharReader): Boolean =
+  def nextArrayElement(trace: Chunk[JsonError], in: OneCharReader): Boolean =
     (in.nextNonWhitespace(): @switch) match {
       case ',' => true
       case ']' => false
@@ -98,17 +98,17 @@ private[zio] object Lexer {
       case 'f' => readChars(trace, in, alse, "false")
       case 't' => readChars(trace, in, rue, "true")
       case '{' =>
-        if (firstObject(trace, in)) {
+        if (firstField(trace, in)) {
           do {
             char(trace, in, '"')
             skipString(trace, in)
             char(trace, in, ':')
             skipValue(trace, in)
-          } while (nextObject(trace, in))
+          } while (nextField(trace, in))
         }
       case '[' =>
-        if (firstArray(trace, in)) {
-          do skipValue(trace, in) while (nextArray(trace, in))
+        if (firstArrayElement(trace, in)) {
+          do skipValue(trace, in) while (nextArrayElement(trace, in))
         }
       case '"' =>
         skipString(trace, in)
@@ -213,13 +213,13 @@ private[zio] object Lexer {
     }
   }
 
-  def biginteger(
+  def bigInteger(
     trace: Chunk[JsonError],
     in: RetractReader
   ): java.math.BigInteger = {
     checkNumber(trace, in)
     try {
-      val i = UnsafeNumbers.biginteger_(in, false, NumberMaxBits)
+      val i = UnsafeNumbers.bigInteger_(in, false, NumberMaxBits)
       in.retract()
       i
     } catch {
@@ -252,13 +252,13 @@ private[zio] object Lexer {
     }
   }
 
-  def bigdecimal(
+  def bigDecimal(
     trace: Chunk[JsonError],
     in: RetractReader
   ): java.math.BigDecimal = {
     checkNumber(trace, in)
     try {
-      val i = UnsafeNumbers.bigdecimal_(in, false, NumberMaxBits)
+      val i = UnsafeNumbers.bigDecimal_(in, false, NumberMaxBits)
       in.retract()
       i
     } catch {

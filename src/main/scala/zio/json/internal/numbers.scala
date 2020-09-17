@@ -52,11 +52,11 @@ private[zio] object SafeNumbers {
     try LongSome(UnsafeNumbers.long(num))
     catch { case UnsafeNumber => LongNone }
 
-  def biginteger(
+  def bigInteger(
     num: String,
     max_bits: Int = 128
   ): Option[java.math.BigInteger] =
-    try Some(UnsafeNumbers.biginteger(num, max_bits))
+    try Some(UnsafeNumbers.bigInteger(num, max_bits))
     catch { case UnsafeNumber => None }
 
   def float(num: String, max_bits: Int = 128): FloatOption =
@@ -67,11 +67,11 @@ private[zio] object SafeNumbers {
     try DoubleSome(UnsafeNumbers.double(num, max_bits))
     catch { case UnsafeNumber => DoubleNone }
 
-  def bigdecimal(
+  def bigDecimal(
     num: String,
     max_bits: Int = 128
   ): Option[java.math.BigDecimal] =
-    try Some(UnsafeNumbers.bigdecimal(num, max_bits))
+    try Some(UnsafeNumbers.bigDecimal(num, max_bits))
     catch { case UnsafeNumber => None }
 
 }
@@ -189,9 +189,9 @@ object UnsafeNumbers {
   def long_(in: Reader, consume: Boolean): Long =
     long__(in, Long.MinValue, Long.MaxValue, consume)
 
-  def biginteger(num: String, max_bits: Int): java.math.BigInteger =
-    biginteger_(new FastStringReader(num), true, max_bits)
-  def biginteger_(
+  def bigInteger(num: String, max_bits: Int): java.math.BigInteger =
+    bigInteger_(new FastStringReader(num), true, max_bits)
+  def bigInteger_(
     in: Reader,
     consume: Boolean,
     max_bits: Int
@@ -206,14 +206,14 @@ object UnsafeNumbers {
       current = in.read()
     if (current == -1) throw UnsafeNumber
 
-    bigdecimal__(in, consume, negative, current, true, max_bits).unscaledValue
+    bigDecimal__(in, consume, negative, current, true, max_bits).unscaledValue
   }
 
   // measured faster than Character.isDigit
   @inline private[this] def isDigit(i: Int): Boolean =
     '0' <= i && i <= '9'
 
-  // is it worth keeping this custom long__ instead of using biginteger since it
+  // is it worth keeping this custom long__ instead of using bigInteger since it
   // is approximately double the performance.
   def long__(in: Reader, lower: Long, upper: Long, consume: Boolean): Long = {
     var current: Int = 0
@@ -311,16 +311,16 @@ object UnsafeNumbers {
     // ultimately uses strtod from the system libraries and they may loop until
     // the answer converges
     // https://github.com/rust-lang/rust/pull/27307/files#diff-fe6c36003393c49bf7e5c413458d6d9cR43-R84
-    val res = bigdecimal__(in, consume, negative, current, false, max_bits)
+    val res = bigDecimal__(in, consume, negative, current, false, max_bits)
     // BigDecimal doesn't have a negative zero, so we need to apply manually
     if (negative && res.unscaledValue == java.math.BigInteger.ZERO) -0.0
     // TODO implement Algorithm M or Bigcomp and avoid going via BigDecimal
     else res.doubleValue
   }
 
-  def bigdecimal(num: String, max_bits: Int): java.math.BigDecimal =
-    bigdecimal_(new FastStringReader(num), true, max_bits)
-  def bigdecimal_(
+  def bigDecimal(num: String, max_bits: Int): java.math.BigDecimal =
+    bigDecimal_(new FastStringReader(num), true, max_bits)
+  def bigDecimal_(
     in: Reader,
     consume: Boolean,
     max_bits: Int
@@ -335,10 +335,10 @@ object UnsafeNumbers {
       current = in.read()
     if (current == -1) throw UnsafeNumber
 
-    bigdecimal__(in, consume, negative, current, false, max_bits)
+    bigDecimal__(in, consume, negative, current, false, max_bits)
   }
 
-  def bigdecimal__(
+  def bigDecimal__(
     in: Reader,
     consume: Boolean,
     negative: Boolean,
@@ -377,7 +377,7 @@ object UnsafeNumbers {
       if (sig_ != null) {
         sig_ = sig_
           .multiply(java.math.BigInteger.TEN)
-          .add(bigintegers(c))
+          .add(bigIntegers(c))
         // arbitrary limit on BigInteger size to avoid OOM attacks
         if (sig_.bitLength >= max_bits)
           throw UnsafeNumber
@@ -385,7 +385,7 @@ object UnsafeNumbers {
         sig_ = java.math.BigInteger
           .valueOf(sig)
           .multiply(java.math.BigInteger.TEN)
-          .add(bigintegers(c))
+          .add(bigIntegers(c))
       else if (sig < 0) sig = c
       else sig = sig * 10 + c
     }
@@ -441,8 +441,8 @@ object UnsafeNumbers {
     else
       res
   }
-  // note that bigdecimal does not have a negative zero
-  val bigintegers: Array[java.math.BigInteger] =
+  // note that bigDecimal does not have a negative zero
+  val bigIntegers: Array[java.math.BigInteger] =
     (0L to 9L).map(java.math.BigInteger.valueOf(_)).toArray
   val longunderflow: Long = Long.MinValue / 10L
   val longoverflow: Long  = Long.MaxValue / 10L

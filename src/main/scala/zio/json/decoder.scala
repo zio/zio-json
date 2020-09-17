@@ -119,13 +119,13 @@ object Decoder extends GeneratedTupleDecoders with DecoderLowPriority0 {
   implicit val short: Decoder[Short] = number(Lexer.short)
   implicit val int: Decoder[Int]     = number(Lexer.int)
   implicit val long: Decoder[Long]   = number(Lexer.long)
-  implicit val biginteger: Decoder[java.math.BigInteger] = number(
-    Lexer.biginteger
+  implicit val bigInteger: Decoder[java.math.BigInteger] = number(
+    Lexer.bigInteger
   )
   implicit val float: Decoder[Float]   = number(Lexer.float)
   implicit val double: Decoder[Double] = number(Lexer.double)
-  implicit val bigdecimal: Decoder[java.math.BigDecimal] = number(
-    Lexer.bigdecimal
+  implicit val bigDecimal: Decoder[java.math.BigDecimal] = number(
+    Lexer.bigDecimal
   )
   // numbers decode from numbers or strings for maximum compatibility
   private[this] def number[A](
@@ -186,7 +186,7 @@ object Decoder extends GeneratedTupleDecoders with DecoderLowPriority0 {
 
         val values: Array[Any] = Array.ofDim(2)
 
-        if (Lexer.firstObject(trace, in))
+        if (Lexer.firstField(trace, in))
           do {
             val field = Lexer.field(trace, in, matrix)
             if (field == -1) Lexer.skipValue(trace, in)
@@ -202,7 +202,7 @@ object Decoder extends GeneratedTupleDecoders with DecoderLowPriority0 {
                 values(1) = B.unsafeDecode(trace_, in)
               }
             }
-          } while (Lexer.nextObject(trace, in))
+          } while (Lexer.nextField(trace, in))
 
         if (values(0) == null && values(1) == null)
           throw UnsafeJson(trace :+ JsonError.Message("missing fields"))
@@ -223,11 +223,11 @@ object Decoder extends GeneratedTupleDecoders with DecoderLowPriority0 {
   )(implicit A: Decoder[A]): T[A] = {
     Lexer.char(trace, in, '[')
     var i: Int = 0
-    if (Lexer.firstArray(trace, in)) do {
+    if (Lexer.firstArrayElement(trace, in)) do {
       val trace_ = trace :+ JsonError.ArrayAccess(i)
       builder += A.unsafeDecode(trace_, in)
       i += 1
-    } while (Lexer.nextArray(trace, in))
+    } while (Lexer.nextArrayElement(trace, in))
     builder.result()
   }
 
@@ -239,11 +239,21 @@ private[json] trait DecoderLowPriority0 extends DecoderLowPriority1 { this: Deco
       builder(trace, in, zio.ChunkBuilder.make[A]())
   }
 
+  implicit def list[A: Decoder]: Decoder[List[A]] = new Decoder[List[A]] {
+    def unsafeDecode(trace: Chunk[JsonError], in: RetractReader): List[A] =
+      builder(trace, in, new mutable.ListBuffer[A])
+  }
+
+  implicit def vector[A: Decoder]: Decoder[Vector[A]] = new Decoder[Vector[A]] {
+    def unsafeDecode(trace: Chunk[JsonError], in: RetractReader): Vector[A] =
+      builder(trace, in, new immutable.VectorBuilder[A]).toVector
+  }
+
   implicit def hashset[A: Decoder]: Decoder[immutable.HashSet[A]] =
     list[A].map(lst => immutable.HashSet(lst: _*))
 
   implicit def hashmap[K: FieldDecoder, V: Decoder]: Decoder[immutable.HashMap[K, V]] =
-    keylist[K, V].map(lst => immutable.HashMap(lst: _*))
+    keyValueChunk[K, V].map(lst => immutable.HashMap(lst: _*))
 
 }
 
@@ -261,20 +271,10 @@ private[json] trait DecoderLowPriority0 extends DecoderLowPriority1 { this: Deco
 private[json] trait DecoderLowPriority1 {
   this: Decoder.type =>
 
-  implicit def list[A: Decoder]: Decoder[List[A]] = new Decoder[List[A]] {
-    def unsafeDecode(trace: Chunk[JsonError], in: RetractReader): List[A] =
-      builder(trace, in, new mutable.ListBuffer[A])
-  }
-
-  implicit def vector[A: Decoder]: Decoder[Vector[A]] = new Decoder[Vector[A]] {
-    def unsafeDecode(trace: Chunk[JsonError], in: RetractReader): Vector[A] =
-      builder(trace, in, new immutable.VectorBuilder[A]).toVector
-  }
-
   implicit def seq[A: Decoder]: Decoder[Seq[A]] = list[A]
 
   // not implicit because this overlaps with decoders for lists of tuples
-  def keylist[K, A](
+  def keyValueChunk[K, A](
     implicit
     K: FieldDecoder[K],
     A: Decoder[A]
@@ -286,20 +286,20 @@ private[json] trait DecoderLowPriority1 {
       ): Chunk[(K, A)] = {
         val builder = zio.ChunkBuilder.make[(K, A)]()
         Lexer.char(trace, in, '{')
-        if (Lexer.firstObject(trace, in))
+        if (Lexer.firstField(trace, in))
           do {
             val field  = Lexer.string(trace, in).toString
             val trace_ = trace :+ JsonError.ObjectAccess(field)
             Lexer.char(trace_, in, ':')
             val value = A.unsafeDecode(trace_, in)
             builder += ((K.unsafeDecodeField(trace_, field), value))
-          } while (Lexer.nextObject(trace, in))
+          } while (Lexer.nextField(trace, in))
         builder.result()
       }
     }
 
   implicit def sortedmap[K: FieldDecoder: Ordering, V: Decoder]: Decoder[collection.SortedMap[K, V]] =
-    keylist[K, V].map(lst => collection.SortedMap.apply(lst: _*))
+    keyValueChunk[K, V].map(lst => collection.SortedMap.apply(lst: _*))
 
   implicit def map[K: FieldDecoder, V: Decoder]: Decoder[Map[K, V]] = hashmap[K, V]
 
