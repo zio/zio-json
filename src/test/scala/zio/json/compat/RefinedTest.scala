@@ -18,14 +18,14 @@ object RefinedTest extends TestSuite {
   case class Person(name: String Refined NonEmpty)
 
   object Person {
-    implicit val decoder: JsonDecoder[Person] = json.DeriveJsonDecoder.gen[Person]
-    implicit val encoder: JsonEncoder[Person] = json.DeriveJsonEncoder.gen[Person]
+    implicit val decoder: JsonDecoder[Person] = DeriveJsonDecoder.gen[Person]
+    implicit val encoder: JsonEncoder[Person] = DeriveJsonEncoder.gen[Person]
   }
 
   val tests = Tests {
     test("Refined") {
-      json.parser.decode[Person]("""{"name":""}""") ==> Left(".name(Predicate isEmpty() did not fail.)")
-      json.parser.decode[Person]("""{"name":"fommil"}""") ==> Right(Person("fommil"))
+      parser.decode[Person]("""{"name":""}""") ==> Left(".name(Predicate isEmpty() did not fail.)")
+      parser.decode[Person]("""{"name":"fommil"}""") ==> Right(Person("fommil"))
 
       Person("fommil").toJson ==> """{"name":"fommil"}"""
     }

@@ -3,7 +3,7 @@ package zio.json
 import scala.collection.immutable
 
 import zio.Chunk
-import zio.json
+import zio.json._
 import zio.json.ast._
 import io.circe
 import TestUtils._
@@ -23,14 +23,14 @@ object DecoderTest extends TestSuite {
     case class Parameterless()
     object Parameterless {
       implicit val decoder: JsonDecoder[Parameterless] =
-        json.DeriveJsonDecoder.gen[Parameterless]
+        DeriveJsonDecoder.gen[Parameterless]
     }
 
-    @json.no_extra_fields
+    @no_extra_fields
     case class OnlyString(s: String)
     object OnlyString {
       implicit val decoder: JsonDecoder[OnlyString] =
-        json.DeriveJsonDecoder.gen[OnlyString]
+        DeriveJsonDecoder.gen[OnlyString]
     }
   }
 
@@ -38,7 +38,7 @@ object DecoderTest extends TestSuite {
 
     sealed abstract class Parent
     object Parent {
-      implicit val decoder: JsonDecoder[Parent] = json.DeriveJsonDecoder.gen[Parent]
+      implicit val decoder: JsonDecoder[Parent] = DeriveJsonDecoder.gen[Parent]
     }
     case class Child1() extends Parent
     case class Child2() extends Parent
@@ -46,21 +46,21 @@ object DecoderTest extends TestSuite {
 
   object examplealtsum {
 
-    @json.discriminator("hint")
+    @discriminator("hint")
     sealed abstract class Parent
     object Parent {
-      implicit val decoder: JsonDecoder[Parent] = json.DeriveJsonDecoder.gen[Parent]
+      implicit val decoder: JsonDecoder[Parent] = DeriveJsonDecoder.gen[Parent]
     }
-    @json.hint("Cain")
+    @hint("Cain")
     case class Child1() extends Parent
-    @json.hint("Abel")
+    @hint("Abel")
     case class Child2() extends Parent
   }
 
   val tests = Tests {
     test("primitives") {
       // this big integer consumes more than 128 bits
-      json.parser.decode[java.math.BigInteger]("170141183460469231731687303715884105728") ==> Left(
+      parser.decode[java.math.BigInteger]("170141183460469231731687303715884105728") ==> Left(
         "(expected a 128 bit BigInteger)"
       )
     }
@@ -69,20 +69,20 @@ object DecoderTest extends TestSuite {
       val bernies = List("""{"a":1}""", """{"left":1}""", """{"Left":1}""")
       val trumps  = List("""{"b":2}""", """{"right":2}""", """{"Right":2}""")
 
-      bernies.foreach(s => json.parser.decode[Either[Int, Int]](s) ==> Right(Left(1)))
+      bernies.foreach(s => parser.decode[Either[Int, Int]](s) ==> Right(Left(1)))
 
-      trumps.foreach(s => json.parser.decode[Either[Int, Int]](s) ==> Right(Right(2)))
+      trumps.foreach(s => parser.decode[Either[Int, Int]](s) ==> Right(Right(2)))
 
     }
 
     test("parameterless products") {
       import exampleproducts._
-      json.parser.decode[Parameterless]("""{}""") ==> Right(Parameterless())
+      parser.decode[Parameterless]("""{}""") ==> Right(Parameterless())
 
       // actually anything works... consider this a canary test because if only
       // the empty object is supported that's fine.
-      json.parser.decode[Parameterless]("""null""") ==> Right(Parameterless())
-      json.parser.decode[Parameterless]("""{"field":"value"}""") ==> Right(
+      parser.decode[Parameterless]("""null""") ==> Right(Parameterless())
+      parser.decode[Parameterless]("""{"field":"value"}""") ==> Right(
         Parameterless()
       )
     }
@@ -90,18 +90,18 @@ object DecoderTest extends TestSuite {
     test("no extra fields") {
       import exampleproducts._
 
-      json.parser.decode[OnlyString]("""{"s":""}""") ==> Right(OnlyString(""))
+      parser.decode[OnlyString]("""{"s":""}""") ==> Right(OnlyString(""))
 
-      json.parser.decode[OnlyString]("""{"s":"","t":""}""") ==> Left(
+      parser.decode[OnlyString]("""{"s":"","t":""}""") ==> Left(
         "(invalid extra field)"
       )
     }
 
     test("sum encoding") {
       import examplesum._
-      json.parser.decode[Parent]("""{"Child1":{}}""") ==> Right(Child1())
-      json.parser.decode[Parent]("""{"Child2":{}}""") ==> Right(Child2())
-      json.parser.decode[Parent]("""{"type":"Child1"}""") ==> Left(
+      parser.decode[Parent]("""{"Child1":{}}""") ==> Right(Child1())
+      parser.decode[Parent]("""{"Child2":{}}""") ==> Right(Child2())
+      parser.decode[Parent]("""{"type":"Child1"}""") ==> Left(
         "(invalid disambiguator)"
       )
     }
@@ -109,12 +109,12 @@ object DecoderTest extends TestSuite {
     test("sum alternative encoding") {
       import examplealtsum._
 
-      json.parser.decode[Parent]("""{"hint":"Cain"}""") ==> Right(Child1())
-      json.parser.decode[Parent]("""{"hint":"Abel"}""") ==> Right(Child2())
-      json.parser.decode[Parent]("""{"hint":"Samson"}""") ==> Left(
+      parser.decode[Parent]("""{"hint":"Cain"}""") ==> Right(Child1())
+      parser.decode[Parent]("""{"hint":"Abel"}""") ==> Right(Child2())
+      parser.decode[Parent]("""{"hint":"Samson"}""") ==> Left(
         "(invalid disambiguator)"
       )
-      json.parser.decode[Parent]("""{"Cain":{}}""") ==> Left(
+      parser.decode[Parent]("""{"Cain":{}}""") ==> Left(
         "(missing hint 'hint')"
       )
     }
@@ -158,7 +158,7 @@ object DecoderTest extends TestSuite {
       val input = getResourceAsString("twitter_api_response.json")
       val expected =
         circe.parser.decode[List[Tweet]](input)
-      val got = json.parser.decode[List[Tweet]](input)
+      val got = parser.decode[List[Tweet]](input)
       got ==> expected
     }
 
@@ -166,7 +166,7 @@ object DecoderTest extends TestSuite {
       import zio.json.data.geojson.generated._
       val input    = getResourceAsString("che.geo.json")
       val expected = circe.parser.decode[GeoJSON](input)
-      val got      = json.parser.decode[GeoJSON](input)
+      val got      = parser.decode[GeoJSON](input)
       got ==> expected
     }
 
@@ -174,7 +174,7 @@ object DecoderTest extends TestSuite {
       import zio.json.data.geojson.handrolled._
       val input    = getResourceAsString("che.geo.json")
       val expected = circe.parser.decode[GeoJSON](input)
-      val got      = json.parser.decode[GeoJSON](input)
+      val got      = parser.decode[GeoJSON](input)
       got ==> expected
     }
 
@@ -182,7 +182,7 @@ object DecoderTest extends TestSuite {
       import zio.json.data.geojson.generated._
       val input    = getResourceAsString("che-2.geo.json")
       val expected = circe.parser.decode[GeoJSON](input)
-      val got      = json.parser.decode[GeoJSON](input)
+      val got      = parser.decode[GeoJSON](input)
       got ==> expected
     }
 
@@ -199,44 +199,44 @@ object DecoderTest extends TestSuite {
     }
 
     test("unicode") {
-      json.parser.decode[String](""""€🐵🥰"""") ==> Right("€🐵🥰")
+      parser.decode[String](""""€🐵🥰"""") ==> Right("€🐵🥰")
     }
 
     // collections tests contributed by Piotr Paradziński
     test("Seq") {
       val jsonStr  = """["5XL","2XL","XL"]"""
       val expected = Seq("5XL", "2XL", "XL")
-      json.parser.decode[Seq[String]](jsonStr) ==> Right(expected)
+      parser.decode[Seq[String]](jsonStr) ==> Right(expected)
     }
 
     test("Vector") {
       val jsonStr  = """["5XL","2XL","XL"]"""
       val expected = Vector("5XL", "2XL", "XL")
-      json.parser.decode[Vector[String]](jsonStr) ==> Right(expected)
+      parser.decode[Vector[String]](jsonStr) ==> Right(expected)
     }
 
     test("SortedSet") {
       val jsonStr  = """["5XL","2XL","XL"]"""
       val expected = immutable.SortedSet("5XL", "2XL", "XL")
-      json.parser.decode[immutable.SortedSet[String]](jsonStr) ==> Right(expected)
+      parser.decode[immutable.SortedSet[String]](jsonStr) ==> Right(expected)
     }
 
     test("HashSet") {
       val jsonStr  = """["5XL","2XL","XL"]"""
       val expected = immutable.HashSet("5XL", "2XL", "XL")
-      json.parser.decode[immutable.HashSet[String]](jsonStr) ==> Right(expected)
+      parser.decode[immutable.HashSet[String]](jsonStr) ==> Right(expected)
     }
 
     test("Set") {
       val jsonStr  = """["5XL","2XL","XL"]"""
       val expected = Set("5XL", "2XL", "XL")
-      json.parser.decode[Set[String]](jsonStr) ==> Right(expected)
+      parser.decode[Set[String]](jsonStr) ==> Right(expected)
     }
 
     test("Map") {
       val jsonStr  = """{"5XL":3,"2XL":14,"XL":159}"""
       val expected = Map("5XL" -> 3, "2XL" -> 14, "XL" -> 159)
-      json.parser.decode[Map[String, Int]](jsonStr) ==> Right(expected)
+      parser.decode[Map[String, Int]](jsonStr) ==> Right(expected)
     }
 
     test("jawn test data: bar") {

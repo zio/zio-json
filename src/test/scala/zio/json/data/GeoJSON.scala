@@ -1,11 +1,11 @@
 package zio.json.data.geojson
 
 import io.circe
-import zio.json
 import play.api.libs.{ json => Play }
 import ai.x.play.json.{ Jsonx => Playx }
 import ai.x.play.json.Encoders.encoder
 
+import zio.json._
 import zio.json.ast._
 import zio.Chunk
 
@@ -14,7 +14,7 @@ import playtuples._
 
 package generated {
 
-  @json.discriminator("type")
+  @discriminator("type")
   sealed abstract class Geometry
   final case class Point(coordinates: (Double, Double))                          extends Geometry
   final case class MultiPoint(coordinates: List[(Double, Double)])               extends Geometry
@@ -26,7 +26,7 @@ package generated {
     geometries: List[Geometry] // NOTE: recursive
   ) extends Geometry
 
-  @json.discriminator("type")
+  @discriminator("type")
   sealed abstract class GeoJSON
   final case class Feature(properties: Map[String, String], geometry: Geometry) extends GeoJSON
   final case class FeatureCollection(
@@ -35,9 +35,9 @@ package generated {
 
   object Geometry {
     implicit lazy val zioJsonJsonDecoder: JsonDecoder[Geometry] =
-      json.DeriveJsonDecoder.gen[Geometry]
+      DeriveJsonDecoder.gen[Geometry]
     implicit lazy val zioJsonEncoder: JsonEncoder[Geometry] =
-      json.DeriveJsonEncoder.gen[Geometry]
+      DeriveJsonEncoder.gen[Geometry]
 
     implicit val customConfig: circe.generic.extras.Configuration =
       circe.generic.extras.Configuration.default
@@ -60,9 +60,9 @@ package generated {
   }
   object GeoJSON {
     implicit lazy val zioJsonJsonDecoder: JsonDecoder[GeoJSON] =
-      json.DeriveJsonDecoder.gen[GeoJSON]
+      DeriveJsonDecoder.gen[GeoJSON]
     implicit lazy val zioJsonEncoder: JsonEncoder[GeoJSON] =
-      json.DeriveJsonEncoder.gen[GeoJSON]
+      DeriveJsonEncoder.gen[GeoJSON]
 
     implicit val customConfig: circe.generic.extras.Configuration =
       circe.generic.extras.Configuration.default
@@ -232,7 +232,7 @@ package handrolled {
 
       }
     implicit lazy val zioJsonEncoder: JsonEncoder[Geometry] =
-      json.DeriveJsonEncoder.gen[Geometry]
+      DeriveJsonEncoder.gen[Geometry]
 
     implicit val customConfig: circe.generic.extras.Configuration =
       circe.generic.extras.Configuration.default
@@ -342,7 +342,7 @@ package handrolled {
 
       }
     implicit lazy val zioJsonEncoder: JsonEncoder[GeoJSON] =
-      json.DeriveJsonEncoder.gen[GeoJSON]
+      DeriveJsonEncoder.gen[GeoJSON]
 
     implicit val customConfig: circe.generic.extras.Configuration =
       circe.generic.extras.Configuration.default

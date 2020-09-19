@@ -107,11 +107,11 @@ class TwitterAPIBenchmarks {
 
   @Benchmark
   def decodeZioSuccess1(): Either[String, List[Tweet]] =
-    json.parser.decode[List[Tweet]](jsonChars)
+    parser.decode[List[Tweet]](jsonChars)
 
   @Benchmark
   def decodeZioSuccess2(): Either[String, List[Tweet]] =
-    json.parser.decode[List[Tweet]](jsonCharsCompact)
+    parser.decode[List[Tweet]](jsonCharsCompact)
 
   @Benchmark
   def encodeZio(): String = {
@@ -122,7 +122,7 @@ class TwitterAPIBenchmarks {
 
   @Benchmark
   def decodeZioError(): Either[String, List[Tweet]] =
-    json.parser.decode[List[Tweet]](jsonCharsErr)
+    parser.decode[List[Tweet]](jsonCharsErr)
 
 }
 

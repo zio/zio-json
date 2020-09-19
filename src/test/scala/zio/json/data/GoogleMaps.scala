@@ -2,19 +2,19 @@ package zio.json.data.googlemaps
 
 import com.github.plokhotnyuk.jsoniter_scala.macros.named
 import io.circe
-import zio.json
+import zio.json._
 import play.api.libs.{ json => Play }
 
 final case class Value(
   text: String,
   @named("value")
-  @json.field("value")
+  @field("value")
   @circe.generic.extras.JsonKey("value")
   v: Int
 )
 final case class Elements(distance: Value, duration: Value, status: String)
 final case class Rows(elements: List[Elements])
-// @json.no_extra_fields // entirely mitigates Attack1
+// @no_extra_fields // entirely mitigates Attack1
 final case class DistanceMatrix(
   destination_addresses: List[String],
   origin_addresses: List[String],
@@ -23,8 +23,8 @@ final case class DistanceMatrix(
 )
 
 object Value {
-  implicit val zioJsonJsonDecoder: JsonDecoder[Value] = json.DeriveJsonDecoder.gen[Value]
-  implicit val zioJsonEncoder: JsonEncoder[Value] = json.DeriveJsonEncoder.gen[Value]
+  implicit val zioJsonJsonDecoder: JsonDecoder[Value] = DeriveJsonDecoder.gen[Value]
+  implicit val zioJsonEncoder: JsonEncoder[Value] = DeriveJsonEncoder.gen[Value]
 
   implicit val customConfig: circe.generic.extras.Configuration =
     circe.generic.extras.Configuration.default
@@ -55,8 +55,8 @@ object Value {
 
 }
 object Elements {
-  implicit val zioJsonJsonDecoder: JsonDecoder[Elements] = json.DeriveJsonDecoder.gen[Elements]
-  implicit val zioJsonEncoder: JsonEncoder[Elements] = json.DeriveJsonEncoder.gen[Elements]
+  implicit val zioJsonJsonDecoder: JsonDecoder[Elements] = DeriveJsonDecoder.gen[Elements]
+  implicit val zioJsonEncoder: JsonEncoder[Elements] = DeriveJsonEncoder.gen[Elements]
 
   implicit val customConfig: circe.generic.extras.Configuration =
     circe.generic.extras.Configuration.default
@@ -70,8 +70,8 @@ object Elements {
 
 }
 object Rows {
-  implicit val zioJsonJsonDecoder: JsonDecoder[Rows] = json.DeriveJsonDecoder.gen[Rows]
-  implicit val zioJsonEncoder: JsonEncoder[Rows] = json.DeriveJsonEncoder.gen[Rows]
+  implicit val zioJsonJsonDecoder: JsonDecoder[Rows] = DeriveJsonDecoder.gen[Rows]
+  implicit val zioJsonEncoder: JsonEncoder[Rows] = DeriveJsonEncoder.gen[Rows]
 
   implicit val customConfig: circe.generic.extras.Configuration =
     circe.generic.extras.Configuration.default
@@ -86,9 +86,9 @@ object Rows {
 }
 object DistanceMatrix {
   implicit val zioJsonJsonDecoder: JsonDecoder[DistanceMatrix] =
-    json.DeriveJsonDecoder.gen[DistanceMatrix]
+    DeriveJsonDecoder.gen[DistanceMatrix]
   implicit val zioJsonEncoder: JsonEncoder[DistanceMatrix] =
-    json.DeriveJsonEncoder.gen[DistanceMatrix]
+    DeriveJsonEncoder.gen[DistanceMatrix]
 
   implicit val customConfig: circe.generic.extras.Configuration =
     circe.generic.extras.Configuration.default

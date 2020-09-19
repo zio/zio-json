@@ -19,7 +19,7 @@ object ScalazTest extends TestSuite {
       IList[Int]().toJsonPretty ==> "[]"
       IList(1, 2, 3).toJsonPretty ==> "[1, 2, 3]"
 
-      json.parser.decode[IList[Int]]("""[1,2,3]""") ==> Right(IList(1, 2, 3))
+      parser.decode[IList[Int]]("""[1,2,3]""") ==> Right(IList(1, 2, 3))
     }
   }
 

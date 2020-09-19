@@ -3,7 +3,6 @@ package zio.json
 import scala.collection.immutable
 
 import io.circe
-import zio.json
 import zio.json._
 import TestUtils._
 import scalaprops._
@@ -21,19 +20,19 @@ object EncoderTest extends TestSuite {
     case class Parameterless()
     object Parameterless {
       implicit val encoder: JsonEncoder[Parameterless] =
-        json.DeriveJsonEncoder.gen[Parameterless]
+        DeriveJsonEncoder.gen[Parameterless]
     }
 
     case class OnlyString(s: String)
     object OnlyString {
       implicit val encoder: JsonEncoder[OnlyString] =
-        json.DeriveJsonEncoder.gen[OnlyString]
+        DeriveJsonEncoder.gen[OnlyString]
     }
 
-    case class CoupleOfThings(@json.field("j") i: Int, f: Option[Float], b: Boolean)
+    case class CoupleOfThings(@field("j") i: Int, f: Option[Float], b: Boolean)
     object CoupleOfThings {
       implicit val encoder: JsonEncoder[CoupleOfThings] =
-        json.DeriveJsonEncoder.gen[CoupleOfThings]
+        DeriveJsonEncoder.gen[CoupleOfThings]
     }
   }
 
@@ -41,22 +40,22 @@ object EncoderTest extends TestSuite {
 
     sealed abstract class Parent
     object Parent {
-      implicit val encoder: JsonEncoder[Parent] = json.DeriveJsonEncoder.gen[Parent]
+      implicit val encoder: JsonEncoder[Parent] = DeriveJsonEncoder.gen[Parent]
     }
     case class Child1() extends Parent
-    @json.hint("Cain")
+    @hint("Cain")
     case class Child2() extends Parent
   }
 
   object examplealtsum {
 
-    @json.discriminator("hint")
+    @discriminator("hint")
     sealed abstract class Parent
     object Parent {
-      implicit val encoder: JsonEncoder[Parent] = json.DeriveJsonEncoder.gen[Parent]
+      implicit val encoder: JsonEncoder[Parent] = DeriveJsonEncoder.gen[Parent]
     }
     case class Child1() extends Parent
-    @json.hint("Abel")
+    @hint("Abel")
     case class Child2(s: Option[String]) extends Parent
   }
 

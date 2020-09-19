@@ -17,9 +17,9 @@ import scala.util.Try
 final case class Nested(n: Option[Nested])
 object Nested {
   implicit lazy val zioJsonJsonDecoder: JsonDecoder[Nested] =
-    json.DeriveJsonDecoder.gen
+    DeriveJsonDecoder.gen
   implicit lazy val zioJsonEncoder: JsonEncoder[Nested] =
-    json.DeriveJsonEncoder.gen
+    DeriveJsonEncoder.gen
 
   implicit val customConfig: circe.generic.extras.Configuration =
     circe.generic.extras.Configuration.default
@@ -92,7 +92,7 @@ class SyntheticBenchmarks {
 
   @Benchmark
   def decodeZioSuccess(): Either[String, Nested] =
-    json.parser.decode[Nested](jsonChars)
+    parser.decode[Nested](jsonChars)
 
   @Benchmark
   def encodeZio(): String = {

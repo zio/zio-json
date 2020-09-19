@@ -1,7 +1,7 @@
 package zio.json.data.twitter
 
 import io.circe
-import zio.json
+import zio.json._
 import play.api.libs.{ json => Play }
 import ai.x.play.json.{ Jsonx => Playx }
 import ai.x.play.json.Encoders.encoder
@@ -13,8 +13,8 @@ case class Urls(
   indices: List[Int]
 )
 object Urls {
-  implicit val jJsonDecoder: JsonDecoder[Urls] = json.DeriveJsonDecoder.gen[Urls]
-  implicit val jEncoder: JsonEncoder[Urls] = json.DeriveJsonEncoder.gen[Urls]
+  implicit val jJsonDecoder: JsonDecoder[Urls] = DeriveJsonDecoder.gen[Urls]
+  implicit val jEncoder: JsonEncoder[Urls] = DeriveJsonEncoder.gen[Urls]
   implicit val customConfig: circe.generic.extras.Configuration =
     circe.generic.extras.Configuration.default
   implicit val circeJsonDecoder: circe.Decoder[Urls] =
@@ -25,8 +25,8 @@ object Urls {
 }
 case class Url(urls: List[Urls])
 object Url {
-  implicit val jJsonDecoder: JsonDecoder[Url] = json.DeriveJsonDecoder.gen[Url]
-  implicit val jEncoder: JsonEncoder[Url] = json.DeriveJsonEncoder.gen[Url]
+  implicit val jJsonDecoder: JsonDecoder[Url] = DeriveJsonDecoder.gen[Url]
+  implicit val jEncoder: JsonEncoder[Url] = DeriveJsonEncoder.gen[Url]
   implicit val customConfig: circe.generic.extras.Configuration =
     circe.generic.extras.Configuration.default
   implicit val circeJsonDecoder: circe.Decoder[Url] =
@@ -38,8 +38,8 @@ object Url {
 
 case class UserEntities(url: Url, description: Url)
 object UserEntities {
-  implicit val jJsonDecoder: JsonDecoder[UserEntities] = json.DeriveJsonDecoder.gen[UserEntities]
-  implicit val jEncoder: JsonEncoder[UserEntities] = json.DeriveJsonEncoder.gen[UserEntities]
+  implicit val jJsonDecoder: JsonDecoder[UserEntities] = DeriveJsonDecoder.gen[UserEntities]
+  implicit val jEncoder: JsonEncoder[UserEntities] = DeriveJsonEncoder.gen[UserEntities]
   implicit val customConfig: circe.generic.extras.Configuration =
     circe.generic.extras.Configuration.default
   implicit val circeJsonDecoder: circe.Decoder[UserEntities] =
@@ -58,8 +58,8 @@ case class UserMentions(
   indices: List[Int]
 )
 object UserMentions {
-  implicit val jJsonDecoder: JsonDecoder[UserMentions] = json.DeriveJsonDecoder.gen[UserMentions]
-  implicit val jEncoder: JsonEncoder[UserMentions] = json.DeriveJsonEncoder.gen[UserMentions]
+  implicit val jJsonDecoder: JsonDecoder[UserMentions] = DeriveJsonDecoder.gen[UserMentions]
+  implicit val jEncoder: JsonEncoder[UserMentions] = DeriveJsonEncoder.gen[UserMentions]
   implicit val customConfig: circe.generic.extras.Configuration =
     circe.generic.extras.Configuration.default
   implicit val circeJsonDecoder: circe.Decoder[UserMentions] =
@@ -115,8 +115,8 @@ case class User(
   translator_type: String
 )
 object User {
-  implicit val jJsonDecoder: JsonDecoder[User] = json.DeriveJsonDecoder.gen[User]
-  implicit val jEncoder: JsonEncoder[User] = json.DeriveJsonEncoder.gen[User]
+  implicit val jJsonDecoder: JsonDecoder[User] = DeriveJsonDecoder.gen[User]
+  implicit val jEncoder: JsonEncoder[User] = DeriveJsonEncoder.gen[User]
   implicit val customConfig: circe.generic.extras.Configuration =
     circe.generic.extras.Configuration.default
   implicit val circeJsonDecoder: circe.Decoder[User] =
@@ -133,8 +133,8 @@ case class Entities(
   urls: List[Urls]
 )
 object Entities {
-  implicit val jJsonDecoder: JsonDecoder[Entities] = json.DeriveJsonDecoder.gen[Entities]
-  implicit val jEncoder: JsonEncoder[Entities] = json.DeriveJsonEncoder.gen[Entities]
+  implicit val jJsonDecoder: JsonDecoder[Entities] = DeriveJsonDecoder.gen[Entities]
+  implicit val jEncoder: JsonEncoder[Entities] = DeriveJsonEncoder.gen[Entities]
   implicit val customConfig: circe.generic.extras.Configuration =
     circe.generic.extras.Configuration.default
   implicit val circeJsonDecoder: circe.Decoder[Entities] =
@@ -172,9 +172,9 @@ case class RetweetedStatus(
 )
 object RetweetedStatus {
   implicit val jJsonDecoder: JsonDecoder[RetweetedStatus] =
-    json.DeriveJsonDecoder.gen[RetweetedStatus]
+    DeriveJsonDecoder.gen[RetweetedStatus]
   implicit val jEncoder: JsonEncoder[RetweetedStatus] =
-    json.DeriveJsonEncoder.gen[RetweetedStatus]
+    DeriveJsonEncoder.gen[RetweetedStatus]
   implicit val customConfig: circe.generic.extras.Configuration =
     circe.generic.extras.Configuration.default
   implicit val circeJsonDecoder: circe.Decoder[RetweetedStatus] =
@@ -214,8 +214,8 @@ case class Tweet(
 )
 
 object Tweet {
-  implicit val zioJsonJsonDecoder: JsonDecoder[Tweet] = json.DeriveJsonDecoder.gen[Tweet]
-  implicit val zioJsonEncoder: JsonEncoder[Tweet] = json.DeriveJsonEncoder.gen[Tweet]
+  implicit val zioJsonJsonDecoder: JsonDecoder[Tweet] = DeriveJsonDecoder.gen[Tweet]
+  implicit val zioJsonEncoder: JsonEncoder[Tweet] = DeriveJsonEncoder.gen[Tweet]
   implicit val customConfig: circe.generic.extras.Configuration =
     circe.generic.extras.Configuration.default
   implicit val circeJsonDecoder: circe.Decoder[Tweet] =

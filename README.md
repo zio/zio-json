@@ -58,14 +58,14 @@ To do this, we create an *instance* of the `JsonDecoder` typeclass for `Banana` 
 
 ```scala
 object Banana {
-  implicit val decoder: JsonDecoder[Banana] = json.DeriveJsonDecoder.gen[Banana]
+  implicit val decoder: JsonDecoder[Banana] = DeriveJsonDecoder.gen[Banana]
 }
 ```
 
 Now we can parse JSON into our object
 
 ```
-scala> json.parser.decode[Banana]("""{"curvature":0.5}""")
+scala> parser.decode[Banana]("""{"curvature":0.5}""")
 val res: Either[String, Banana] = Right(Banana(0.5))
 ```
 
@@ -74,7 +74,7 @@ Likewise, to produce JSON from our data we define a `JsonEncoder`
 ```scala
 object Banana {
   ...
-  implicit val encoder: JsonEncoder[Banana] = json.DeriveJsonEncoder.gen[Banana]
+  implicit val encoder: JsonEncoder[Banana] = DeriveJsonEncoder.gen[Banana]
 }
 
 scala> Banana(0.5).toJson
@@ -90,7 +90,7 @@ val res: String =
 And bad JSON will produce an error in `jq` syntax with an additional piece of contextual information (in parentheses)
 
 ```
-scala> json.parser.decode[Banana]("""{"curvature": womp}""")
+scala> parser.decode[Banana]("""{"curvature": womp}""")
 val res: Either[String, Banana] = Left(.curvature(expected a number, got w))
 ```
 
@@ -106,18 +106,18 @@ we can generate the encoder and decoder for the entire `sealed` family
 
 ```scala
 object Fruit {
-  implicit val decoder: JsonDecoder[Fruit] = json.DeriveJsonDecoder.gen[Fruit]
-  implicit val encoder: JsonEncoder[Fruit] = json.DeriveJsonEncoder.gen[Fruit]
+  implicit val decoder: JsonDecoder[Fruit] = DeriveJsonDecoder.gen[Fruit]
+  implicit val encoder: JsonEncoder[Fruit] = DeriveJsonEncoder.gen[Fruit]
 }
 ```
 
 allowing us to load the fruit based on a single field type tag in the JSON
 
 ```
-scala> json.parser.decode[Fruit]("""{"Banana":{"curvature":0.5}}""")
+scala> parser.decode[Fruit]("""{"Banana":{"curvature":0.5}}""")
 val res: Either[String, Fruit] = Right(Banana(0.5))
 
-scala> json.parser.decode[Fruit]("""{"Apple":{"poison":false}}""")
+scala> parser.decode[Fruit]("""{"Apple":{"poison":false}}""")
 val res: Either[String, Fruit] = Right(Apple(false))
 ```
 
@@ -125,19 +125,19 @@ Almost all of the standard library data types are supported as fields on the cas
 
 ## Configuration
 
-By default the field names of a case class are used as the JSON fields, but it is easy to override this with an annotation `@json.field`.
+By default the field names of a case class are used as the JSON fields, but it is easy to override this with an annotation `@field`.
 
-It is also possible to change the type hint that is used to discriminate case classes with `@json.hint`.
+It is also possible to change the type hint that is used to discriminate case classes with `@hint`.
 
 For example, these annotations change the expected JSON of our `Fruit` family
 
 ```scala
 sealed trait Fruit
-@json.hint("banaani") case class Banana(
-  @json.field("bendiness") curvature: Double
+@hint("banaani") case class Banana(
+  @field("bendiness") curvature: Double
 ) extends Fruit
-@json.hint("omena") case class Apple(
-  @json.field("bad") poison: Boolean
+@hint("omena") case class Apple(
+  @field("bad") poison: Boolean
 ) extends Fruit
 ```
 
@@ -157,7 +157,7 @@ to
 {"omena":{"bad":false}}
 ```
 
-We can raise an error if we encounter unexpected fields by using the `@json.no_extra_fields` annotation on a case class.
+We can raise an error if we encounter unexpected fields by using the `@no_extra_fields` annotation on a case class.
 
 A popular alternative way to encode sealed traits:
 
@@ -167,10 +167,10 @@ A popular alternative way to encode sealed traits:
 {"type":"omena", "bad":false}
 ```
 
-is discouraged for performance reasons. However, if we have no choice in the matter, it may be accomodated with the `@json.discriminator` annotation
+is discouraged for performance reasons. However, if we have no choice in the matter, it may be accomodated with the `@discriminator` annotation
 
 ```scala
-@json.discriminator("type") sealed trait Fruit
+@discriminator("type") sealed trait Fruit
 ```
 
 ## Manual Instances
@@ -258,7 +258,7 @@ import eu.timepit.refined.collection.NonEmpty
 case class Person(name: String Refined NonEmpty)
 
 object Person {
-  implicit val decoder: JsonDecoder[Person] = json.DeriveJsonDecoder.gen
+  implicit val decoder: JsonDecoder[Person] = DeriveJsonDecoder.gen
 }
 ```
 
@@ -386,7 +386,7 @@ circe  2224 ( 7456)  1655 (1533)
 play   2350 ( 3589)  1854 (1344)
 ```
 
-The reason why `zio-json` is not as badly affected is because it skips values that are unexpected. We can completely mitigate this kind of attack by using the `@json.no_extra_fields` annotation which results in the payload being rejected at a rate of 5.5 million ops/sec.
+The reason why `zio-json` is not as badly affected is because it skips values that are unexpected. We can completely mitigate this kind of attack by using the `@no_extra_fields` annotation which results in the payload being rejected at a rate of 5.5 million ops/sec.
 
 Other kinds of redundant values attacks are also possible, such as using an array of 60K full of high precision decimal numbers that require slow parsing (also known as ["near halfway numbers"](https://www.exploringbinary.com/17-digits-gets-you-there-once-youve-found-your-way/)), attacking the CPU. However, the memory attack afforded to us by a redundant `String` is already quite effective.
 
@@ -400,7 +400,7 @@ In this malicious payload, we add redundant fields that have hashcode collisions
 
 <!-- jmh:run -prof gc GoogleMaps.*Attack2 -->
 
-Again, `zio-json` completely mitigates this attack if the `@json.no_extra_fields` annotation is used. Note that even if Circe and Play rejected payloads of this nature, it would be too late because the attack happens at the AST layer, not the decoders. However, for the sake of comparison, let's turn off the `zio-json` mitigation:
+Again, `zio-json` completely mitigates this attack if the `@no_extra_fields` annotation is used. Note that even if Circe and Play rejected payloads of this nature, it would be too late because the attack happens at the AST layer, not the decoders. However, for the sake of comparison, let's turn off the `zio-json` mitigation:
 
 ```
        ops/sec       MB/sec
