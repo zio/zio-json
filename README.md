@@ -3,17 +3,18 @@ The goal of this project is to create the best all-round JSON library for Scala:
 - **Performance** to handle more requests per second than the incumbents, i.e. reduced operational costs.
 - **Security** to mitigate against adversarial JSON payloads that threaten the capacity of the server.
 - **Fast Compilation** no shapeless, no type astronautics.
-- **Future Proof** prepared for Scala 3 and next generation Java.
+- **Future-Proof**, prepared for Scala 3 and next generation Java.
 - **Simple** small codebase, short and concise documentation that covers everything.
 - **Helpful errors** are readable by humans and machines.
+- **ZIO Integration** so nothing more is required.
 
 # How
 
 Extreme **performance** is achieved by decoding JSON directly from the input source into business objects (inspired by [plokhotnyuk](https://github.com/plokhotnyuk/jsoniter-scala)). Although not a requirement, the latest advances in [Java Loom](https://wiki.openjdk.java.net/display/loom/Main) can be used to support arbitrarily large payloads with near-zero overhead.
 
-Best in class **security** is achieved with an aggressive *early exit* strategy that avoids costly stacktraces, even when parsing malformed numbers. Malicious (and badly formed) payloads are rejected before finishing reading.
+Best in class **security** is achieved with an aggressive *early exit* strategy that avoids costly stack traces, even when parsing malformed numbers. Malicious (and badly formed) payloads are rejected before finishing reading.
 
-**Fast compilation** and **future proofing** is possible thanks to [Magnolia](https://propensive.com/opensource/magnolia/) which allows us to generate boilerplate in a way that will survive the exodus to Scala 3. `zio-json` is internally implemented using the [`java.io.Reader`](https://docs.oracle.com/en/java/javase/14/docs/api/java.base/java/io/Reader.html) interface which is making a comeback to center stage in Loom.
+**Fast compilation** and **future-proofing** is possible thanks to [Magnolia](https://propensive.com/opensource/magnolia/) which allows us to generate boilerplate in a way that will survive the exodus to Scala 3. `zio-json` is internally implemented using the [`java.io.Reader`](https://docs.oracle.com/en/java/javase/14/docs/api/java.base/java/io/Reader.html) interface which is making a comeback to center stage in Loom.
 
 **Simplicity** is achieved by using well-known software patterns and avoiding bloat. The only requirement to use this library is to know about Scala's encoding of typeclasses, described in [Functional Programming for Mortals](https://leanpub.com/fpmortals/read#leanpub-auto-functionality).
 
@@ -36,7 +37,6 @@ scalaVersion in ThisBuild := "2.13.3"
 All of the following code snippets assume that the following imports have been declared
 
 ```scala
-import zio.json
 import zio.json._
 ```
 
@@ -65,7 +65,7 @@ object Banana {
 Now we can parse JSON into our object
 
 ```
-scala> parser.decode[Banana]("""{"curvature":0.5}""")
+scala> """{"curvature":0.5}""".fromJson[Banana]
 val res: Either[String, Banana] = Right(Banana(0.5))
 ```
 
@@ -90,7 +90,7 @@ val res: String =
 And bad JSON will produce an error in `jq` syntax with an additional piece of contextual information (in parentheses)
 
 ```
-scala> parser.decode[Banana]("""{"curvature": womp}""")
+scala> """{"curvature": womp}""".fromJson[Banana]
 val res: Either[String, Banana] = Left(.curvature(expected a number, got w))
 ```
 
@@ -114,10 +114,10 @@ object Fruit {
 allowing us to load the fruit based on a single field type tag in the JSON
 
 ```
-scala> parser.decode[Fruit]("""{"Banana":{"curvature":0.5}}""")
+scala> """{"Banana":{"curvature":0.5}}""".fromJson[Fruit]
 val res: Either[String, Fruit] = Right(Banana(0.5))
 
-scala> parser.decode[Fruit]("""{"Apple":{"poison":false}}""")
+scala> """{"Apple":{"poison":false}}""".fromJson[Fruit]
 val res: Either[String, Fruit] = Right(Apple(false))
 ```
 

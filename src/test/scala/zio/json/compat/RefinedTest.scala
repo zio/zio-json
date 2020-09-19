@@ -24,8 +24,8 @@ object RefinedTest extends TestSuite {
 
   val tests = Tests {
     test("Refined") {
-      parser.decode[Person]("""{"name":""}""") ==> Left(".name(Predicate isEmpty() did not fail.)")
-      parser.decode[Person]("""{"name":"fommil"}""") ==> Right(Person("fommil"))
+      """{"name":""}""".fromJson[Person] ==> Left(".name(Predicate isEmpty() did not fail.)")
+      """{"name":"fommil"}""".fromJson[Person] ==> Right(Person("fommil"))
 
       Person("fommil").toJson ==> """{"name":"fommil"}"""
     }

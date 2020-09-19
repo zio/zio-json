@@ -64,6 +64,8 @@ trait JsonEncoder[A] { self =>
   // override and return `true` when this value may be skipped from JSON Objects
   def isNothing(a: A): Boolean = false
 
+  def xmap[B](f: A => B, g: B => A): JsonEncoder[B] = contramap(g)
+
   def unsafeEncode(a: A, indent: Option[Int], out: java.io.Writer): Unit
 }
 

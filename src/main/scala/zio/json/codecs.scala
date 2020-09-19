@@ -22,19 +22,29 @@ import JsonDecoder.JsonError
  * intCodec.encodeJson(intCodec.encodeJson(42)) == Right(42)
  * }}
  */
-trait JsonCodec[A] extends JsonDecoder[A] with JsonEncoder[A]
+trait JsonCodec[A] extends JsonDecoder[A] with JsonEncoder[A] {
+  def encoder: JsonEncoder[A]
+  def decoder: JsonDecoder[A]
+
+  override def xmap[B](f: A => B, g: B => A): JsonCodec[B] =
+    JsonCodec(encoder.contramap(g), decoder.map(f))
+}
 object JsonCodec {
   def apply[A](implicit jsonCodec: JsonCodec[A]): JsonCodec[A] = jsonCodec
 
   /**
    * Derives a `JsonCodec[A]` from an encoder and a decoder.
    */
-  implicit def apply[A](implicit encoder: JsonEncoder[A], decoder: JsonDecoder[A]): JsonCodec[A] =
+  implicit def apply[A](implicit encoder0: JsonEncoder[A], decoder0: JsonDecoder[A]): JsonCodec[A] =
     new JsonCodec[A] {
+      def encoder: JsonEncoder[A] = encoder0
+
+      def decoder: JsonDecoder[A] = decoder0
+
       def unsafeDecode(trace: Chunk[JsonError], in: RetractReader): A =
-        decoder.unsafeDecode(trace, in)
+        decoder0.unsafeDecode(trace, in)
 
       def unsafeEncode(a: A, indent: Option[Int], out: java.io.Writer): Unit =
-        encoder.unsafeEncode(a, indent, out)
+        encoder0.unsafeEncode(a, indent, out)
     }
 }
