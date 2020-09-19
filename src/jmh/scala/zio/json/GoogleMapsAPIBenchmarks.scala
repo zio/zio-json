@@ -246,7 +246,7 @@ class GoogleMapsAPIBenchmarks {
 
   @Benchmark
   def encodeZio(): String = {
-    import zio.json.syntax._
+    import zio.json._
 
     decoded.toJson
   }
