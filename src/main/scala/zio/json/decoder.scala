@@ -12,25 +12,56 @@ import zio.{ Chunk, ZIO }
 import zio.blocking._
 import zio.stream.ZStream
 
+/**
+ * A `JsonDecoder[A]` instance has the ability to decode JSON to values of type `A`, potentially
+ * failing with an error if the JSON content does not encode a value of the given type.
+ */
 trait JsonDecoder[A] { self =>
+
+  /**
+   * An alias for [[JsonDecoder#orElse]].
+   */
   final def <>[A1 >: A](that: => JsonDecoder[A1]): JsonDecoder[A1] = self.orElse(that)
 
+  /**
+   * An alias for [[JsonDecoder#orElseEither]].
+   */
   final def <+>[B](that: => JsonDecoder[B]): JsonDecoder[Either[A, B]] = self.orElseEither(that)
 
+  /**
+   * An alias for [[JsonDecoder#zip]].
+   */
   final def <*>[B](that: => JsonDecoder[B]): JsonDecoder[(A, B)] = self.zip(that)
 
-  final def *>[B](that: => JsonDecoder[B]): JsonDecoder[B] = self.zipWith(that)((_, b) => b)
+  /**
+   * An alias for [[JsonDecoder#zipRight]].
+   */
+  final def *>[B](that: => JsonDecoder[B]): JsonDecoder[B] = self.zipRight(that)
 
-  final def <*[B](that: => JsonDecoder[B]): JsonDecoder[A] = self.zipWith(that)((a, _) => a)
+  /**
+   * An alias for [[JsonDecoder#zipLeft]].
+   */
+  final def <*[B](that: => JsonDecoder[B]): JsonDecoder[A] = self.zipLeft(that)
 
-  // note that the string may not be fully consumed
+  /**
+   * Attempts to decode a value of type `A` from the specified `CharSequence`, but may fail with
+   * a human-readable error message if the provided text does not encode a value of this type.
+   *
+   * Note: This method may not entirely consume the specified character sequence.
+   */
   final def decodeJson(str: CharSequence): Either[String, A] =
     try Right(unsafeDecode(Chunk.empty, new FastStringReader(str)))
     catch {
       case JsonDecoder.UnsafeJson(trace) => Left(JsonError.render(trace))
-      case _: internal.UnexpectedEnd     => Left("unexpected end of input")
+      case _: internal.UnexpectedEnd     => Left("Unexpected end of input")
     }
 
+  /**
+   * Attempts to decode a stream of characters into a single value of type `A`, but mayu fail with
+   * a human-readable exception if the stream does not encode a value of this type.
+   *
+   * Note: This method may not consume the full string.
+   */
   final def decodeJsonStream[R <: Blocking](stream: ZStream[R, Throwable, Char]): ZIO[R, Throwable, A] =
     stream.toReader.use { reader =>
       effectBlocking {
@@ -42,6 +73,10 @@ trait JsonDecoder[A] { self =>
       }
     }
 
+  /**
+   * Returns a new codec that combines this codec and the specified codec using fallback semantics:
+   * such that if this codec fails, the specified codec will be tried instead.
+   */
   final def orElse[A1 >: A](that: => JsonDecoder[A1]): JsonDecoder[A1] =
     new JsonDecoder[A1] {
       def unsafeDecode(trace: Chunk[JsonError], in: RetractReader): A1 = {
@@ -60,16 +95,26 @@ trait JsonDecoder[A] { self =>
       }
     }
 
+  /**
+   * Returns a new codec that combines this codec and the specified codec using fallback semantics:
+   * such that if this codec fails, the specified codec will be tried instead.
+   */
   final def orElseEither[B](that: => JsonDecoder[B]): JsonDecoder[Either[A, B]] =
     self.map(Left(_)).orElse(that.map(Right(_)))
 
-  // scalaz-deriving style MonadError combinators
+  /**
+   * Returns a new codec whose decoded values will be mapped by the specified function.
+   */
   final def map[B](f: A => B): JsonDecoder[B] =
     new JsonDecoder[B] {
       def unsafeDecode(trace: Chunk[JsonError], in: RetractReader): B =
         f(self.unsafeDecode(trace, in))
     }
 
+  /**
+   * Returns a new codec whose decoded values will be mapped by the specified function, which may
+   * itself decide to fail with some type of error.
+   */
   final def mapOrFail[B](f: A => Either[String, B]): JsonDecoder[B] =
     new JsonDecoder[B] {
       def unsafeDecode(trace: Chunk[JsonError], in: RetractReader): B =
@@ -80,36 +125,56 @@ trait JsonDecoder[A] { self =>
         }
     }
 
+  /**
+   * Returns a new codec that combines this codec and the specified codec into a single codec that
+   * decodes a tuple of the values decoded by the respective codecs.
+   */
   final def zip[B](that: => JsonDecoder[B]): JsonDecoder[(A, B)] = JsonDecoder.tuple2(this, that)
 
+  /**
+   * Zips two codecs, but discards the output on the right hand side.
+   */
+  final def zipLeft[B](that: => JsonDecoder[B]): JsonDecoder[A] = self.zipWith(that)((a, _) => a)
+
+  /**
+   * Zips two codecs, but discards the output on the left hand side.
+   */
+  final def zipRight[B](that: => JsonDecoder[B]): JsonDecoder[B] = self.zipWith(that)((_, b) => b)
+
+  /**
+   * Zips two codecs into one, transforming the outputs of both codecs by the specified function.
+   */
   final def zipWith[B, C](that: => JsonDecoder[B])(f: (A, B) => C): JsonDecoder[C] =
     self.zip(that).map(f.tupled)
 
-  // The unsafe* methods are internal and should only be used by generated
-  // decoders and web frameworks.
-  //
-  // They are unsafe because they are non-total and use mutable references.
-  //
-  // We could use a ReaderT[List[JsonError]] but that would bring in
-  // dependencies and overhead, so we pass the trace context manually.
-  private[zio] def unsafeDecodeMissing(trace: Chunk[JsonError]): A =
+  def unsafeDecodeMissing(trace: Chunk[JsonError]): A =
     throw JsonDecoder.UnsafeJson(trace :+ JsonError.Message("missing"))
 
-  private[zio] def unsafeDecode(trace: Chunk[JsonError], in: RetractReader): A
+  /**
+   * Low-level, unsafe method to decode a value or throw an exception. This method should not be
+   * called in application code, although it can be implemented for user-defined data structures.
+   */
+  def unsafeDecode(trace: Chunk[JsonError], in: RetractReader): A
 }
 
 object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority0 {
   def apply[A](implicit a: JsonDecoder[A]): JsonDecoder[A] = a
 
-  // Design note: we could require the position in the stream here to improve
-  // debugging messages. But the cost would be that the RetractReader would need
-  // to keep track and any wrappers would need to preserve the position. It may
-  // still be desirable to do this but at the moment it is not necessary.
+  /**
+   *
+   * Design note: we could require the position in the stream here to improve
+   * debugging messages. But the cost would be that the RetractReader would need
+   * to keep track and any wrappers would need to preserve the position. It may
+   * still be desirable to do this but at the moment it is not necessary.
+   */
   final case class UnsafeJson(trace: Chunk[JsonError])
-      extends Exception("if you see this a dev made a mistake using JsonDecoder")
+      extends Exception("If you see this, a developer made a mistake using JsonDecoder")
       with NoStackTrace
 
-  /* Allows a human readable string to be generated for decoding failures. */
+  /**
+   * A `JsonError` value describes the ways in which decoding could fail. This structure is used
+   * to facilitate human-readable error messages during decoding failures.
+   */
   sealed abstract class JsonError
   object JsonError {
     def render(trace: Chunk[JsonError]): String =
