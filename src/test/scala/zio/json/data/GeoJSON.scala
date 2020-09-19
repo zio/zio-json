@@ -1,4 +1,4 @@
-package zio.json.data.geojson
+package testzio.json.data.geojson
 
 import io.circe
 import play.api.libs.{ json => Play }

@@ -1,9 +1,8 @@
-package zio.json
+package testzio.json
 
 import scala.collection.immutable
 
 import zio.Chunk
-import zio.json
 import zio.json._
 import zio.json.ast._
 import scalaprops._

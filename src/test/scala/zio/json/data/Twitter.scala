@@ -1,4 +1,4 @@
-package zio.json.data.twitter
+package testtestzio.json.data.twitter
 
 import io.circe
 import zio.json._

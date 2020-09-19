@@ -1,5 +1,6 @@
-package zio.json.internal
+package testzio.json.internal
 
+import zio.json.internal._
 import scalaprops._
 import Property.{ implies, prop, property }
 

@@ -1,4 +1,4 @@
-package zio.json
+package testzio.json
 
 import scala.collection.immutable
 
@@ -10,8 +10,8 @@ import Property.{ implies, prop, property }
 import scala.collection.mutable
 
 import utest._
-import zio.json.data.googlemaps._
-import zio.json.data.twitter._
+import testtestzio.json.data.googlemaps._
+import testtestzio.json.data.twitter._
 
 // testOnly *EncoderTest
 object EncoderTest extends TestSuite {
@@ -194,7 +194,7 @@ object EncoderTest extends TestSuite {
     }
 
     test("GeoJSON") {
-      import zio.json.data.geojson.generated._
+      import testzio.json.data.geojson.generated._
 
       testRoundtrip[GeoJSON]("che.geo.json")
     }

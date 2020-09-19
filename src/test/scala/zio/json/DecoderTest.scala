@@ -1,4 +1,4 @@
-package zio.json
+package testzio.json
 
 import scala.collection.immutable
 
@@ -13,8 +13,8 @@ import org.typelevel.jawn.{ ast => jawn }
 import scala.collection.mutable
 
 import utest._
-import zio.json.data.googlemaps._
-import zio.json.data.twitter._
+import testtestzio.json.data.googlemaps._
+import testtestzio.json.data.twitter._
 
 // testOnly *DecoderTest
 object DecoderTest extends TestSuite {
@@ -163,7 +163,7 @@ object DecoderTest extends TestSuite {
     }
 
     test("geojson1") {
-      import zio.json.data.geojson.generated._
+      import testzio.json.data.geojson.generated._
       val input    = getResourceAsString("che.geo.json")
       val expected = circe.parser.decode[GeoJSON](input)
       val got      = parser.decode[GeoJSON](input)
@@ -171,7 +171,7 @@ object DecoderTest extends TestSuite {
     }
 
     test("geojson1 alt") {
-      import zio.json.data.geojson.handrolled._
+      import testzio.json.data.geojson.handrolled._
       val input    = getResourceAsString("che.geo.json")
       val expected = circe.parser.decode[GeoJSON](input)
       val got      = parser.decode[GeoJSON](input)
@@ -179,7 +179,7 @@ object DecoderTest extends TestSuite {
     }
 
     test("geojson2") {
-      import zio.json.data.geojson.generated._
+      import testzio.json.data.geojson.generated._
       val input    = getResourceAsString("che-2.geo.json")
       val expected = circe.parser.decode[GeoJSON](input)
       val got      = parser.decode[GeoJSON](input)
@@ -187,7 +187,7 @@ object DecoderTest extends TestSuite {
     }
 
     test("geojson2 lowlevel") {
-      import zio.json.data.geojson.generated._
+      import testzio.json.data.geojson.generated._
       // this uses a lower level Reader to ensure that the more general recorder
       // impl is covered by the tests
       val expected =

@@ -9,7 +9,7 @@ import zio.json.JsonDecoder.{ JsonError, UnsafeJson }
 // tries to stick to the spec, but maybe a bit loose in places (e.g. numbers)
 //
 // https://www.json.org/json-en.html
-private[zio] object Lexer {
+object Lexer {
   // TODO need a variant that doesn't skip whitespace, so that attack vectors
   // consisting of an infinite stream of space can exit early.
 

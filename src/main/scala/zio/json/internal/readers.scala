@@ -63,7 +63,7 @@ sealed trait RetractReader extends OneCharReader {
   def retract(): Unit
 }
 
-private[zio] final class FastCharSequence(s: Array[Char]) extends CharSequence {
+final class FastCharSequence(s: Array[Char]) extends CharSequence {
   def length: Int          = s.length
   def charAt(i: Int): Char = s(i)
   def subSequence(start: Int, end: Int): CharSequence =
@@ -102,7 +102,7 @@ private[zio] final class FastStringReader(s: CharSequence) extends RetractReader
 
 // this tends to be a bit slower than creating an implementation that implements
 // all Reader interfaces that are required.
-private[zio] final class WithRetractReader(in: java.io.Reader) extends RetractReader {
+final class WithRetractReader(in: java.io.Reader) extends RetractReader {
   private[this] var last   = -2
   private[this] var replay = false
 

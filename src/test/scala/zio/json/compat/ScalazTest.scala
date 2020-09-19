@@ -1,8 +1,8 @@
-package zio.json.compat
+package testzio.json.compat
 
 import zio.json
 import zio.json._
-import zio.json.TestUtils._
+import testzio.json.TestUtils._
 
 import utest._
 import _root_.scalaz._

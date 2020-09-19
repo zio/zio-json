@@ -10,7 +10,7 @@ import com.github.plokhotnyuk.jsoniter_scala.macros._
 import io.circe
 import zio.json.GoogleMapsAPIBenchmarks._
 import zio.json.TestUtils._
-import zio.json.data.googlemaps._
+import testzio.json.data.googlemaps._
 import org.openjdk.jmh.annotations._
 import play.api.libs.{ json => Play }
 

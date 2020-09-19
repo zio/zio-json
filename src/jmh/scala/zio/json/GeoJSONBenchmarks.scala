@@ -9,8 +9,8 @@ import com.github.plokhotnyuk.jsoniter_scala.macros._
 import io.circe
 import zio.json.GeoJSONBenchmarks._
 import zio.json.TestUtils._
-//import zio.json.data.geojson.generated._
-import zio.json.data.geojson.handrolled._
+//import testzio.json.data.geojson.generated._
+import testzio.json.data.geojson.handrolled._
 import org.openjdk.jmh.annotations._
 import play.api.libs.{ json => Play }
 

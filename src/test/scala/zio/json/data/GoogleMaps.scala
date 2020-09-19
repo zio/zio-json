@@ -1,4 +1,4 @@
-package zio.json.data.googlemaps
+package testtestzio.json.data.googlemaps
 
 import com.github.plokhotnyuk.jsoniter_scala.macros.named
 import io.circe

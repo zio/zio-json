@@ -1,8 +1,10 @@
-package zio.json.internal
+package testzio.json.internal
 
 import scalaprops._
 import Property.{ implies, prop, property }
 import utest._
+
+import zio.json.internal._
 
 // testOnly *StringMatrix*
 object StringMatrixProps extends Scalaprops {
