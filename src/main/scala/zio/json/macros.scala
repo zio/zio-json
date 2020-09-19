@@ -36,7 +36,7 @@ final case class discriminator(name: String) extends Annotation
 // Subtype.
 
 /**
- * If used on a case class will determine the typehint value for disambiguating
+ * If used on a case class will determine the type hint value for disambiguating
  * sealed traits. Defaults to the short type name.
  */
 final case class hint(name: String) extends Annotation
@@ -49,13 +49,13 @@ final case class hint(name: String) extends Annotation
  * the schema will result in a hard error rather than silently ignoring those
  * fields.
  *
- * Cannot be comibned with `@discriminator` since it is considered an extra
+ * Cannot be combined with `@discriminator` since it is considered an extra
  * field from the perspective of the case class.
  */
 final class no_extra_fields extends Annotation
 
 object DeriveJsonDecoder {
-  type Typeclass[+A] = JsonDecoder[A]
+  type Typeclass[A] = JsonDecoder[A]
 
   def combine[A](ctx: CaseClass[JsonDecoder, A]): JsonDecoder[A] = {
     val no_extra = ctx.annotations.collectFirst {
@@ -84,7 +84,7 @@ object DeriveJsonDecoder {
         val matrix: StringMatrix    = new StringMatrix(names)
         val spans: Array[JsonError] = names.map(JsonError.ObjectAccess(_))
         lazy val tcs: Array[JsonDecoder[Any]] =
-          ctx.parameters.map(_.typeclass).toArray
+          ctx.parameters.map(_.typeclass).toArray.asInstanceOf[Array[JsonDecoder[Any]]]
 
         def unsafeDecode(trace: Chunk[JsonError], in: RetractReader): A = {
           Lexer.char(trace, in, '{')
@@ -137,7 +137,7 @@ object DeriveJsonDecoder {
     val len: Int             = names.length
     val matrix: StringMatrix = new StringMatrix(names)
     lazy val tcs: Array[JsonDecoder[Any]] =
-      ctx.subtypes.map(_.typeclass).toArray
+      ctx.subtypes.map(_.typeclass).toArray.asInstanceOf[Array[JsonDecoder[Any]]]
 
     def discrim = ctx.annotations.collectFirst { case discriminator(n) => n }
     if (discrim.isEmpty)
@@ -199,7 +199,7 @@ object DeriveJsonDecoder {
 }
 
 object DeriveJsonEncoder {
-  type Typeclass[-A] = JsonEncoder[A]
+  type Typeclass[A] = JsonEncoder[A]
 
   def combine[A](ctx: CaseClass[JsonEncoder, A]): JsonEncoder[A] =
     if (ctx.parameters.isEmpty)

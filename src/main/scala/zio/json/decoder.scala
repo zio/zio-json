@@ -12,7 +12,7 @@ import zio.{ Chunk, ZIO }
 import zio.blocking._
 import zio.stream.ZStream
 
-trait JsonDecoder[+A] { self =>
+trait JsonDecoder[A] { self =>
   final def <>[A1 >: A](that: => JsonDecoder[A1]): JsonDecoder[A1] = self.orElse(that)
 
   final def <+>[B](that: => JsonDecoder[B]): JsonDecoder[Either[A, B]] = self.orElseEither(that)
@@ -303,7 +303,7 @@ private[json] trait DecoderLowPriority1 extends DecoderLowPriority2 { this: Json
 private[json] trait DecoderLowPriority2 {
   this: JsonDecoder.type =>
 
-  def seq[A: JsonDecoder]: JsonDecoder[Seq[A]] = list[A]
+  implicit def seq[A: JsonDecoder]: JsonDecoder[Seq[A]] = list[A].map(_.toList)
 
   // not implicit because this overlaps with decoders for lists of tuples
   def keyValueChunk[K, A](

@@ -11,10 +11,10 @@ object JsonCodec {
 
   implicit def apply[A](implicit encoder: JsonEncoder[A], decoder: JsonDecoder[A]): JsonCodec[A] =
     new JsonCodec[A] {
-      private[zio] def unsafeDecode(trace: Chunk[JsonError], in: RetractReader): A =
+      def unsafeDecode(trace: Chunk[JsonError], in: RetractReader): A =
         decoder.unsafeDecode(trace, in)
 
-      private[zio] def unsafeEncode(a: A, indent: Option[Int], out: java.io.Writer): Unit =
+      def unsafeEncode(a: A, indent: Option[Int], out: java.io.Writer): Unit =
         encoder.unsafeEncode(a, indent, out)
     }
 }

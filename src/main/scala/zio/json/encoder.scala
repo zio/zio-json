@@ -10,7 +10,7 @@ import zio.stream._
 
 import java.io.{ BufferedWriter, Writer }
 
-trait JsonEncoder[-A] { self =>
+trait JsonEncoder[A] { self =>
   final def both[B](that: => JsonEncoder[B]): JsonEncoder[(A, B)] = JsonEncoder.tuple2(self, that)
 
   final def bothWith[B, C](that: => JsonEncoder[B])(f: C => (A, B)): JsonEncoder[C] = self.both(that).contramap(f)
@@ -62,9 +62,9 @@ trait JsonEncoder[-A] { self =>
     }
 
   // override and return `true` when this value may be skipped from JSON Objects
-  private[zio] def isNothing(a: A): Boolean = false
+  def isNothing(a: A): Boolean = false
 
-  private[zio] def unsafeEncode(a: A, indent: Option[Int], out: java.io.Writer): Unit
+  def unsafeEncode(a: A, indent: Option[Int], out: java.io.Writer): Unit
 }
 
 object JsonEncoder extends GeneratedTupleEncoders with EncoderLowPriority0 {
@@ -154,7 +154,7 @@ object JsonEncoder extends GeneratedTupleEncoders with EncoderLowPriority0 {
 }
 
 private[json] trait EncoderLowPriority0 extends EncoderLowPriority1 { this: JsonEncoder.type =>
-  implicit def chunk[A: JsonEncoder]: JsonEncoder[Chunk[A]] = seq[A]
+  implicit def chunk[A: JsonEncoder]: JsonEncoder[Chunk[A]] = seq[A].contramap(_.toSeq)
 
   implicit def hashSet[A: JsonEncoder]: JsonEncoder[immutable.HashSet[A]] =
     list[A].contramap(_.toList)
@@ -164,8 +164,8 @@ private[json] trait EncoderLowPriority0 extends EncoderLowPriority1 { this: Json
 }
 
 private[json] trait EncoderLowPriority1 extends EncoderLowPriority2 { this: JsonEncoder.type =>
-  implicit def list[A: JsonEncoder]: JsonEncoder[List[A]]     = seq[A]
-  implicit def vector[A: JsonEncoder]: JsonEncoder[Vector[A]] = seq[A]
+  implicit def list[A: JsonEncoder]: JsonEncoder[List[A]]     = seq[A].contramap(_.toSeq)
+  implicit def vector[A: JsonEncoder]: JsonEncoder[Vector[A]] = seq[A].contramap(_.toSeq)
 
   // TODO these could be optimised...
   implicit def sortedMap[K: JsonFieldEncoder, V: JsonEncoder]: JsonEncoder[collection.SortedMap[K, V]] =
@@ -176,7 +176,7 @@ private[json] trait EncoderLowPriority1 extends EncoderLowPriority2 { this: Json
 }
 
 private[json] trait EncoderLowPriority2 { this: JsonEncoder.type =>
-  def seq[A](implicit A: JsonEncoder[A]): JsonEncoder[Seq[A]] = new JsonEncoder[Seq[A]] {
+  implicit def seq[A](implicit A: JsonEncoder[A]): JsonEncoder[Seq[A]] = new JsonEncoder[Seq[A]] {
     def unsafeEncode(as: Seq[A], indent: Option[Int], out: java.io.Writer): Unit = {
       out.write("[")
       var first = true

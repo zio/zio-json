@@ -1,5 +1,5 @@
 // Implementations of java.io.Writer that are faster (2x) because they do not
-// synchronise on a lock
+// synchronize on a lock
 package zio.json.internal
 
 import java.nio.CharBuffer
