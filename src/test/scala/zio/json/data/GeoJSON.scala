@@ -34,9 +34,9 @@ package generated {
   ) extends GeoJSON
 
   object Geometry {
-    implicit lazy val zioJsonJsonDecoder: json.JsonDecoder[Geometry] =
+    implicit lazy val zioJsonJsonDecoder: JsonDecoder[Geometry] =
       json.DeriveJsonDecoder.gen[Geometry]
-    implicit lazy val zioJsonEncoder: json.JsonEncoder[Geometry] =
+    implicit lazy val zioJsonEncoder: JsonEncoder[Geometry] =
       json.DeriveJsonEncoder.gen[Geometry]
 
     implicit val customConfig: circe.generic.extras.Configuration =
@@ -59,9 +59,9 @@ package generated {
 
   }
   object GeoJSON {
-    implicit lazy val zioJsonJsonDecoder: json.JsonDecoder[GeoJSON] =
+    implicit lazy val zioJsonJsonDecoder: JsonDecoder[GeoJSON] =
       json.DeriveJsonDecoder.gen[GeoJSON]
-    implicit lazy val zioJsonEncoder: json.JsonEncoder[GeoJSON] =
+    implicit lazy val zioJsonEncoder: JsonEncoder[GeoJSON] =
       json.DeriveJsonEncoder.gen[GeoJSON]
 
     implicit val customConfig: circe.generic.extras.Configuration =
@@ -106,8 +106,8 @@ package handrolled {
     // This should be considered an extremely advanced example of how to write
     // custom decoders and is not a requirement to use the JsonDecoder[GeoJSON]
     // custom decoder (below) which is necessary to avert a DOS attack.
-    implicit lazy val zioJsonJsonDecoder: json.JsonDecoder[Geometry] =
-      new json.JsonDecoder[Geometry] {
+    implicit lazy val zioJsonJsonDecoder: JsonDecoder[Geometry] =
+      new JsonDecoder[Geometry] {
         import zio.json._, internal._, JsonDecoder.{ JsonError, UnsafeJson }
         import scala.annotation._
 
@@ -231,7 +231,7 @@ package handrolled {
         }
 
       }
-    implicit lazy val zioJsonEncoder: json.JsonEncoder[Geometry] =
+    implicit lazy val zioJsonEncoder: JsonEncoder[Geometry] =
       json.DeriveJsonEncoder.gen[Geometry]
 
     implicit val customConfig: circe.generic.extras.Configuration =
@@ -257,8 +257,8 @@ package handrolled {
     // the object. This is only needed because the contents of the GeoJSON is
     // potentially complex and even skipping over it is expensive... it's a bit
     // of a corner case.
-    implicit lazy val zioJsonJsonDecoder: json.JsonDecoder[GeoJSON] =
-      new json.JsonDecoder[GeoJSON] {
+    implicit lazy val zioJsonJsonDecoder: JsonDecoder[GeoJSON] =
+      new JsonDecoder[GeoJSON] {
         import zio.json._, internal._, JsonDecoder.{ JsonError, UnsafeJson }
         import scala.annotation._
 
@@ -341,7 +341,7 @@ package handrolled {
         }
 
       }
-    implicit lazy val zioJsonEncoder: json.JsonEncoder[GeoJSON] =
+    implicit lazy val zioJsonEncoder: JsonEncoder[GeoJSON] =
       json.DeriveJsonEncoder.gen[GeoJSON]
 
     implicit val customConfig: circe.generic.extras.Configuration =

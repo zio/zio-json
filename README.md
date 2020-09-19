@@ -54,11 +54,11 @@ into a Scala `case class`
 case class Banana(curvature: Double)
 ```
 
-To do this, we create an *instance* of the `json.JsonDecoder` typeclass for `Banana` using the `zio-json` code generator. It is best practice to put it on the companion of `Banana`, like so
+To do this, we create an *instance* of the `JsonDecoder` typeclass for `Banana` using the `zio-json` code generator. It is best practice to put it on the companion of `Banana`, like so
 
 ```scala
 object Banana {
-  implicit val decoder: json.JsonDecoder[Banana] = json.DeriveJsonDecoder.gen[Banana]
+  implicit val decoder: JsonDecoder[Banana] = json.DeriveJsonDecoder.gen[Banana]
 }
 ```
 
@@ -69,12 +69,12 @@ scala> json.parser.decode[Banana]("""{"curvature":0.5}""")
 val res: Either[String, Banana] = Right(Banana(0.5))
 ```
 
-Likewise, to produce JSON from our data we define a `json.JsonEncoder`
+Likewise, to produce JSON from our data we define a `JsonEncoder`
 
 ```scala
 object Banana {
   ...
-  implicit val encoder: json.JsonEncoder[Banana] = json.DeriveJsonEncoder.gen[Banana]
+  implicit val encoder: JsonEncoder[Banana] = json.DeriveJsonEncoder.gen[Banana]
 }
 
 scala> Banana(0.5).toJson
@@ -106,8 +106,8 @@ we can generate the encoder and decoder for the entire `sealed` family
 
 ```scala
 object Fruit {
-  implicit val decoder: json.JsonDecoder[Fruit] = json.DeriveJsonDecoder.gen[Fruit]
-  implicit val encoder: json.JsonEncoder[Fruit] = json.DeriveJsonEncoder.gen[Fruit]
+  implicit val decoder: JsonDecoder[Fruit] = json.DeriveJsonDecoder.gen[Fruit]
+  implicit val encoder: JsonEncoder[Fruit] = json.DeriveJsonEncoder.gen[Fruit]
 }
 ```
 
@@ -175,7 +175,7 @@ is discouraged for performance reasons. However, if we have no choice in the mat
 
 ## Manual Instances
 
-Sometimes it is easier to reuse an existing `json.JsonDecoder` rather than generate a new one. This can be accomplished using convenience methods on the `json.JsonDecoder` typeclass to *derive* new decoders:
+Sometimes it is easier to reuse an existing `JsonDecoder` rather than generate a new one. This can be accomplished using convenience methods on the `JsonDecoder` typeclass to *derive* new decoders:
 
 ```scala
 trait JsonDecoder[+A] {
@@ -185,7 +185,7 @@ trait JsonDecoder[+A] {
 }
 ```
 
-Similarly, we can reuse an existing `json.JsonEncoder`
+Similarly, we can reuse an existing `JsonEncoder`
 
 ```scala
 trait JsonEncoder[-A] {
@@ -196,7 +196,7 @@ trait JsonEncoder[-A] {
 
 ### `.map`
 
-We can `.map` from another `json.JsonDecoder` in cases where the conversion will always succeed. This is very useful if we have a `case class` that simply wraps another thing and shares the same expected JSON.
+We can `.map` from another `JsonDecoder` in cases where the conversion will always succeed. This is very useful if we have a `case class` that simply wraps another thing and shares the same expected JSON.
 
 For example, say we want to model the count of fruit with a `case class` to provide us with additional type safety in our business logic (this pattern is known as a *newtype*).
 
@@ -210,22 +210,22 @@ but this would cause us to expect JSON of the form
 {"value":1}
 ```
 
-wheres we really expect the raw number. We can derive a decoder from `json.JsonDecoder[Int]` and `.map` the result into a `FruitCount`
+wheres we really expect the raw number. We can derive a decoder from `JsonDecoder[Int]` and `.map` the result into a `FruitCount`
 
 ```scala
 object FruitCount {
-  implicit val decoder: json.JsonDecoder[FruitCount] = json.JsonDecoder[Int].map(FruitCount(_))
+  implicit val decoder: JsonDecoder[FruitCount] = JsonDecoder[Int].map(FruitCount(_))
 }
 ```
 
-and now the `json.JsonDecoder` for `FruitCount` just expects a raw `Int`.
+and now the `JsonDecoder` for `FruitCount` just expects a raw `Int`.
 
-Every time we use a `.map` to create a `json.JsonDecoder` we can usually create a `json.JsonEncoder` with `.contramap`
+Every time we use a `.map` to create a `JsonDecoder` we can usually create a `JsonEncoder` with `.contramap`
 
 ```scala
 object FruitCount {
   ...
-  implicit val encoder: json.JsonEncoder[FruitCount] = json.JsonEncoder[Int].contramap(_.value)
+  implicit val encoder: JsonEncoder[FruitCount] = JsonEncoder[Int].contramap(_.value)
 }
 ```
 
@@ -234,8 +234,8 @@ Another usecase is if we want to encode a `case class` as an array of values, ra
 ```scala
 case class Things(s: String, i: Int, b: Boolean)
 object Things {
-  implicit val decoder: json.JsonDecoder[Things] =
-    json.JsonDecoder[(String, Int, Boolean)].map { case (p1, p2, p3) => Things(p1, p2, p3) }
+  implicit val decoder: JsonDecoder[Things] =
+    JsonDecoder[(String, Int, Boolean)].map { case (p1, p2, p3) => Things(p1, p2, p3) }
 }
 ```
 
@@ -247,7 +247,7 @@ which parses the following JSON
 
 ### `.mapOrFail`
 
-We can use `.mapOrFail` to take the result of another `json.JsonDecoder` and try to convert it into our custom data type, failing with a message if there is an error.
+We can use `.mapOrFail` to take the result of another `JsonDecoder` and try to convert it into our custom data type, failing with a message if there is an error.
 
 Say we are using the [`refined`](https://github.com/fthomas/refined) library to ensure that a `Person` data type only holds a non-empty string in its `name` field
 
@@ -258,17 +258,17 @@ import eu.timepit.refined.collection.NonEmpty
 case class Person(name: String Refined NonEmpty)
 
 object Person {
-  implicit val decoder: json.JsonDecoder[Person] = json.DeriveJsonDecoder.gen
+  implicit val decoder: JsonDecoder[Person] = json.DeriveJsonDecoder.gen
 }
 ```
 
-we will get a compiletime error because there is no `json.JsonDecoder[String Refined NonEmpty]`.
+we will get a compiletime error because there is no `JsonDecoder[String Refined NonEmpty]`.
 
-However, we can derive one by requesting the `json.JsonDecoder[String]` and calling `.mapOrFail`, supplying the constructor for our special `String Refined NonEmpty` type
+However, we can derive one by requesting the `JsonDecoder[String]` and calling `.mapOrFail`, supplying the constructor for our special `String Refined NonEmpty` type
 
 ```scala
-implicit val decodeName: json.JsonDecoder[String Refined NonEmpty] =
-  json.JsonDecoder[String].mapOrFail(refined.refineV[NonEmpty](_))
+implicit val decodeName: JsonDecoder[String Refined NonEmpty] =
+  JsonDecoder[String].mapOrFail(refined.refineV[NonEmpty](_))
 ```
 
 Now the code compiles.

@@ -20,19 +20,19 @@ object EncoderTest extends TestSuite {
   object exampleproducts {
     case class Parameterless()
     object Parameterless {
-      implicit val encoder: json.JsonEncoder[Parameterless] =
+      implicit val encoder: JsonEncoder[Parameterless] =
         json.DeriveJsonEncoder.gen[Parameterless]
     }
 
     case class OnlyString(s: String)
     object OnlyString {
-      implicit val encoder: json.JsonEncoder[OnlyString] =
+      implicit val encoder: JsonEncoder[OnlyString] =
         json.DeriveJsonEncoder.gen[OnlyString]
     }
 
     case class CoupleOfThings(@json.field("j") i: Int, f: Option[Float], b: Boolean)
     object CoupleOfThings {
-      implicit val encoder: json.JsonEncoder[CoupleOfThings] =
+      implicit val encoder: JsonEncoder[CoupleOfThings] =
         json.DeriveJsonEncoder.gen[CoupleOfThings]
     }
   }
@@ -41,7 +41,7 @@ object EncoderTest extends TestSuite {
 
     sealed abstract class Parent
     object Parent {
-      implicit val encoder: json.JsonEncoder[Parent] = json.DeriveJsonEncoder.gen[Parent]
+      implicit val encoder: JsonEncoder[Parent] = json.DeriveJsonEncoder.gen[Parent]
     }
     case class Child1() extends Parent
     @json.hint("Cain")
@@ -53,7 +53,7 @@ object EncoderTest extends TestSuite {
     @json.discriminator("hint")
     sealed abstract class Parent
     object Parent {
-      implicit val encoder: json.JsonEncoder[Parent] = json.DeriveJsonEncoder.gen[Parent]
+      implicit val encoder: JsonEncoder[Parent] = json.DeriveJsonEncoder.gen[Parent]
     }
     case class Child1() extends Parent
     @json.hint("Abel")
@@ -175,7 +175,7 @@ object EncoderTest extends TestSuite {
       (Child2(Some("hello")): Parent).toJsonPretty ==> "{\n  \"hint\" : \"Abel\",\n  \"s\" : \"hello\"\n}"
     }
 
-    // using circe to avoid entwining this test on zio.json.JsonDecoder
+    // using circe to avoid entwining this test on zio.JsonDecoder
     def testRoundtrip[A: circe.Decoder: JsonEncoder](res: String) = {
       val jsonString = getResourceAsString(res)
       val decoded    = circe.parser.decode[A](jsonString)

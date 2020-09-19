@@ -22,14 +22,14 @@ object DecoderTest extends TestSuite {
   object exampleproducts {
     case class Parameterless()
     object Parameterless {
-      implicit val decoder: json.JsonDecoder[Parameterless] =
+      implicit val decoder: JsonDecoder[Parameterless] =
         json.DeriveJsonDecoder.gen[Parameterless]
     }
 
     @json.no_extra_fields
     case class OnlyString(s: String)
     object OnlyString {
-      implicit val decoder: json.JsonDecoder[OnlyString] =
+      implicit val decoder: JsonDecoder[OnlyString] =
         json.DeriveJsonDecoder.gen[OnlyString]
     }
   }
@@ -38,7 +38,7 @@ object DecoderTest extends TestSuite {
 
     sealed abstract class Parent
     object Parent {
-      implicit val decoder: json.JsonDecoder[Parent] = json.DeriveJsonDecoder.gen[Parent]
+      implicit val decoder: JsonDecoder[Parent] = json.DeriveJsonDecoder.gen[Parent]
     }
     case class Child1() extends Parent
     case class Child2() extends Parent
@@ -49,7 +49,7 @@ object DecoderTest extends TestSuite {
     @json.discriminator("hint")
     sealed abstract class Parent
     object Parent {
-      implicit val decoder: json.JsonDecoder[Parent] = json.DeriveJsonDecoder.gen[Parent]
+      implicit val decoder: JsonDecoder[Parent] = json.DeriveJsonDecoder.gen[Parent]
     }
     @json.hint("Cain")
     case class Child1() extends Parent
@@ -193,7 +193,7 @@ object DecoderTest extends TestSuite {
       val expected =
         circe.parser.decode[GeoJSON](getResourceAsString("che-2.geo.json"))
       val input = getResourceAsReader("che-2.geo.json")
-      val got   = json.JsonDecoder[GeoJSON].unsafeDecode(Chunk.empty, input)
+      val got   = JsonDecoder[GeoJSON].unsafeDecode(Chunk.empty, input)
       input.close()
       Right(got) ==> expected
     }

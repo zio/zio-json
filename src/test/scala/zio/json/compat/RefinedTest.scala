@@ -18,8 +18,8 @@ object RefinedTest extends TestSuite {
   case class Person(name: String Refined NonEmpty)
 
   object Person {
-    implicit val decoder: json.JsonDecoder[Person] = json.DeriveJsonDecoder.gen[Person]
-    implicit val encoder: json.JsonEncoder[Person] = json.DeriveJsonEncoder.gen[Person]
+    implicit val decoder: JsonDecoder[Person] = json.DeriveJsonDecoder.gen[Person]
+    implicit val encoder: JsonEncoder[Person] = json.DeriveJsonEncoder.gen[Person]
   }
 
   val tests = Tests {
