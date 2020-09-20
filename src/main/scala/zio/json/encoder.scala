@@ -11,28 +11,58 @@ import zio.stream._
 import java.io.{ BufferedWriter, Writer }
 
 trait JsonEncoder[A] { self =>
+
+  /**
+   * Returns a new encoder that is capable of encoding a tuple containing the values of this
+   * encoder and the specified encoder.
+   */
   final def both[B](that: => JsonEncoder[B]): JsonEncoder[(A, B)] = JsonEncoder.tuple2(self, that)
 
+  /**
+   * Returns a new encoder that is capable of encoding a user-defined value, which is create from
+   * a tuple of the values of this encoder and the specified encoder, from the specified user-
+   * defined function.
+   */
   final def bothWith[B, C](that: => JsonEncoder[B])(f: C => (A, B)): JsonEncoder[C] = self.both(that).contramap(f)
 
+  /**
+   * Returns a new encoder, with a new input type, which can be transformed to the old input type
+   * by the specified user-defined function.
+   */
   final def contramap[B](f: B => A): JsonEncoder[B] = new JsonEncoder[B] {
     override def unsafeEncode(b: B, indent: Option[Int], out: java.io.Writer): Unit =
       self.unsafeEncode(f(b), indent, out)
     override def isNothing(b: B): Boolean = self.isNothing(f(b))
   }
 
+  /**
+   * Returns a new encoder that can accepts an `Either[A, B]` to either, and uses either this
+   * encoder or the specified encoder to encode the two different types of values.
+   */
   final def either[B](that: => JsonEncoder[B]): JsonEncoder[Either[A, B]] = JsonEncoder.either[A, B](self, that)
 
+  /**
+   * Returns a new encoder with a new input type, which can be transformed to either the input
+   * type of this encoder, or the input type of the specified encoder, using the user-defined
+   * transformation function.
+   */
   final def eitherWith[B, C](that: => JsonEncoder[B])(f: C => Either[A, B]): JsonEncoder[C] =
     self.either(that).contramap(f)
 
+  /**
+   * Encodes the specified value into a JSON string, with the specified indentation level.
+   */
   final def encodeJson(a: A, indent: Option[Int]): String = {
     val writer = new zio.json.internal.FastStringWriter(64)
     unsafeEncode(a, indent, writer)
     writer.toString
   }
 
-  // TODO: Use `Take` so we can push errors into the stream
+  /**
+   * Encodes the specified value into a character stream.
+   *
+   * TODO: Use Take so we can push errors into the stream.
+   */
   final def encodeJsonStream(a: A, indent: Option[Int]): ZStream[Blocking, Nothing, Char] =
     ZStream.unwrapManaged {
       (for {
@@ -61,7 +91,10 @@ trait JsonEncoder[A] { self =>
       } yield ZStream.fromChunkQueue(queue))
     }
 
-  // override and return `true` when this value may be skipped from JSON Objects
+  /**
+   * This default may be overriden when this value may be missing within a JSON object and still
+   * be encoded.
+   */
   def isNothing(a: A): Boolean = false
 
   def xmap[B](f: A => B, g: B => A): JsonEncoder[B] = contramap(g)
