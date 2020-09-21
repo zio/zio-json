@@ -1,4 +1,4 @@
-package testtestzio.json.data.googlemaps
+package testzio.json.data.googlemaps
 
 import com.github.plokhotnyuk.jsoniter_scala.macros.named
 import io.circe
@@ -24,7 +24,7 @@ final case class DistanceMatrix(
 
 object Value {
   implicit val zioJsonJsonDecoder: JsonDecoder[Value] = DeriveJsonDecoder.gen[Value]
-  implicit val zioJsonEncoder: JsonEncoder[Value] = DeriveJsonEncoder.gen[Value]
+  implicit val zioJsonEncoder: JsonEncoder[Value]     = DeriveJsonEncoder.gen[Value]
 
   implicit val customConfig: circe.generic.extras.Configuration =
     circe.generic.extras.Configuration.default
@@ -56,7 +56,7 @@ object Value {
 }
 object Elements {
   implicit val zioJsonJsonDecoder: JsonDecoder[Elements] = DeriveJsonDecoder.gen[Elements]
-  implicit val zioJsonEncoder: JsonEncoder[Elements] = DeriveJsonEncoder.gen[Elements]
+  implicit val zioJsonEncoder: JsonEncoder[Elements]     = DeriveJsonEncoder.gen[Elements]
 
   implicit val customConfig: circe.generic.extras.Configuration =
     circe.generic.extras.Configuration.default
@@ -65,13 +65,13 @@ object Elements {
   implicit val circeEncoder: circe.Encoder[Elements] =
     circe.generic.extras.semiauto.deriveConfiguredEncoder[Elements]
 
-  implicit val playJsonDecoder: Play.Reads[Elements]  = Play.Json.reads[Elements]
-  implicit val playEncoder: Play.Writes[Elements] = Play.Json.writes[Elements]
+  implicit val playJsonDecoder: Play.Reads[Elements] = Play.Json.reads[Elements]
+  implicit val playEncoder: Play.Writes[Elements]    = Play.Json.writes[Elements]
 
 }
 object Rows {
   implicit val zioJsonJsonDecoder: JsonDecoder[Rows] = DeriveJsonDecoder.gen[Rows]
-  implicit val zioJsonEncoder: JsonEncoder[Rows] = DeriveJsonEncoder.gen[Rows]
+  implicit val zioJsonEncoder: JsonEncoder[Rows]     = DeriveJsonEncoder.gen[Rows]
 
   implicit val customConfig: circe.generic.extras.Configuration =
     circe.generic.extras.Configuration.default
@@ -80,8 +80,8 @@ object Rows {
   implicit val circeEncoder: circe.Encoder[Rows] =
     circe.generic.extras.semiauto.deriveConfiguredEncoder[Rows]
 
-  implicit val playJsonDecoder: Play.Reads[Rows]  = Play.Json.reads[Rows]
-  implicit val playEncoder: Play.Writes[Rows] = Play.Json.writes[Rows]
+  implicit val playJsonDecoder: Play.Reads[Rows] = Play.Json.reads[Rows]
+  implicit val playEncoder: Play.Writes[Rows]    = Play.Json.writes[Rows]
 
 }
 object DistanceMatrix {

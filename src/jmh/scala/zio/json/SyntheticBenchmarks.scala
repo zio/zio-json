@@ -8,7 +8,7 @@ import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.github.plokhotnyuk.jsoniter_scala.macros._
 import io.circe
 import zio.json.SyntheticBenchmarks._
-import zio.json.TestUtils._
+import testzio.json.TestUtils._
 import org.openjdk.jmh.annotations._
 import play.api.libs.{ json => Play }
 
@@ -68,7 +68,7 @@ class SyntheticBenchmarks {
   @Benchmark
   def decodeJsoniterSuccess(): Either[String, Nested] =
     Try(readFromArray(jsonString.getBytes(UTF_8)))
-      .fold(t => Left(t.toString), Right.apply)
+      .fold(t => Left(t.toString), Right(_))
 
   @Benchmark
   def decodeCirceSuccess(): Either[circe.Error, Nested] =

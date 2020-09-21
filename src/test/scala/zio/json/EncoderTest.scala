@@ -10,8 +10,8 @@ import Property.{ implies, prop, property }
 import scala.collection.mutable
 
 import utest._
-import testtestzio.json.data.googlemaps._
-import testtestzio.json.data.twitter._
+import testzio.json.data.googlemaps._
+import testzio.json.data.twitter._
 
 // testOnly *EncoderTest
 object EncoderTest extends TestSuite {

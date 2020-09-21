@@ -57,7 +57,7 @@ trait JsonDecoder[A] { self =>
     }
 
   /**
-   * Attempts to decode a stream of characters into a single value of type `A`, but mayu fail with
+   * Attempts to decode a stream of characters into a single value of type `A`, but may fail with
    * a human-readable exception if the stream does not encode a value of this type.
    *
    * Note: This method may not consume the full string.

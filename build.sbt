@@ -9,7 +9,7 @@ scalaVersion := crossScalaVersions.value.last
 scalacOptions ++= Seq(
   "-language:_",
   //"-Xfatal-warnings", // the deprecations cause the compile to fail
-  "-deprecation",
+  "-deprecation"
   // optimisations slow things down...
   //"-opt:l:inline",
   //"-opt-inline-from:**"
@@ -18,11 +18,11 @@ scalacOptions ++= Seq(
 scalacOptions in (Compile, console) -= "-Xfatal-warnings"
 scalacOptions in (Test, console) -= "-Xfatal-warnings"
 
-libraryDependencies += "com.propensive" %% "magnolia" % "0.16.0"
+libraryDependencies += "com.propensive" %% "magnolia"     % "0.16.0"
 libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value % Provided
 
-libraryDependencies += "org.scalaz" %% "scalaz-core" % "7.3.2" intransitive()
-libraryDependencies += "eu.timepit" %% "refined" % "0.9.15" intransitive()
+libraryDependencies += "org.scalaz" %% "scalaz-core" % "7.3.2" intransitive ()
+libraryDependencies += "eu.timepit" %% "refined"     % "0.9.15" intransitive ()
 
 libraryDependencies ++= Seq(
   "dev.zio" %% "zio"          % zioVersion,
@@ -31,14 +31,17 @@ libraryDependencies ++= Seq(
   "dev.zio" %% "zio-test-sbt" % zioVersion % "test"
 )
 
-testFrameworks ++= Seq(new TestFramework("scalaprops.ScalapropsFramework"), new TestFramework("zio.test.sbt.ZTestFramework"))
+testFrameworks ++= Seq(
+  new TestFramework("scalaprops.ScalapropsFramework"),
+  new TestFramework("zio.test.sbt.ZTestFramework")
+)
 libraryDependencies += "com.github.scalaprops" %% "scalaprops" % "0.8.0" % "test"
 parallelExecution in Test := false // scalaprops does not support parallel execution
 
 libraryDependencies += "com.lihaoyi" %% "utest" % "0.7.2" % "test"
 testFrameworks += new TestFramework("utest.runner.Framework")
 
-libraryDependencies += "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-core" % "2.5.0" % "test"
+libraryDependencies += "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-core"   % "2.5.0" % "test"
 libraryDependencies += "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-macros" % "2.5.0" % "test"
 
 // circe is super easy to install (e_e)
@@ -48,11 +51,11 @@ libraryDependencies ++= Seq(
   "io.circe" %% "circe-generic",
   "io.circe" %% "circe-parser"
 ).map(_ % circeVersion % "test")
-libraryDependencies += "io.circe" %% "circe-generic-extras" % "0.13.0" % "test"
-libraryDependencies += "org.typelevel" %% "jawn-ast" % "1.0.0" // matches circe
+libraryDependencies += "io.circe"      %% "circe-generic-extras" % "0.13.0" % "test"
+libraryDependencies += "org.typelevel" %% "jawn-ast"             % "1.0.0" // matches circe
 
-libraryDependencies += "com.typesafe.play" %% "play-json" % "2.9.0" % "test"
-libraryDependencies += "ai.x" %% "play-json-extensions" % "0.42.0" % "test"
+libraryDependencies += "com.typesafe.play" %% "play-json"            % "2.9.0"  % "test"
+libraryDependencies += "ai.x"              %% "play-json-extensions" % "0.42.0" % "test"
 
 // scalafmtOnCompile := true
 
@@ -60,14 +63,14 @@ enablePlugins(NeoJmhPlugin)
 inConfig(Jmh)(org.scalafmt.sbt.ScalafmtPlugin.scalafmtConfigSettings)
 
 sourceGenerators in Compile += Def.task {
-  val dir = (sourceManaged in Compile).value
+  val dir  = (sourceManaged in Compile).value
   val file = dir / "zio" / "json" / "GeneratedTupleDecoders.scala"
   val decoders = (1 to 22).map { i =>
-    val tparams = (1 to i).map(p => s"A$p").mkString(", ")
+    val tparams   = (1 to i).map(p => s"A$p").mkString(", ")
     val implicits = (1 to i).map(p => s"A$p: JsonDecoder[A$p]").mkString(", ")
-    val work = (1 to i).map { p =>
-      s"val a$p = A$p.unsafeDecode(trace :+ traces($p), in)"
-    }.mkString("\n        Lexer.char(trace, in, ',')\n        ")
+    val work = (1 to i)
+      .map(p => s"val a$p = A$p.unsafeDecode(trace :+ traces($p), in)")
+      .mkString("\n        Lexer.char(trace, in, ',')\n        ")
     val returns = (1 to i).map(p => s"a$p").mkString(", ")
 
     s"""implicit def tuple${i}[$tparams](implicit $implicits): JsonDecoder[Tuple${i}[$tparams]] =
@@ -90,19 +93,20 @@ sourceGenerators in Compile += Def.task {
        |
        |private[json] trait GeneratedTupleDecoders { this: JsonDecoder.type =>
        |  ${decoders.mkString("\n\n  ")}
-       |}""".stripMargin)
+       |}""".stripMargin
+  )
   Seq(file)
 }.taskValue
 
 sourceGenerators in Compile += Def.task {
-  val dir = (sourceManaged in Compile).value
+  val dir  = (sourceManaged in Compile).value
   val file = dir / "zio" / "json" / "GeneratedTupleEncoders.scala"
   val encoders = (1 to 22).map { i =>
-    val tparams = (1 to i).map(p => s"A$p").mkString(", ")
+    val tparams   = (1 to i).map(p => s"A$p").mkString(", ")
     val implicits = (1 to i).map(p => s"A$p: JsonEncoder[A$p]").mkString(", ")
-    val work = (1 to i).map { p =>
-      s"A$p.unsafeEncode(t._$p, indent, out)"
-    }.mkString("\n        if (indent.isEmpty) out.write(\",\") else out.write(\", \")\n        ")
+    val work = (1 to i)
+      .map(p => s"A$p.unsafeEncode(t._$p, indent, out)")
+      .mkString("\n        if (indent.isEmpty) out.write(\",\") else out.write(\", \")\n        ")
 
     s"""implicit def tuple${i}[$tparams](implicit $implicits): JsonEncoder[Tuple${i}[$tparams]] =
        |    new JsonEncoder[Tuple${i}[$tparams]] {
@@ -119,6 +123,7 @@ sourceGenerators in Compile += Def.task {
        |
        |private[json] trait GeneratedTupleEncoders { this: JsonEncoder.type =>
        |  ${encoders.mkString("\n\n  ")}
-       |}""".stripMargin)
+       |}""".stripMargin
+  )
   Seq(file)
 }.taskValue

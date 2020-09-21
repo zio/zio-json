@@ -125,7 +125,7 @@ package handrolled {
             "GeometryCollection"
           )
         )
-        val coordinatesD: JsonDecoder[Json.Arr]            = JsonDecoder[Json.Arr]
+        val coordinatesD: JsonDecoder[Json.Arr]           = JsonDecoder[Json.Arr]
         lazy val geometriesD: JsonDecoder[List[Geometry]] = JsonDecoder[List[Geometry]]
 
         def coordinates0(
@@ -174,7 +174,7 @@ package handrolled {
         ): Geometry = {
           Lexer.char(trace, in, '{')
 
-          var coordinates: Json.Arr       = null
+          var coordinates: Json.Arr      = null
           var geometries: List[Geometry] = null
           var subtype: Int               = -1
 

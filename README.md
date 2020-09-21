@@ -178,7 +178,7 @@ is discouraged for performance reasons. However, if we have no choice in the mat
 Sometimes it is easier to reuse an existing `JsonDecoder` rather than generate a new one. This can be accomplished using convenience methods on the `JsonDecoder` typeclass to *derive* new decoders:
 
 ```scala
-trait JsonDecoder[+A] {
+trait JsonDecoder[A] {
   def map[B](f: A => B): JsonDecoder[B]
   def mapOrFail[B](f: A => Either[String, B]): JsonDecoder[B]
   ...
@@ -188,7 +188,7 @@ trait JsonDecoder[+A] {
 Similarly, we can reuse an existing `JsonEncoder`
 
 ```scala
-trait JsonEncoder[-A] {
+trait JsonEncoder[A] {
   def contramap[B](f: B => A): JsonEncoder[B]
   ...
 }
@@ -422,13 +422,13 @@ There is a variant of this attack that can be devastating for libraries that rel
 
 Another kind of attack is to provide data that will cause the decoder for a specific value to do more work than it needs to. Numbers are always a great example of this.
 
-The most brutal attack of this nature is to trick a deserialisation library into constructing a gigantic number as a `BigDecimal` and then to downcast to a `BigInteger`. The JVM will happily attempt to reserve GBs of heap for the conversion. Try this in your REPL:
+The most brutal attack of this nature is to trick a deserialization library into constructing a gigantic number as a `BigDecimal` and then to downcast to a `BigInteger`. The JVM will happily attempt to reserve GBs of heap for the conversion. Try this in your REPL:
 
 ```scala
 new java.math.BigDecimal("1e214748364").toBigInteger
 ```
 
-Fortunately, this kind of attack is prevented by all the mainsteam libraries. But it is possible to perform a much weaker form of the attack on Circe, which (to its credit) goes to great effort to pre-validate numbers.
+Fortunately, this kind of attack is prevented by all the mainstream libraries. But it is possible to perform a much weaker form of the attack on Circe, which (to its credit) goes to great effort to pre-validate numbers.
 
 The Google Maps schema has fields of type `Int` and Circe supports the conversion of floating point numbers to integers if the fractional part is zero: so we can pad an integer with as many zeros as possible.
 
@@ -439,10 +439,10 @@ circe  4529 ( 7456)  2037 (1533)
 
 This attack is very effective in schemas with lots of numbers, causing ops/sec to be halved with a 33% increase in memory usage.
 
-`zio-json` is resistant to a wide range of number based attacks because it uses a from-scratch number parser that will exit early when the number of bits of any number exceeds 128 bits, which can be customised by the system property `zio.json.number.bits`.
+`zio-json` is resistant to a wide range of number based attacks because it uses a from-scratch number parser that will exit early when the number of bits of any number exceeds 128 bits, which can be customized by the system property `zio.json.number.bits`.
 
 # Even Moar Performance
 
 If `zio-json` isn't fast enough for you, then try out [jsoniter-scala](https://github.com/plokhotnyuk/jsoniter-scala); whereas `zio-json` is fully integrated into ZIO, including streams and transducer support, jsoniter is library agnostic.
 
-JSON is an inefficent transport format and everybody would benefit from a port of this library to msgpack or protobuf. For legacy services, a port supporting XML is also be possible.
+JSON is an inefficient transport format and everybody would benefit from a port of this library to msgpack or protobuf. For legacy services, a port supporting XML is also be possible.

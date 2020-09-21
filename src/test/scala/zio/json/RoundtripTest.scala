@@ -38,7 +38,7 @@ object RoundtripTest extends Scalaprops {
   implicit lazy val astGen: Gen[Json] = Gen.sized { size =>
     val entry: Gen[(String, Json)] = Gen.delay(Gen.apply2(Gen.asciiString, astGen)((a, b) => (a, b)))
     // objects and arrays should get smaller with depth to avoid infinite recursion
-    val size_             = 0 min (size - 1)
+    val size_          = 0 min (size - 1)
     val obj: Gen[Json] = Gen.delay(Gen.listOfN(size_, entry)).map(Chunk.fromIterable(_)).map(Json.Obj(_))
     val arr: Gen[Json] = Gen.delay(Gen.listOfN(size_, astGen)).map(Chunk.fromIterable(_)).map(Json.Arr(_))
     val boo: Gen[Json] = Gen[Boolean].map(Json.Bool(_))
@@ -61,12 +61,13 @@ object RoundtripTest extends Scalaprops {
   }
 
   implicit lazy val astShrinker: Shrink[Json] = Shrink.shrink {
-    case Json.Obj(entries) => Shrink.list[(String, Json)].apply(entries.toList).map(Chunk.fromIterable(_)).map(Json.Obj(_))
-    case Json.Arr(entries)  => Shrink.list[Json].apply(entries.toList).map(Chunk.fromIterable(_)).map(Json.Arr(_))
+    case Json.Obj(entries) =>
+      Shrink.list[(String, Json)].apply(entries.toList).map(Chunk.fromIterable(_)).map(Json.Obj(_))
+    case Json.Arr(entries) => Shrink.list[Json].apply(entries.toList).map(Chunk.fromIterable(_)).map(Json.Arr(_))
     case Json.Bool(_)      => Stream.empty[Json]
     case Json.Str(txt)     => strShrinker(txt).map(Json.Str(_))
     case Json.Num(_)       => Stream.empty[Json]
-    case Json.Null            => Stream.empty[Json]
+    case Json.Null         => Stream.empty[Json]
   }
 
   val asts = property { i: Json => roundtrip(i) }

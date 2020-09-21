@@ -7,7 +7,7 @@ import zio.json
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.github.plokhotnyuk.jsoniter_scala.macros._
 import io.circe
-import zio.json.TestUtils._
+import testzio.json.TestUtils._
 import testzio.json.data.twitter._
 import org.openjdk.jmh.annotations._
 import play.api.libs.{ json => Play }
@@ -107,11 +107,11 @@ class TwitterAPIBenchmarks {
 
   @Benchmark
   def decodeZioSuccess1(): Either[String, List[Tweet]] =
-    parser.decode[List[Tweet]](jsonChars)
+    jsonChars.fromJson[List[Tweet]]
 
   @Benchmark
   def decodeZioSuccess2(): Either[String, List[Tweet]] =
-    parser.decode[List[Tweet]](jsonCharsCompact)
+    jsonCharsCompact.fromJson[List[Tweet]]
 
   @Benchmark
   def encodeZio(): String = {
@@ -122,7 +122,7 @@ class TwitterAPIBenchmarks {
 
   @Benchmark
   def decodeZioError(): Either[String, List[Tweet]] =
-    parser.decode[List[Tweet]](jsonCharsErr)
+    jsonCharsErr.fromJson[List[Tweet]]
 
 }
 

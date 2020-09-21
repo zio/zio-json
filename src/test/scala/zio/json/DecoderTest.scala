@@ -13,8 +13,8 @@ import org.typelevel.jawn.{ ast => jawn }
 import scala.collection.mutable
 
 import utest._
-import testtestzio.json.data.googlemaps._
-import testtestzio.json.data.twitter._
+import testzio.json.data.googlemaps._
+import testzio.json.data.twitter._
 
 // testOnly *DecoderTest
 object DecoderTest extends TestSuite {
@@ -145,15 +145,15 @@ object DecoderTest extends TestSuite {
         Left(".rows[0].elements[0].distance.value(missing)")
     }
 
-    test("googleMapsAst") {      
-        getResourceAsString("google_maps_api_response.json").fromJson[Json] ==>
-          getResourceAsString("google_maps_api_compact_response.json").fromJson[Json]
+    test("googleMapsAst") {
+      getResourceAsString("google_maps_api_response.json").fromJson[Json] ==>
+        getResourceAsString("google_maps_api_compact_response.json").fromJson[Json]
     }
 
     test("twitter") {
-      val input = getResourceAsString("twitter_api_response.json")
+      val input    = getResourceAsString("twitter_api_response.json")
       val expected = circe.parser.decode[List[Tweet]](input)
-      val got = input.fromJson[List[Tweet]]
+      val got      = input.fromJson[List[Tweet]]
       got ==> expected
     }
 
@@ -306,7 +306,7 @@ object DecoderTest extends TestSuite {
             .sortBy(_._1)
         )
       case Json.Arr(values) => Json.Arr(values.map(normalize(_)))
-      case other           => other
+      case other            => other
     }
 
   def fromJawn(ast: jawn.JValue): Json =
