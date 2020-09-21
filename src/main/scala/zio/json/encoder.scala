@@ -4,7 +4,7 @@ import scala.annotation._
 import scala.collection.mutable
 import scala.collection.immutable
 
-import zio.{ Chunk, Managed, Queue, UIO, ZIO, ZManaged }
+import zio.{ Chunk, Managed, Queue, UIO, ZIO, ZManaged, ZQueue, Exit }
 import zio.blocking._
 import zio.stream._
 
@@ -60,36 +60,40 @@ trait JsonEncoder[A] { self =>
 
   /**
    * Encodes the specified value into a character stream.
-   *
-   * TODO: Use Take so we can push errors into the stream.
    */
-  final def encodeJsonStream(a: A, indent: Option[Int]): ZStream[Blocking, Nothing, Char] =
+  final def encodeJsonStream(a: A, indent: Option[Int]): ZStream[Blocking, Throwable, Char] =
     ZStream.unwrapManaged {
-      (for {
+      for {
         runtime <- ZIO.runtime[Any].toManaged_
-        queue   <- Queue.bounded[Chunk[Char]](1).toManaged_
+        queue   <- ZQueue.bounded[Exit[Option[Throwable], Chunk[Char]]](1).toManaged_
         writer <- ZManaged.fromAutoCloseable {
-                   ZIO.effectTotal {
-                     new java.io.BufferedWriter(new Writer {
-                       override def write(buffer: Array[Char], offset: Int, len: Int): Unit =
-                         runtime.unsafeRun(queue.offer(Chunk.fromArray(buffer).drop(offset).take(len)))
+          ZIO.effectTotal {
+            new java.io.BufferedWriter(new Writer {
+              override def write(buffer: Array[Char], offset: Int, len: Int): Unit = {
+                val copy = new Array[Char](len)
+                System.arraycopy(buffer, offset, copy, 0, len)
 
-                       override def close(): Unit =
-                         runtime.unsafeRun(queue.shutdown)
-
-                       override def flush(): Unit = ()
-                     }, Stream.DefaultChunkSize)
-                   }
-                 }
-        _ <- effectBlocking {
-              try {
-                unsafeEncode(a, indent, writer); runtime.unsafeRun(queue.shutdown)
-              } catch {
-                case _: Throwable => runtime.unsafeRun(queue.shutdown)
+                val chunk = Chunk.fromArray(copy).drop(offset).take(len)
+                runtime.unsafeRun(queue.offer(Exit.succeed(chunk)))
               }
-            }.toManaged_.fork
-      } yield ZStream.fromChunkQueue(queue))
-    }
+
+              override def close(): Unit = {
+                runtime.unsafeRun(queue.offer(Exit.fail(None)))
+              }
+
+              override def flush(): Unit = ()
+            }, Stream.DefaultChunkSize)
+          }
+        }
+        _ <- effectBlocking {
+            unsafeEncode(a, indent, writer)
+            writer.close()
+          }.tapError { t =>
+            queue.offer(Exit.fail(Some(t)))
+          }
+          .forkManaged
+      } yield ZStream.fromQueue(queue)
+    }.collectWhileSuccess.flattenChunks
 
   /**
    * This default may be overriden when this value may be missing within a JSON object and still
