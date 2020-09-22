@@ -30,11 +30,11 @@ object RoundTripSpec extends DefaultRunnableSpec {
       },
       testM("floats") {
         // NaN / Infinity is tested manually, because of == semantics
-        check(Gen.anyFloat.filter(_.isFinite))(assertRoundtrips)
+        check(Gen.anyFloat.filter(java.lang.Float.isFinite))(assertRoundtrips)
       },
       testM("doubles") {
         // NaN / Infinity is tested manually, because of == semantics
-        check(Gen.anyDouble.filter(_.isFinite))(assertRoundtrips)
+        check(Gen.anyDouble.filter(java.lang.Double.isFinite))(assertRoundtrips)
       },
       testM("AST") {
         check(genAst)(assertRoundtrips)
