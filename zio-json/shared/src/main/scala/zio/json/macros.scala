@@ -2,6 +2,7 @@ package zio.json
 
 import scala.annotation._
 import scala.reflect.macros.whitebox
+import scala.language.experimental.macros
 
 import magnolia._
 
