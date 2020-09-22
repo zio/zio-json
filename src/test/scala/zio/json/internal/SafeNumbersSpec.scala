@@ -220,9 +220,7 @@ object SafeNumbersSpec extends DefaultRunnableSpec {
         testM("valid edge cases") {
           val input = List("00", "01", "0000001", "-9223372036854775807", "9223372036854775806")
 
-          check(Gen.fromIterable(input)) { x =>
-            assert(SafeNumbers.long(x))(equalTo(LongSome(x.toLong)))
-          }
+          check(Gen.fromIterable(input))(x => assert(SafeNumbers.long(x))(equalTo(LongSome(x.toLong))))
         },
         testM("in valid edge cases") {
           val input = List(
@@ -235,9 +233,7 @@ object SafeNumbersSpec extends DefaultRunnableSpec {
             "9223372036854775808"
           )
 
-          check(Gen.fromIterable(input)) { x =>
-            assert(SafeNumbers.long(x))(equalTo(LongNone))
-          }
+          check(Gen.fromIterable(input))(x => assert(SafeNumbers.long(x))(equalTo(LongNone)))
         },
         testM("valid") {
           check(Gen.anyLong)(d => assert(SafeNumbers.long(d.toString))(equalTo(LongSome(d))))
@@ -246,9 +242,7 @@ object SafeNumbersSpec extends DefaultRunnableSpec {
           val outOfRange = genBigInteger
             .filter(_.bitLength > 63)
 
-          check(outOfRange) { x =>
-            assert(SafeNumbers.long(x.toString))(equalTo(LongNone))
-          }
+          check(outOfRange)(x => assert(SafeNumbers.long(x.toString))(equalTo(LongNone)))
         },
         testM("invalid (text)") {
           check(genAlphaLowerString)(s => assert(SafeNumbers.long(s))(equalTo(LongNone)))
