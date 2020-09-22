@@ -15,14 +15,10 @@ object StringMatrixSpec extends DefaultRunnableSpec {
       }
     },
     testM("negative fails") {
-      check(genTestStrings.filterNot(_.startsWith("wibble"))) { xs =>
-        assert(matcher(xs, "wibble"))(isEmpty)
-      }
+      check(genTestStrings.filterNot(_.startsWith("wibble")))(xs => assert(matcher(xs, "wibble"))(isEmpty))
     },
     testM("substring fails") {
-      check(genTestStrings.filter(_.length > 1)) { xs =>
-        assert(matcher(xs, xs.mkString))(isEmpty)
-      }
+      check(genTestStrings.filter(_.length > 1))(xs => assert(matcher(xs, xs.mkString))(isEmpty))
     },
     testM("trivial") {
       check(genNonEmptyString)(s => assert(matcher(List(s), s))(equalTo(List(s))))
