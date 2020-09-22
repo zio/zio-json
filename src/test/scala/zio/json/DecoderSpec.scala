@@ -1,20 +1,18 @@
 package testzio.json
 
-import scala.collection.immutable
-
-import zio.{ Chunk, Task, ZIO, ZManaged }
-import zio.json._
-import zio.json.ast._
-import zio.test._
-import zio.console
-import zio.test.Assertion._
-import zio.blocking._
-import zio.test.{ DefaultRunnableSpec, ZSpec }
 import io.circe
+import org.typelevel.jawn.{ ast => jawn }
+import testzio.json.TestUtils._
 import testzio.json.data.googlemaps._
 import testzio.json.data.twitter._
-import org.typelevel.jawn.{ ast => jawn }
-import TestUtils._
+import zio.blocking._
+import zio.json._
+import zio.json.ast._
+import zio.test.Assertion._
+import zio.test.{ DefaultRunnableSpec, _ }
+import zio.{ test => _, _ }
+
+import scala.collection.immutable
 
 object DecoderSpec extends DefaultRunnableSpec {
   def spec =
@@ -256,7 +254,6 @@ object DecoderSpec extends DefaultRunnableSpec {
   def matchesCirceDecoded[A](
     expected: String
   )(implicit cDecoder: circe.Decoder[A], eq: Eql[A, A]): Assertion[Either[String, A]] = {
-    import zio.test.Assertion._
     import zio.test.Assertion.Render._
 
     val cDecoded = circe.parser.decode(expected).left.map(_.toString)

@@ -1,18 +1,8 @@
 package testzio.json.internal
 
 import zio.json.internal._
-
-import io.circe
-import testzio.json.TestUtils._
-import testzio.json.data.geojson.generated._
-import testzio.json.data.googlemaps._
-import testzio.json.data.twitter._
-import zio.json._
 import zio.test.Assertion._
 import zio.test.{ DefaultRunnableSpec, _ }
-import zio.random.Random
-import zio.json.ast.Json
-import zio.Chunk
 
 object SafeNumbersSpec extends DefaultRunnableSpec {
   def spec =

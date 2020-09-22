@@ -1,21 +1,7 @@
 package testzio.json.compat
 
-import io.circe
-import testzio.json.TestUtils._
-import testzio.json.data.geojson.generated._
-import testzio.json.data.googlemaps._
-import testzio.json.data.twitter._
 import zio.json._
-import zio.test.Assertion._
-import zio.test.{ DefaultRunnableSpec, _ }
-import zio.random.Random
-import zio.json.ast.Json
-import zio.Chunk
-
-import zio.json
-import zio.json._
-import testzio.json.TestUtils._
-import eu.timepit.refined.api.{ Refined }
+import zio.test._
 
 import eu.timepit.refined.api.Refined
 import eu.timepit.refined.collection.NonEmpty
