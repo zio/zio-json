@@ -7,7 +7,6 @@ import ai.x.play.json.Encoders.encoder
 
 import zio.json._
 import zio.json.ast._
-import zio.Chunk
 
 object playtuples extends Play.GeneratedReads with Play.GeneratedWrites
 import playtuples._
@@ -220,7 +219,7 @@ package handrolled {
             throw UnsafeJson(
               JsonError.Message("missing 'coordinates' field") :: trace
             )
-          var trace_ = spans(1) :: trace
+          val trace_ = spans(1) :: trace
           (subtype: @switch) match {
             case 0 => Point(coordinates0(trace_, coordinates))
             case 1 => MultiPoint(coordinates1(trace_, coordinates))

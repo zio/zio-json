@@ -1,14 +1,13 @@
 package zio.json
 
 import scala.annotation._
-import scala.collection.mutable
 import scala.collection.immutable
 
-import zio.{ Chunk, Exit, Managed, Queue, UIO, ZIO, ZManaged, ZQueue }
+import zio.{ Chunk, Exit, ZIO, ZManaged, ZQueue }
 import zio.blocking._
 import zio.stream._
 
-import java.io.{ BufferedWriter, Writer }
+import java.io.Writer
 
 trait JsonEncoder[A] { self =>
 
@@ -76,11 +75,11 @@ trait JsonEncoder[A] { self =>
                          System.arraycopy(buffer, offset, copy, 0, len)
 
                          val chunk = Chunk.fromArray(copy).drop(offset).take(len)
-                         runtime.unsafeRun(queue.offer(Exit.succeed(chunk)))
+                         runtime.unsafeRun(queue.offer(Exit.succeed(chunk)).unit)
                        }
 
                        override def close(): Unit =
-                         runtime.unsafeRun(queue.offer(Exit.fail(None)))
+                         runtime.unsafeRun(queue.offer(Exit.fail(None)).unit)
 
                        override def flush(): Unit = ()
                      }, Stream.DefaultChunkSize)
@@ -97,8 +96,10 @@ trait JsonEncoder[A] { self =>
    * This default may be overriden when this value may be missing within a JSON object and still
    * be encoded.
    */
+  @nowarn("msg=is never used")
   def isNothing(a: A): Boolean = false
 
+  @nowarn("msg=is never used")
   def xmap[B](f: A => B, g: B => A): JsonEncoder[B] = contramap(g)
 
   def unsafeEncode(a: A, indent: Option[Int], out: java.io.Writer): Unit
@@ -123,7 +124,7 @@ object JsonEncoder extends GeneratedTupleEncoders with EncoderLowPriority0 {
           case '\t' => out.write("\\t")
           case c =>
             if (c < ' ') out.write("\\u%04x".format(c.toInt))
-            else out.write(c)
+            else out.write(c.toInt)
         }
         i += 1
       }

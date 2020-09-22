@@ -1,6 +1,5 @@
 package zio.json
 
-import zio.Chunk
 import zio.json.internal._
 
 import JsonDecoder.JsonError

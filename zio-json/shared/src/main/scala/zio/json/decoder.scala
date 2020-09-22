@@ -125,6 +125,7 @@ trait JsonDecoder[A] { self =>
         }
     }
 
+  @nowarn("msg=is never used")
   def xmap[B](f: A => B, g: B => A): JsonDecoder[B] = map(f)
 
   /**
@@ -203,7 +204,7 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority0 {
 
   implicit val char: JsonDecoder[Char] = string.mapOrFail {
     case str if str.length == 1 => Right(str(0))
-    case other                  => Left("expected one character")
+    case _                      => Left("expected one character")
   }
   implicit val symbol: JsonDecoder[Symbol] = string.map(Symbol(_))
 
@@ -315,7 +316,7 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority0 {
   )(implicit A: JsonDecoder[A]): T[A] = {
     Lexer.char(trace, in, '[')
     var i: Int = 0
-    if (Lexer.firstArrayElement(trace, in)) do {
+    if (Lexer.firstArrayElement(in)) do {
       val trace_ = JsonError.ArrayAccess(i) :: trace
       builder += A.unsafeDecode(trace_, in)
       i += 1

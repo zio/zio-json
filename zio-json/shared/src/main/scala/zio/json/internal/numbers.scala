@@ -353,12 +353,6 @@ object UnsafeNumbers {
     var dot: Int                    = 0    // counts from the right
     var exp: Int                    = 0    // implied
 
-    def read(): Int = {
-      current = in.read()
-      if (current == -1) throw UnsafeNumber
-      current
-    }
-
     def advance(): Boolean = {
       current = in.read()
       current != -1
@@ -386,7 +380,7 @@ object UnsafeNumbers {
           .valueOf(sig)
           .multiply(java.math.BigInteger.TEN)
           .add(bigIntegers(c))
-      else if (sig < 0) sig = c
+      else if (sig < 0) sig = c.toLong
       else sig = sig * 10 + c
     }
 

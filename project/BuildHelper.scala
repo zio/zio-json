@@ -41,6 +41,14 @@ object BuildHelper {
     "-Ywarn-value-discard"
   ) ++ customOptions
 
+  /**
+   * @see https://github.com/scala/scala/pull/8373
+   */
+  private val warningOptions = Seq(
+    // Many libraries use byName implicits. The warnings would turn up at the call site.
+    "-Wconf:cat=lint-byname-implicit:silent"
+  )
+
   private def propertyFlag(property: String, default: Boolean) =
     sys.props.get(property).map(_.toBoolean).getOrElse(default)
 
@@ -69,7 +77,7 @@ object BuildHelper {
       case Some((2, 13)) =>
         Seq(
           "-Ywarn-unused:params,-implicits"
-        ) ++ std2xOptions ++ optimizerOptions(optimize)
+        ) ++ std2xOptions ++ optimizerOptions(optimize) ++ warningOptions
       case Some((2, 12)) =>
         Seq(
           "-opt-warnings",

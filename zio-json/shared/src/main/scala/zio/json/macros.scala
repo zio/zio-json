@@ -1,12 +1,10 @@
 package zio.json
 
 import scala.annotation._
-import scala.reflect.macros.whitebox
 import scala.language.experimental.macros
 
 import magnolia._
 
-import zio.Chunk
 import zio.json.JsonDecoder.{ JsonError, UnsafeJson }
 import zio.json.internal.{ Lexer, RetractReader, StringMatrix }
 
@@ -104,7 +102,6 @@ object DeriveJsonDecoder {
               var trace_ = trace
               val field  = Lexer.field(trace, in, matrix)
               if (field != -1) {
-                val field_ = names(field)
                 trace_ = spans(field) :: trace
                 if (ps(field) != null)
                   throw UnsafeJson(JsonError.Message("duplicate") :: trace)
@@ -135,7 +132,6 @@ object DeriveJsonDecoder {
         case jsonHint(name) => name
       }.getOrElse(p.typeName.short)
     }.toArray
-    val len: Int             = names.length
     val matrix: StringMatrix = new StringMatrix(names)
     lazy val tcs: Array[JsonDecoder[Any]] =
       ctx.subtypes.map(_.typeclass).toArray.asInstanceOf[Array[JsonDecoder[Any]]]
@@ -150,7 +146,6 @@ object DeriveJsonDecoder {
           if (Lexer.firstField(trace, in)) {
             val field = Lexer.field(trace, in, matrix)
             if (field != -1) {
-              val field_ = names(field)
               val trace_ = spans(field) :: trace
               val a      = tcs(field).unsafeDecode(trace_, in).asInstanceOf[A]
               Lexer.char(trace, in, '}')

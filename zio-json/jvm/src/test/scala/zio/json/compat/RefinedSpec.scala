@@ -1,7 +1,6 @@
 package testzio.json.compat
 
 import zio.json._
-import zio.test._
 
 import eu.timepit.refined.api.Refined
 import eu.timepit.refined.collection.NonEmpty
