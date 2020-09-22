@@ -129,6 +129,8 @@ test: &test
         name: Run tests
         command: ./sbt ++${SCALA_VERSION}! test
     - <<: *save_cache
+    - store_test_results:
+        path: zio-json/jvm/target/test-reports
 
 jmh_compile: &jmh_compile
   steps:
