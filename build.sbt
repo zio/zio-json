@@ -32,14 +32,10 @@ libraryDependencies ++= Seq(
 )
 
 testFrameworks ++= Seq(
-  new TestFramework("scalaprops.ScalapropsFramework"),
   new TestFramework("zio.test.sbt.ZTestFramework")
 )
-libraryDependencies += "com.github.scalaprops" %% "scalaprops" % "0.8.0" % "test"
-parallelExecution in Test := false // scalaprops does not support parallel execution
 
-libraryDependencies += "com.lihaoyi" %% "utest" % "0.7.2" % "test"
-testFrameworks += new TestFramework("utest.runner.Framework")
+parallelExecution in Test := true
 
 libraryDependencies += "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-core"   % "2.5.0" % "test"
 libraryDependencies += "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-macros" % "2.5.0" % "test"
