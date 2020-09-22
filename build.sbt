@@ -24,8 +24,8 @@ inThisBuild(
   )
 )
 
-addCommandAlias("fmt", "all scalafmtSbt scalafmt test:scalafmt")
-addCommandAlias("check", "all scalafmtSbtCheck scalafmtCheck test:scalafmtCheck")
+addCommandAlias("fmt", "all scalafmtSbt scalafmt test:scalafmt jmh:scalafmt")
+addCommandAlias("check", "all scalafmtSbtCheck scalafmtCheck test:scalafmtCheck jmh:scalafmtCheck")
 
 val zioVersion = "1.0.1"
 
@@ -54,26 +54,25 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform)
     // as per @fommil, optimization slows things down.
     scalacOptions -= "-opt:l:inline",
     scalacOptions -= "-opt-inline-from:zio.internal.**",
-
     libraryDependencies ++= Seq(
-      "com.propensive"                        %% "magnolia"              % "0.16.0",
-      "org.scalaz"                            %% "scalaz-core"           % "7.3.2" intransitive (),
-      "eu.timepit"                            %% "refined"               % "0.9.15" intransitive (),
-      "org.scala-lang"                        % "scala-reflect"          % scalaVersion.value % Provided,
-      "dev.zio"                               %% "zio"                   % zioVersion,
-      "dev.zio"                               %% "zio-streams"           % zioVersion,
+      "com.propensive"                        %% "magnolia"                % "0.16.0",
+      "org.scalaz"                            %% "scalaz-core"             % "7.3.2" intransitive (),
+      "eu.timepit"                            %% "refined"                 % "0.9.15" intransitive (),
+      "org.scala-lang"                        % "scala-reflect"            % scalaVersion.value % Provided,
+      "dev.zio"                               %% "zio"                     % zioVersion,
+      "dev.zio"                               %% "zio-streams"             % zioVersion,
       "org.scala-lang.modules"                %% "scala-collection-compat" % "2.2.0",
-      "dev.zio"                               %% "zio-test"              % zioVersion % "test",
-      "dev.zio"                               %% "zio-test-sbt"          % zioVersion % "test",
-      "io.circe"                              %% "circe-core"            % circeVersion % "test",
-      "io.circe"                              %% "circe-generic"         % circeVersion % "test",
-      "io.circe"                              %% "circe-parser"          % circeVersion % "test",
-      "ai.x"                                  %% "play-json-extensions"  % "0.42.0" % "test",
-      "io.circe"                              %% "circe-generic-extras"  % circeVersion % "test",
-      "com.typesafe.play"                     %% "play-json"             % "2.9.0" % "test",
-      "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-core"   % "2.5.0" % "test",
-      "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-macros" % "2.5.0" % "test",
-      "org.typelevel"                         %% "jawn-ast"              % "1.0.0"
+      "dev.zio"                               %% "zio-test"                % zioVersion % "test",
+      "dev.zio"                               %% "zio-test-sbt"            % zioVersion % "test",
+      "io.circe"                              %% "circe-core"              % circeVersion % "test",
+      "io.circe"                              %% "circe-generic"           % circeVersion % "test",
+      "io.circe"                              %% "circe-parser"            % circeVersion % "test",
+      "ai.x"                                  %% "play-json-extensions"    % "0.42.0" % "test",
+      "io.circe"                              %% "circe-generic-extras"    % circeVersion % "test",
+      "com.typesafe.play"                     %% "play-json"               % "2.9.0" % "test",
+      "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-core"     % "2.5.0" % "test",
+      "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-macros"   % "2.5.0" % "test",
+      "org.typelevel"                         %% "jawn-ast"                % "1.0.0"
     ),
     sourceGenerators in Compile += Def.task {
       val dir  = (sourceManaged in Compile).value

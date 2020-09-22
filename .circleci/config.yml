@@ -1,10 +1,10 @@
 version: 2.1
 
 scala_212: &scala_212
-  SCALA_VERSION: 2.12.10
+  SCALA_VERSION: 2.12.11
 
 scala_213: &scala_213
-  SCALA_VERSION: 2.13.1
+  SCALA_VERSION: 2.13.3
 
 scala_dotty: &scala_dotty
   SCALA_VERSION: 0.20.0-RC1
@@ -129,6 +129,18 @@ test: &test
         name: Run tests
         command: ./sbt ++${SCALA_VERSION}! test
     - <<: *save_cache
+    - store_test_results:
+        path: zio-json/jvm/target/test-reports
+
+jmh_compile: &jmh_compile
+  steps:
+    - checkout
+    - <<: *load_cache
+    - <<: *install_jdk
+    - run:
+        name: Compile JMH
+        command: ./sbt ++${SCALA_VERSION}! jmh:compile
+    - <<: *save_cache
 
 release: &release
   steps:
@@ -210,6 +222,34 @@ jobs:
       - <<: *scala_212
       - <<: *jdk_8
 
+  jmh_compile_212_jdk8_jvm:
+    <<: *jmh_compile
+    <<: *machine_ubuntu
+    environment:
+      - <<: *scala_212
+      - <<: *jdk_8
+
+  jmh_compile_212_jdk11_jvm:
+    <<: *jmh_compile
+    <<: *machine_ubuntu
+    environment:
+      - <<: *scala_212
+      - <<: *jdk_11
+
+  jmh_compile_213_jdk8_jvm:
+    <<: *jmh_compile
+    <<: *machine_ubuntu
+    environment:
+      - <<: *scala_213
+      - <<: *jdk_8
+
+  jmh_compile_213_jdk11_jvm:
+    <<: *jmh_compile
+    <<: *machine_ubuntu
+    environment:
+      - <<: *scala_213
+      - <<: *jdk_11
+
   test_212_jdk8_jvm:
     <<: *test
     <<: *machine_ubuntu
@@ -278,26 +318,43 @@ workflows:
             - lint
           filters:
             <<: *filter_tags
+
       - test_212_jdk8_jvm:
           requires:
             - lint
           filters:
             <<: *filter_tags
+
       - test_213_jdk8_jvm:
           requires:
             - lint
           filters:
             <<: *filter_tags
+
       - test_212_jdk11_jvm:
           requires:
             - lint
           filters:
             <<: *filter_tags
+
       - test_213_jdk11_jvm:
           requires:
             - lint
           filters:
             <<: *filter_tags
+
+      - jmh_compile_213_jdk8_jvm:
+          requires:
+            - lint
+          filters:
+            <<: *filter_tags
+
+      - jmh_compile_213_jdk11_jvm:
+          requires:
+            - lint
+          filters:
+            <<: *filter_tags
+
       - release:
           context: Sonatype2
           requires:
