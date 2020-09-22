@@ -4,91 +4,183 @@ import scala.annotation._
 import scala.collection.mutable
 import scala.collection.immutable
 import scala.util.control.NoStackTrace
-import zio.json.internal._
-import Decoder.JsonError
 
-// convenience to match the circe api
-object parser {
+import JsonDecoder.JsonError
+
+import zio.json.internal._
+import zio.{ Chunk, ZIO }
+import zio.blocking._
+import zio.stream.ZStream
+
+/**
+ * A `JsonDecoder[A]` instance has the ability to decode JSON to values of type `A`, potentially
+ * failing with an error if the JSON content does not encode a value of the given type.
+ */
+trait JsonDecoder[A] { self =>
 
   /**
-   * Attempts to decode the raw JSON string as an `A`.
-   *
-   * On failure a human readable message is returned using a jq friendly
-   * format. For example the error
-   * `.rows[0].elements[0].distance.value(missing)"` tells us the location of a
-   * missing field named "value". We can use part of the error message in the
-   * `jq` command line tool for further inspection, e.g.
-   *
-   * {{{jq '.rows[0].elements[0].distance' input.json}}}
+   * An alias for [[JsonDecoder#orElse]].
    */
-  def decode[A](str: CharSequence)(implicit D: Decoder[A]): Either[String, A] =
-    D.decodeJson(str)
-}
+  final def <>[A1 >: A](that: => JsonDecoder[A1]): JsonDecoder[A1] = self.orElse(that)
 
-trait Decoder[A] { self =>
-  // note that the string may not be fully consumed
+  /**
+   * An alias for [[JsonDecoder#orElseEither]].
+   */
+  final def <+>[B](that: => JsonDecoder[B]): JsonDecoder[Either[A, B]] = self.orElseEither(that)
+
+  /**
+   * An alias for [[JsonDecoder#zip]].
+   */
+  final def <*>[B](that: => JsonDecoder[B]): JsonDecoder[(A, B)] = self.zip(that)
+
+  /**
+   * An alias for [[JsonDecoder#zipRight]].
+   */
+  final def *>[B](that: => JsonDecoder[B]): JsonDecoder[B] = self.zipRight(that)
+
+  /**
+   * An alias for [[JsonDecoder#zipLeft]].
+   */
+  final def <*[B](that: => JsonDecoder[B]): JsonDecoder[A] = self.zipLeft(that)
+
+  /**
+   * Attempts to decode a value of type `A` from the specified `CharSequence`, but may fail with
+   * a human-readable error message if the provided text does not encode a value of this type.
+   *
+   * Note: This method may not entirely consume the specified character sequence.
+   */
   final def decodeJson(str: CharSequence): Either[String, A] =
-    try Right(unsafeDecode(Nil, new FastStringReader(str)))
+    try Right(unsafeDecode(Chunk.empty, new FastStringReader(str)))
     catch {
-      case Decoder.UnsafeJson(trace) => Left(JsonError.render(trace))
-      case _: internal.UnexpectedEnd => Left("unexpected end of input")
+      case JsonDecoder.UnsafeJson(trace) => Left(JsonError.render(trace))
+      case _: internal.UnexpectedEnd     => Left("Unexpected end of input")
     }
 
-  // scalaz-deriving style MonadError combinators
-  final def widen[B >: A]: Decoder[B]                 = self.asInstanceOf[Decoder[B]]
-  final def xmap[B](f: A => B, g: B => A): Decoder[B] = map(f)
-  final def map[B](f: A => B): Decoder[B] =
-    new Decoder[B] {
-      override def unsafeDecodeMissing(trace: List[JsonError]): B =
-        f(self.unsafeDecodeMissing(trace))
-      def unsafeDecode(trace: List[JsonError], in: RetractReader): B =
+  /**
+   * Attempts to decode a stream of characters into a single value of type `A`, but may fail with
+   * a human-readable exception if the stream does not encode a value of this type.
+   *
+   * Note: This method may not consume the full string.
+   */
+  final def decodeJsonStream[R <: Blocking](stream: ZStream[R, Throwable, Char]): ZIO[R, Throwable, A] =
+    stream.toReader.use { reader =>
+      effectBlocking {
+        try unsafeDecode(Chunk.empty, new zio.json.internal.WithRetractReader(reader))
+        catch {
+          case JsonDecoder.UnsafeJson(trace) => throw new Exception(JsonError.render(trace))
+          case _: internal.UnexpectedEnd     => throw new Exception("unexpected end of input")
+        }
+      }
+    }
+
+  /**
+   * Returns a new codec that combines this codec and the specified codec using fallback semantics:
+   * such that if this codec fails, the specified codec will be tried instead.
+   */
+  final def orElse[A1 >: A](that: => JsonDecoder[A1]): JsonDecoder[A1] =
+    new JsonDecoder[A1] {
+      def unsafeDecode(trace: Chunk[JsonError], in: RetractReader): A1 = {
+        val in2 = new zio.json.internal.WithRecordingReader(in, 0)
+
+        try self.unsafeDecode(trace, in2)
+        catch {
+          case JsonDecoder.UnsafeJson(_) =>
+            in2.rewind()
+            that.unsafeDecode(trace, in2)
+
+          case _: internal.UnexpectedEnd =>
+            in2.rewind()
+            that.unsafeDecode(trace, in2)
+        }
+      }
+    }
+
+  /**
+   * Returns a new codec that combines this codec and the specified codec using fallback semantics:
+   * such that if this codec fails, the specified codec will be tried instead.
+   */
+  final def orElseEither[B](that: => JsonDecoder[B]): JsonDecoder[Either[A, B]] =
+    self.map(Left(_)).orElse(that.map(Right(_)))
+
+  /**
+   * Returns a new codec whose decoded values will be mapped by the specified function.
+   */
+  final def map[B](f: A => B): JsonDecoder[B] =
+    new JsonDecoder[B] {
+      def unsafeDecode(trace: Chunk[JsonError], in: RetractReader): B =
         f(self.unsafeDecode(trace, in))
     }
-  final def emap[B](f: A => Either[String, B]): Decoder[B] =
-    new Decoder[B] {
-      override def unsafeDecodeMissing(trace: List[JsonError]): B =
-        f(self.unsafeDecodeMissing(trace)) match {
-          case Left(err) =>
-            throw Decoder.UnsafeJson(JsonError.Message(err) :: trace)
-          case Right(b) => b
-        }
-      def unsafeDecode(trace: List[JsonError], in: RetractReader): B =
+
+  /**
+   * Returns a new codec whose decoded values will be mapped by the specified function, which may
+   * itself decide to fail with some type of error.
+   */
+  final def mapOrFail[B](f: A => Either[String, B]): JsonDecoder[B] =
+    new JsonDecoder[B] {
+      def unsafeDecode(trace: Chunk[JsonError], in: RetractReader): B =
         f(self.unsafeDecode(trace, in)) match {
           case Left(err) =>
-            throw Decoder.UnsafeJson(JsonError.Message(err) :: trace)
+            throw JsonDecoder.UnsafeJson(trace :+ JsonError.Message(err))
           case Right(b) => b
         }
     }
 
-  // The unsafe* methods are internal and should only be used by generated
-  // decoders and web frameworks.
-  //
-  // They are unsafe because they are non-total and use mutable references.
-  //
-  // We could use a ReaderT[List[JsonError]] but that would bring in
-  // dependencies and overhead, so we pass the trace context manually.
-  def unsafeDecodeMissing(trace: List[JsonError]): A =
-    throw Decoder.UnsafeJson(JsonError.Message("missing") :: trace)
+  def xmap[B](f: A => B, g: B => A): JsonDecoder[B] = map(f)
 
-  def unsafeDecode(trace: List[JsonError], in: RetractReader): A
+  /**
+   * Returns a new codec that combines this codec and the specified codec into a single codec that
+   * decodes a tuple of the values decoded by the respective codecs.
+   */
+  final def zip[B](that: => JsonDecoder[B]): JsonDecoder[(A, B)] = JsonDecoder.tuple2(this, that)
+
+  /**
+   * Zips two codecs, but discards the output on the right hand side.
+   */
+  final def zipLeft[B](that: => JsonDecoder[B]): JsonDecoder[A] = self.zipWith(that)((a, _) => a)
+
+  /**
+   * Zips two codecs, but discards the output on the left hand side.
+   */
+  final def zipRight[B](that: => JsonDecoder[B]): JsonDecoder[B] = self.zipWith(that)((_, b) => b)
+
+  /**
+   * Zips two codecs into one, transforming the outputs of both codecs by the specified function.
+   */
+  final def zipWith[B, C](that: => JsonDecoder[B])(f: (A, B) => C): JsonDecoder[C] =
+    self.zip(that).map(f.tupled)
+
+  def unsafeDecodeMissing(trace: Chunk[JsonError]): A =
+    throw JsonDecoder.UnsafeJson(trace :+ JsonError.Message("missing"))
+
+  /**
+   * Low-level, unsafe method to decode a value or throw an exception. This method should not be
+   * called in application code, although it can be implemented for user-defined data structures.
+   */
+  def unsafeDecode(trace: Chunk[JsonError], in: RetractReader): A
 }
 
-object Decoder extends GeneratedTupleDecoders with DecoderLowPriority1 {
-  def apply[A](implicit a: Decoder[A]): Decoder[A] = a
+object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority0 {
+  def apply[A](implicit a: JsonDecoder[A]): JsonDecoder[A] = a
 
-  // Design note: we could require the position in the stream here to improve
-  // debugging messages. But the cost would be that the RetractReader would need
-  // to keep track and any wrappers would need to preserve the position. It may
-  // still be desirable to do this but at the moment it is not necessary.
-  final case class UnsafeJson(trace: List[JsonError])
-      extends Exception("if you see this a dev made a mistake using Decoder")
+  /**
+   *
+   * Design note: we could require the position in the stream here to improve
+   * debugging messages. But the cost would be that the RetractReader would need
+   * to keep track and any wrappers would need to preserve the position. It may
+   * still be desirable to do this but at the moment it is not necessary.
+   */
+  final case class UnsafeJson(trace: Chunk[JsonError])
+      extends Exception("If you see this, a developer made a mistake using JsonDecoder")
       with NoStackTrace
 
-  /* Allows a human readable string to be generated for decoding failures. */
+  /**
+   * A `JsonError` value describes the ways in which decoding could fail. This structure is used
+   * to facilitate human-readable error messages during decoding failures.
+   */
   sealed abstract class JsonError
   object JsonError {
-    def render(trace: List[JsonError]): String =
-      trace.reverse.map {
+    def render(trace: Chunk[JsonError]): String =
+      trace.map {
         case Message(txt)        => s"($txt)"
         case ArrayAccess(i)      => s"[$i]"
         case ObjectAccess(field) => s".$field"
@@ -100,39 +192,39 @@ object Decoder extends GeneratedTupleDecoders with DecoderLowPriority1 {
     final case class SumType(cons: String)       extends JsonError
   }
 
-  implicit val string: Decoder[String] = new Decoder[String] {
-    def unsafeDecode(trace: List[JsonError], in: RetractReader): String =
+  implicit val string: JsonDecoder[String] = new JsonDecoder[String] {
+    def unsafeDecode(trace: Chunk[JsonError], in: RetractReader): String =
       Lexer.string(trace, in).toString
   }
-  implicit val boolean: Decoder[Boolean] = new Decoder[Boolean] {
-    def unsafeDecode(trace: List[JsonError], in: RetractReader): Boolean =
+  implicit val boolean: JsonDecoder[Boolean] = new JsonDecoder[Boolean] {
+    def unsafeDecode(trace: Chunk[JsonError], in: RetractReader): Boolean =
       Lexer.boolean(trace, in)
   }
 
-  implicit val char: Decoder[Char] = string.emap {
+  implicit val char: JsonDecoder[Char] = string.mapOrFail {
     case str if str.length == 1 => Right(str(0))
     case other                  => Left("expected one character")
   }
-  implicit val symbol: Decoder[Symbol] = string.map(Symbol(_))
+  implicit val symbol: JsonDecoder[Symbol] = string.map(Symbol(_))
 
-  implicit val byte: Decoder[Byte]   = number(Lexer.byte)
-  implicit val short: Decoder[Short] = number(Lexer.short)
-  implicit val int: Decoder[Int]     = number(Lexer.int)
-  implicit val long: Decoder[Long]   = number(Lexer.long)
-  implicit val biginteger: Decoder[java.math.BigInteger] = number(
-    Lexer.biginteger
+  implicit val byte: JsonDecoder[Byte]   = number(Lexer.byte)
+  implicit val short: JsonDecoder[Short] = number(Lexer.short)
+  implicit val int: JsonDecoder[Int]     = number(Lexer.int)
+  implicit val long: JsonDecoder[Long]   = number(Lexer.long)
+  implicit val bigInteger: JsonDecoder[java.math.BigInteger] = number(
+    Lexer.bigInteger
   )
-  implicit val float: Decoder[Float]   = number(Lexer.float)
-  implicit val double: Decoder[Double] = number(Lexer.double)
-  implicit val bigdecimal: Decoder[java.math.BigDecimal] = number(
-    Lexer.bigdecimal
+  implicit val float: JsonDecoder[Float]   = number(Lexer.float)
+  implicit val double: JsonDecoder[Double] = number(Lexer.double)
+  implicit val bigDecimal: JsonDecoder[java.math.BigDecimal] = number(
+    Lexer.bigDecimal
   )
   // numbers decode from numbers or strings for maximum compatibility
   private[this] def number[A](
-    f: (List[JsonError], RetractReader) => A
-  ): Decoder[A] =
-    new Decoder[A] {
-      def unsafeDecode(trace: List[JsonError], in: RetractReader): A =
+    f: (Chunk[JsonError], RetractReader) => A
+  ): JsonDecoder[A] =
+    new JsonDecoder[A] {
+      def unsafeDecode(trace: Chunk[JsonError], in: RetractReader): A =
         (in.nextNonWhitespace(): @switch) match {
           case '"' =>
             val i = f(trace, in)
@@ -148,12 +240,12 @@ object Decoder extends GeneratedTupleDecoders with DecoderLowPriority1 {
   //
   // If alternative behaviour is desired, e.g. pass null to the underlying, then
   // use a newtype wrapper.
-  implicit def option[A](implicit A: Decoder[A]): Decoder[Option[A]] =
-    new Decoder[Option[A]] {
+  implicit def option[A](implicit A: JsonDecoder[A]): JsonDecoder[Option[A]] =
+    new JsonDecoder[Option[A]] {
       private[this] val ull: Array[Char] = "ull".toCharArray
-      override def unsafeDecodeMissing(trace: List[JsonError]): Option[A] =
+      override def unsafeDecodeMissing(trace: Chunk[JsonError]): Option[A] =
         Option.empty
-      def unsafeDecode(trace: List[JsonError], in: RetractReader): Option[A] =
+      def unsafeDecode(trace: Chunk[JsonError], in: RetractReader): Option[A] =
         (in.nextNonWhitespace(): @switch) match {
           case 'n' =>
             Lexer.readChars(trace, in, ull, "null")
@@ -169,46 +261,46 @@ object Decoder extends GeneratedTupleDecoders with DecoderLowPriority1 {
   // "value" used by some libraries.
   implicit def either[A, B](
     implicit
-    A: Decoder[A],
-    B: Decoder[B]
-  ): Decoder[Either[A, B]] =
-    new Decoder[Either[A, B]] {
+    A: JsonDecoder[A],
+    B: JsonDecoder[B]
+  ): JsonDecoder[Either[A, B]] =
+    new JsonDecoder[Either[A, B]] {
       val names: Array[String] =
         Array("a", "Left", "left", "b", "Right", "right")
       val matrix: StringMatrix    = new StringMatrix(names)
       val spans: Array[JsonError] = names.map(JsonError.ObjectAccess(_))
 
       def unsafeDecode(
-        trace: List[JsonError],
+        trace: Chunk[JsonError],
         in: RetractReader
       ): Either[A, B] = {
         Lexer.char(trace, in, '{')
 
         val values: Array[Any] = Array.ofDim(2)
 
-        if (Lexer.firstObject(trace, in))
+        if (Lexer.firstField(trace, in))
           do {
             val field = Lexer.field(trace, in, matrix)
             if (field == -1) Lexer.skipValue(trace, in)
             else {
-              val trace_ = spans(field) :: trace
+              val trace_ = trace :+ spans(field)
               if (field < 3) {
                 if (values(0) != null)
-                  throw UnsafeJson(JsonError.Message("duplicate") :: trace_)
+                  throw UnsafeJson(trace_ :+ JsonError.Message("duplicate"))
                 values(0) = A.unsafeDecode(trace_, in)
               } else {
                 if (values(1) != null)
-                  throw UnsafeJson(JsonError.Message("duplicate") :: trace_)
+                  throw UnsafeJson(trace_ :+ JsonError.Message("duplicate"))
                 values(1) = B.unsafeDecode(trace_, in)
               }
             }
-          } while (Lexer.nextObject(trace, in))
+          } while (Lexer.nextField(trace, in))
 
         if (values(0) == null && values(1) == null)
-          throw UnsafeJson(JsonError.Message("missing fields") :: trace)
+          throw UnsafeJson(trace :+ JsonError.Message("missing fields"))
         if (values(0) != null && values(1) != null)
           throw UnsafeJson(
-            JsonError.Message("ambiguous either, both present") :: trace
+            trace :+ JsonError.Message("ambiguous either, both present")
           )
         if (values(0) != null)
           Left(values(0).asInstanceOf[A])
@@ -217,20 +309,51 @@ object Decoder extends GeneratedTupleDecoders with DecoderLowPriority1 {
     }
 
   private[json] def builder[A, T[_]](
-    trace: List[JsonError],
+    trace: Chunk[JsonError],
     in: RetractReader,
-    builder: mutable.ReusableBuilder[A, T[A]]
-  )(implicit A: Decoder[A]): T[A] = {
+    builder: mutable.Builder[A, T[A]]
+  )(implicit A: JsonDecoder[A]): T[A] = {
     Lexer.char(trace, in, '[')
     var i: Int = 0
-    if (Lexer.firstArray(trace, in)) do {
-      val trace_ = JsonError.ArrayAccess(i) :: trace
+    if (Lexer.firstArrayElement(trace, in)) do {
+      val trace_ = trace :+ JsonError.ArrayAccess(i)
       builder += A.unsafeDecode(trace_, in)
       i += 1
-    } while (Lexer.nextArray(trace, in))
+    } while (Lexer.nextArrayElement(trace, in))
     builder.result()
   }
 
+}
+
+private[json] trait DecoderLowPriority0 extends DecoderLowPriority1 { this: JsonDecoder.type =>
+  implicit def chunk[A: JsonDecoder]: JsonDecoder[Chunk[A]] = new JsonDecoder[Chunk[A]] {
+    def unsafeDecode(trace: Chunk[JsonError], in: RetractReader): Chunk[A] =
+      builder(trace, in, zio.ChunkBuilder.make[A]())
+  }
+
+  implicit def hashSet[A: JsonDecoder]: JsonDecoder[immutable.HashSet[A]] =
+    list[A].map(lst => immutable.HashSet(lst: _*))
+
+  implicit def hashMap[K: JsonFieldDecoder, V: JsonDecoder]: JsonDecoder[immutable.HashMap[K, V]] =
+    keyValueChunk[K, V].map(lst => immutable.HashMap(lst: _*))
+}
+
+private[json] trait DecoderLowPriority1 extends DecoderLowPriority2 { this: JsonDecoder.type =>
+  implicit def list[A: JsonDecoder]: JsonDecoder[List[A]] = new JsonDecoder[List[A]] {
+    def unsafeDecode(trace: Chunk[JsonError], in: RetractReader): List[A] =
+      builder(trace, in, new mutable.ListBuffer[A])
+  }
+
+  implicit def vector[A: JsonDecoder]: JsonDecoder[Vector[A]] = new JsonDecoder[Vector[A]] {
+    def unsafeDecode(trace: Chunk[JsonError], in: RetractReader): Vector[A] =
+      builder(trace, in, new immutable.VectorBuilder[A]).toVector
+  }
+
+  implicit def sortedSet[A: Ordering: JsonDecoder]: JsonDecoder[immutable.SortedSet[A]] =
+    list[A].map(lst => immutable.SortedSet(lst: _*))
+
+  implicit def sortedMap[K: JsonFieldDecoder: Ordering, V: JsonDecoder]: JsonDecoder[collection.SortedMap[K, V]] =
+    keyValueChunk[K, V].map(lst => collection.SortedMap.apply(lst: _*))
 }
 
 // We have a hierarchy of implicits for two reasons:
@@ -244,87 +367,65 @@ object Decoder extends GeneratedTupleDecoders with DecoderLowPriority1 {
 //    optimised instances, and a fallback for the more general case that would
 //    otherwise conflict in a lower priority scope. A good example of this is to
 //    have specialised decoders for collection types, falling back to BuildFrom.
-private[json] trait DecoderLowPriority1 {
-  this: Decoder.type =>
+private[json] trait DecoderLowPriority2 {
+  this: JsonDecoder.type =>
 
-  implicit def list[A: Decoder]: Decoder[List[A]] = new Decoder[List[A]] {
-    def unsafeDecode(trace: List[JsonError], in: RetractReader): List[A] =
-      builder(trace, in, new mutable.ListBuffer[A])
-  }
-
-  implicit def vector[A: Decoder]: Decoder[Vector[A]] = new Decoder[Vector[A]] {
-    def unsafeDecode(trace: List[JsonError], in: RetractReader): Vector[A] =
-      builder(trace, in, new immutable.VectorBuilder[A]).toVector
-  }
-
-  implicit def seq[A: Decoder]: Decoder[Seq[A]] = list[A].widen
+  implicit def seq[A: JsonDecoder]: JsonDecoder[Seq[A]] = list[A].map(_.toList)
 
   // not implicit because this overlaps with decoders for lists of tuples
-  def keylist[K, A](
+  def keyValueChunk[K, A](
     implicit
-    K: FieldDecoder[K],
-    A: Decoder[A]
-  ): Decoder[List[(K, A)]] =
-    new Decoder[List[(K, A)]] {
+    K: JsonFieldDecoder[K],
+    A: JsonDecoder[A]
+  ): JsonDecoder[Chunk[(K, A)]] =
+    new JsonDecoder[Chunk[(K, A)]] {
       def unsafeDecode(
-        trace: List[JsonError],
+        trace: Chunk[JsonError],
         in: RetractReader
-      ): List[(K, A)] = {
-        val builder = new mutable.ListBuffer[(K, A)]
+      ): Chunk[(K, A)] = {
+        val builder = zio.ChunkBuilder.make[(K, A)]()
         Lexer.char(trace, in, '{')
-        if (Lexer.firstObject(trace, in))
+        if (Lexer.firstField(trace, in))
           do {
             val field  = Lexer.string(trace, in).toString
-            val trace_ = JsonError.ObjectAccess(field) :: trace
+            val trace_ = trace :+ JsonError.ObjectAccess(field)
             Lexer.char(trace_, in, ':')
             val value = A.unsafeDecode(trace_, in)
             builder += ((K.unsafeDecodeField(trace_, field), value))
-          } while (Lexer.nextObject(trace, in))
+          } while (Lexer.nextField(trace, in))
         builder.result()
       }
     }
 
-  implicit def sortedmap[K: FieldDecoder: Ordering, V: Decoder]: Decoder[collection.SortedMap[K, V]] =
-    keylist[K, V].map(lst => collection.SortedMap.apply(lst: _*))
-
-  implicit def map[K: FieldDecoder, V: Decoder]: Decoder[Map[K, V]] = hashmap[K, V].widen
-
-  implicit def hashmap[K: FieldDecoder, V: Decoder]: Decoder[immutable.HashMap[K, V]] =
-    keylist[K, V].map(lst => immutable.HashMap(lst: _*))
+  implicit def map[K: JsonFieldDecoder, V: JsonDecoder]: JsonDecoder[Map[K, V]] =
+    keyValueChunk[K, V].map(lst => Map.apply(lst: _*))
 
   // TODO these could be optimised...
-  implicit def set[A: Decoder]: Decoder[Set[A]] = hashset[A].widen
-  implicit def hashset[A: Decoder]: Decoder[immutable.HashSet[A]] =
+  implicit def set[A: JsonDecoder]: JsonDecoder[Set[A]] =
     list[A].map(lst => immutable.HashSet(lst: _*))
-  implicit def sortedset[A: Ordering: Decoder]: Decoder[immutable.SortedSet[A]] =
-    list[A].map(lst => immutable.SortedSet(lst: _*))
-
 }
 
 /** When decoding a JSON Object, we only allow the keys that implement this interface. */
-trait FieldDecoder[A] { self =>
-  final def widen[B >: A]: FieldDecoder[B] =
-    self.asInstanceOf[FieldDecoder[B]]
-  final def xmap[B](f: A => B, g: B => A): FieldDecoder[B] = map(f)
-  final def map[B](f: A => B): FieldDecoder[B] =
-    new FieldDecoder[B] {
-      def unsafeDecodeField(trace: List[JsonError], in: String): B =
+trait JsonFieldDecoder[+A] { self =>
+  final def map[B](f: A => B): JsonFieldDecoder[B] =
+    new JsonFieldDecoder[B] {
+      def unsafeDecodeField(trace: Chunk[JsonError], in: String): B =
         f(self.unsafeDecodeField(trace, in))
     }
-  final def emap[B](f: A => Either[String, B]): FieldDecoder[B] =
-    new FieldDecoder[B] {
-      def unsafeDecodeField(trace: List[JsonError], in: String): B =
+  final def mapOrFail[B](f: A => Either[String, B]): JsonFieldDecoder[B] =
+    new JsonFieldDecoder[B] {
+      def unsafeDecodeField(trace: Chunk[JsonError], in: String): B =
         f(self.unsafeDecodeField(trace, in)) match {
           case Left(err) =>
-            throw Decoder.UnsafeJson(JsonError.Message(err) :: trace)
+            throw JsonDecoder.UnsafeJson(trace :+ JsonError.Message(err))
           case Right(b) => b
         }
     }
 
-  def unsafeDecodeField(trace: List[JsonError], in: String): A
+  def unsafeDecodeField(trace: Chunk[JsonError], in: String): A
 }
-object FieldDecoder {
-  implicit val string: FieldDecoder[String] = new FieldDecoder[String] {
-    def unsafeDecodeField(trace: List[JsonError], in: String): String = in
+object JsonFieldDecoder {
+  implicit val string: JsonFieldDecoder[String] = new JsonFieldDecoder[String] {
+    def unsafeDecodeField(trace: Chunk[JsonError], in: String): String = in
   }
 }

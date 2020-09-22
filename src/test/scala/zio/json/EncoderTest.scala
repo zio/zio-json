@@ -1,18 +1,17 @@
-package zio.json
+package testzio.json
 
 import scala.collection.immutable
 
 import io.circe
-import zio.json
-import json.syntax._
+import zio.json._
 import TestUtils._
 import scalaprops._
 import Property.{ implies, prop, property }
 import scala.collection.mutable
 
 import utest._
-import zio.json.data.googlemaps._
-import zio.json.data.twitter._
+import testzio.json.data.googlemaps._
+import testzio.json.data.twitter._
 
 // testOnly *EncoderTest
 object EncoderTest extends TestSuite {
@@ -20,20 +19,20 @@ object EncoderTest extends TestSuite {
   object exampleproducts {
     case class Parameterless()
     object Parameterless {
-      implicit val encoder: json.Encoder[Parameterless] =
-        json.MagnoliaEncoder.gen
+      implicit val encoder: JsonEncoder[Parameterless] =
+        DeriveJsonEncoder.gen[Parameterless]
     }
 
     case class OnlyString(s: String)
     object OnlyString {
-      implicit val encoder: json.Encoder[OnlyString] =
-        json.MagnoliaEncoder.gen
+      implicit val encoder: JsonEncoder[OnlyString] =
+        DeriveJsonEncoder.gen[OnlyString]
     }
 
-    case class CoupleOfThings(@json.field("j") i: Int, f: Option[Float], b: Boolean)
+    case class CoupleOfThings(@field("j") i: Int, f: Option[Float], b: Boolean)
     object CoupleOfThings {
-      implicit val encoder: json.Encoder[CoupleOfThings] =
-        json.MagnoliaEncoder.gen
+      implicit val encoder: JsonEncoder[CoupleOfThings] =
+        DeriveJsonEncoder.gen[CoupleOfThings]
     }
   }
 
@@ -41,22 +40,22 @@ object EncoderTest extends TestSuite {
 
     sealed abstract class Parent
     object Parent {
-      implicit val encoder: json.Encoder[Parent] = json.MagnoliaEncoder.gen
+      implicit val encoder: JsonEncoder[Parent] = DeriveJsonEncoder.gen[Parent]
     }
     case class Child1() extends Parent
-    @json.hint("Cain")
+    @hint("Cain")
     case class Child2() extends Parent
   }
 
   object examplealtsum {
 
-    @json.discriminator("hint")
+    @discriminator("hint")
     sealed abstract class Parent
     object Parent {
-      implicit val encoder: json.Encoder[Parent] = json.MagnoliaEncoder.gen
+      implicit val encoder: JsonEncoder[Parent] = DeriveJsonEncoder.gen[Parent]
     }
     case class Child1() extends Parent
-    @json.hint("Abel")
+    @hint("Abel")
     case class Child2(s: Option[String]) extends Parent
   }
 
@@ -175,8 +174,8 @@ object EncoderTest extends TestSuite {
       (Child2(Some("hello")): Parent).toJsonPretty ==> "{\n  \"hint\" : \"Abel\",\n  \"s\" : \"hello\"\n}"
     }
 
-    // using circe to avoid entwining this test on zio.json.Decoder
-    def testRoundtrip[A: circe.Decoder: Encoder](res: String) = {
+    // using circe to avoid entwining this test on zio.JsonDecoder
+    def testRoundtrip[A: circe.Decoder: JsonEncoder](res: String) = {
       val jsonString = getResourceAsString(res)
       val decoded    = circe.parser.decode[A](jsonString)
       val recoded    = decoded.toOption.get.toJson
@@ -195,7 +194,7 @@ object EncoderTest extends TestSuite {
     }
 
     test("GeoJSON") {
-      import zio.json.data.geojson.generated._
+      import testzio.json.data.geojson.generated._
 
       testRoundtrip[GeoJSON]("che.geo.json")
     }

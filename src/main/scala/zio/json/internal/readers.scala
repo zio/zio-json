@@ -10,7 +10,7 @@ import scala.util.control.NoStackTrace
 
 // https://github.com/openjdk/jdk/blob/master/src/java.base/share/classes/java/io/PushbackReader.java
 
-trait OneCharReader extends java.io.Reader {
+private[zio] trait OneCharReader extends java.io.Reader {
   def read(cbuf: Array[Char], off: Int, len: Int): Int =
     throw new UnsupportedOperationException
 
@@ -45,7 +45,7 @@ trait OneCharReader extends java.io.Reader {
 
 }
 
-final class UnexpectedEnd
+private[zio] final class UnexpectedEnd
     extends Exception(
       "if you see this a dev made a mistake using OneCharReader"
     )
@@ -72,7 +72,7 @@ final class FastCharSequence(s: Array[Char]) extends CharSequence {
 
 // java.io.StringReader uses a lock, which reduces perf by x2, this also allows
 // fast retraction and access to raw char arrays (which are faster than Strings)
-final class FastStringReader(s: CharSequence) extends RetractReader with PlaybackReader {
+private[zio] final class FastStringReader(s: CharSequence) extends RetractReader with PlaybackReader {
   private[this] var i: Int = 0
   def offset(): Int        = i
   private val len: Int     = s.length
@@ -134,10 +134,10 @@ final class WithRetractReader(in: java.io.Reader) extends RetractReader {
  * first action nor is `retract` allowed to happen immediately before or after
  * a `rewind`.
  */
-sealed trait RecordingReader extends RetractReader {
+private[zio] sealed trait RecordingReader extends RetractReader {
   def rewind(): Unit
 }
-object RecordingReader {
+private[zio] object RecordingReader {
   def apply(in: OneCharReader): RecordingReader =
     in match {
       case rr: PlaybackReader => new WrappedRecordingReader(rr)
@@ -146,14 +146,16 @@ object RecordingReader {
 }
 
 // used to optimise RecordingReader
-sealed trait PlaybackReader extends OneCharReader {
+private[zio] sealed trait PlaybackReader extends OneCharReader {
   def offset(): Int
 
   // i must be < offset
   def history(i: Int): Char
 }
 
-final class WithRecordingReader(in: OneCharReader, initial: Int) extends RecordingReader with PlaybackReader {
+private[zio] final class WithRecordingReader(in: OneCharReader, initial: Int)
+    extends RecordingReader
+    with PlaybackReader {
   private[this] var tape: Array[Char] = Array.ofDim(initial)
   private[this] var eob: Int          = -1
   private[this] var writing: Int      = 0
@@ -204,7 +206,7 @@ final class WithRecordingReader(in: OneCharReader, initial: Int) extends Recordi
 // since the underlying is a recording reader, it implies that anything we would
 // be recording has already been recorded as part of a larger recording.
 // Therefore, reuse the existing recording.
-final class WrappedRecordingReader(rr: PlaybackReader) extends RecordingReader with PlaybackReader {
+private[zio] final class WrappedRecordingReader(rr: PlaybackReader) extends RecordingReader with PlaybackReader {
 
   private[this] val start  = rr.offset()
   private[this] var i: Int = start

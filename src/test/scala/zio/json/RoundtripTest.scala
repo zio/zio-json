@@ -1,10 +1,10 @@
-package zio.json
+package testzio.json
 
 import scala.collection.immutable
 
-import zio.json
-import json._
-import json.syntax._
+import zio.Chunk
+import zio.json._
+import zio.json.ast._
 import scalaprops._
 import Property.{ implies, prop, property }
 import scala.collection.mutable
@@ -12,9 +12,9 @@ import scala.collection.mutable
 // testOnly *RoundtripTest
 object RoundtripTest extends Scalaprops {
 
-  def roundtrip[A: Encoder: Decoder](a: A) =
-    prop(json.parser.decode[A](a.toJson) == Right(a)) and
-      prop(json.parser.decode[A](a.toJsonPretty) == Right(a))
+  def roundtrip[A: JsonEncoder: JsonDecoder](a: A) =
+    prop(a.toJson.fromJson[A] == Right(a)) and
+      prop(a.toJsonPretty.fromJson[A] == Right(a))
 
   // arbitrary strings are not guaranteed to roundtrip due to normalisation of
   // some unicode characters, but we could still test this on a subset of
@@ -35,22 +35,22 @@ object RoundtripTest extends Scalaprops {
   val floats  = property { i: Float => implies(i.isFinite, roundtrip(i)) }
   val doubles = property { i: Double => implies(i.isFinite, roundtrip(i)) }
 
-  implicit lazy val astGen: Gen[JsValue] = Gen.sized { size =>
-    val entry: Gen[(String, JsValue)] = Gen.delay(Gen.apply2(Gen.asciiString, astGen)((a, b) => (a, b)))
+  implicit lazy val astGen: Gen[Json] = Gen.sized { size =>
+    val entry: Gen[(String, Json)] = Gen.delay(Gen.apply2(Gen.asciiString, astGen)((a, b) => (a, b)))
     // objects and arrays should get smaller with depth to avoid infinite recursion
-    val size_             = 0 min (size - 1)
-    val obj: Gen[JsValue] = Gen.delay(Gen.listOfN(size_, entry)).map(JsObject(_))
-    val arr: Gen[JsValue] = Gen.delay(Gen.listOfN(size_, astGen)).map(JsArray(_))
-    val boo: Gen[JsValue] = Gen[Boolean].map(JsBoolean(_))
-    val str: Gen[JsValue] = Gen.asciiString.map(JsString(_))
-    val num: Gen[JsValue] = for {
+    val size_          = 0 min (size - 1)
+    val obj: Gen[Json] = Gen.delay(Gen.listOfN(size_, entry)).map(Chunk.fromIterable(_)).map(Json.Obj(_))
+    val arr: Gen[Json] = Gen.delay(Gen.listOfN(size_, astGen)).map(Chunk.fromIterable(_)).map(Json.Arr(_))
+    val boo: Gen[Json] = Gen[Boolean].map(Json.Bool(_))
+    val str: Gen[Json] = Gen.asciiString.map(Json.Str(_))
+    val num: Gen[Json] = for {
       num <- Gen[java.math.BigDecimal]
       // fallback to null if we ever get a number that is too big
     } yield
-      if (num.unscaledValue.bitLength > 128) JsNull
-      else JsNumber(num)
+      if (num.unscaledValue.bitLength > 128) Json.Null
+      else Json.Num(num)
 
-    val nul: Gen[JsValue] = Gen.value(JsNull)
+    val nul: Gen[Json] = Gen.value(Json.Null)
 
     Gen.oneOf(obj, arr, boo, str, num)
   }
@@ -60,15 +60,16 @@ object RoundtripTest extends Scalaprops {
     else Stream(txt.drop(1), txt.reverse.drop(1).reverse)
   }
 
-  implicit lazy val astShrinker: Shrink[JsValue] = Shrink.shrink {
-    case JsObject(entries) => Shrink.list[(String, JsValue)].apply(entries).map(JsObject(_))
-    case JsArray(entries)  => Shrink.list[JsValue].apply(entries).map(JsArray(_))
-    case JsBoolean(_)      => Stream.empty[JsValue]
-    case JsString(txt)     => strShrinker(txt).map(JsString(_))
-    case JsNumber(_)       => Stream.empty[JsValue]
-    case JsNull            => Stream.empty[JsValue]
+  implicit lazy val astShrinker: Shrink[Json] = Shrink.shrink {
+    case Json.Obj(entries) =>
+      Shrink.list[(String, Json)].apply(entries.toList).map(Chunk.fromIterable(_)).map(Json.Obj(_))
+    case Json.Arr(entries) => Shrink.list[Json].apply(entries.toList).map(Chunk.fromIterable(_)).map(Json.Arr(_))
+    case Json.Bool(_)      => Stream.empty[Json]
+    case Json.Str(txt)     => strShrinker(txt).map(Json.Str(_))
+    case Json.Num(_)       => Stream.empty[Json]
+    case Json.Null         => Stream.empty[Json]
   }
 
-  val asts = property { i: JsValue => roundtrip(i) }
+  val asts = property { i: Json => roundtrip(i) }
 
 }

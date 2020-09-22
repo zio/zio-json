@@ -8,9 +8,8 @@ import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.github.plokhotnyuk.jsoniter_scala.macros._
 import io.circe
 import zio.json.GeoJSONBenchmarks._
-import zio.json.TestUtils._
-//import zio.json.data.geojson.generated._
-import zio.json.data.geojson.handrolled._
+import testzio.json.TestUtils._
+import testzio.json.data.geojson.handrolled._
 import org.openjdk.jmh.annotations._
 import play.api.libs.{ json => Play }
 
@@ -109,22 +108,22 @@ class GeoJSONBenchmarks {
 
   @Benchmark
   def decodeZioSuccess1(): Either[String, GeoJSON] =
-    json.parser.decode[GeoJSON](jsonChars1)
+    jsonChars1.fromJson[GeoJSON]
 
   @Benchmark
   def decodeZioSuccess2(): Either[String, GeoJSON] =
-    json.parser.decode[GeoJSON](jsonChars2)
+    jsonChars2.fromJson[GeoJSON]
 
   @Benchmark
   def encodeZio(): String = {
-    import zio.json.syntax._
+    import zio.json._
 
     decoded.toJson
   }
 
   @Benchmark
   def decodeZioError(): Either[String, GeoJSON] =
-    json.parser.decode[GeoJSON](jsonCharsErr)
+    jsonCharsErr.fromJson[GeoJSON]
 
 }
 

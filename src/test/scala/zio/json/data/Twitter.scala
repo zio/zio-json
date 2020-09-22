@@ -1,7 +1,7 @@
-package zio.json.data.twitter
+package testzio.json.data.twitter
 
 import io.circe
-import zio.json
+import zio.json._
 import play.api.libs.{ json => Play }
 import ai.x.play.json.{ Jsonx => Playx }
 import ai.x.play.json.Encoders.encoder
@@ -13,11 +13,11 @@ case class Urls(
   indices: List[Int]
 )
 object Urls {
-  implicit val jDecoder: json.Decoder[Urls] = json.MagnoliaDecoder.gen
-  implicit val jEncoder: json.Encoder[Urls] = json.MagnoliaEncoder.gen
+  implicit val jJsonDecoder: JsonDecoder[Urls] = DeriveJsonDecoder.gen[Urls]
+  implicit val jEncoder: JsonEncoder[Urls]     = DeriveJsonEncoder.gen[Urls]
   implicit val customConfig: circe.generic.extras.Configuration =
     circe.generic.extras.Configuration.default
-  implicit val circeDecoder: circe.Decoder[Urls] =
+  implicit val circeJsonDecoder: circe.Decoder[Urls] =
     circe.generic.extras.semiauto.deriveConfiguredDecoder[Urls]
   implicit val circeEncoder: circe.Encoder[Urls] =
     circe.generic.extras.semiauto.deriveConfiguredEncoder[Urls]
@@ -25,11 +25,11 @@ object Urls {
 }
 case class Url(urls: List[Urls])
 object Url {
-  implicit val jDecoder: json.Decoder[Url] = json.MagnoliaDecoder.gen
-  implicit val jEncoder: json.Encoder[Url] = json.MagnoliaEncoder.gen
+  implicit val jJsonDecoder: JsonDecoder[Url] = DeriveJsonDecoder.gen[Url]
+  implicit val jEncoder: JsonEncoder[Url]     = DeriveJsonEncoder.gen[Url]
   implicit val customConfig: circe.generic.extras.Configuration =
     circe.generic.extras.Configuration.default
-  implicit val circeDecoder: circe.Decoder[Url] =
+  implicit val circeJsonDecoder: circe.Decoder[Url] =
     circe.generic.extras.semiauto.deriveConfiguredDecoder[Url]
   implicit val circeEncoder: circe.Encoder[Url] =
     circe.generic.extras.semiauto.deriveConfiguredEncoder[Url]
@@ -38,11 +38,11 @@ object Url {
 
 case class UserEntities(url: Url, description: Url)
 object UserEntities {
-  implicit val jDecoder: json.Decoder[UserEntities] = json.MagnoliaDecoder.gen
-  implicit val jEncoder: json.Encoder[UserEntities] = json.MagnoliaEncoder.gen
+  implicit val jJsonDecoder: JsonDecoder[UserEntities] = DeriveJsonDecoder.gen[UserEntities]
+  implicit val jEncoder: JsonEncoder[UserEntities]     = DeriveJsonEncoder.gen[UserEntities]
   implicit val customConfig: circe.generic.extras.Configuration =
     circe.generic.extras.Configuration.default
-  implicit val circeDecoder: circe.Decoder[UserEntities] =
+  implicit val circeJsonDecoder: circe.Decoder[UserEntities] =
     circe.generic.extras.semiauto.deriveConfiguredDecoder[UserEntities]
   implicit val circeEncoder: circe.Encoder[UserEntities] =
     circe.generic.extras.semiauto.deriveConfiguredEncoder[UserEntities]
@@ -58,11 +58,11 @@ case class UserMentions(
   indices: List[Int]
 )
 object UserMentions {
-  implicit val jDecoder: json.Decoder[UserMentions] = json.MagnoliaDecoder.gen
-  implicit val jEncoder: json.Encoder[UserMentions] = json.MagnoliaEncoder.gen
+  implicit val jJsonDecoder: JsonDecoder[UserMentions] = DeriveJsonDecoder.gen[UserMentions]
+  implicit val jEncoder: JsonEncoder[UserMentions]     = DeriveJsonEncoder.gen[UserMentions]
   implicit val customConfig: circe.generic.extras.Configuration =
     circe.generic.extras.Configuration.default
-  implicit val circeDecoder: circe.Decoder[UserMentions] =
+  implicit val circeJsonDecoder: circe.Decoder[UserMentions] =
     circe.generic.extras.semiauto.deriveConfiguredDecoder[UserMentions]
   implicit val circeEncoder: circe.Encoder[UserMentions] =
     circe.generic.extras.semiauto.deriveConfiguredEncoder[UserMentions]
@@ -115,11 +115,11 @@ case class User(
   translator_type: String
 )
 object User {
-  implicit val jDecoder: json.Decoder[User] = json.MagnoliaDecoder.gen
-  implicit val jEncoder: json.Encoder[User] = json.MagnoliaEncoder.gen
+  implicit val jJsonDecoder: JsonDecoder[User] = DeriveJsonDecoder.gen[User]
+  implicit val jEncoder: JsonEncoder[User]     = DeriveJsonEncoder.gen[User]
   implicit val customConfig: circe.generic.extras.Configuration =
     circe.generic.extras.Configuration.default
-  implicit val circeDecoder: circe.Decoder[User] =
+  implicit val circeJsonDecoder: circe.Decoder[User] =
     circe.generic.extras.semiauto.deriveConfiguredDecoder[User]
   implicit val circeEncoder: circe.Encoder[User] =
     circe.generic.extras.semiauto.deriveConfiguredEncoder[User]
@@ -133,11 +133,11 @@ case class Entities(
   urls: List[Urls]
 )
 object Entities {
-  implicit val jDecoder: json.Decoder[Entities] = json.MagnoliaDecoder.gen
-  implicit val jEncoder: json.Encoder[Entities] = json.MagnoliaEncoder.gen
+  implicit val jJsonDecoder: JsonDecoder[Entities] = DeriveJsonDecoder.gen[Entities]
+  implicit val jEncoder: JsonEncoder[Entities]     = DeriveJsonEncoder.gen[Entities]
   implicit val customConfig: circe.generic.extras.Configuration =
     circe.generic.extras.Configuration.default
-  implicit val circeDecoder: circe.Decoder[Entities] =
+  implicit val circeJsonDecoder: circe.Decoder[Entities] =
     circe.generic.extras.semiauto.deriveConfiguredDecoder[Entities]
   implicit val circeEncoder: circe.Encoder[Entities] =
     circe.generic.extras.semiauto.deriveConfiguredEncoder[Entities]
@@ -171,13 +171,13 @@ case class RetweetedStatus(
   lang: String
 )
 object RetweetedStatus {
-  implicit val jDecoder: json.Decoder[RetweetedStatus] =
-    json.MagnoliaDecoder.gen
-  implicit val jEncoder: json.Encoder[RetweetedStatus] =
-    json.MagnoliaEncoder.gen
+  implicit val jJsonDecoder: JsonDecoder[RetweetedStatus] =
+    DeriveJsonDecoder.gen[RetweetedStatus]
+  implicit val jEncoder: JsonEncoder[RetweetedStatus] =
+    DeriveJsonEncoder.gen[RetweetedStatus]
   implicit val customConfig: circe.generic.extras.Configuration =
     circe.generic.extras.Configuration.default
-  implicit val circeDecoder: circe.Decoder[RetweetedStatus] =
+  implicit val circeJsonDecoder: circe.Decoder[RetweetedStatus] =
     circe.generic.extras.semiauto.deriveConfiguredDecoder[RetweetedStatus]
   implicit val circeEncoder: circe.Encoder[RetweetedStatus] =
     circe.generic.extras.semiauto.deriveConfiguredEncoder[RetweetedStatus]
@@ -214,11 +214,11 @@ case class Tweet(
 )
 
 object Tweet {
-  implicit val zioJsonDecoder: json.Decoder[Tweet] = json.MagnoliaDecoder.gen
-  implicit val zioJsonEncoder: json.Encoder[Tweet] = json.MagnoliaEncoder.gen
+  implicit val zioJsonJsonDecoder: JsonDecoder[Tweet] = DeriveJsonDecoder.gen[Tweet]
+  implicit val zioJsonEncoder: JsonEncoder[Tweet]     = DeriveJsonEncoder.gen[Tweet]
   implicit val customConfig: circe.generic.extras.Configuration =
     circe.generic.extras.Configuration.default
-  implicit val circeDecoder: circe.Decoder[Tweet] =
+  implicit val circeJsonDecoder: circe.Decoder[Tweet] =
     circe.generic.extras.semiauto.deriveConfiguredDecoder[Tweet]
   implicit val circeEncoder: circe.Encoder[Tweet] =
     circe.generic.extras.semiauto.deriveConfiguredEncoder[Tweet]

@@ -1,7 +1,7 @@
-package zio.json.compat
+package testzio.json.compat
 
-import zio.json, json.syntax._
-import zio.json.TestUtils._
+import zio.json._
+import testzio.json.TestUtils._
 
 import utest._
 import _root_.scalaz._
@@ -18,7 +18,7 @@ object ScalazTest extends TestSuite {
       IList[Int]().toJsonPretty ==> "[]"
       IList(1, 2, 3).toJsonPretty ==> "[1, 2, 3]"
 
-      json.parser.decode[IList[Int]]("""[1,2,3]""") ==> Right(IList(1, 2, 3))
+      """[1,2,3]""".fromJson[IList[Int]] ==> Right(IList(1, 2, 3))
     }
   }
 

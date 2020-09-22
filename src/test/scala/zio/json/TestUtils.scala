@@ -1,4 +1,4 @@
-package zio.json
+package testzio.json
 
 import java.nio.CharBuffer
 
@@ -39,10 +39,10 @@ object TestUtils {
   }
 
   def asChars(str: String): CharSequence =
-    new internal.FastCharSequence(str.toCharArray)
+    new zio.json.internal.FastCharSequence(str.toCharArray)
 
-  def getResourceAsReader(res: String): internal.RetractReader =
-    new internal.WithRetractReader(
+  def getResourceAsReader(res: String): zio.json.internal.RetractReader =
+    new zio.json.internal.WithRetractReader(
       new java.io.InputStreamReader(
         getClass.getClassLoader.getResourceAsStream(res),
         "UTF-8"

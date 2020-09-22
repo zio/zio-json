@@ -7,8 +7,8 @@ import zio.json
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.github.plokhotnyuk.jsoniter_scala.macros._
 import io.circe
-import zio.json.TestUtils._
-import zio.json.data.twitter._
+import testzio.json.TestUtils._
+import testzio.json.data.twitter._
 import org.openjdk.jmh.annotations._
 import play.api.libs.{ json => Play }
 import TwitterAPIBenchmarks._
@@ -107,29 +107,29 @@ class TwitterAPIBenchmarks {
 
   @Benchmark
   def decodeZioSuccess1(): Either[String, List[Tweet]] =
-    json.parser.decode[List[Tweet]](jsonChars)
+    jsonChars.fromJson[List[Tweet]]
 
   @Benchmark
   def decodeZioSuccess2(): Either[String, List[Tweet]] =
-    json.parser.decode[List[Tweet]](jsonCharsCompact)
+    jsonCharsCompact.fromJson[List[Tweet]]
 
   @Benchmark
   def encodeZio(): String = {
-    import zio.json.syntax._
+    import zio.json._
 
     decoded.toJson
   }
 
   @Benchmark
   def decodeZioError(): Either[String, List[Tweet]] =
-    json.parser.decode[List[Tweet]](jsonCharsErr)
+    jsonCharsErr.fromJson[List[Tweet]]
 
 }
 
 object TwitterAPIBenchmarks {
   // these avoid the List implicit from being recreated every time
-  implicit val zListTweet: json.Decoder[List[Tweet]] =
-    json.Decoder.list[Tweet]
+  implicit val zListTweet: JsonDecoder[List[Tweet]] =
+    JsonDecoder.list[Tweet]
   implicit val cListTweet: circe.Decoder[List[Tweet]] =
     circe.Decoder.decodeList[Tweet]
   implicit val codec: JsonValueCodec[List[Tweet]] =

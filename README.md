@@ -3,17 +3,18 @@ The goal of this project is to create the best all-round JSON library for Scala:
 - **Performance** to handle more requests per second than the incumbents, i.e. reduced operational costs.
 - **Security** to mitigate against adversarial JSON payloads that threaten the capacity of the server.
 - **Fast Compilation** no shapeless, no type astronautics.
-- **Future Proof** prepared for Scala 3 and next generation Java.
+- **Future-Proof**, prepared for Scala 3 and next generation Java.
 - **Simple** small codebase, short and concise documentation that covers everything.
 - **Helpful errors** are readable by humans and machines.
+- **ZIO Integration** so nothing more is required.
 
 # How
 
 Extreme **performance** is achieved by decoding JSON directly from the input source into business objects (inspired by [plokhotnyuk](https://github.com/plokhotnyuk/jsoniter-scala)). Although not a requirement, the latest advances in [Java Loom](https://wiki.openjdk.java.net/display/loom/Main) can be used to support arbitrarily large payloads with near-zero overhead.
 
-Best in class **security** is achieved with an aggressive *early exit* strategy that avoids costly stacktraces, even when parsing malformed numbers. Malicious (and badly formed) payloads are rejected before finishing reading.
+Best in class **security** is achieved with an aggressive *early exit* strategy that avoids costly stack traces, even when parsing malformed numbers. Malicious (and badly formed) payloads are rejected before finishing reading.
 
-**Fast compilation** and **future proofing** is possible thanks to [Magnolia](https://propensive.com/opensource/magnolia/) which allows us to generate boilerplate in a way that will survive the exodus to Scala 3. `zio-json` is internally implemented using the [`java.io.Reader`](https://docs.oracle.com/en/java/javase/14/docs/api/java.base/java/io/Reader.html) interface which is making a comeback to center stage in Loom.
+**Fast compilation** and **future-proofing** is possible thanks to [Magnolia](https://propensive.com/opensource/magnolia/) which allows us to generate boilerplate in a way that will survive the exodus to Scala 3. `zio-json` is internally implemented using the [`java.io.Reader`](https://docs.oracle.com/en/java/javase/14/docs/api/java.base/java/io/Reader.html) interface which is making a comeback to center stage in Loom.
 
 **Simplicity** is achieved by using well-known software patterns and avoiding bloat. The only requirement to use this library is to know about Scala's encoding of typeclasses, described in [Functional Programming for Mortals](https://leanpub.com/fpmortals/read#leanpub-auto-functionality).
 
@@ -36,8 +37,7 @@ scalaVersion in ThisBuild := "2.13.3"
 All of the following code snippets assume that the following imports have been declared
 
 ```scala
-import zio.json
-import json.syntax._
+import zio.json._
 ```
 
 ## Simple Example
@@ -54,27 +54,27 @@ into a Scala `case class`
 case class Banana(curvature: Double)
 ```
 
-To do this, we create an *instance* of the `json.Decoder` typeclass for `Banana` using the `zio-json` code generator. It is best practice to put it on the companion of `Banana`, like so
+To do this, we create an *instance* of the `JsonDecoder` typeclass for `Banana` using the `zio-json` code generator. It is best practice to put it on the companion of `Banana`, like so
 
 ```scala
 object Banana {
-  implicit val decoder: json.Decoder[Banana] = json.MagnoliaDecoder.gen
+  implicit val decoder: JsonDecoder[Banana] = DeriveJsonDecoder.gen[Banana]
 }
 ```
 
 Now we can parse JSON into our object
 
 ```
-scala> json.parser.decode[Banana]("""{"curvature":0.5}""")
+scala> """{"curvature":0.5}""".fromJson[Banana]
 val res: Either[String, Banana] = Right(Banana(0.5))
 ```
 
-Likewise, to produce JSON from our data we define a `json.Encoder`
+Likewise, to produce JSON from our data we define a `JsonEncoder`
 
 ```scala
 object Banana {
   ...
-  implicit val encoder: json.Encoder[Banana] = json.MagnoliaEncoder.gen
+  implicit val encoder: JsonEncoder[Banana] = DeriveJsonEncoder.gen[Banana]
 }
 
 scala> Banana(0.5).toJson
@@ -90,7 +90,7 @@ val res: String =
 And bad JSON will produce an error in `jq` syntax with an additional piece of contextual information (in parentheses)
 
 ```
-scala> json.parser.decode[Banana]("""{"curvature": womp}""")
+scala> """{"curvature": womp}""".fromJson[Banana]
 val res: Either[String, Banana] = Left(.curvature(expected a number, got w))
 ```
 
@@ -106,18 +106,18 @@ we can generate the encoder and decoder for the entire `sealed` family
 
 ```scala
 object Fruit {
-  implicit val decoder: json.Decoder[Fruit] = json.MagnoliaDecoder.gen
-  implicit val encoder: json.Encoder[Fruit] = json.MagnoliaEncoder.gen
+  implicit val decoder: JsonDecoder[Fruit] = DeriveJsonDecoder.gen[Fruit]
+  implicit val encoder: JsonEncoder[Fruit] = DeriveJsonEncoder.gen[Fruit]
 }
 ```
 
 allowing us to load the fruit based on a single field type tag in the JSON
 
 ```
-scala> json.parser.decode[Fruit]("""{"Banana":{"curvature":0.5}}""")
+scala> """{"Banana":{"curvature":0.5}}""".fromJson[Fruit]
 val res: Either[String, Fruit] = Right(Banana(0.5))
 
-scala> json.parser.decode[Fruit]("""{"Apple":{"poison":false}}""")
+scala> """{"Apple":{"poison":false}}""".fromJson[Fruit]
 val res: Either[String, Fruit] = Right(Apple(false))
 ```
 
@@ -125,19 +125,19 @@ Almost all of the standard library data types are supported as fields on the cas
 
 ## Configuration
 
-By default the field names of a case class are used as the JSON fields, but it is easy to override this with an annotation `@json.field`.
+By default the field names of a case class are used as the JSON fields, but it is easy to override this with an annotation `@field`.
 
-It is also possible to change the type hint that is used to discriminate case classes with `@json.hint`.
+It is also possible to change the type hint that is used to discriminate case classes with `@hint`.
 
 For example, these annotations change the expected JSON of our `Fruit` family
 
 ```scala
 sealed trait Fruit
-@json.hint("banaani") case class Banana(
-  @json.field("bendiness") curvature: Double
+@hint("banaani") case class Banana(
+  @field("bendiness") curvature: Double
 ) extends Fruit
-@json.hint("omena") case class Apple(
-  @json.field("bad") poison: Boolean
+@hint("omena") case class Apple(
+  @field("bad") poison: Boolean
 ) extends Fruit
 ```
 
@@ -157,7 +157,7 @@ to
 {"omena":{"bad":false}}
 ```
 
-We can raise an error if we encounter unexpected fields by using the `@json.no_extra_fields` annotation on a case class.
+We can raise an error if we encounter unexpected fields by using the `@no_extra_fields` annotation on a case class.
 
 A popular alternative way to encode sealed traits:
 
@@ -167,36 +167,36 @@ A popular alternative way to encode sealed traits:
 {"type":"omena", "bad":false}
 ```
 
-is discouraged for performance reasons. However, if we have no choice in the matter, it may be accomodated with the `@json.discriminator` annotation
+is discouraged for performance reasons. However, if we have no choice in the matter, it may be accomodated with the `@discriminator` annotation
 
 ```scala
-@json.discriminator("type") sealed trait Fruit
+@discriminator("type") sealed trait Fruit
 ```
 
 ## Manual Instances
 
-Sometimes it is easier to reuse an existing `json.Decoder` rather than generate a new one. This can be accomplished using convenience methods on the `json.Decoder` typeclass to *derive* new decoders:
+Sometimes it is easier to reuse an existing `JsonDecoder` rather than generate a new one. This can be accomplished using convenience methods on the `JsonDecoder` typeclass to *derive* new decoders:
 
 ```scala
-trait Decoder[A] {
-  def map[B](f: A => B): Decoder[B]
-  def emap[B](f: A => Either[String, B]): Decoder[B]
+trait JsonDecoder[A] {
+  def map[B](f: A => B): JsonDecoder[B]
+  def mapOrFail[B](f: A => Either[String, B]): JsonDecoder[B]
   ...
 }
 ```
 
-Similarly, we can reuse an existing `json.Encoder`
+Similarly, we can reuse an existing `JsonEncoder`
 
 ```scala
-trait Encoder[A] {
-  def contramap[B](f: B => A): Encoder[B]
+trait JsonEncoder[A] {
+  def contramap[B](f: B => A): JsonEncoder[B]
   ...
 }
 ```
 
 ### `.map`
 
-We can `.map` from another `json.Decoder` in cases where the conversion will always succeed. This is very useful if we have a `case class` that simply wraps another thing and shares the same expected JSON.
+We can `.map` from another `JsonDecoder` in cases where the conversion will always succeed. This is very useful if we have a `case class` that simply wraps another thing and shares the same expected JSON.
 
 For example, say we want to model the count of fruit with a `case class` to provide us with additional type safety in our business logic (this pattern is known as a *newtype*).
 
@@ -210,22 +210,22 @@ but this would cause us to expect JSON of the form
 {"value":1}
 ```
 
-wheres we really expect the raw number. We can derive a decoder from `json.Decoder[Int]` and `.map` the result into a `FruitCount`
+wheres we really expect the raw number. We can derive a decoder from `JsonDecoder[Int]` and `.map` the result into a `FruitCount`
 
 ```scala
 object FruitCount {
-  implicit val decoder: json.Decoder[FruitCount] = json.Decoder[Int].map(FruitCount(_))
+  implicit val decoder: JsonDecoder[FruitCount] = JsonDecoder[Int].map(FruitCount(_))
 }
 ```
 
-and now the `json.Decoder` for `FruitCount` just expects a raw `Int`.
+and now the `JsonDecoder` for `FruitCount` just expects a raw `Int`.
 
-Every time we use a `.map` to create a `json.Decoder` we can usually create a `json.Encoder` with `.contramap`
+Every time we use a `.map` to create a `JsonDecoder` we can usually create a `JsonEncoder` with `.contramap`
 
 ```scala
 object FruitCount {
   ...
-  implicit val encoder: json.Encoder[FruitCount] = json.Encoder[Int].contramap(_.value)
+  implicit val encoder: JsonEncoder[FruitCount] = JsonEncoder[Int].contramap(_.value)
 }
 ```
 
@@ -234,8 +234,8 @@ Another usecase is if we want to encode a `case class` as an array of values, ra
 ```scala
 case class Things(s: String, i: Int, b: Boolean)
 object Things {
-  implicit val decoder: json.Decoder[Things] =
-    json.Decoder[(String, Int, Boolean)].map { case (p1, p2, p3) => Things(p1, p2, p3) }
+  implicit val decoder: JsonDecoder[Things] =
+    JsonDecoder[(String, Int, Boolean)].map { case (p1, p2, p3) => Things(p1, p2, p3) }
 }
 ```
 
@@ -245,9 +245,9 @@ which parses the following JSON
 ["hello",1,true]
 ```
 
-### `.emap`
+### `.mapOrFail`
 
-We can use `.emap` (for *either map*) to take the result of another `json.Decoder` and try to convert it into our custom data type, failing with a message if there is an error.
+We can use `.mapOrFail` to take the result of another `JsonDecoder` and try to convert it into our custom data type, failing with a message if there is an error.
 
 Say we are using the [`refined`](https://github.com/fthomas/refined) library to ensure that a `Person` data type only holds a non-empty string in its `name` field
 
@@ -258,17 +258,17 @@ import eu.timepit.refined.collection.NonEmpty
 case class Person(name: String Refined NonEmpty)
 
 object Person {
-  implicit val decoder: json.Decoder[Person] = json.MagnoliaDecoder.gen
+  implicit val decoder: JsonDecoder[Person] = DeriveJsonDecoder.gen
 }
 ```
 
-we will get a compiletime error because there is no `json.Decoder[String Refined NonEmpty]`.
+we will get a compiletime error because there is no `JsonDecoder[String Refined NonEmpty]`.
 
-However, we can derive one by requesting the `json.Decoder[String]` and calling `.emap`, supplying the constructor for our special `String Refined NonEmpty` type
+However, we can derive one by requesting the `JsonDecoder[String]` and calling `.mapOrFail`, supplying the constructor for our special `String Refined NonEmpty` type
 
 ```scala
-implicit val decodeName: json.Decoder[String Refined NonEmpty] =
-  json.Decoder[String].emap(refined.refineV[NonEmpty](_))
+implicit val decodeName: JsonDecoder[String Refined NonEmpty] =
+  JsonDecoder[String].mapOrFail(refined.refineV[NonEmpty](_))
 ```
 
 Now the code compiles.
@@ -386,7 +386,7 @@ circe  2224 ( 7456)  1655 (1533)
 play   2350 ( 3589)  1854 (1344)
 ```
 
-The reason why `zio-json` is not as badly affected is because it skips values that are unexpected. We can completely mitigate this kind of attack by using the `@json.no_extra_fields` annotation which results in the payload being rejected at a rate of 5.5 million ops/sec.
+The reason why `zio-json` is not as badly affected is because it skips values that are unexpected. We can completely mitigate this kind of attack by using the `@no_extra_fields` annotation which results in the payload being rejected at a rate of 5.5 million ops/sec.
 
 Other kinds of redundant values attacks are also possible, such as using an array of 60K full of high precision decimal numbers that require slow parsing (also known as ["near halfway numbers"](https://www.exploringbinary.com/17-digits-gets-you-there-once-youve-found-your-way/)), attacking the CPU. However, the memory attack afforded to us by a redundant `String` is already quite effective.
 
@@ -400,7 +400,7 @@ In this malicious payload, we add redundant fields that have hashcode collisions
 
 <!-- jmh:run -prof gc GoogleMaps.*Attack2 -->
 
-Again, `zio-json` completely mitigates this attack if the `@json.no_extra_fields` annotation is used. Note that even if Circe and Play rejected payloads of this nature, it would be too late because the attack happens at the AST layer, not the decoders. However, for the sake of comparison, let's turn off the `zio-json` mitigation:
+Again, `zio-json` completely mitigates this attack if the `@no_extra_fields` annotation is used. Note that even if Circe and Play rejected payloads of this nature, it would be too late because the attack happens at the AST layer, not the decoders. However, for the sake of comparison, let's turn off the `zio-json` mitigation:
 
 ```
        ops/sec       MB/sec
@@ -422,13 +422,13 @@ There is a variant of this attack that can be devastating for libraries that rel
 
 Another kind of attack is to provide data that will cause the decoder for a specific value to do more work than it needs to. Numbers are always a great example of this.
 
-The most brutal attack of this nature is to trick a deserialisation library into constructing a gigantic number as a `BigDecimal` and then to downcast to a `BigInteger`. The JVM will happily attempt to reserve GBs of heap for the conversion. Try this in your REPL:
+The most brutal attack of this nature is to trick a deserialization library into constructing a gigantic number as a `BigDecimal` and then to downcast to a `BigInteger`. The JVM will happily attempt to reserve GBs of heap for the conversion. Try this in your REPL:
 
 ```scala
 new java.math.BigDecimal("1e214748364").toBigInteger
 ```
 
-Fortunately, this kind of attack is prevented by all the mainsteam libraries. But it is possible to perform a much weaker form of the attack on Circe, which (to its credit) goes to great effort to pre-validate numbers.
+Fortunately, this kind of attack is prevented by all the mainstream libraries. But it is possible to perform a much weaker form of the attack on Circe, which (to its credit) goes to great effort to pre-validate numbers.
 
 The Google Maps schema has fields of type `Int` and Circe supports the conversion of floating point numbers to integers if the fractional part is zero: so we can pad an integer with as many zeros as possible.
 
@@ -439,10 +439,10 @@ circe  4529 ( 7456)  2037 (1533)
 
 This attack is very effective in schemas with lots of numbers, causing ops/sec to be halved with a 33% increase in memory usage.
 
-`zio-json` is resistant to a wide range of number based attacks because it uses a from-scratch number parser that will exit early when the number of bits of any number exceeds 128 bits, which can be customised by the system property `zio.json.number.bits`.
+`zio-json` is resistant to a wide range of number based attacks because it uses a from-scratch number parser that will exit early when the number of bits of any number exceeds 128 bits, which can be customized by the system property `zio.json.number.bits`.
 
 # Even Moar Performance
 
-If `zio-json` isn't fast enough for you, then try out [jsoniter-scala](https://github.com/plokhotnyuk/jsoniter-scala); whereas `zio-json` has picked a blend of goals, jsoniter has gone for raw performance. Caveat emptor.
+If `zio-json` isn't fast enough for you, then try out [jsoniter-scala](https://github.com/plokhotnyuk/jsoniter-scala); whereas `zio-json` is fully integrated into ZIO, including streams and transducer support, jsoniter is library agnostic.
 
-JSON is an inefficent transport format and everybody would benefit from a port of this library to msgpack or protobuf. For legacy services, a port supporting XML is also be possible.
+JSON is an inefficient transport format and everybody would benefit from a port of this library to msgpack or protobuf. For legacy services, a port supporting XML is also be possible.

@@ -1,7 +1,8 @@
-package zio.json.compat
+package testzio.json.compat
 
-import zio.json, json.syntax._
-import zio.json.TestUtils._
+import zio.json
+import zio.json._
+import testzio.json.TestUtils._
 import eu.timepit.refined.api.{ Refined }
 
 import eu.timepit.refined.api.Refined
@@ -17,14 +18,14 @@ object RefinedTest extends TestSuite {
   case class Person(name: String Refined NonEmpty)
 
   object Person {
-    implicit val decoder: json.Decoder[Person] = json.MagnoliaDecoder.gen
-    implicit val encoder: json.Encoder[Person] = json.MagnoliaEncoder.gen
+    implicit val decoder: JsonDecoder[Person] = DeriveJsonDecoder.gen[Person]
+    implicit val encoder: JsonEncoder[Person] = DeriveJsonEncoder.gen[Person]
   }
 
   val tests = Tests {
     test("Refined") {
-      json.parser.decode[Person]("""{"name":""}""") ==> Left(".name(Predicate isEmpty() did not fail.)")
-      json.parser.decode[Person]("""{"name":"fommil"}""") ==> Right(Person("fommil"))
+      """{"name":""}""".fromJson[Person] ==> Left(".name(Predicate isEmpty() did not fail.)")
+      """{"name":"fommil"}""".fromJson[Person] ==> Right(Person("fommil"))
 
       Person("fommil").toJson ==> """{"name":"fommil"}"""
     }

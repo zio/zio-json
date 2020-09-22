@@ -1,8 +1,10 @@
 package zio.json.internal
 
 import scala.annotation._
-import zio.json.Decoder.{ JsonError, UnsafeJson }
 import scala.util.Properties.propOrNone
+
+import zio.Chunk
+import zio.json.JsonDecoder.{ JsonError, UnsafeJson }
 
 // tries to stick to the spec, but maybe a bit loose in places (e.g. numbers)
 //
@@ -14,7 +16,7 @@ object Lexer {
   val NumberMaxBits: Int = propOrNone("zio.json.number.bits").getOrElse("128").toInt
 
   // True if we got a string (implies a retraction), False for }
-  def firstObject(trace: List[JsonError], in: RetractReader): Boolean =
+  def firstField(trace: Chunk[JsonError], in: RetractReader): Boolean =
     (in.nextNonWhitespace(): @switch) match {
       case '"' =>
         in.retract()
@@ -22,36 +24,36 @@ object Lexer {
       case '}' => false
       case c =>
         throw UnsafeJson(
-          JsonError.Message(s"expected string or '}' got '$c'") :: trace
+          trace :+ JsonError.Message(s"expected string or '}' got '$c'")
         )
     }
 
   // True if we got a comma, and False for }
-  def nextObject(trace: List[JsonError], in: OneCharReader): Boolean =
+  def nextField(trace: Chunk[JsonError], in: OneCharReader): Boolean =
     (in.nextNonWhitespace(): @switch) match {
       case ',' => true
       case '}' => false
       case c =>
         throw UnsafeJson(
-          JsonError.Message(s"expected ',' or '}' got '$c'") :: trace
+          trace :+ JsonError.Message(s"expected ',' or '}' got '$c'")
         )
     }
 
   // True if we got anything besides a ], False for ]
-  def firstArray(trace: List[JsonError], in: RetractReader): Boolean =
+  def firstArrayElement(trace: Chunk[JsonError], in: RetractReader): Boolean =
     (in.nextNonWhitespace(): @switch) match {
       case ']' => false
       case _ =>
         in.retract()
         true
     }
-  def nextArray(trace: List[JsonError], in: OneCharReader): Boolean =
+  def nextArrayElement(trace: Chunk[JsonError], in: OneCharReader): Boolean =
     (in.nextNonWhitespace(): @switch) match {
       case ',' => true
       case ']' => false
       case c =>
         throw UnsafeJson(
-          JsonError.Message(s"expected ',' or ']' got '$c'") :: trace
+          trace :+ JsonError.Message(s"expected ',' or ']' got '$c'")
         )
     }
 
@@ -60,7 +62,7 @@ object Lexer {
   //
   // returns the index of the matched field, or -1
   def field(
-    trace: List[JsonError],
+    trace: Chunk[JsonError],
     in: OneCharReader,
     matrix: StringMatrix
   ): Int = {
@@ -70,7 +72,7 @@ object Lexer {
   }
 
   def enum(
-    trace: List[JsonError],
+    trace: Chunk[JsonError],
     in: OneCharReader,
     matrix: StringMatrix
   ): Int = {
@@ -90,37 +92,37 @@ object Lexer {
   private[this] val ull: Array[Char]  = "ull".toCharArray
   private[this] val alse: Array[Char] = "alse".toCharArray
   private[this] val rue: Array[Char]  = "rue".toCharArray
-  def skipValue(trace: List[JsonError], in: RetractReader): Unit =
+  def skipValue(trace: Chunk[JsonError], in: RetractReader): Unit =
     (in.nextNonWhitespace(): @switch) match {
       case 'n' => readChars(trace, in, ull, "null")
       case 'f' => readChars(trace, in, alse, "false")
       case 't' => readChars(trace, in, rue, "true")
       case '{' =>
-        if (firstObject(trace, in)) {
+        if (firstField(trace, in)) {
           do {
             char(trace, in, '"')
             skipString(trace, in)
             char(trace, in, ':')
             skipValue(trace, in)
-          } while (nextObject(trace, in))
+          } while (nextField(trace, in))
         }
       case '[' =>
-        if (firstArray(trace, in)) {
-          do skipValue(trace, in) while (nextArray(trace, in))
+        if (firstArrayElement(trace, in)) {
+          do skipValue(trace, in) while (nextArrayElement(trace, in))
         }
       case '"' =>
         skipString(trace, in)
       case '-' | '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' =>
         skipNumber(trace, in)
-      case c => throw UnsafeJson(JsonError.Message(s"unexpected '$c'") :: trace)
+      case c => throw UnsafeJson(trace :+ JsonError.Message(s"unexpected '$c'"))
     }
 
-  def skipNumber(trace: List[JsonError], in: RetractReader): Unit = {
+  def skipNumber(trace: Chunk[JsonError], in: RetractReader): Unit = {
     while (isNumber(in.readChar())) {}
     in.retract()
   }
 
-  def skipString(trace: List[JsonError], in: OneCharReader): Unit = {
+  def skipString(trace: Chunk[JsonError], in: OneCharReader): Unit = {
     val stream = new EscapedString(trace, in)
     var i: Int = 0
     do i = stream.read() while (i != -1)
@@ -128,14 +130,14 @@ object Lexer {
 
   // useful for embedded documents, e.g. CSV contained inside JSON
   def streamingString(
-    trace: List[JsonError],
+    trace: Chunk[JsonError],
     in: OneCharReader
   ): java.io.Reader = {
     char(trace, in, '"')
     new EscapedString(trace, in)
   }
 
-  def string(trace: List[JsonError], in: OneCharReader): CharSequence = {
+  def string(trace: Chunk[JsonError], in: OneCharReader): CharSequence = {
     char(trace, in, '"')
     val stream = new EscapedString(trace, in)
 
@@ -146,10 +148,10 @@ object Lexer {
         return sb.buffer // mutable thing escapes, but cannot be changed
       sb.append(c.toChar)
     }
-    throw UnsafeJson(JsonError.Message("impossible string") :: trace)
+    throw UnsafeJson(trace :+ JsonError.Message("impossible string"))
   }
 
-  def boolean(trace: List[JsonError], in: OneCharReader): Boolean =
+  def boolean(trace: Chunk[JsonError], in: OneCharReader): Boolean =
     (in.nextNonWhitespace(): @switch) match {
       case 't' =>
         readChars(trace, in, rue, "true")
@@ -159,11 +161,11 @@ object Lexer {
         false
       case c =>
         throw UnsafeJson(
-          JsonError.Message(s"expected 'true' or 'false' got $c") :: trace
+          trace :+ JsonError.Message(s"expected 'true' or 'false' got $c")
         )
     }
 
-  def byte(trace: List[JsonError], in: RetractReader): Byte = {
+  def byte(trace: Chunk[JsonError], in: RetractReader): Byte = {
     checkNumber(trace, in)
     try {
       val i = UnsafeNumbers.byte_(in, false)
@@ -171,11 +173,11 @@ object Lexer {
       i
     } catch {
       case UnsafeNumbers.UnsafeNumber =>
-        throw UnsafeJson(JsonError.Message("expected a Byte") :: trace)
+        throw UnsafeJson(trace :+ JsonError.Message("expected a Byte"))
     }
   }
 
-  def short(trace: List[JsonError], in: RetractReader): Short = {
+  def short(trace: Chunk[JsonError], in: RetractReader): Short = {
     checkNumber(trace, in)
     try {
       val i = UnsafeNumbers.short_(in, false)
@@ -183,11 +185,11 @@ object Lexer {
       i
     } catch {
       case UnsafeNumbers.UnsafeNumber =>
-        throw UnsafeJson(JsonError.Message("expected a Short") :: trace)
+        throw UnsafeJson(trace :+ JsonError.Message("expected a Short"))
     }
   }
 
-  def int(trace: List[JsonError], in: RetractReader): Int = {
+  def int(trace: Chunk[JsonError], in: RetractReader): Int = {
     checkNumber(trace, in)
     try {
       val i = UnsafeNumbers.int_(in, false)
@@ -195,11 +197,11 @@ object Lexer {
       i
     } catch {
       case UnsafeNumbers.UnsafeNumber =>
-        throw UnsafeJson(JsonError.Message("expected an Int") :: trace)
+        throw UnsafeJson(trace :+ JsonError.Message("expected an Int"))
     }
   }
 
-  def long(trace: List[JsonError], in: RetractReader): Long = {
+  def long(trace: Chunk[JsonError], in: RetractReader): Long = {
     checkNumber(trace, in)
     try {
       val i = UnsafeNumbers.long_(in, false)
@@ -207,26 +209,26 @@ object Lexer {
       i
     } catch {
       case UnsafeNumbers.UnsafeNumber =>
-        throw UnsafeJson(JsonError.Message("expected a Long") :: trace)
+        throw UnsafeJson(trace :+ JsonError.Message("expected a Long"))
     }
   }
 
-  def biginteger(
-    trace: List[JsonError],
+  def bigInteger(
+    trace: Chunk[JsonError],
     in: RetractReader
   ): java.math.BigInteger = {
     checkNumber(trace, in)
     try {
-      val i = UnsafeNumbers.biginteger_(in, false, NumberMaxBits)
+      val i = UnsafeNumbers.bigInteger_(in, false, NumberMaxBits)
       in.retract()
       i
     } catch {
       case UnsafeNumbers.UnsafeNumber =>
-        throw UnsafeJson(JsonError.Message(s"expected a $NumberMaxBits bit BigInteger") :: trace)
+        throw UnsafeJson(trace :+ JsonError.Message(s"expected a $NumberMaxBits bit BigInteger"))
     }
   }
 
-  def float(trace: List[JsonError], in: RetractReader): Float = {
+  def float(trace: Chunk[JsonError], in: RetractReader): Float = {
     checkNumber(trace, in)
     try {
       val i = UnsafeNumbers.float_(in, false, NumberMaxBits)
@@ -234,11 +236,11 @@ object Lexer {
       i
     } catch {
       case UnsafeNumbers.UnsafeNumber =>
-        throw UnsafeJson(JsonError.Message("expected a Float") :: trace)
+        throw UnsafeJson(trace :+ JsonError.Message("expected a Float"))
     }
   }
 
-  def double(trace: List[JsonError], in: RetractReader): Double = {
+  def double(trace: Chunk[JsonError], in: RetractReader): Double = {
     checkNumber(trace, in)
     try {
       val i = UnsafeNumbers.double_(in, false, NumberMaxBits)
@@ -246,52 +248,52 @@ object Lexer {
       i
     } catch {
       case UnsafeNumbers.UnsafeNumber =>
-        throw UnsafeJson(JsonError.Message("expected a Double") :: trace)
+        throw UnsafeJson(trace :+ JsonError.Message("expected a Double"))
     }
   }
 
-  def bigdecimal(
-    trace: List[JsonError],
+  def bigDecimal(
+    trace: Chunk[JsonError],
     in: RetractReader
   ): java.math.BigDecimal = {
     checkNumber(trace, in)
     try {
-      val i = UnsafeNumbers.bigdecimal_(in, false, NumberMaxBits)
+      val i = UnsafeNumbers.bigDecimal_(in, false, NumberMaxBits)
       in.retract()
       i
     } catch {
       case UnsafeNumbers.UnsafeNumber =>
-        throw UnsafeJson(JsonError.Message(s"expected a $NumberMaxBits BigDecimal") :: trace)
+        throw UnsafeJson(trace :+ JsonError.Message(s"expected a $NumberMaxBits BigDecimal"))
     }
   }
 
   // really just a way to consume the whitespace
-  private def checkNumber(trace: List[JsonError], in: RetractReader): Unit = {
+  private def checkNumber(trace: Chunk[JsonError], in: RetractReader): Unit = {
     (in.nextNonWhitespace(): @switch) match {
       case '-' | '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' => ()
       case c =>
         throw UnsafeJson(
-          JsonError.Message(s"expected a number, got $c") :: trace
+          trace :+ JsonError.Message(s"expected a number, got $c")
         )
     }
     in.retract()
   }
 
   // optional whitespace and then an expected character
-  @inline def char(trace: List[JsonError], in: OneCharReader, c: Char): Unit = {
+  @inline def char(trace: Chunk[JsonError], in: OneCharReader, c: Char): Unit = {
     val got = in.nextNonWhitespace()
     if (got != c)
-      throw UnsafeJson(JsonError.Message(s"expected '$c' got '$got'") :: trace)
+      throw UnsafeJson(trace :+ JsonError.Message(s"expected '$c' got '$got'"))
   }
 
   @inline def charOnly(
-    trace: List[JsonError],
+    trace: Chunk[JsonError],
     in: OneCharReader,
     c: Char
   ): Unit = {
     val got = in.readChar()
     if (got != c)
-      throw UnsafeJson(JsonError.Message(s"expected '$c' got '$got'") :: trace)
+      throw UnsafeJson(trace :+ JsonError.Message(s"expected '$c' got '$got'"))
   }
 
   // non-positional for performance
@@ -303,7 +305,7 @@ object Lexer {
     }
 
   def readChars(
-    trace: List[JsonError],
+    trace: Chunk[JsonError],
     in: OneCharReader,
     expect: Array[Char],
     errMsg: String
@@ -311,7 +313,7 @@ object Lexer {
     var i: Int = 0
     while (i < expect.length) {
       if (in.readChar() != expect(i))
-        throw UnsafeJson(JsonError.Message(s"expected '$errMsg'") :: trace)
+        throw UnsafeJson(trace :+ JsonError.Message(s"expected '$errMsg'"))
       i += 1
     }
   }
@@ -321,7 +323,9 @@ object Lexer {
 // A Reader for the contents of a string, taking care of the escaping.
 //
 // `read` can throw extra exceptions on badly formed input.
-private final class EscapedString(trace: List[JsonError], in: OneCharReader) extends java.io.Reader with OneCharReader {
+private final class EscapedString(trace: Chunk[JsonError], in: OneCharReader)
+    extends java.io.Reader
+    with OneCharReader {
 
   def close(): Unit = in.close()
 
@@ -336,7 +340,7 @@ private final class EscapedString(trace: List[JsonError], in: OneCharReader) ext
         case 'u'                                            => nextHex4()
         case _ =>
           throw UnsafeJson(
-            JsonError.Message(s"invalid '\\${c.toChar}' in string") :: trace
+            trace :+ JsonError.Message(s"invalid '\\${c.toChar}' in string")
           )
       }
     } else if (c == '\\') {
@@ -344,7 +348,7 @@ private final class EscapedString(trace: List[JsonError], in: OneCharReader) ext
       read()
     } else if (c == '"') -1 // this is the EOS for the caller
     else if (c < ' ')
-      throw UnsafeJson(JsonError.Message("invalid control in string") :: trace)
+      throw UnsafeJson(trace :+ JsonError.Message("invalid control in string"))
     else c
   }
 
@@ -362,14 +366,14 @@ private final class EscapedString(trace: List[JsonError], in: OneCharReader) ext
     while (i < 4) {
       var c: Int = in.read()
       if (c == -1)
-        throw UnsafeJson(JsonError.Message("unexpected EOB in string") :: trace)
+        throw UnsafeJson(trace :+ JsonError.Message("unexpected EOB in string"))
       c =
         if ('0' <= c && c <= '9') c - '0'
         else if ('A' <= c && c <= 'F') c - 'A' + 10
         else if ('a' <= c && c <= 'f') c - 'a' + 10
         else
           throw UnsafeJson(
-            JsonError.Message("invalid charcode in string") :: trace
+            trace :+ JsonError.Message("invalid charcode in string")
           )
       accum = accum * 16 + c
       i += 1

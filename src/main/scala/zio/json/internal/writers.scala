@@ -1,12 +1,12 @@
 // Implementations of java.io.Writer that are faster (2x) because they do not
-// synchronise on a lock
+// synchronize on a lock
 package zio.json.internal
 
 import java.nio.CharBuffer
 import java.util.Arrays
 
 // like StringBuilder but doesn't have any encoding or range checks
-final class FastStringWriter(initial: Int) extends java.io.Writer {
+private[zio] final class FastStringWriter(initial: Int) extends java.io.Writer {
   private[this] var chars: Array[Char] = Array.ofDim(initial)
   private[this] var i: Int             = 0
 
