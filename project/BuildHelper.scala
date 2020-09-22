@@ -12,8 +12,8 @@ import scalafix.sbt.ScalafixPlugin.autoImport.scalafixSemanticdb
 object BuildHelper {
 
   private val Scala211 = "2.11.12"
-  private val Scala212 = "2.12.10"
-  private val Scala213 = "2.13.1"
+  private val Scala212 = "2.12.11"
+  private val Scala213 = "2.13.3"
   val DottyVersion     = "0.23.0-RC1"
 
   def buildInfoSettings(packageName: String) =
@@ -182,7 +182,7 @@ object BuildHelper {
   def stdSettings(prjName: String) = Seq(
     name := s"$prjName",
     scalacOptions := stdOptions,
-    crossScalaVersions := Seq(Scala213, Scala212, Scala211),
+    crossScalaVersions := Seq(Scala213, Scala212),
     scalaVersion in ThisBuild := crossScalaVersions.value.head,
     scalacOptions := stdOptions ++ extraOptions(scalaVersion.value, optimize = !isSnapshot.value),
     libraryDependencies ++= {
@@ -190,8 +190,8 @@ object BuildHelper {
         Seq("com.github.ghik" % "silencer-lib_2.13.1" % "1.6.0" % Provided)
       else
         Seq(
-          "com.github.ghik" % "silencer-lib" % "1.4.4" % Provided cross CrossVersion.full,
-          compilerPlugin("com.github.ghik" % "silencer-plugin" % "1.4.4" cross CrossVersion.full),
+          "com.github.ghik" % "silencer-lib" % "1.7.0" % Provided cross CrossVersion.full,
+          compilerPlugin("com.github.ghik" % "silencer-plugin" % "1.7.0" cross CrossVersion.full),
           compilerPlugin(scalafixSemanticdb)
         )
     },

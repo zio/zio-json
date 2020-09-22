@@ -49,11 +49,12 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform)
   .settings(buildInfoSettings("zio.json"))
   .enablePlugins(NeoJmhPlugin)
   .settings(
-    Compile / scalacOptions -= "-Xfatal-warnings", // not quite ready.
+    scalacOptions -= "-Xfatal-warnings", // not quite ready.
 
     // as per @fommil, optimization slows things down.
-    Compile / scalacOptions -= "-opt:l:inline",
-    Compile / scalacOptions -= "-opt-inline-from:zio.internal.**",
+    scalacOptions -= "-opt:l:inline",
+    scalacOptions -= "-opt-inline-from:zio.internal.**",
+
     libraryDependencies ++= Seq(
       "com.propensive"                        %% "magnolia"              % "0.16.0",
       "org.scalaz"                            %% "scalaz-core"           % "7.3.2" intransitive (),
@@ -147,7 +148,6 @@ lazy val zioJsonJS = zioJson.js
   .settings(scalaJSUseMainModuleInitializer := true)
 
 lazy val zioJsonJVM = zioJson.jvm
-  .settings(dottySettings)
 
 lazy val docs = project
   .in(file("zio-json-docs"))

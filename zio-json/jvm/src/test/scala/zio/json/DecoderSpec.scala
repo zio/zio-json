@@ -241,8 +241,10 @@ object DecoderSpec extends DefaultRunnableSpec {
     ast match {
       case Json.Obj(values) =>
         Json.Obj(
-          values
-            .distinctBy(_._1)
+          Chunk.fromIterable(values
+            .groupBy(_._1)
+            .map(_._2.head)
+          )
             .map { case (k, v) => (k, normalize(v)) }
             .sortBy(_._1)
         )
