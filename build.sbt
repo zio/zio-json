@@ -72,7 +72,7 @@ sourceGenerators in Compile += Def.task {
     s"""implicit def tuple${i}[$tparams](implicit $implicits): JsonDecoder[Tuple${i}[$tparams]] =
        |    new JsonDecoder[Tuple${i}[$tparams]] {
        |      val traces: Array[JsonError] = (0 to $i).map(JsonError.ArrayAccess(_)).toArray
-       |      def unsafeDecode(trace: Chunk[JsonError], in: RetractReader): Tuple${i}[$tparams] = {
+       |      def unsafeDecode(trace: List[JsonError], in: RetractReader): Tuple${i}[$tparams] = {
        |        Lexer.char(trace, in, '[')
        |        $work
        |        Lexer.char(trace, in, ']')

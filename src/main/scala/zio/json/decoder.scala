@@ -50,7 +50,7 @@ trait JsonDecoder[A] { self =>
    * Note: This method may not entirely consume the specified character sequence.
    */
   final def decodeJson(str: CharSequence): Either[String, A] =
-    try Right(unsafeDecode(Chunk.empty, new FastStringReader(str)))
+    try Right(unsafeDecode(Nil, new FastStringReader(str)))
     catch {
       case JsonDecoder.UnsafeJson(trace) => Left(JsonError.render(trace))
       case _: internal.UnexpectedEnd     => Left("Unexpected end of input")
@@ -65,7 +65,7 @@ trait JsonDecoder[A] { self =>
   final def decodeJsonStream[R <: Blocking](stream: ZStream[R, Throwable, Char]): ZIO[R, Throwable, A] =
     stream.toReader.use { reader =>
       effectBlocking {
-        try unsafeDecode(Chunk.empty, new zio.json.internal.WithRetractReader(reader))
+        try unsafeDecode(Nil, new zio.json.internal.WithRetractReader(reader))
         catch {
           case JsonDecoder.UnsafeJson(trace) => throw new Exception(JsonError.render(trace))
           case _: internal.UnexpectedEnd     => throw new Exception("unexpected end of input")
@@ -79,7 +79,7 @@ trait JsonDecoder[A] { self =>
    */
   final def orElse[A1 >: A](that: => JsonDecoder[A1]): JsonDecoder[A1] =
     new JsonDecoder[A1] {
-      def unsafeDecode(trace: Chunk[JsonError], in: RetractReader): A1 = {
+      def unsafeDecode(trace: List[JsonError], in: RetractReader): A1 = {
         val in2 = new zio.json.internal.WithRecordingReader(in, 0)
 
         try self.unsafeDecode(trace, in2)
@@ -107,7 +107,7 @@ trait JsonDecoder[A] { self =>
    */
   final def map[B](f: A => B): JsonDecoder[B] =
     new JsonDecoder[B] {
-      def unsafeDecode(trace: Chunk[JsonError], in: RetractReader): B =
+      def unsafeDecode(trace: List[JsonError], in: RetractReader): B =
         f(self.unsafeDecode(trace, in))
     }
 
@@ -117,10 +117,10 @@ trait JsonDecoder[A] { self =>
    */
   final def mapOrFail[B](f: A => Either[String, B]): JsonDecoder[B] =
     new JsonDecoder[B] {
-      def unsafeDecode(trace: Chunk[JsonError], in: RetractReader): B =
+      def unsafeDecode(trace: List[JsonError], in: RetractReader): B =
         f(self.unsafeDecode(trace, in)) match {
           case Left(err) =>
-            throw JsonDecoder.UnsafeJson(trace :+ JsonError.Message(err))
+            throw JsonDecoder.UnsafeJson(JsonError.Message(err) :: trace)
           case Right(b) => b
         }
     }
@@ -149,14 +149,14 @@ trait JsonDecoder[A] { self =>
   final def zipWith[B, C](that: => JsonDecoder[B])(f: (A, B) => C): JsonDecoder[C] =
     self.zip(that).map(f.tupled)
 
-  def unsafeDecodeMissing(trace: Chunk[JsonError]): A =
-    throw JsonDecoder.UnsafeJson(trace :+ JsonError.Message("missing"))
+  def unsafeDecodeMissing(trace: List[JsonError]): A =
+    throw JsonDecoder.UnsafeJson(JsonError.Message("missing") :: trace)
 
   /**
    * Low-level, unsafe method to decode a value or throw an exception. This method should not be
    * called in application code, although it can be implemented for user-defined data structures.
    */
-  def unsafeDecode(trace: Chunk[JsonError], in: RetractReader): A
+  def unsafeDecode(trace: List[JsonError], in: RetractReader): A
 }
 
 object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority0 {
@@ -169,7 +169,7 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority0 {
    * to keep track and any wrappers would need to preserve the position. It may
    * still be desirable to do this but at the moment it is not necessary.
    */
-  final case class UnsafeJson(trace: Chunk[JsonError])
+  final case class UnsafeJson(trace: List[JsonError])
       extends Exception("If you see this, a developer made a mistake using JsonDecoder")
       with NoStackTrace
 
@@ -179,8 +179,8 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority0 {
    */
   sealed abstract class JsonError
   object JsonError {
-    def render(trace: Chunk[JsonError]): String =
-      trace.map {
+    def render(trace: List[JsonError]): String =
+      trace.reverse.map {
         case Message(txt)        => s"($txt)"
         case ArrayAccess(i)      => s"[$i]"
         case ObjectAccess(field) => s".$field"
@@ -193,11 +193,11 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority0 {
   }
 
   implicit val string: JsonDecoder[String] = new JsonDecoder[String] {
-    def unsafeDecode(trace: Chunk[JsonError], in: RetractReader): String =
+    def unsafeDecode(trace: List[JsonError], in: RetractReader): String =
       Lexer.string(trace, in).toString
   }
   implicit val boolean: JsonDecoder[Boolean] = new JsonDecoder[Boolean] {
-    def unsafeDecode(trace: Chunk[JsonError], in: RetractReader): Boolean =
+    def unsafeDecode(trace: List[JsonError], in: RetractReader): Boolean =
       Lexer.boolean(trace, in)
   }
 
@@ -221,10 +221,10 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority0 {
   )
   // numbers decode from numbers or strings for maximum compatibility
   private[this] def number[A](
-    f: (Chunk[JsonError], RetractReader) => A
+    f: (List[JsonError], RetractReader) => A
   ): JsonDecoder[A] =
     new JsonDecoder[A] {
-      def unsafeDecode(trace: Chunk[JsonError], in: RetractReader): A =
+      def unsafeDecode(trace: List[JsonError], in: RetractReader): A =
         (in.nextNonWhitespace(): @switch) match {
           case '"' =>
             val i = f(trace, in)
@@ -243,9 +243,9 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority0 {
   implicit def option[A](implicit A: JsonDecoder[A]): JsonDecoder[Option[A]] =
     new JsonDecoder[Option[A]] {
       private[this] val ull: Array[Char] = "ull".toCharArray
-      override def unsafeDecodeMissing(trace: Chunk[JsonError]): Option[A] =
+      override def unsafeDecodeMissing(trace: List[JsonError]): Option[A] =
         Option.empty
-      def unsafeDecode(trace: Chunk[JsonError], in: RetractReader): Option[A] =
+      def unsafeDecode(trace: List[JsonError], in: RetractReader): Option[A] =
         (in.nextNonWhitespace(): @switch) match {
           case 'n' =>
             Lexer.readChars(trace, in, ull, "null")
@@ -271,7 +271,7 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority0 {
       val spans: Array[JsonError] = names.map(JsonError.ObjectAccess(_))
 
       def unsafeDecode(
-        trace: Chunk[JsonError],
+        trace: List[JsonError],
         in: RetractReader
       ): Either[A, B] = {
         Lexer.char(trace, in, '{')
@@ -283,24 +283,24 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority0 {
             val field = Lexer.field(trace, in, matrix)
             if (field == -1) Lexer.skipValue(trace, in)
             else {
-              val trace_ = trace :+ spans(field)
+              val trace_ = spans(field) :: trace
               if (field < 3) {
                 if (values(0) != null)
-                  throw UnsafeJson(trace_ :+ JsonError.Message("duplicate"))
+                  throw UnsafeJson(JsonError.Message("duplicate") :: trace_)
                 values(0) = A.unsafeDecode(trace_, in)
               } else {
                 if (values(1) != null)
-                  throw UnsafeJson(trace_ :+ JsonError.Message("duplicate"))
+                  throw UnsafeJson(JsonError.Message("duplicate") :: trace_)
                 values(1) = B.unsafeDecode(trace_, in)
               }
             }
           } while (Lexer.nextField(trace, in))
 
         if (values(0) == null && values(1) == null)
-          throw UnsafeJson(trace :+ JsonError.Message("missing fields"))
+          throw UnsafeJson(JsonError.Message("missing fields") :: trace)
         if (values(0) != null && values(1) != null)
           throw UnsafeJson(
-            trace :+ JsonError.Message("ambiguous either, both present")
+            JsonError.Message("ambiguous either, both present") :: trace
           )
         if (values(0) != null)
           Left(values(0).asInstanceOf[A])
@@ -309,14 +309,14 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority0 {
     }
 
   private[json] def builder[A, T[_]](
-    trace: Chunk[JsonError],
+    trace: List[JsonError],
     in: RetractReader,
     builder: mutable.Builder[A, T[A]]
   )(implicit A: JsonDecoder[A]): T[A] = {
     Lexer.char(trace, in, '[')
     var i: Int = 0
     if (Lexer.firstArrayElement(trace, in)) do {
-      val trace_ = trace :+ JsonError.ArrayAccess(i)
+      val trace_ = JsonError.ArrayAccess(i) :: trace
       builder += A.unsafeDecode(trace_, in)
       i += 1
     } while (Lexer.nextArrayElement(trace, in))
@@ -327,7 +327,7 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority0 {
 
 private[json] trait DecoderLowPriority0 extends DecoderLowPriority1 { this: JsonDecoder.type =>
   implicit def chunk[A: JsonDecoder]: JsonDecoder[Chunk[A]] = new JsonDecoder[Chunk[A]] {
-    def unsafeDecode(trace: Chunk[JsonError], in: RetractReader): Chunk[A] =
+    def unsafeDecode(trace: List[JsonError], in: RetractReader): Chunk[A] =
       builder(trace, in, zio.ChunkBuilder.make[A]())
   }
 
@@ -340,12 +340,12 @@ private[json] trait DecoderLowPriority0 extends DecoderLowPriority1 { this: Json
 
 private[json] trait DecoderLowPriority1 extends DecoderLowPriority2 { this: JsonDecoder.type =>
   implicit def list[A: JsonDecoder]: JsonDecoder[List[A]] = new JsonDecoder[List[A]] {
-    def unsafeDecode(trace: Chunk[JsonError], in: RetractReader): List[A] =
+    def unsafeDecode(trace: List[JsonError], in: RetractReader): List[A] =
       builder(trace, in, new mutable.ListBuffer[A])
   }
 
   implicit def vector[A: JsonDecoder]: JsonDecoder[Vector[A]] = new JsonDecoder[Vector[A]] {
-    def unsafeDecode(trace: Chunk[JsonError], in: RetractReader): Vector[A] =
+    def unsafeDecode(trace: List[JsonError], in: RetractReader): Vector[A] =
       builder(trace, in, new immutable.VectorBuilder[A]).toVector
   }
 
@@ -380,7 +380,7 @@ private[json] trait DecoderLowPriority2 {
   ): JsonDecoder[Chunk[(K, A)]] =
     new JsonDecoder[Chunk[(K, A)]] {
       def unsafeDecode(
-        trace: Chunk[JsonError],
+        trace: List[JsonError],
         in: RetractReader
       ): Chunk[(K, A)] = {
         val builder = zio.ChunkBuilder.make[(K, A)]()
@@ -388,7 +388,7 @@ private[json] trait DecoderLowPriority2 {
         if (Lexer.firstField(trace, in))
           do {
             val field  = Lexer.string(trace, in).toString
-            val trace_ = trace :+ JsonError.ObjectAccess(field)
+            val trace_ = JsonError.ObjectAccess(field) :: trace
             Lexer.char(trace_, in, ':')
             val value = A.unsafeDecode(trace_, in)
             builder += ((K.unsafeDecodeField(trace_, field), value))
@@ -409,23 +409,23 @@ private[json] trait DecoderLowPriority2 {
 trait JsonFieldDecoder[+A] { self =>
   final def map[B](f: A => B): JsonFieldDecoder[B] =
     new JsonFieldDecoder[B] {
-      def unsafeDecodeField(trace: Chunk[JsonError], in: String): B =
+      def unsafeDecodeField(trace: List[JsonError], in: String): B =
         f(self.unsafeDecodeField(trace, in))
     }
   final def mapOrFail[B](f: A => Either[String, B]): JsonFieldDecoder[B] =
     new JsonFieldDecoder[B] {
-      def unsafeDecodeField(trace: Chunk[JsonError], in: String): B =
+      def unsafeDecodeField(trace: List[JsonError], in: String): B =
         f(self.unsafeDecodeField(trace, in)) match {
           case Left(err) =>
-            throw JsonDecoder.UnsafeJson(trace :+ JsonError.Message(err))
+            throw JsonDecoder.UnsafeJson(JsonError.Message(err) :: trace)
           case Right(b) => b
         }
     }
 
-  def unsafeDecodeField(trace: Chunk[JsonError], in: String): A
+  def unsafeDecodeField(trace: List[JsonError], in: String): A
 }
 object JsonFieldDecoder {
   implicit val string: JsonFieldDecoder[String] = new JsonFieldDecoder[String] {
-    def unsafeDecodeField(trace: Chunk[JsonError], in: String): String = in
+    def unsafeDecodeField(trace: List[JsonError], in: String): String = in
   }
 }

@@ -41,7 +41,7 @@ object JsonCodec {
 
       def decoder: JsonDecoder[A] = decoder0
 
-      def unsafeDecode(trace: Chunk[JsonError], in: RetractReader): A =
+      def unsafeDecode(trace: List[JsonError], in: RetractReader): A =
         decoder0.unsafeDecode(trace, in)
 
       def unsafeEncode(a: A, indent: Option[Int], out: java.io.Writer): Unit =

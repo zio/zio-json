@@ -127,7 +127,7 @@ object DecoderSpec extends DefaultRunnableSpec {
           ZManaged.fromAutoCloseable(Task(getResourceAsReader("che-2.geo.json"))).use { reader =>
             for {
               circe <- ZIO.fromEither(circe.parser.decode[GeoJSON](str))
-              got   <- effectBlocking(JsonDecoder[GeoJSON].unsafeDecode(Chunk.empty, reader))
+              got   <- effectBlocking(JsonDecoder[GeoJSON].unsafeDecode(Nil, reader))
             } yield {
               assert(got)(equalTo(circe))
             }

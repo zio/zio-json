@@ -4,7 +4,7 @@ import scala.annotation._
 import scala.collection.mutable
 import scala.collection.immutable
 
-import zio.{ Chunk, Managed, Queue, UIO, ZIO, ZManaged, ZQueue, Exit }
+import zio.{ Chunk, Exit, Managed, Queue, UIO, ZIO, ZManaged, ZQueue }
 import zio.blocking._
 import zio.stream._
 
@@ -53,7 +53,9 @@ trait JsonEncoder[A] { self =>
    * Encodes the specified value into a JSON string, with the specified indentation level.
    */
   final def encodeJson(a: A, indent: Option[Int]): String = {
-    val writer = new zio.json.internal.FastStringWriter(64)
+    // TODO we'd prefer to use our FastStringWriter here but it's unfathomly
+    // slower for the Google Maps API benchmark. Needs investigation.
+    val writer = new java.io.StringWriter()
     unsafeEncode(a, indent, writer)
     writer.toString
   }
@@ -67,31 +69,27 @@ trait JsonEncoder[A] { self =>
         runtime <- ZIO.runtime[Any].toManaged_
         queue   <- ZQueue.bounded[Exit[Option[Throwable], Chunk[Char]]](1).toManaged_
         writer <- ZManaged.fromAutoCloseable {
-          ZIO.effectTotal {
-            new java.io.BufferedWriter(new Writer {
-              override def write(buffer: Array[Char], offset: Int, len: Int): Unit = {
-                val copy = new Array[Char](len)
-                System.arraycopy(buffer, offset, copy, 0, len)
+                   ZIO.effectTotal {
+                     new java.io.BufferedWriter(new Writer {
+                       override def write(buffer: Array[Char], offset: Int, len: Int): Unit = {
+                         val copy = new Array[Char](len)
+                         System.arraycopy(buffer, offset, copy, 0, len)
 
-                val chunk = Chunk.fromArray(copy).drop(offset).take(len)
-                runtime.unsafeRun(queue.offer(Exit.succeed(chunk)))
-              }
+                         val chunk = Chunk.fromArray(copy).drop(offset).take(len)
+                         runtime.unsafeRun(queue.offer(Exit.succeed(chunk)))
+                       }
 
-              override def close(): Unit = {
-                runtime.unsafeRun(queue.offer(Exit.fail(None)))
-              }
+                       override def close(): Unit =
+                         runtime.unsafeRun(queue.offer(Exit.fail(None)))
 
-              override def flush(): Unit = ()
-            }, Stream.DefaultChunkSize)
-          }
-        }
+                       override def flush(): Unit = ()
+                     }, Stream.DefaultChunkSize)
+                   }
+                 }
         _ <- effectBlocking {
-            unsafeEncode(a, indent, writer)
-            writer.close()
-          }.tapError { t =>
-            queue.offer(Exit.fail(Some(t)))
-          }
-          .forkManaged
+              unsafeEncode(a, indent, writer)
+              writer.close()
+            }.tapError(t => queue.offer(Exit.fail(Some(t)))).forkManaged
       } yield ZStream.fromQueue(queue)
     }.collectWhileSuccess.flattenChunks
 
