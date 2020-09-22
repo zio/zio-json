@@ -198,8 +198,8 @@ object BuildHelper {
         Seq("com.github.ghik" % "silencer-lib_2.13.1" % "1.6.0" % Provided)
       else
         Seq(
-          "com.github.ghik" % "silencer-lib" % "1.7.0" % Provided cross CrossVersion.full,
-          compilerPlugin("com.github.ghik" % "silencer-plugin" % "1.7.0" cross CrossVersion.full),
+          "com.github.ghik" % "silencer-lib" % "1.7.1" % Provided cross CrossVersion.full,
+          compilerPlugin("com.github.ghik" % "silencer-plugin" % "1.7.1" cross CrossVersion.full),
           compilerPlugin(scalafixSemanticdb)
         )
     },
