@@ -1,23 +1,34 @@
 package testzio.json
 
-import java.nio.CharBuffer
+import zio._
+import zio.blocking._
+import zio.stream._
+import java.io.IOException
+import java.io.FileNotFoundException
+
+import zio.test.Gen
 
 object TestUtils {
-  // by plokhotnyuk
-  def zeroHashCodeStrings: Iterator[String] = {
-    def charAndHash(h: Int): Iterator[(Char, Int)] = ('!' to '~').iterator.map(ch => (ch, (h + ch) * 31))
+  val genBigInteger =
+    Gen
+      .bigInt((BigInt(2).pow(128) - 1) * -1, BigInt(2).pow(128) - 1)
+      .map(_.bigInteger)
+      .filter(_.bitLength < 128)
 
-    for {
-      (ch0, h0) <- charAndHash(0)
-      (ch1, h1) <- charAndHash(h0)
-      (ch2, h2) <- charAndHash(h1) if (((h2 + 32) * 923521) ^ ((h2 + 127) * 923521)) < 0
-      (ch3, h3) <- charAndHash(h2) if (((h3 + 32) * 29791) ^ ((h3 + 127) * 29791)) < 0
-      (ch4, h4) <- charAndHash(h3) if (((h4 + 32) * 961) ^ ((h4 + 127) * 961)) < 0
-      (ch5, h5) <- charAndHash(h4) if (((h5 + 32) * 31) ^ ((h5 + 127) * 31)) < 0
-      (ch6, h6) <- charAndHash(h5) if ((h6 + 32) ^ (h6 + 127)) < 0
-      (ch7, _)  <- charAndHash(h6) if h6 + ch7 == 0
-    } yield new String(Array(ch0, ch1, ch2, ch3, ch4, ch5, ch6, ch7))
-  }
+  val genBigDecimal =
+    Gen
+      .bigDecimal((BigDecimal(2).pow(128) - 1) * -1, BigDecimal(2).pow(128) - 1)
+      .map(_.bigDecimal)
+      .filter(_.toBigInteger.bitLength < 128)
+
+  // Something seems to be up with zio-test’s Gen.usASCII, it returns
+  // strings like 'Chunk(<>)' (Chunk#toString?) containing any ASCII chars
+  // This generator matches ScalaProps
+  val genUsAsciiString =
+    Gen.string(Gen.oneOf(Gen.char('!', '~')))
+
+  val genAlphaLowerString =
+    Gen.string(Gen.oneOf(Gen.char('a', 'z')))
 
   def writeFile(path: String, s: String): Unit = {
     val bw = new java.io.BufferedWriter(new java.io.FileWriter(path))
@@ -37,6 +48,19 @@ object TestUtils {
       baos.toString("UTF-8")
     } finally is.close()
   }
+
+  def getResourceAsStringM(res: String): ZIO[Blocking, IOException, String] =
+    ZStream.managed {
+      val acquire = effectBlockingIO(getClass.getClassLoader.getResourceAsStream(res)).flatMap { x =>
+        if (x == null)
+          ZIO.fail(new FileNotFoundException(s"No such resource: '$res'"))
+        else
+          ZIO.succeed(x)
+      }
+
+      ZManaged.fromAutoCloseable(acquire)
+    }.flatMap(inputStream => ZStream.fromInputStream(inputStream).transduce(ZTransducer.utf8Decode))
+      .fold("")(_ ++ _)
 
   def asChars(str: String): CharSequence =
     new zio.json.internal.FastCharSequence(str.toCharArray)
