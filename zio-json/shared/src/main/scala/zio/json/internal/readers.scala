@@ -80,7 +80,7 @@ private[zio] final class FastStringReader(s: CharSequence) extends RetractReader
   override def read(): Int = {
     i += 1
     if (i > len) -1
-    else history(i - 1) // -1 is faster than assigning a temp value
+    else history(i - 1).toInt // -1 is faster than assigning a temp value
   }
   override def readChar(): Char = {
     i += 1

@@ -62,6 +62,7 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform)
       "org.scala-lang"                        % "scala-reflect"          % scalaVersion.value % Provided,
       "dev.zio"                               %% "zio"                   % zioVersion,
       "dev.zio"                               %% "zio-streams"           % zioVersion,
+      "org.scala-lang.modules"                %% "scala-collection-compat" % "2.2.0",
       "dev.zio"                               %% "zio-test"              % zioVersion % "test",
       "dev.zio"                               %% "zio-test-sbt"          % zioVersion % "test",
       "io.circe"                              %% "circe-core"            % circeVersion % "test",
@@ -101,7 +102,6 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform)
         file,
         s"""package zio.json
            |
-           |import zio.Chunk
            |import zio.json.internal._
            |
            |private[json] trait GeneratedTupleDecoders { this: JsonDecoder.type =>

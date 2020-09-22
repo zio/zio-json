@@ -101,7 +101,7 @@ object SafeNumbersSpec extends DefaultRunnableSpec {
           }
         },
         testM("valid (from Int)") {
-          check(Gen.anyInt)(i => assert(SafeNumbers.double(i.toString))(equalTo(DoubleSome(i))))
+          check(Gen.anyInt)(i => assert(SafeNumbers.double(i.toString))(equalTo(DoubleSome(i.toDouble))))
         },
         testM("valid (from Long)") {
           check(Gen.anyLong)(i => assert(SafeNumbers.double(i.toString))(equalTo(DoubleSome(i.toDouble))))

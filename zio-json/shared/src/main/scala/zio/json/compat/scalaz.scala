@@ -1,6 +1,6 @@
 package zio.json.compat
 
-import _root_.scalaz._, Scalaz._
+import _root_.scalaz._
 import zio.json._
 
 object scalaz {

@@ -16,16 +16,12 @@ object StringMatrixSpec extends DefaultRunnableSpec {
     },
     testM("negative fails") {
       check(genTestStrings.filterNot(_.startsWith("wibble"))) { xs =>
-        val asserts = xs.map(s => matcher(xs, "wibble"))
-
-        assert(asserts)(forall(isEmpty))
+        assert(matcher(xs, "wibble"))(isEmpty)
       }
     },
     testM("substring fails") {
       check(genTestStrings.filter(_.length > 1)) { xs =>
-        val asserts = xs.map(s => matcher(xs, xs.mkString))
-
-        assert(asserts)(forall(isEmpty))
+        assert(matcher(xs, xs.mkString))(isEmpty)
       }
     },
     testM("trivial") {
@@ -53,7 +49,7 @@ object StringMatrixSpec extends DefaultRunnableSpec {
   private def matcher(xs: List[String], test: String): List[String] = {
     val m = new StringMatrix(xs.toArray)
     var bs = test.zipWithIndex.foldLeft(m.initial) {
-      case (bs, (c, i)) => m.update(bs, i, c)
+      case (bs, (c, i)) => m.update(bs, i, c.toInt)
     }
     bs = m.exact(bs, test.length)
     matches(xs, bs)

@@ -3,7 +3,6 @@ package zio.json.internal
 import scala.annotation._
 import scala.util.Properties.propOrNone
 
-import zio.Chunk
 import zio.json.JsonDecoder.{ JsonError, UnsafeJson }
 
 // tries to stick to the spec, but maybe a bit loose in places (e.g. numbers)
@@ -40,7 +39,7 @@ object Lexer {
     }
 
   // True if we got anything besides a ], False for ]
-  def firstArrayElement(trace: List[JsonError], in: RetractReader): Boolean =
+  def firstArrayElement(in: RetractReader): Boolean =
     (in.nextNonWhitespace(): @switch) match {
       case ']' => false
       case _ =>
@@ -107,17 +106,17 @@ object Lexer {
           } while (nextField(trace, in))
         }
       case '[' =>
-        if (firstArrayElement(trace, in)) {
+        if (firstArrayElement(in)) {
           do skipValue(trace, in) while (nextArrayElement(trace, in))
         }
       case '"' =>
         skipString(trace, in)
       case '-' | '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' =>
-        skipNumber(trace, in)
+        skipNumber(in)
       case c => throw UnsafeJson(JsonError.Message(s"unexpected '$c'") :: trace)
     }
 
-  def skipNumber(trace: List[JsonError], in: RetractReader): Unit = {
+  def skipNumber(in: RetractReader): Unit = {
     while (isNumber(in.readChar())) {}
     in.retract()
   }
@@ -334,7 +333,7 @@ private final class EscapedString(trace: List[JsonError], in: OneCharReader) ext
     if (escaped) {
       escaped = false
       (c: @switch) match {
-        case '"' | '\\' | '/' | 'b' | 'f' | 'n' | 'r' | 't' => c
+        case '"' | '\\' | '/' | 'b' | 'f' | 'n' | 'r' | 't' => c.toInt
         case 'u'                                            => nextHex4()
         case _ =>
           throw UnsafeJson(
@@ -347,7 +346,7 @@ private final class EscapedString(trace: List[JsonError], in: OneCharReader) ext
     } else if (c == '"') -1 // this is the EOS for the caller
     else if (c < ' ')
       throw UnsafeJson(JsonError.Message("invalid control in string") :: trace)
-    else c
+    else c.toInt
   }
 
   // callers expect to get an EOB so this is rare

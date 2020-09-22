@@ -52,7 +52,7 @@ object RoundTripSpec extends DefaultRunnableSpec {
       val num   = genBigDecimal.map(Json.Num(_))
       val nul   = Gen.const(Json.Null)
 
-      Gen.oneOf(obj, arr, boo, str, num)
+      Gen.oneOf(obj, arr, boo, str, num, nul)
     }
 
   private def assertRoundtrips[A: JsonEncoder: JsonDecoder](a: A) =
