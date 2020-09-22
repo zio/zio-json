@@ -13,7 +13,7 @@ import zio.json.internal.{ Lexer, RetractReader, StringMatrix }
  * If used on a case class field, determines the name of the JSON field.
  * Defaults to the case class field name.
  */
-final case class field(name: String) extends Annotation
+final case class jsonField(name: String) extends Annotation
 
 /**
  * If used on a sealed class, will determine the name of the field for
@@ -28,7 +28,7 @@ final case class field(name: String) extends Annotation
  * encoders (which must write an unenforced object type). Only use this option
  * if you must model an externally defined schema.
  */
-final case class discriminator(name: String) extends Annotation
+final case class jsonDiscriminator(name: String) extends Annotation
 // TODO a strategy where the constructor is inferred from the field names, only
 // valid if there is no ambiguity in the types of fields for all case classes.
 // Such a strategy cannot be implemented with Magnolia because the SealedTrait
@@ -39,7 +39,7 @@ final case class discriminator(name: String) extends Annotation
  * If used on a case class will determine the type hint value for disambiguating
  * sealed traits. Defaults to the short type name.
  */
-final case class hint(name: String) extends Annotation
+final case class jsonHint(name: String) extends Annotation
 
 /**
  * If used on a case class, will exit early if any fields are in the JSON that
@@ -49,17 +49,17 @@ final case class hint(name: String) extends Annotation
  * the schema will result in a hard error rather than silently ignoring those
  * fields.
  *
- * Cannot be combined with `@discriminator` since it is considered an extra
+ * Cannot be combined with `@jsonDiscriminator` since it is considered an extra
  * field from the perspective of the case class.
  */
-final class no_extra_fields extends Annotation
+final class jsonNoExtraFields extends Annotation
 
 object DeriveJsonDecoder {
   type Typeclass[A] = JsonDecoder[A]
 
   def combine[A](ctx: CaseClass[JsonDecoder, A]): JsonDecoder[A] = {
     val no_extra = ctx.annotations.collectFirst {
-      case _: no_extra_fields => ()
+      case _: jsonNoExtraFields => ()
     }.isDefined
     if (ctx.parameters.isEmpty)
       new JsonDecoder[A] {
@@ -77,7 +77,7 @@ object DeriveJsonDecoder {
       new JsonDecoder[A] {
         val names: Array[String] = ctx.parameters.map { p =>
           p.annotations.collectFirst {
-            case field(name) => name
+            case jsonField(name) => name
           }.getOrElse(p.label)
         }.toArray
         val len: Int                = names.length
@@ -131,7 +131,7 @@ object DeriveJsonDecoder {
   def dispatch[A](ctx: SealedTrait[JsonDecoder, A]): JsonDecoder[A] = {
     val names: Array[String] = ctx.subtypes.map { p =>
       p.annotations.collectFirst {
-        case hint(name) => name
+        case jsonHint(name) => name
       }.getOrElse(p.typeName.short)
     }.toArray
     val len: Int             = names.length
@@ -139,7 +139,7 @@ object DeriveJsonDecoder {
     lazy val tcs: Array[JsonDecoder[Any]] =
       ctx.subtypes.map(_.typeclass).toArray.asInstanceOf[Array[JsonDecoder[Any]]]
 
-    def discrim = ctx.annotations.collectFirst { case discriminator(n) => n }
+    def discrim = ctx.annotations.collectFirst { case jsonDiscriminator(n) => n }
     if (discrim.isEmpty)
       new JsonDecoder[A] {
         val spans: Array[JsonError] = names.map(JsonError.ObjectAccess(_))
@@ -211,7 +211,7 @@ object DeriveJsonEncoder {
         val params = ctx.parameters.toArray
         val names: Array[String] = params.map { p =>
           p.annotations.collectFirst {
-            case field(name) => name
+            case jsonField(name) => name
           }.getOrElse(p.label)
         }
         lazy val tcs: Array[JsonEncoder[Any]] = params.map(p => p.typeclass.asInstanceOf[JsonEncoder[Any]])
@@ -248,10 +248,10 @@ object DeriveJsonEncoder {
   def dispatch[A](ctx: SealedTrait[JsonEncoder, A]): JsonEncoder[A] = {
     val names: Array[String] = ctx.subtypes.map { p =>
       p.annotations.collectFirst {
-        case hint(name) => name
+        case jsonHint(name) => name
       }.getOrElse(p.typeName.short)
     }.toArray
-    def discrim = ctx.annotations.collectFirst { case discriminator(n) => n }
+    def discrim = ctx.annotations.collectFirst { case jsonDiscriminator(n) => n }
     if (discrim.isEmpty)
       new JsonEncoder[A] {
         def unsafeEncode(a: A, indent: Option[Int], out: java.io.Writer): Unit = ctx.dispatch(a) { sub =>
