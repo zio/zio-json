@@ -133,7 +133,8 @@ package handrolled {
           js: Json.Arr
         ): (Double, Double) =
           js match {
-            case Json.Arr(chunk) =>
+            case Json.Arr(chunk)
+                if chunk.length == 2 && chunk(0).isInstanceOf[Json.Num] && chunk(1).isInstanceOf[Json.Num] =>
               (chunk(0).asInstanceOf[Json.Num].value.doubleValue(), chunk(1).asInstanceOf[Json.Num].value.doubleValue())
             case _ =>
               throw UnsafeJson(
