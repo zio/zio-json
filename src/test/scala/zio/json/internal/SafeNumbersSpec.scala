@@ -3,6 +3,7 @@ package testzio.json.internal
 import zio.json.internal._
 import zio.test.Assertion._
 import zio.test.{ DefaultRunnableSpec, _ }
+import testzio.json.TestUtils._
 
 object SafeNumbersSpec extends DefaultRunnableSpec {
   def spec =
@@ -252,22 +253,4 @@ object SafeNumbersSpec extends DefaultRunnableSpec {
         }
       )
     )
-
-  // Something seems to be up with zio-test’s Gen.usASCII, it returns
-  // strings like 'Chunk(<>)' (Chunk#toString?) containing any ASCII chars
-  // This generator matches ScalaProps
-  val genAlphaLowerString =
-    Gen.string(Gen.oneOf(Gen.char('a', 'z')))
-
-  val genBigInteger =
-    Gen
-      .bigInt((BigInt(2).pow(128) - 1) * -1, BigInt(2).pow(128) - 1)
-      .map(_.bigInteger)
-      .filter(_.bitLength < 128)
-
-  val genBigDecimal =
-    Gen
-      .bigDecimal((BigDecimal(2).pow(128) - 1) * -1, BigDecimal(2).pow(128) - 1)
-      .map(_.bigDecimal)
-      .filter(_.toBigInteger.bitLength < 128)
 }

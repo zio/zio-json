@@ -49,7 +49,7 @@ object EncoderSpec extends DefaultRunnableSpec {
         }
       ),
       test("options") {
-        assert((None: Option[Int]).toJson)(equalTo("null"))
+        assert((None: Option[Int]).toJson)(equalTo("null")) &&
         assert((Some(1): Option[Int]).toJson)(equalTo("1"))
       },
       test("eithers") {

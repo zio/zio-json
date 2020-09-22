@@ -6,7 +6,30 @@ import zio.stream._
 import java.io.IOException
 import java.io.FileNotFoundException
 
+import zio.test.Gen
+
 object TestUtils {
+  val genBigInteger =
+    Gen
+      .bigInt((BigInt(2).pow(128) - 1) * -1, BigInt(2).pow(128) - 1)
+      .map(_.bigInteger)
+      .filter(_.bitLength < 128)
+
+  val genBigDecimal =
+    Gen
+      .bigDecimal((BigDecimal(2).pow(128) - 1) * -1, BigDecimal(2).pow(128) - 1)
+      .map(_.bigDecimal)
+      .filter(_.toBigInteger.bitLength < 128)
+
+  // Something seems to be up with zio-test’s Gen.usASCII, it returns
+  // strings like 'Chunk(<>)' (Chunk#toString?) containing any ASCII chars
+  // This generator matches ScalaProps
+  val genUsAsciiString =
+    Gen.string(Gen.oneOf(Gen.char('!', '~')))
+
+  val genAlphaLowerString =
+    Gen.string(Gen.oneOf(Gen.char('a', 'z')))
+
   def writeFile(path: String, s: String): Unit = {
     val bw = new java.io.BufferedWriter(new java.io.FileWriter(path))
     bw.write(s)
