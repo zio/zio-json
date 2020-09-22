@@ -149,7 +149,7 @@ object EncoderSpec extends DefaultRunnableSpec {
         DeriveJsonEncoder.gen[OnlyString]
     }
 
-    case class CoupleOfThings(@field("j") i: Int, f: Option[Float], b: Boolean)
+    case class CoupleOfThings(@jsonField("j") i: Int, f: Option[Float], b: Boolean)
     object CoupleOfThings {
       implicit val encoder: JsonEncoder[CoupleOfThings] =
         DeriveJsonEncoder.gen[CoupleOfThings]
@@ -163,19 +163,19 @@ object EncoderSpec extends DefaultRunnableSpec {
       implicit val encoder: JsonEncoder[Parent] = DeriveJsonEncoder.gen[Parent]
     }
     case class Child1() extends Parent
-    @hint("Cain")
+    @jsonHint("Cain")
     case class Child2() extends Parent
   }
 
   object examplealtsum {
-    @discriminator("hint")
+    @jsonDiscriminator("hint")
     sealed abstract class Parent
     object Parent {
       implicit val encoder: JsonEncoder[Parent] = DeriveJsonEncoder.gen[Parent]
     }
 
     case class Child1() extends Parent
-    @hint("Abel")
+    @jsonHint("Abel")
     case class Child2(s: Option[String]) extends Parent
   }
 }

@@ -8,13 +8,13 @@ import play.api.libs.{ json => Play }
 final case class Value(
   text: String,
   @named("value")
-  @field("value")
+  @jsonField("value")
   @circe.generic.extras.JsonKey("value")
   v: Int
 )
 final case class Elements(distance: Value, duration: Value, status: String)
 final case class Rows(elements: List[Elements])
-// @no_extra_fields // entirely mitigates Attack1
+// @jsonNoExtraFields // entirely mitigates Attack1
 final case class DistanceMatrix(
   destination_addresses: List[String],
   origin_addresses: List[String],

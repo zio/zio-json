@@ -14,7 +14,7 @@ import playtuples._
 
 package generated {
 
-  @discriminator("type")
+  @jsonDiscriminator("type")
   sealed abstract class Geometry
   final case class Point(coordinates: (Double, Double))                          extends Geometry
   final case class MultiPoint(coordinates: List[(Double, Double)])               extends Geometry
@@ -26,7 +26,7 @@ package generated {
     geometries: List[Geometry] // NOTE: recursive
   ) extends Geometry
 
-  @discriminator("type")
+  @jsonDiscriminator("type")
   sealed abstract class GeoJSON
   final case class Feature(properties: Map[String, String], geometry: Geometry) extends GeoJSON
   final case class FeatureCollection(

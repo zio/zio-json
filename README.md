@@ -125,19 +125,19 @@ Almost all of the standard library data types are supported as fields on the cas
 
 ## Configuration
 
-By default the field names of a case class are used as the JSON fields, but it is easy to override this with an annotation `@field`.
+By default the field names of a case class are used as the JSON fields, but it is easy to override this with an annotation `@jsonField`.
 
-It is also possible to change the type hint that is used to discriminate case classes with `@hint`.
+It is also possible to change the type hint that is used to discriminate case classes with `@jsonHint`.
 
 For example, these annotations change the expected JSON of our `Fruit` family
 
 ```scala
 sealed trait Fruit
-@hint("banaani") case class Banana(
-  @field("bendiness") curvature: Double
+@jsonHint("banaani") case class Banana(
+  @jsonField("bendiness") curvature: Double
 ) extends Fruit
-@hint("omena") case class Apple(
-  @field("bad") poison: Boolean
+@jsonHint("omena") case class Apple(
+  @jsonField("bad") poison: Boolean
 ) extends Fruit
 ```
 
@@ -157,7 +157,7 @@ to
 {"omena":{"bad":false}}
 ```
 
-We can raise an error if we encounter unexpected fields by using the `@no_extra_fields` annotation on a case class.
+We can raise an error if we encounter unexpected fields by using the `@jsonNoExtraFields` annotation on a case class.
 
 A popular alternative way to encode sealed traits:
 
@@ -167,10 +167,10 @@ A popular alternative way to encode sealed traits:
 {"type":"omena", "bad":false}
 ```
 
-is discouraged for performance reasons. However, if we have no choice in the matter, it may be accomodated with the `@discriminator` annotation
+is discouraged for performance reasons. However, if we have no choice in the matter, it may be accomodated with the `@jsonDiscriminator` annotation
 
 ```scala
-@discriminator("type") sealed trait Fruit
+@jsonDiscriminator("type") sealed trait Fruit
 ```
 
 ## Manual Instances
@@ -386,7 +386,7 @@ circe  2224 ( 7456)  1655 (1533)
 play   2350 ( 3589)  1854 (1344)
 ```
 
-The reason why `zio-json` is not as badly affected is because it skips values that are unexpected. We can completely mitigate this kind of attack by using the `@no_extra_fields` annotation which results in the payload being rejected at a rate of 5.5 million ops/sec.
+The reason why `zio-json` is not as badly affected is because it skips values that are unexpected. We can completely mitigate this kind of attack by using the `@jsonNoExtraFields` annotation which results in the payload being rejected at a rate of 5.5 million ops/sec.
 
 Other kinds of redundant values attacks are also possible, such as using an array of 60K full of high precision decimal numbers that require slow parsing (also known as ["near halfway numbers"](https://www.exploringbinary.com/17-digits-gets-you-there-once-youve-found-your-way/)), attacking the CPU. However, the memory attack afforded to us by a redundant `String` is already quite effective.
 
@@ -400,7 +400,7 @@ In this malicious payload, we add redundant fields that have hashcode collisions
 
 <!-- jmh:run -prof gc GoogleMaps.*Attack2 -->
 
-Again, `zio-json` completely mitigates this attack if the `@no_extra_fields` annotation is used. Note that even if Circe and Play rejected payloads of this nature, it would be too late because the attack happens at the AST layer, not the decoders. However, for the sake of comparison, let's turn off the `zio-json` mitigation:
+Again, `zio-json` completely mitigates this attack if the `@jsonNoExtraFields` annotation is used. Note that even if Circe and Play rejected payloads of this nature, it would be too late because the attack happens at the AST layer, not the decoders. However, for the sake of comparison, let's turn off the `zio-json` mitigation:
 
 ```
        ops/sec       MB/sec

@@ -268,7 +268,7 @@ object DecoderSpec extends DefaultRunnableSpec {
         DeriveJsonDecoder.gen[Parameterless]
     }
 
-    @no_extra_fields
+    @jsonNoExtraFields
     case class OnlyString(s: String)
     object OnlyString {
       implicit val decoder: JsonDecoder[OnlyString] =
@@ -286,16 +286,16 @@ object DecoderSpec extends DefaultRunnableSpec {
   }
 
   object examplealtsum {
-    @discriminator("hint")
+    @jsonDiscriminator("hint")
     sealed abstract class Parent
     object Parent {
       implicit val decoder: JsonDecoder[Parent] = DeriveJsonDecoder.gen[Parent]
     }
 
-    @hint("Cain")
+    @jsonHint("Cain")
     case class Child1() extends Parent
 
-    @hint("Abel")
+    @jsonHint("Abel")
     case class Child2() extends Parent
   }
 }
