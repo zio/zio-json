@@ -227,19 +227,19 @@ jobs:
       - <<: *scala_212
       - <<: *jdk_8
 
-  jmh_compile_213_jdk8_jvm:
-    <<: *jmh_compile
-    <<: *machine_ubuntu
-    environment:
-      - <<: *scala_213
-      - <<: *jdk_8
-
   jmh_compile_212_jdk11_jvm:
     <<: *jmh_compile
     <<: *machine_ubuntu
     environment:
       - <<: *scala_212
       - <<: *jdk_11
+
+  jmh_compile_213_jdk8_jvm:
+    <<: *jmh_compile
+    <<: *machine_ubuntu
+    environment:
+      - <<: *scala_213
+      - <<: *jdk_8
 
   jmh_compile_213_jdk11_jvm:
     <<: *jmh_compile
