@@ -343,19 +343,7 @@ workflows:
           filters:
             <<: *filter_tags
 
-      - jmh_compile_212_jdk8_jvm:
-          requires:
-            - lint
-          filters:
-            <<: *filter_tags
-
       - jmh_compile_213_jdk8_jvm:
-          requires:
-            - lint
-          filters:
-            <<: *filter_tags
-
-      - jmh_compile_212_jdk11_jvm:
           requires:
             - lint
           filters:
