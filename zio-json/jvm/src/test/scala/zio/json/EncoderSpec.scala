@@ -8,6 +8,7 @@ import testzio.json.data.twitter._
 import zio.json._
 import zio.test.Assertion._
 import zio.test.{ DefaultRunnableSpec, _ }
+import zio.stream.ZStream
 
 // zioJsonJVM/testOnly testzio.json.EncoderSpec
 object EncoderSpec extends DefaultRunnableSpec {
@@ -122,6 +123,28 @@ object EncoderSpec extends DefaultRunnableSpec {
         testRoundTrip[DistanceMatrix]("google_maps_api_response"),
         testRoundTrip[List[Tweet]]("twitter_api_response"),
         testRoundTrip[GeoJSON]("che.geo")
+      ),
+      suite("ZIO Streams integration")(
+        testM("encodes into a ZStream of Char") {
+          val intEncoder = JsonEncoder[Int]
+          val value      = 1234
+
+          for {
+            chars <- intEncoder.encodeJsonStream(value, indent = None).runCollect
+          } yield {
+            assert(chars.mkString)(equalTo("1234"))
+          }
+        },
+        testM("encodes values that yield a result of length > DefaultChunkSize") {
+          val longString = List.fill(ZStream.DefaultChunkSize * 2)('x').mkString
+
+          for {
+            chars <- JsonEncoder[String].encodeJsonStream(longString, indent = None).runCollect
+          } yield {
+            assert(chars)(hasSize(equalTo(ZStream.DefaultChunkSize * 2 + 2))) &&
+            assert(chars.mkString(""))(equalTo("\"" ++ longString ++ "\""))
+          }
+        }
       )
     )
 
