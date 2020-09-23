@@ -44,7 +44,7 @@ val circeVersion = "0.13.0"
 
 lazy val zioJson = crossProject(JSPlatform, JVMPlatform)
   .in(file("zio-json"))
-  .settings(stdSettings("zioJson"))
+  .settings(stdSettings("zio-json"))
   .settings(crossProjectSettings)
   .settings(buildInfoSettings("zio.json"))
   .enablePlugins(NeoJmhPlugin)
@@ -55,9 +55,9 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform)
     scalacOptions -= "-opt:l:inline",
     scalacOptions -= "-opt-inline-from:zio.internal.**",
     libraryDependencies ++= Seq(
-      "com.propensive"                        %% "magnolia"                % "0.16.0",
+      "com.propensive"                        %% "magnolia"                % "0.17.0",
       "org.scalaz"                            %% "scalaz-core"             % "7.3.2" intransitive (),
-      "eu.timepit"                            %% "refined"                 % "0.9.15" intransitive (),
+      "eu.timepit"                            %% "refined"                 % "0.9.16" intransitive (),
       "org.scala-lang"                        % "scala-reflect"            % scalaVersion.value % Provided,
       "dev.zio"                               %% "zio"                     % zioVersion,
       "dev.zio"                               %% "zio-streams"             % zioVersion,
@@ -69,9 +69,9 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform)
       "io.circe"                              %% "circe-parser"            % circeVersion % "test",
       "ai.x"                                  %% "play-json-extensions"    % "0.42.0" % "test",
       "io.circe"                              %% "circe-generic-extras"    % circeVersion % "test",
-      "com.typesafe.play"                     %% "play-json"               % "2.9.0" % "test",
-      "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-core"     % "2.6.0" % "test",
-      "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-macros"   % "2.6.0" % "test",
+      "com.typesafe.play"                     %% "play-json"               % "2.9.1" % "test",
+      "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-core"     % "2.5.0" % "test",
+      "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-macros"   % "2.5.0" % "test",
       "org.typelevel"                         %% "jawn-ast"                % "1.0.0"
     ),
     sourceGenerators in Compile += Def.task {
@@ -118,14 +118,14 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform)
           val implicits = (1 to i).map(p => s"A$p: JsonEncoder[A$p]").mkString(", ")
           val work = (1 to i)
             .map(p => s"A$p.unsafeEncode(t._$p, indent, out)")
-            .mkString("\n        if (indent.isEmpty) out.write(\",\") else out.write(\", \")\n        ")
+            .mkString("\n        if (indent.isEmpty) out.write(',') else out.write(\", \")\n        ")
 
           s"""implicit def tuple${i}[$tparams](implicit $implicits): JsonEncoder[Tuple${i}[$tparams]] =
              |    new JsonEncoder[Tuple${i}[$tparams]] {
-             |      def unsafeEncode(t: Tuple${i}[$tparams], indent: Option[Int], out: java.io.Writer): Unit = {
-             |        out.write("[")
+             |      def unsafeEncode(t: Tuple${i}[$tparams], indent: Option[Int], out: internal.Write): Unit = {
+             |        out.write('[')
              |        $work
-             |        out.write("]")
+             |        out.write(']')
              |      }
              |    }""".stripMargin
       }
