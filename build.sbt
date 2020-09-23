@@ -57,7 +57,7 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform)
     libraryDependencies ++= Seq(
       "com.propensive"                        %% "magnolia"                % "0.16.0",
       "org.scalaz"                            %% "scalaz-core"             % "7.3.2" intransitive (),
-      "eu.timepit"                            %% "refined"                 % "0.9.15" intransitive (),
+      "eu.timepit"                            %% "refined"                 % "0.9.16" intransitive (),
       "org.scala-lang"                        % "scala-reflect"            % scalaVersion.value % Provided,
       "dev.zio"                               %% "zio"                     % zioVersion,
       "dev.zio"                               %% "zio-streams"             % zioVersion,
