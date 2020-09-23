@@ -367,7 +367,7 @@ workflows:
             <<: *filter_tags
             branches:
               only:
-                - master
+                - develop
       - microsite:
           context: Website
           requires:

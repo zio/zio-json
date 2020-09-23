@@ -140,7 +140,7 @@ object Lexer {
     char(trace, in, '"')
     val stream = new EscapedString(trace, in)
 
-    val sb = new FastStringWriter(64)
+    val sb = new FastStringBuilder(64)
     while (true) {
       val c = stream.read()
       if (c == -1)

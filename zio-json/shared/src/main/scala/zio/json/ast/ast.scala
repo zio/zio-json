@@ -38,7 +38,7 @@ object Json {
     }
     private lazy val obje = JsonEncoder.keyValueChunk[String, Json]
     implicit val encoder: JsonEncoder[Obj] = new JsonEncoder[Obj] {
-      def unsafeEncode(a: Obj, indent: Option[Int], out: java.io.Writer): Unit =
+      def unsafeEncode(a: Obj, indent: Option[Int], out: Write): Unit =
         obje.unsafeEncode(a.fields, indent, out)
     }
   }
@@ -51,7 +51,7 @@ object Json {
     }
     private lazy val arre = JsonEncoder.chunk[Json]
     implicit val encoder: JsonEncoder[Arr] = new JsonEncoder[Arr] {
-      def unsafeEncode(a: Arr, indent: Option[Int], out: java.io.Writer): Unit =
+      def unsafeEncode(a: Arr, indent: Option[Int], out: Write): Unit =
         arre.unsafeEncode(a.elements, indent, out)
     }
   }
@@ -62,7 +62,7 @@ object Json {
         Bool(JsonDecoder.boolean.unsafeDecode(trace, in))
     }
     implicit val encoder: JsonEncoder[Bool] = new JsonEncoder[Bool] {
-      def unsafeEncode(a: Bool, indent: Option[Int], out: java.io.Writer): Unit =
+      def unsafeEncode(a: Bool, indent: Option[Int], out: Write): Unit =
         JsonEncoder.boolean.unsafeEncode(a.value, indent, out)
     }
   }
@@ -73,7 +73,7 @@ object Json {
         Str(JsonDecoder.string.unsafeDecode(trace, in))
     }
     implicit val encoder: JsonEncoder[Str] = new JsonEncoder[Str] {
-      def unsafeEncode(a: Str, indent: Option[Int], out: java.io.Writer): Unit =
+      def unsafeEncode(a: Str, indent: Option[Int], out: Write): Unit =
         JsonEncoder.string.unsafeEncode(a.value, indent, out)
     }
   }
@@ -84,7 +84,7 @@ object Json {
         Num(JsonDecoder.bigDecimal.unsafeDecode(trace, in))
     }
     implicit val encoder: JsonEncoder[Num] = new JsonEncoder[Num] {
-      def unsafeEncode(a: Num, indent: Option[Int], out: java.io.Writer): Unit =
+      def unsafeEncode(a: Num, indent: Option[Int], out: Write): Unit =
         JsonEncoder.bigDecimal.unsafeEncode(a.value, indent, out)
     }
   }
@@ -97,7 +97,7 @@ object Json {
       }
     }
     implicit val encoder: JsonEncoder[Null.type] = new JsonEncoder[Null.type] {
-      def unsafeEncode(a: Null.type, indent: Option[Int], out: java.io.Writer): Unit =
+      def unsafeEncode(a: Null.type, indent: Option[Int], out: Write): Unit =
         out.write("null")
     }
   }
@@ -120,7 +120,7 @@ object Json {
     }
   }
   implicit val encoder: JsonEncoder[Json] = new JsonEncoder[Json] {
-    def unsafeEncode(a: Json, indent: Option[Int], out: java.io.Writer): Unit =
+    def unsafeEncode(a: Json, indent: Option[Int], out: Write): Unit =
       a match {
         case j: Obj  => Obj.encoder.unsafeEncode(j, indent, out)
         case j: Arr  => Arr.encoder.unsafeEncode(j, indent, out)

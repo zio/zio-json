@@ -9,6 +9,7 @@ import zio.json._
 import zio.test.Assertion._
 import zio.test.{ DefaultRunnableSpec, _ }
 
+// zioJsonJVM/testOnly testzio.json.EncoderSpec
 object EncoderSpec extends DefaultRunnableSpec {
   def spec =
     suite("Encoder")(

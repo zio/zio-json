@@ -307,7 +307,7 @@ Here are JMH benchmarks (higher `ops/sec` is better, lower `MB/sec` is better) o
 ```
        Decoding                    | Encoding
        ops/sec       MB/sec        | ops/sec      MB/sec
-zio    15761 ± 283   1633 ± 29     | 16125 ± 192   629 ±  7
+zio    15761 ± 283   1633 ± 29     | 13497 ± 246  2164 ± 40
 circe   8832 ± 269   1816 ± 55     | 11980 ± 142  2030 ± 24
 play    5756 ±  47   2260 ± 19     |  6669 ± 160  2677 ± 64
 ```
@@ -320,7 +320,7 @@ on a standard Twitter API performance-testing dataset (stressing nested case cla
 ```
        Decoding                    | Encoding
        ops/sec       MB/sec        | ops/sec      MB/sec
-zio    16989 ± 113    827 ±  6     | 16945 ± 247  1100 ± 16
+zio    16989 ± 113    827 ±  6     | 20619 ± 178  2002 ± 17
 circe  16010 ±  72   1349 ±  6     | 15664 ± 209  1627 ± 22
 play    5256 ± 165   1231 ± 39     | 15580 ± 314  2260 ± 45
 ```
@@ -333,7 +333,7 @@ on a standard GeoJSON performance-testing dataset (stressing nested sealed trait
 ```
        Decoding                    | Encoding
        ops/sec       MB/sec        | ops/sec       MB/sec
-zio    17104 ± 155   2768 ± 25     | 6031 ± 63      522 ±  6
+zio    17104 ± 155   2768 ± 25     | 5236 ± 65      834 ± 10
 circe   8388 ± 118   2879 ± 41     | 4762 ± 47      592 ±  6
 play     704 ±   9   3946 ± 55     | 2587 ± 24     1091 ± 10
 ```
@@ -346,7 +346,7 @@ and on a standard synthetic performance-testing dataset (stressing nested recurs
 ```
        Decoding                    | Encoding
        ops/sec       MB/sec        | ops/sec       MB/sec
-zio    59099 ± 1307  2108 ± 46     | 57547 ±  235   787 ±  3
+zio    59099 ± 1307  2108 ± 46     | 32367 ±  321  2660 ± 27
 circe  19609 ±  370  2873 ± 53     | 13830 ±  109  1730 ± 14
 play    9001 ±  182  3348 ± 67     | 14529 ±  200  3533 ± 48
 ```
