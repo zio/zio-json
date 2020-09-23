@@ -7,7 +7,7 @@ import zio.{ Chunk, Exit, ZIO, ZManaged, ZQueue }
 import zio.blocking._
 import zio.stream._
 
-import java.io.Writer
+import zio.json.internal.{ FastStringWrite, Write, WriteWriter }
 
 trait JsonEncoder[A] { self =>
 
@@ -29,7 +29,7 @@ trait JsonEncoder[A] { self =>
    * by the specified user-defined function.
    */
   final def contramap[B](f: B => A): JsonEncoder[B] = new JsonEncoder[B] {
-    override def unsafeEncode(b: B, indent: Option[Int], out: java.io.Writer): Unit =
+    override def unsafeEncode(b: B, indent: Option[Int], out: Write): Unit =
       self.unsafeEncode(f(b), indent, out)
     override def isNothing(b: B): Boolean = self.isNothing(f(b))
   }
@@ -52,9 +52,7 @@ trait JsonEncoder[A] { self =>
    * Encodes the specified value into a JSON string, with the specified indentation level.
    */
   final def encodeJson(a: A, indent: Option[Int]): String = {
-    // TODO we'd prefer to use our FastStringWriter here but it's unfathomly
-    // slower for the Google Maps API benchmark. Needs investigation.
-    val writer = new java.io.StringWriter()
+    val writer = new FastStringWrite(64)
     unsafeEncode(a, indent, writer)
     writer.toString
   }
@@ -69,7 +67,7 @@ trait JsonEncoder[A] { self =>
         queue   <- ZQueue.bounded[Exit[Option[Throwable], Chunk[Char]]](1).toManaged_
         writer <- ZManaged.fromAutoCloseable {
                    ZIO.effectTotal {
-                     new java.io.BufferedWriter(new Writer {
+                     new java.io.BufferedWriter(new java.io.Writer {
                        override def write(buffer: Array[Char], offset: Int, len: Int): Unit = {
                          val copy = new Array[Char](len)
                          System.arraycopy(buffer, offset, copy, 0, len)
@@ -86,7 +84,7 @@ trait JsonEncoder[A] { self =>
                    }
                  }
         _ <- effectBlocking {
-              unsafeEncode(a, indent, writer)
+              unsafeEncode(a, indent, new WriteWriter(writer))
               writer.close()
             }.tapError(t => queue.offer(Exit.fail(Some(t)))).forkManaged
       } yield ZStream.fromQueue(queue)
@@ -102,14 +100,14 @@ trait JsonEncoder[A] { self =>
   @nowarn("msg=is never used")
   def xmap[B](f: A => B, g: B => A): JsonEncoder[B] = contramap(g)
 
-  def unsafeEncode(a: A, indent: Option[Int], out: java.io.Writer): Unit
+  def unsafeEncode(a: A, indent: Option[Int], out: Write): Unit
 }
 
 object JsonEncoder extends GeneratedTupleEncoders with EncoderLowPriority0 {
   def apply[A](implicit a: JsonEncoder[A]): JsonEncoder[A] = a
 
   implicit val string: JsonEncoder[String] = new JsonEncoder[String] {
-    override def unsafeEncode(a: String, indent: Option[Int], out: java.io.Writer): Unit = {
+    override def unsafeEncode(a: String, indent: Option[Int], out: Write): Unit = {
       out.write('"')
       var i   = 0
       val len = a.length
@@ -124,7 +122,7 @@ object JsonEncoder extends GeneratedTupleEncoders with EncoderLowPriority0 {
           case '\t' => out.write("\\t")
           case c =>
             if (c < ' ') out.write("\\u%04x".format(c.toInt))
-            else out.write(c.toInt)
+            else out.write(c)
         }
         i += 1
       }
@@ -134,7 +132,7 @@ object JsonEncoder extends GeneratedTupleEncoders with EncoderLowPriority0 {
   }
 
   private[this] def explicit[A](f: A => String): JsonEncoder[A] = new JsonEncoder[A] {
-    def unsafeEncode(a: A, indent: Option[Int], out: java.io.Writer): Unit = out.write(f(a))
+    def unsafeEncode(a: A, indent: Option[Int], out: Write): Unit = out.write(f(a))
   }
   implicit val boolean: JsonEncoder[Boolean] = explicit(_.toString)
   implicit val char: JsonEncoder[Char]       = string.contramap(_.toString)
@@ -153,7 +151,7 @@ object JsonEncoder extends GeneratedTupleEncoders with EncoderLowPriority0 {
   implicit val bigDecimal: JsonEncoder[java.math.BigDecimal] = explicit(_.toString)
 
   implicit def option[A](implicit A: JsonEncoder[A]): JsonEncoder[Option[A]] = new JsonEncoder[Option[A]] {
-    def unsafeEncode(oa: Option[A], indent: Option[Int], out: java.io.Writer): Unit = oa match {
+    def unsafeEncode(oa: Option[A], indent: Option[Int], out: Write): Unit = oa match {
       case None    => out.write("null")
       case Some(a) => A.unsafeEncode(a, indent, out)
     }
@@ -164,29 +162,29 @@ object JsonEncoder extends GeneratedTupleEncoders with EncoderLowPriority0 {
     case None    => None
     case Some(i) => Some(i + 1)
   }
-  def pad(indent: Option[Int], out: java.io.Writer): Unit =
+  def pad(indent: Option[Int], out: Write): Unit =
     indent.foreach(i => out.write("\n" + (" " * 2 * i)))
 
   implicit def either[A, B](implicit A: JsonEncoder[A], B: JsonEncoder[B]): JsonEncoder[Either[A, B]] =
     new JsonEncoder[Either[A, B]] {
-      def unsafeEncode(eab: Either[A, B], indent: Option[Int], out: java.io.Writer): Unit = {
-        out.write("{")
+      def unsafeEncode(eab: Either[A, B], indent: Option[Int], out: Write): Unit = {
+        out.write('{')
         val indent_ = bump(indent)
         pad(indent_, out)
         eab match {
           case Left(a) =>
             out.write("\"Left\"")
-            if (indent.isEmpty) out.write(":")
+            if (indent.isEmpty) out.write(':')
             else out.write(" : ")
             A.unsafeEncode(a, indent_, out)
           case Right(b) =>
             out.write("\"Right\"")
-            if (indent.isEmpty) out.write(":")
+            if (indent.isEmpty) out.write(':')
             else out.write(" : ")
             B.unsafeEncode(b, indent_, out)
         }
         pad(indent, out)
-        out.write("}")
+        out.write('}')
       }
     }
 }
@@ -215,16 +213,16 @@ private[json] trait EncoderLowPriority1 extends EncoderLowPriority2 { this: Json
 
 private[json] trait EncoderLowPriority2 { this: JsonEncoder.type =>
   implicit def seq[A](implicit A: JsonEncoder[A]): JsonEncoder[Seq[A]] = new JsonEncoder[Seq[A]] {
-    def unsafeEncode(as: Seq[A], indent: Option[Int], out: java.io.Writer): Unit = {
-      out.write("[")
+    def unsafeEncode(as: Seq[A], indent: Option[Int], out: Write): Unit = {
+      out.write('[')
       var first = true
       as.foreach { a =>
         if (first) first = false
-        else if (indent.isEmpty) out.write(",")
+        else if (indent.isEmpty) out.write(',')
         else out.write(", ")
         A.unsafeEncode(a, indent, out)
       }
-      out.write("]")
+      out.write(']')
     }
   }
 
@@ -234,10 +232,10 @@ private[json] trait EncoderLowPriority2 { this: JsonEncoder.type =>
     K: JsonFieldEncoder[K],
     A: JsonEncoder[A]
   ): JsonEncoder[Chunk[(K, A)]] = new JsonEncoder[Chunk[(K, A)]] {
-    def unsafeEncode(kvs: Chunk[(K, A)], indent: Option[Int], out: java.io.Writer): Unit = {
+    def unsafeEncode(kvs: Chunk[(K, A)], indent: Option[Int], out: Write): Unit = {
       if (kvs.isEmpty) return out.write("{}")
 
-      out.write("{")
+      out.write('{')
       val indent_ = bump(indent)
       pad(indent_, out)
       var first = true
@@ -246,21 +244,20 @@ private[json] trait EncoderLowPriority2 { this: JsonEncoder.type =>
           if (!A.isNothing(a)) {
             if (first)
               first = false
-            else if (indent.isEmpty)
-              out.write(",")
             else {
-              out.write(",")
-              pad(indent_, out)
+              out.write(',')
+              if (!indent.isEmpty)
+                pad(indent_, out)
             }
 
             string.unsafeEncode(K.unsafeEncodeField(k), indent_, out)
-            if (indent.isEmpty) out.write(":")
+            if (indent.isEmpty) out.write(':')
             else out.write(" : ")
             A.unsafeEncode(a, indent_, out)
           }
       }
       pad(indent, out)
-      out.write("}")
+      out.write('}')
     }
   }
 
