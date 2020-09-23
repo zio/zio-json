@@ -44,7 +44,7 @@ val circeVersion = "0.13.0"
 
 lazy val zioJson = crossProject(JSPlatform, JVMPlatform)
   .in(file("zio-json"))
-  .settings(stdSettings("zioJson"))
+  .settings(stdSettings("zio-json"))
   .settings(crossProjectSettings)
   .settings(buildInfoSettings("zio.json"))
   .enablePlugins(NeoJmhPlugin)
