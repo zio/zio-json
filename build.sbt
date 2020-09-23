@@ -69,7 +69,7 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform)
       "io.circe"                              %% "circe-parser"            % circeVersion % "test",
       "ai.x"                                  %% "play-json-extensions"    % "0.42.0" % "test",
       "io.circe"                              %% "circe-generic-extras"    % circeVersion % "test",
-      "com.typesafe.play"                     %% "play-json"               % "2.9.0" % "test",
+      "com.typesafe.play"                     %% "play-json"               % "2.9.1" % "test",
       "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-core"     % "2.5.0" % "test",
       "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-macros"   % "2.5.0" % "test",
       "org.typelevel"                         %% "jawn-ast"                % "1.0.0"
