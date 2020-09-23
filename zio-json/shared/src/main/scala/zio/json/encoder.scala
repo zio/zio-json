@@ -51,10 +51,10 @@ trait JsonEncoder[A] { self =>
   /**
    * Encodes the specified value into a JSON string, with the specified indentation level.
    */
-  final def encodeJson(a: A, indent: Option[Int]): String = {
+  final def encodeJson(a: A, indent: Option[Int]): CharSequence = {
     val writer = new FastStringWrite(64)
     unsafeEncode(a, indent, writer)
-    writer.toString
+    writer.buffer
   }
 
   /**

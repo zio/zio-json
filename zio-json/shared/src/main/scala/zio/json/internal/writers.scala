@@ -45,9 +45,11 @@ final class FastStringWrite(initial: Int) extends Write {
     i += 1
   }
 
-  override def toString: String = {
+  def buffer: CharSequence = {
     reconcile()
 
+    // TODO this could be made faster to optimise for the case where the user
+    // really wants a String, which uses an Array[Byte] and encoding param.
     @tailrec def len(ss: List[String], acc: Int): Int = ss match {
       case Nil          => acc
       case head :: tail => len(tail, head.length + acc)
@@ -58,9 +60,7 @@ final class FastStringWrite(initial: Int) extends Write {
       s.getChars(0, s.length, output, i)
       i += s.length
     }
-    val combined = new String(output) // unavoidable copy...
-    strings = List(combined) // allow early GC
-    combined
+    CharBuffer.wrap(output)
   }
 }
 
@@ -76,5 +76,5 @@ private[zio] final class FastStringBuilder(initial: Int) {
     i += 1
   }
 
-  def buffer: CharBuffer = CharBuffer.wrap(chars, 0, i)
+  def buffer: CharSequence = CharBuffer.wrap(chars, 0, i)
 }

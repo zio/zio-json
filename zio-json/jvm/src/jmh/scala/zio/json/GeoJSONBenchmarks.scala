@@ -115,11 +115,8 @@ class GeoJSONBenchmarks {
     jsonChars2.fromJson[GeoJSON]
 
   @Benchmark
-  def encodeZio(): String = {
-    import zio.json._
-
-    decoded.toJson
-  }
+  def encodeZio(): CharSequence =
+    JsonEncoder[GeoJSON].encodeJson(decoded, None)
 
   @Benchmark
   def decodeZioError(): Either[String, GeoJSON] =

@@ -95,11 +95,8 @@ class SyntheticBenchmarks {
     jsonChars.fromJson[Nested]
 
   @Benchmark
-  def encodeZio(): String = {
-    import zio.json._
-
-    decoded.toJson
-  }
+  def encodeZio(): CharSequence =
+    JsonEncoder[Nested].encodeJson(decoded, None)
 
 }
 

@@ -24,7 +24,7 @@ import scala.annotation._
 sealed abstract class Json {
   def widen: Json = this
 
-  override def toString(): String = Json.encoder.encodeJson(this, None)
+  override def toString(): String = Json.encoder.encodeJson(this, None).toString
 }
 
 object Json {

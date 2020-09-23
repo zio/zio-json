@@ -114,11 +114,8 @@ class TwitterAPIBenchmarks {
     jsonCharsCompact.fromJson[List[Tweet]]
 
   @Benchmark
-  def encodeZio(): String = {
-    import zio.json._
-
-    decoded.toJson
-  }
+  def encodeZio(): CharSequence =
+    JsonEncoder[List[Tweet]].encodeJson(decoded, None)
 
   @Benchmark
   def decodeZioError(): Either[String, List[Tweet]] =

@@ -21,7 +21,7 @@ Extreme **performance** is achieved by decoding JSON directly from the input sou
 
 Best in class **security** is achieved with an aggressive *early exit* strategy that avoids costly stack traces, even when parsing malformed numbers. Malicious (and badly formed) payloads are rejected before finishing reading.
 
-**Fast compilation** and **future-proofing** is possible thanks to [Magnolia](https://propensive.com/opensource/magnolia/) which allows us to generate boilerplate in a way that will survive the exodus to Scala 3. `zio-json` is internally implemented using the [`java.io.Reader`](https://docs.oracle.com/en/java/javase/14/docs/api/java.base/java/io/Reader.html) interface which is making a comeback to center stage in Loom.
+**Fast compilation** and **future-proofing** is possible thanks to [Magnolia](https://propensive.com/opensource/magnolia/) which allows us to generate boilerplate in a way that will survive the exodus to Scala 3. `zio-json` is internally implemented using a [`java.io.Reader`](https://docs.oracle.com/en/java/javase/14/docs/api/java.base/java/io/Reader.html) / [`java.io.Writer`](https://docs.oracle.com/en/java/javase/14/docs/api/java.base/java/io/Writer.html)-like interface, which is making a comeback to center stage in Loom.
 
 **Simplicity** is achieved by using well-known software patterns and avoiding bloat. The only requirement to use this library is to know about Scala's encoding of typeclasses, described in [Functional Programming for Mortals](https://leanpub.com/fpmortals/read#leanpub-auto-functionality).
 
@@ -294,7 +294,7 @@ Alternative (binary incompatible) versions are not supported; if you require sup
 
 # Performance
 
-The following benchmarks are freely available to run on your hardware with `sbt "jmh:run -prof gc"` and can be extended to include more niche libraries. We only compare `zio-json` against Circe and Play as they are the incumbent solutions used by most of the Scala ecosystem.
+The following benchmarks are freely available to run on your hardware with `sbt "zioJsonJVM/jmh:run -prof gc"` and can be extended to include more niche libraries. We only compare `zio-json` against Circe and Play as they are the incumbent solutions used by most of the Scala ecosystem.
 
 `zio-json`, when used in legacy mode (i.e. using a `StringReader`), is typically x2 faster than Circe and x5 faster than Play. When used with Loom, `zio-json` has finished its work before the others even begin. The following benchmarks are therefore only for legacy mode comparisons.
 
@@ -302,52 +302,52 @@ There are two main factors to consider when comparing the performance of JSON li
 
 Here are JMH benchmarks (higher `ops/sec` is better, lower `MB/sec` is better) on a standard Google Maps API performance-testing dataset (stressing array and number parsing). Note that a better metric for memory usage might be `MB` per decode or encode, since it can be misleading to have the same `MB/sec` but be processing more JSON: the library that consumes the least amount of memory is likely to have highest throughput.
 
-<!-- jmh:run -prof gc GoogleMaps.*Success1 -->
-<!-- jmh:run -prof gc GoogleMaps.*encode* -->
+<!-- zioJsonJVM/jmh:run -prof gc GoogleMaps.*Success1 -->
+<!-- zioJsonJVM/jmh:run -prof gc GoogleMaps.*encode* -->
 
 ```
        Decoding                    | Encoding
        ops/sec       MB/sec        | ops/sec      MB/sec
-zio    15761 ± 283   1633 ± 29     | 13497 ± 246  2164 ± 40
+zio    15761 ± 283   1633 ± 29     | 14289 ±  84  2214 ± 12
 circe   8832 ± 269   1816 ± 55     | 11980 ± 142  2030 ± 24
 play    5756 ±  47   2260 ± 19     |  6669 ± 160  2677 ± 64
 ```
 
 on a standard Twitter API performance-testing dataset (stressing nested case classes with lots of fields)
 
-<!-- jmh:run -prof gc Twitter.*Success1 -->
-<!-- jmh:run -prof gc Twitter.*encode* -->
+<!-- zioJsonJVM/jmh:run -prof gc Twitter.*Success1 -->
+<!-- zioJsonJVM/jmh:run -prof gc Twitter.*encode* -->
 
 ```
        Decoding                    | Encoding
        ops/sec       MB/sec        | ops/sec      MB/sec
-zio    16989 ± 113    827 ±  6     | 20619 ± 178  2002 ± 17
+zio    16989 ± 113    827 ±  6     | 23085 ± 641  1791 ± 50
 circe  16010 ±  72   1349 ±  6     | 15664 ± 209  1627 ± 22
 play    5256 ± 165   1231 ± 39     | 15580 ± 314  2260 ± 45
 ```
 
 on a standard GeoJSON performance-testing dataset (stressing nested sealed traits that use a discriminator)
 
-<!-- jmh:run -prof gc GeoJSON.*Success1 -->
-<!-- jmh:run -prof gc GeoJSON.*encode* -->
+<!-- zioJsonJVM/jmh:run -prof gc GeoJSON.*Success1 -->
+<!-- zioJsonJVM/jmh:run -prof gc GeoJSON.*encode* -->
 
 ```
        Decoding                    | Encoding
        ops/sec       MB/sec        | ops/sec       MB/sec
-zio    17104 ± 155   2768 ± 25     | 5236 ± 65      834 ± 10
+zio    17104 ± 155   2768 ± 25     | 5372 ± 26      817 ±  4
 circe   8388 ± 118   2879 ± 41     | 4762 ± 47      592 ±  6
 play     704 ±   9   3946 ± 55     | 2587 ± 24     1091 ± 10
 ```
 
 and on a standard synthetic performance-testing dataset (stressing nested recursive types)
 
-<!-- jmh:run -prof gc Synthetic.*Success -->
-<!-- jmh:run -prof gc Synthetic.*encode* -->
+<!-- zioJsonJVM/jmh:run -prof gc Synthetic.*Success -->
+<!-- zioJsonJVM/jmh:run -prof gc Synthetic.*encode* -->
 
 ```
        Decoding                    | Encoding
        ops/sec       MB/sec        | ops/sec       MB/sec
-zio    59099 ± 1307  2108 ± 46     | 32367 ±  321  2660 ± 27
+zio    59099 ± 1307  2108 ± 46     | 32048 ±  240  2573 ± 19
 circe  19609 ±  370  2873 ± 53     | 13830 ±  109  1730 ± 14
 play    9001 ±  182  3348 ± 67     | 14529 ±  200  3533 ± 48
 ```
@@ -370,7 +370,7 @@ The best way to mitigate against message size attacks is to cap the `Content-Len
 
 For all the remaining attacks, we will cap the malicious message size to 100KB (the original message is 25KB) and compare the attacks against this baseline. The benchmark results for the original (unedited) payload are given in parentheses, and we can immediately see a reduction in the ops/sec for all frameworks, accompanied by a reduction in memory usage.
 
-<!-- jmh:run -prof gc GoogleMaps.*Attack0 -->
+<!-- zioJsonJVM/jmh:run -prof gc GoogleMaps.*Attack0 -->
 
 ```
        ops/sec        MB/sec
@@ -385,7 +385,7 @@ Most JSON libraries (but not `zio-json`) first create a representation of the JS
 
 An intermediate AST enables attack vectors that insert redundant data, for example in our Google Maps dataset we can add a new field called `redundant` at top-level containing a 60K `String`. If we do this, and run the benchmarks, we see that Circe is heavily impacted, with a 75% reduction in capacity and an increase in memory usage. Play is also impacted, although not as severely. `zio-json`'s ops/sec are reduced but the memory usage is in line which means that throughput is unlikely to be affected by this kind of attack.
 
-<!-- jmh:run -prof gc GoogleMaps.*Attack1 -->
+<!-- zioJsonJVM/jmh:run -prof gc GoogleMaps.*Attack1 -->
 
 ```
        ops/sec       MB/sec
@@ -406,7 +406,7 @@ JSON libraries that use an intermediate AST often store JSON objects as a string
 
 In this malicious payload, we add redundant fields that have hashcode collisions, up to 4 collisions per field; we could add more if we used a bruteforce search.
 
-<!-- jmh:run -prof gc GoogleMaps.*Attack2 -->
+<!-- zioJsonJVM/jmh:run -prof gc GoogleMaps.*Attack2 -->
 
 Again, `zio-json` completely mitigates this attack if the `@jsonNoExtraFields` annotation is used. Note that even if Circe and Play rejected payloads of this nature, it would be too late because the attack happens at the AST layer, not the decoders. However, for the sake of comparison, let's turn off the `zio-json` mitigation:
 

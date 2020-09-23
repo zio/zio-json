@@ -2,10 +2,10 @@ package zio
 
 package object json {
   implicit final class EncoderOps[A](private val a: A) extends AnyVal {
-    def toJson(implicit A: JsonEncoder[A]): String = A.encodeJson(a, None)
+    def toJson(implicit A: JsonEncoder[A]): String = A.encodeJson(a, None).toString
 
     // Jon Pretty's better looking brother, but a bit slower
-    def toJsonPretty(implicit A: JsonEncoder[A]): String = A.encodeJson(a, Some(0))
+    def toJsonPretty(implicit A: JsonEncoder[A]): String = A.encodeJson(a, Some(0)).toString
   }
   implicit final class DecoderOps(private val json: CharSequence) extends AnyVal {
 

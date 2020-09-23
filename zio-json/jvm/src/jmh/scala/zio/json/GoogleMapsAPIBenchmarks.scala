@@ -245,11 +245,8 @@ class GoogleMapsAPIBenchmarks {
     jsonCharsCompact.fromJson[DistanceMatrix]
 
   @Benchmark
-  def encodeZio(): String = {
-    import zio.json._
-
-    decoded.toJson
-  }
+  def encodeZio(): CharSequence =
+    JsonEncoder[DistanceMatrix].encodeJson(decoded, None)
 
   // @Benchmark
   // def decodeZioError(): Either[String, DistanceMatrix] =
