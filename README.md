@@ -31,12 +31,13 @@ Best in class **security** is achieved with an aggressive *early exit* strategy 
 
 ## Installation
 
-`zio-json` is in beta and available as a source dependency, e.g. use a git subproject in `build.sbt`
+`zio-json` is in beta and available as snapshot release:
 
-```
-lazy val zio_json = ProjectRef(uri("https://github.com/zio/zio-json.git#develop"), "zio-json")
+```scala
+resolvers += Resolver.sonatypeRepo("snapshots")
 
-lazy val root = (project in file(".")).dependsOn(zio_json)
+// Latest snapshot version is shown in badge here: https://github.com/zio/zio-json/#zio-json
+libraryDependencies += "dev.zio" %% "zio-json" % "0.0.0+28-e548a5ac-SNAPSHOT"
 
 scalaVersion in ThisBuild := "2.13.3"
 ```
@@ -286,8 +287,8 @@ In fact, we do not need to provide `decodeName` for each `Refined` data type; `z
 
 Integrations are provided for the following external libraries which must be depended upon separately:
 
-- [scalaz 7.3](https://github.com/scalaz/scalaz) with `import zio.json.compat.scalaz._`
-- [refined 0.9.15](https://github.com/fthomas/refined) with `import zio.json.compat.refined._`
+- [Scalaz 7.x](https://github.com/scalaz/scalaz) with `import zio.json.compat.scalaz._`
+- [refined 0.9.x](https://github.com/fthomas/refined) with `import zio.json.compat.refined._`
 
 Alternative (binary incompatible) versions are not supported; if you require support for a different version of any of these libraries, just copy the source code into your project and change the package name (and address any API changes).
 
