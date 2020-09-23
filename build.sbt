@@ -118,14 +118,14 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform)
           val implicits = (1 to i).map(p => s"A$p: JsonEncoder[A$p]").mkString(", ")
           val work = (1 to i)
             .map(p => s"A$p.unsafeEncode(t._$p, indent, out)")
-            .mkString("\n        if (indent.isEmpty) out.write(\",\") else out.write(\", \")\n        ")
+            .mkString("\n        if (indent.isEmpty) out.write(',') else out.write(\", \")\n        ")
 
           s"""implicit def tuple${i}[$tparams](implicit $implicits): JsonEncoder[Tuple${i}[$tparams]] =
              |    new JsonEncoder[Tuple${i}[$tparams]] {
-             |      def unsafeEncode(t: Tuple${i}[$tparams], indent: Option[Int], out: java.io.Writer): Unit = {
-             |        out.write("[")
+             |      def unsafeEncode(t: Tuple${i}[$tparams], indent: Option[Int], out: internal.Write): Unit = {
+             |        out.write('[')
              |        $work
-             |        out.write("]")
+             |        out.write(']')
              |      }
              |    }""".stripMargin
       }

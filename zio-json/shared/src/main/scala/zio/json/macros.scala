@@ -6,7 +6,7 @@ import scala.language.experimental.macros
 import magnolia._
 
 import zio.json.JsonDecoder.{ JsonError, UnsafeJson }
-import zio.json.internal.{ Lexer, RetractReader, StringMatrix }
+import zio.json.internal.{ Lexer, RetractReader, StringMatrix, Write }
 
 /**
  * If used on a case class field, determines the name of the JSON field.
@@ -200,7 +200,7 @@ object DeriveJsonEncoder {
   def combine[A](ctx: CaseClass[JsonEncoder, A]): JsonEncoder[A] =
     if (ctx.parameters.isEmpty)
       new JsonEncoder[A] {
-        def unsafeEncode(a: A, indent: Option[Int], out: java.io.Writer): Unit = out.write("{}")
+        def unsafeEncode(a: A, indent: Option[Int], out: Write): Unit = out.write("{}")
       }
     else
       new JsonEncoder[A] {
@@ -212,7 +212,7 @@ object DeriveJsonEncoder {
         }
         lazy val tcs: Array[JsonEncoder[Any]] = params.map(p => p.typeclass.asInstanceOf[JsonEncoder[Any]])
         val len: Int                          = params.length
-        def unsafeEncode(a: A, indent: Option[Int], out: java.io.Writer): Unit = {
+        def unsafeEncode(a: A, indent: Option[Int], out: Write): Unit = {
           var i = 0
           out.write("{")
           val indent_ = JsonEncoder.bump(indent)
@@ -250,7 +250,7 @@ object DeriveJsonEncoder {
     def discrim = ctx.annotations.collectFirst { case jsonDiscriminator(n) => n }
     if (discrim.isEmpty)
       new JsonEncoder[A] {
-        def unsafeEncode(a: A, indent: Option[Int], out: java.io.Writer): Unit = ctx.dispatch(a) { sub =>
+        def unsafeEncode(a: A, indent: Option[Int], out: Write): Unit = ctx.dispatch(a) { sub =>
           out.write("{")
           val indent_ = JsonEncoder.bump(indent)
           JsonEncoder.pad(indent_, out)
@@ -265,7 +265,7 @@ object DeriveJsonEncoder {
     else
       new JsonEncoder[A] {
         val hintfield = discrim.get
-        def unsafeEncode(a: A, indent: Option[Int], out: java.io.Writer): Unit = ctx.dispatch(a) { sub =>
+        def unsafeEncode(a: A, indent: Option[Int], out: Write): Unit = ctx.dispatch(a) { sub =>
           out.write("{")
           val indent_ = JsonEncoder.bump(indent)
           JsonEncoder.pad(indent_, out)
@@ -293,28 +293,29 @@ private final class ArraySeq(p: Array[Any]) extends IndexedSeq[Any] {
 
 // intercepts the first `{` of a nested writer and discards it. We also need to
 // inject a `,` unless an empty object `{}` has been written.
-private[this] final class NestedWriter(out: java.io.Writer, indent: Option[Int]) extends java.io.Writer {
-  def close(): Unit               = out.close()
-  def flush(): Unit               = out.flush()
+private[this] final class NestedWriter(out: Write, indent: Option[Int]) extends Write {
   private[this] var first, second = true
-  def write(cs: Array[Char], from: Int, len: Int): Unit =
+
+  def write(c: Char): Unit = write(c.toString) // could be optimised
+
+  def write(s: String): Unit =
     if (first || second) {
       var i = 0
-      while (i < len) {
-        val c = cs(from + i)
+      while (i < s.length) {
+        val c = s.charAt(i)
         if (c == ' ' || c == '\n') {} else if (first && c == '{') {
           first = false
         } else if (second) {
           second = false
           if (c != '}') {
-            out.append(",")
+            out.write(',')
             JsonEncoder.pad(indent, out)
           }
-          return out.write(cs, from + i, len - i)
+          return out.write(s.substring(i))
         }
         i += 1
       }
-    } else out.write(cs, from, len)
+    } else out.write(s)
 }
 
 object DeriveJsonCodec {
