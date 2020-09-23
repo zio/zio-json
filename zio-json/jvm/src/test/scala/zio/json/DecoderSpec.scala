@@ -13,6 +13,7 @@ import zio.test.{ DefaultRunnableSpec, _ }
 import zio.{ test => _, _ }
 
 import scala.collection.immutable
+import zio.stream.ZStream
 
 object DecoderSpec extends DefaultRunnableSpec {
   def spec =
@@ -189,6 +190,15 @@ object DecoderSpec extends DefaultRunnableSpec {
         testAst("qux1"),
         testAst("qux2"),
         testAst("ugh10k")
+      ),
+      suite("ZIO Streams integration")(
+        testM("decodes a stream of chars") {
+          for {
+            int <- JsonDecoder[Int].decodeJsonStream(ZStream('1', '2', '3'))
+          } yield {
+            assert(int)(equalTo(123))
+          }
+        }
       )
     ) @@ TestAspect.parallel
 
