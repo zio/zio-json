@@ -29,11 +29,11 @@ object JsonTestSuiteSpec extends DefaultRunnableSpec {
                          }
                        }
               } yield
-                (if (path.startsWith("y_")) {
-                   assert(exit)(succeeds(anything))
-                 } else {
-                   assert(exit)(fails(anything))
-                 }).map(_.label(path))
+                if (path.startsWith("y_")) {
+                  assert(exit)(succeeds(anything).label(path))
+                } else {
+                  assert(exit)(fails(anything).label(path))
+                }
             }
       } yield a.reduce(_ && _)
     } @@ ignore
