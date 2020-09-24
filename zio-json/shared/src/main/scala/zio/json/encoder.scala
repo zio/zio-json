@@ -3,10 +3,9 @@ package zio.json
 import scala.annotation._
 import scala.collection.immutable
 
-import zio.{ Chunk, Exit, ZIO, ZManaged, ZQueue }
+import zio.{ Chunk, Ref, ZIO, ZManaged }
 import zio.blocking._
 import zio.stream._
-
 import zio.json.internal.{ FastStringWrite, Write, WriteWriter }
 
 trait JsonEncoder[A] { self =>
@@ -61,10 +60,17 @@ trait JsonEncoder[A] { self =>
    * Encodes the specified value into a character stream.
    */
   final def encodeJsonStream(a: A, indent: Option[Int]): ZStream[Blocking, Throwable, Char] =
-    ZStream.unwrapManaged {
+    ZStream(a).transduce(encodeJsonDelimitedTransducer(None, None, None))
+
+  final private def encodeJsonDelimitedTransducer(
+    startWith: Option[Char],
+    delimiter: Option[Char],
+    endWith: Option[Char]
+  ): ZTransducer[Blocking, Throwable, A, Char] =
+    ZTransducer {
       for {
-        runtime <- ZIO.runtime[Any].toManaged_
-        queue   <- ZQueue.bounded[Exit[Option[Throwable], Chunk[Char]]](1).toManaged_
+        runtime     <- ZIO.runtime[Any].toManaged_
+        chunkBuffer <- Ref.makeManaged(Chunk.fromIterable(startWith))
         writer <- ZManaged.fromAutoCloseable {
                    ZIO.effectTotal {
                      new java.io.BufferedWriter(new java.io.Writer {
@@ -73,22 +79,46 @@ trait JsonEncoder[A] { self =>
                          System.arraycopy(buffer, offset, copy, 0, len)
 
                          val chunk = Chunk.fromArray(copy).drop(offset).take(len)
-                         runtime.unsafeRun(queue.offer(Exit.succeed(chunk)).unit)
+                         runtime.unsafeRun(chunkBuffer.update(_ ++ chunk))
                        }
 
-                       override def close(): Unit =
-                         runtime.unsafeRun(queue.offer(Exit.fail(None)).unit)
-
+                       override def close(): Unit = ()
                        override def flush(): Unit = ()
-                     }, Stream.DefaultChunkSize)
+                     }, ZStream.DefaultChunkSize)
                    }
                  }
-        _ <- effectBlocking {
-              unsafeEncode(a, indent, new WriteWriter(writer))
-              writer.close()
-            }.tapError(t => queue.offer(Exit.fail(Some(t)))).forkManaged
-      } yield ZStream.fromQueue(queue)
-    }.collectWhileSuccess.flattenChunks
+        writeWriter <- ZManaged.succeed(new WriteWriter(writer))
+        push = { is: Option[Chunk[A]] =>
+          val pushChars = chunkBuffer.getAndUpdate(c => if (c.isEmpty) c else Chunk())
+
+          is match {
+            case None =>
+              effectBlocking(writer.close()) *> pushChars.map { terminal =>
+                endWith.fold(terminal) { last =>
+                  // Chop off terminal deliminator
+                  (if (delimiter.isDefined) terminal.dropRight(1) else terminal) :+ last
+                }
+              }
+
+            case Some(xs) =>
+              effectBlocking {
+                for (x <- xs) {
+                  unsafeEncode(x, indent = None, writeWriter)
+
+                  for (s <- delimiter)
+                    writeWriter.write(s)
+                }
+              } *> pushChars
+          }
+        }
+      } yield push
+    }
+
+  final val encodeJsonLinesTransducer: ZTransducer[Blocking, Throwable, A, Char] =
+    encodeJsonDelimitedTransducer(None, Some('\n'), None)
+
+  final val encodeJsonArrayTransducer: ZTransducer[Blocking, Throwable, A, Char] =
+    encodeJsonDelimitedTransducer(Some('['), Some(','), Some(']'))
 
   /**
    * This default may be overriden when this value may be missing within a JSON object and still
