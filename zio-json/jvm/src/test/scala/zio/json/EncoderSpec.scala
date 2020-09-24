@@ -5,7 +5,9 @@ import testzio.json.TestUtils._
 import testzio.json.data.geojson.generated._
 import testzio.json.data.googlemaps._
 import testzio.json.data.twitter._
+import zio.Chunk
 import zio.json._
+import zio.json.ast.Json
 import zio.test.Assertion._
 import zio.test.{ DefaultRunnableSpec, _ }
 import zio.stream.ZStream
@@ -143,6 +145,37 @@ object EncoderSpec extends DefaultRunnableSpec {
           } yield {
             assert(chars)(hasSize(equalTo(ZStream.DefaultChunkSize * 2 + 2))) &&
             assert(chars.mkString(""))(equalTo("\"" ++ longString ++ "\""))
+          }
+        },
+        testM("encodeJsonLinesTransducer") {
+          val ints = ZStream(1, 2, 3, 4)
+
+          for {
+            xs <- ints.transduce(JsonEncoder[Int].encodeJsonLinesTransducer).runCollect
+          } yield {
+            assert(xs.mkString)(equalTo("1\n2\n3\n4\n"))
+          }
+        },
+        testM("encodeJsonLinesTransducer handles elements which take up > DefaultChunkSize to encode") {
+          val longString = List.fill(5000)('x').mkString
+
+          val ints    = ZStream(longString, longString)
+          val encoder = JsonEncoder[String]
+
+          for {
+            xs <- ints.transduce(encoder.encodeJsonLinesTransducer).runCollect
+          } yield {
+            // leading `"`, trailing `"` and `\n` = 3
+            assert(xs.size)(equalTo((5000 + 3) * 2))
+          }
+        },
+        testM("encodeJsonArrayTransducer") {
+          val ints = ZStream(1, 2, 3).map(n => Json.Obj(Chunk("id" -> Json.Num(BigDecimal(n).bigDecimal))))
+
+          for {
+            xs <- ints.transduce(JsonEncoder[Json].encodeJsonArrayTransducer).runCollect
+          } yield {
+            assert(xs.mkString)(equalTo("""[{"id":1},{"id":2},{"id":3}]"""))
           }
         }
       )
