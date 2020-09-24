@@ -3,10 +3,10 @@ package testzio.json
 import zio._
 import zio.blocking._
 import zio.stream._
-import java.io.IOException
-import java.io.FileNotFoundException
+import java.io.{ File, FileNotFoundException, IOException }
 
 import zio.test.Gen
+import scala.jdk.CollectionConverters._
 
 object TestUtils {
   val genBigInteger =
@@ -61,6 +61,14 @@ object TestUtils {
       ZManaged.fromAutoCloseable(acquire)
     }.flatMap(inputStream => ZStream.fromInputStream(inputStream).transduce(ZTransducer.utf8Decode))
       .fold("")(_ ++ _)
+
+  def getResourcePaths(folderPath: String) =
+    effectBlockingIO {
+      val url    = getClass.getClassLoader.getResource(folderPath)
+      val folder = new File(url.getPath)
+
+      folder.listFiles.toVector.map(p => folder.toPath.relativize(p.toPath).toString)
+    }
 
   def asChars(str: String): CharSequence =
     new zio.json.internal.FastCharSequence(str.toCharArray)

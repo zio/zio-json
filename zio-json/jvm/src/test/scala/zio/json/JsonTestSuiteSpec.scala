@@ -1,0 +1,41 @@
+package testzio.json
+
+import testzio.json.TestUtils._
+import zio._
+import zio.json._
+import zio.json.ast.Json
+import zio.test.Assertion._
+import zio.test.TestAspect._
+import zio.test._
+
+// zioJsonJVM/testOnly testzio.json.EncoderSpec
+object JsonTestSuiteSpec extends DefaultRunnableSpec {
+  def spec = suite("JsonTestSuite")(
+    testM("passes all tests") {
+      for {
+        f <- getResourcePaths("json_test_suite")
+        a <- ZIO.foreachPar(f) { path =>
+              for {
+                input <- getResourceAsStringM(s"json_test_suite/$path")
+                exit <- ZIO.effectTotal {
+                         // Catch Stack overflow
+                         try {
+                           JsonDecoder[Json]
+                             .decodeJson(input)
+                             .fold(Exit.fail, Exit.succeed)
+                         } catch {
+                           case t: Throwable =>
+                             Exit.die(t)
+                         }
+                       }
+              } yield
+                (if (path.startsWith("y_")) {
+                   assert(exit)(succeeds(anything))
+                 } else {
+                   assert(exit)(fails(anything))
+                 }).map(_.label(path))
+            }
+      } yield a.reduce(_ && _)
+    } @@ ignore
+  )
+}
