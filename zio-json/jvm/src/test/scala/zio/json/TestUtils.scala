@@ -1,21 +1,22 @@
 package testzio.json
 
+import java.io.{ FileNotFoundException, IOException }
+import java.math.BigInteger
+
 import zio._
 import zio.blocking._
+import zio.random.Random
 import zio.stream._
-import java.io.IOException
-import java.io.FileNotFoundException
-
-import zio.test.Gen
+import zio.test.{ Gen, Sized }
 
 object TestUtils {
-  val genBigInteger =
+  val genBigInteger: Gen[Random, BigInteger] =
     Gen
       .bigInt((BigInt(2).pow(128) - 1) * -1, BigInt(2).pow(128) - 1)
       .map(_.bigInteger)
       .filter(_.bitLength < 128)
 
-  val genBigDecimal =
+  val genBigDecimal: Gen[Random, java.math.BigDecimal] =
     Gen
       .bigDecimal((BigDecimal(2).pow(128) - 1) * -1, BigDecimal(2).pow(128) - 1)
       .map(_.bigDecimal)
@@ -24,10 +25,10 @@ object TestUtils {
   // Something seems to be up with zio-test’s Gen.usASCII, it returns
   // strings like 'Chunk(<>)' (Chunk#toString?) containing any ASCII chars
   // This generator matches ScalaProps
-  val genUsAsciiString =
+  val genUsAsciiString: Gen[Random with Sized, String] =
     Gen.string(Gen.oneOf(Gen.char('!', '~')))
 
-  val genAlphaLowerString =
+  val genAlphaLowerString: Gen[Random with Sized, String] =
     Gen.string(Gen.oneOf(Gen.char('a', 'z')))
 
   def writeFile(path: String, s: String): Unit = {
@@ -39,9 +40,9 @@ object TestUtils {
   def getResourceAsString(res: String): String = {
     val is = getClass.getClassLoader.getResourceAsStream(res)
     try {
-      val baos        = new java.io.ByteArrayOutputStream()
-      val data        = Array.ofDim[Byte](2048)
-      var len: Int    = 0
+      val baos     = new java.io.ByteArrayOutputStream()
+      val data     = Array.ofDim[Byte](2048)
+      var len: Int = 0
       def read(): Int = { len = is.read(data); len }
       while (read() != -1)
         baos.write(data, 0, len)

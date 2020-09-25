@@ -1,8 +1,7 @@
 package zio.json
 
+import zio.json.JsonDecoder.JsonError
 import zio.json.internal._
-
-import JsonDecoder.JsonError
 
 /**
  * A `JsonCodec[A]` instance has the ability to encode values of type `A` into JSON, together with

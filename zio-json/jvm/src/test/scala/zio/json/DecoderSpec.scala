@@ -1,22 +1,23 @@
 package testzio.json
 
+import scala.collection.immutable
+
 import io.circe
 import org.typelevel.jawn.{ ast => jawn }
 import testzio.json.TestUtils._
 import testzio.json.data.googlemaps._
 import testzio.json.data.twitter._
+
 import zio.blocking._
 import zio.json._
 import zio.json.ast._
+import zio.stream.ZStream
 import zio.test.Assertion._
 import zio.test.{ DefaultRunnableSpec, _ }
 import zio.{ test => _, _ }
 
-import scala.collection.immutable
-import zio.stream.ZStream
-
 object DecoderSpec extends DefaultRunnableSpec {
-  def spec =
+  def spec: ZSpec[Has[Blocking.Service] with Has[zio.console.Console.Service], Any] =
     suite("Decoder")(
       test("primitives") {
         // this big integer consumes more than 128 bits
@@ -88,9 +89,8 @@ object DecoderSpec extends DefaultRunnableSpec {
         val response = getResourceAsStringM("google_maps_api_response.json")
         val compact  = getResourceAsStringM("google_maps_api_compact_response.json")
 
-        (response <&> compact).map {
-          case (response, compact) =>
-            assert(response.fromJson[Json])(equalTo(compact.fromJson[Json]))
+        (response <&> compact).map { case (response, compact) =>
+          assert(response.fromJson[Json])(equalTo(compact.fromJson[Json]))
         }
       },
       testM("twitter") {
@@ -202,7 +202,7 @@ object DecoderSpec extends DefaultRunnableSpec {
       )
     ) @@ TestAspect.parallel
 
-  def testAst(label: String) =
+  def testAst(label: String): ZSpec[Blocking with zio.console.Console, Throwable] =
     testM(label) {
       getResourceAsStringM(s"jawn/$label.json").flatMap { input =>
         val expected = jawn.JParser.parseFromString(input).toEither.map(fromJawn)

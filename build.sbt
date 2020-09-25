@@ -25,7 +25,10 @@ inThisBuild(
 )
 
 addCommandAlias("fmt", "all scalafmtSbt scalafmt test:scalafmt jmh:scalafmt")
-addCommandAlias("check", "all scalafmtSbtCheck scalafmtCheck test:scalafmtCheck jmh:scalafmtCheck")
+addCommandAlias("fix", "all compile:scalafix test:scalafix")
+addCommandAlias("fmtCheck", "all scalafmtSbtCheck scalafmtCheck test:scalafmtCheck jmh:scalafmtCheck")
+addCommandAlias("fixCheck", "; compile:scalafix --check ; test:scalafix --check ")
+addCommandAlias("prepare", "; fix; fmt")
 
 val zioVersion = "1.0.1"
 
@@ -58,44 +61,43 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform)
       "com.propensive"                        %% "magnolia"                % "0.17.0",
       "org.scalaz"                            %% "scalaz-core"             % "7.3.2" intransitive (),
       "eu.timepit"                            %% "refined"                 % "0.9.16" intransitive (),
-      "org.scala-lang"                        % "scala-reflect"            % scalaVersion.value % Provided,
+      "org.scala-lang"                         % "scala-reflect"           % scalaVersion.value % Provided,
       "dev.zio"                               %% "zio"                     % zioVersion,
       "dev.zio"                               %% "zio-streams"             % zioVersion,
       "org.scala-lang.modules"                %% "scala-collection-compat" % "2.2.0",
-      "dev.zio"                               %% "zio-test"                % zioVersion % "test",
-      "dev.zio"                               %% "zio-test-sbt"            % zioVersion % "test",
-      "io.circe"                              %% "circe-core"              % circeVersion % "test",
-      "io.circe"                              %% "circe-generic"           % circeVersion % "test",
-      "io.circe"                              %% "circe-parser"            % circeVersion % "test",
-      "ai.x"                                  %% "play-json-extensions"    % "0.42.0" % "test",
-      "io.circe"                              %% "circe-generic-extras"    % circeVersion % "test",
-      "com.typesafe.play"                     %% "play-json"               % "2.9.1" % "test",
-      "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-core"     % "2.6.0" % "test",
-      "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-macros"   % "2.6.0" % "test",
+      "dev.zio"                               %% "zio-test"                % zioVersion         % "test",
+      "dev.zio"                               %% "zio-test-sbt"            % zioVersion         % "test",
+      "io.circe"                              %% "circe-core"              % circeVersion       % "test",
+      "io.circe"                              %% "circe-generic"           % circeVersion       % "test",
+      "io.circe"                              %% "circe-parser"            % circeVersion       % "test",
+      "ai.x"                                  %% "play-json-extensions"    % "0.42.0"           % "test",
+      "io.circe"                              %% "circe-generic-extras"    % circeVersion       % "test",
+      "com.typesafe.play"                     %% "play-json"               % "2.9.1"            % "test",
+      "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-core"     % "2.6.0"            % "test",
+      "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-macros"   % "2.6.0"            % "test",
       "org.typelevel"                         %% "jawn-ast"                % "1.0.0"
     ),
     sourceGenerators in Compile += Def.task {
       val dir  = (sourceManaged in Compile).value
       val file = dir / "zio" / "json" / "GeneratedTupleDecoders.scala"
-      val decoders = (1 to 22).map {
-        i =>
-          val tparams   = (1 to i).map(p => s"A$p").mkString(", ")
-          val implicits = (1 to i).map(p => s"A$p: JsonDecoder[A$p]").mkString(", ")
-          val work = (1 to i)
-            .map(p => s"val a$p = A$p.unsafeDecode(trace :+ traces($p), in)")
-            .mkString("\n        Lexer.char(trace, in, ',')\n        ")
-          val returns = (1 to i).map(p => s"a$p").mkString(", ")
+      val decoders = (1 to 22).map { i =>
+        val tparams   = (1 to i).map(p => s"A$p").mkString(", ")
+        val implicits = (1 to i).map(p => s"A$p: JsonDecoder[A$p]").mkString(", ")
+        val work = (1 to i)
+          .map(p => s"val a$p = A$p.unsafeDecode(trace :+ traces($p), in)")
+          .mkString("\n        Lexer.char(trace, in, ',')\n        ")
+        val returns = (1 to i).map(p => s"a$p").mkString(", ")
 
-          s"""implicit def tuple${i}[$tparams](implicit $implicits): JsonDecoder[Tuple${i}[$tparams]] =
-             |    new JsonDecoder[Tuple${i}[$tparams]] {
-             |      val traces: Array[JsonError] = (0 to $i).map(JsonError.ArrayAccess(_)).toArray
-             |      def unsafeDecode(trace: List[JsonError], in: RetractReader): Tuple${i}[$tparams] = {
-             |        Lexer.char(trace, in, '[')
-             |        $work
-             |        Lexer.char(trace, in, ']')
-             |        Tuple${i}($returns)
-             |      }
-             |    }""".stripMargin
+        s"""implicit def tuple${i}[$tparams](implicit $implicits): JsonDecoder[Tuple${i}[$tparams]] =
+           |    new JsonDecoder[Tuple${i}[$tparams]] {
+           |      val traces: Array[JsonError] = (0 to $i).map(JsonError.ArrayAccess(_)).toArray
+           |      def unsafeDecode(trace: List[JsonError], in: RetractReader): Tuple${i}[$tparams] = {
+           |        Lexer.char(trace, in, '[')
+           |        $work
+           |        Lexer.char(trace, in, ']')
+           |        Tuple${i}($returns)
+           |      }
+           |    }""".stripMargin
       }
       IO.write(
         file,
@@ -112,22 +114,21 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform)
     sourceGenerators in Compile += Def.task {
       val dir  = (sourceManaged in Compile).value
       val file = dir / "zio" / "json" / "GeneratedTupleEncoders.scala"
-      val encoders = (1 to 22).map {
-        i =>
-          val tparams   = (1 to i).map(p => s"A$p").mkString(", ")
-          val implicits = (1 to i).map(p => s"A$p: JsonEncoder[A$p]").mkString(", ")
-          val work = (1 to i)
-            .map(p => s"A$p.unsafeEncode(t._$p, indent, out)")
-            .mkString("\n        if (indent.isEmpty) out.write(',') else out.write(\", \")\n        ")
+      val encoders = (1 to 22).map { i =>
+        val tparams   = (1 to i).map(p => s"A$p").mkString(", ")
+        val implicits = (1 to i).map(p => s"A$p: JsonEncoder[A$p]").mkString(", ")
+        val work = (1 to i)
+          .map(p => s"A$p.unsafeEncode(t._$p, indent, out)")
+          .mkString("\n        if (indent.isEmpty) out.write(',') else out.write(\", \")\n        ")
 
-          s"""implicit def tuple${i}[$tparams](implicit $implicits): JsonEncoder[Tuple${i}[$tparams]] =
-             |    new JsonEncoder[Tuple${i}[$tparams]] {
-             |      def unsafeEncode(t: Tuple${i}[$tparams], indent: Option[Int], out: internal.Write): Unit = {
-             |        out.write('[')
-             |        $work
-             |        out.write(']')
-             |      }
-             |    }""".stripMargin
+        s"""implicit def tuple${i}[$tparams](implicit $implicits): JsonEncoder[Tuple${i}[$tparams]] =
+           |    new JsonEncoder[Tuple${i}[$tparams]] {
+           |      def unsafeEncode(t: Tuple${i}[$tparams], indent: Option[Int], out: internal.Write): Unit = {
+           |        out.write('[')
+           |        $work
+           |        out.write(']')
+           |      }
+           |    }""".stripMargin
       }
       IO.write(
         file,

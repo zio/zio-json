@@ -389,7 +389,7 @@ final class StringMatrix(val xs: Array[String]) {
   require(xs.length < 64)
 
   val width               = xs.length
-  val height              = xs.map(_.length).max
+  val height: Int         = xs.map(_.length).max
   val lengths: Array[Int] = xs.map(_.length)
   val initial: Long       = (0 until width).foldLeft(0L)((bs, r) => bs | (1L << r))
   private val matrix: Array[Int] = {

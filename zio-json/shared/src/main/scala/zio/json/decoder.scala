@@ -1,16 +1,14 @@
 package zio.json
 
 import scala.annotation._
-import scala.collection.mutable
-import scala.collection.immutable
+import scala.collection.{ immutable, mutable }
 import scala.util.control.NoStackTrace
 
-import JsonDecoder.JsonError
-
-import zio.json.internal._
-import zio.{ Chunk, ZIO }
 import zio.blocking._
+import zio.json.JsonDecoder.JsonError
+import zio.json.internal._
 import zio.stream.ZStream
+import zio.{ Chunk, ZIO }
 
 /**
  * A `JsonDecoder[A]` instance has the ability to decode JSON to values of type `A`, potentially
@@ -164,7 +162,6 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority0 {
   def apply[A](implicit a: JsonDecoder[A]): JsonDecoder[A] = a
 
   /**
-   *
    * Design note: we could require the position in the stream here to improve
    * debugging messages. But the cost would be that the RetractReader would need
    * to keep track and any wrappers would need to preserve the position. It may
@@ -260,8 +257,7 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority0 {
   // supports multiple representations for compatibility with other libraries,
   // but does not support the "discriminator field" encoding with a field named
   // "value" used by some libraries.
-  implicit def either[A, B](
-    implicit
+  implicit def either[A, B](implicit
     A: JsonDecoder[A],
     B: JsonDecoder[B]
   ): JsonDecoder[Either[A, B]] =
@@ -374,8 +370,7 @@ private[json] trait DecoderLowPriority2 {
   implicit def seq[A: JsonDecoder]: JsonDecoder[Seq[A]] = list[A].map(_.toList)
 
   // not implicit because this overlaps with decoders for lists of tuples
-  def keyValueChunk[K, A](
-    implicit
+  def keyValueChunk[K, A](implicit
     K: JsonFieldDecoder[K],
     A: JsonDecoder[A]
   ): JsonDecoder[Chunk[(K, A)]] =

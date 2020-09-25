@@ -19,7 +19,7 @@ To begin contributing, please follow these steps:
 
 If you don't already have one, sign up for a free [GitHub Account](https://github.com/join?source=header-home).
 
-After you [log into](https://github.com/login) GitHub using your account, go to the [ZIO Project Page](https://github.com/zio/zio), and click on [Fork](https://github.com/zio/zio/fork) to fork the ZIO repository into your own account.
+After you [log into](https://github.com/login) GitHub using your account, go to the [ZIO Project Page](https://github.com/zio/zio-json), and click on [Fork](https://github.com/zio/zio-json/fork) to fork the ZIO repository into your own account.
 
 You will make _all_ contributions from your own account. No one contributes _directly_ to the main repository. Contributors only ever merge code from other people's forks into the main repository.
 
@@ -73,9 +73,9 @@ project coreJVM
 
 ### Find an Issue
 
-You may have your own idea about what contributions to make to ZIO, which is great! If you want to make sure the ZIO contributors are open to your idea, you can [open an issue](https://github.com/zio/zio/issues/new) first on the ZIO project site.
+You may have your own idea about what contributions to make to ZIO, which is great! If you want to make sure the ZIO contributors are open to your idea, you can [open an issue](https://github.com/zio-json/issues/new) first on the ZIO project site.
 
-Otherwise, if you have no ideas about what to contribute, you can find a large supply of feature requests and bugs on the project's [issue tracker](https://github.com/zio/zio/issues).
+Otherwise, if you have no ideas about what to contribute, you can find a large supply of feature requests and bugs on the project's [issue tracker](https://github.com/zio/zio-json/issues).
 
 Issues are tagged with various labels, such as `good first issue`, which help you find issues that are a fit for you.
 
@@ -91,7 +91,7 @@ The only thing you have to worry about is if you take too long, especially for a
 
 If you shoot for 2-3 weeks for most issues, this should give you plenty of time without having to worry about having your issue stolen.
 
-If you get stuck, please consider [opening a pull request](https://github.com/zio/zio/compare) for your incomplete work, and asking for help (just prefix the pull request by _WIP_). In addition, you can comment on the original issue, pointing people to your own fork. Both of these are great ways to get outside help from people more familiar with the project.
+If you get stuck, please consider [opening a pull request](https://github.com/zio/zio-json/compare) for your incomplete work, and asking for help (just prefix the pull request by _WIP_). In addition, you can comment on the original issue, pointing people to your own fork. Both of these are great ways to get outside help from people more familiar with the project.
 
 ### Prepare Your Code
 
@@ -106,7 +106,7 @@ git status
 If you see new files, you will have to tell `git` to add them to the repository using `git add`:
 
 ```bash
-git add core/src/shared/zio/zio/NewFile.scala
+git add core/src/shared/zio/zio-json/NewFile.scala
 ```
 
 Then you can commit all your changes at once with the following command:
@@ -126,7 +126,7 @@ Now while you were working on this great improvement, it's quite likely that oth
 To do that, use the `git pull` command:
 
 ```bash
-git pull git@github.com:zio/zio.git master
+git pull git@github.com:zio/zio-json.git upstream
 ```
 
 You may get a warning from Git that some files conflicted. Don't worry! That just means you and another contributor edited the same parts of the same files.
@@ -150,9 +150,9 @@ sbt test
 If all the tests are passing, then you can format your code:
 
 ```bash
-# If you are already in a SBT session you can type only 'fmt'
+# If you are already in a SBT session you can type only 'prepare'
 
-sbt fmt
+sbt prepare
 ```
 
 If your changes altered an API, then you may need to rebuild the microsite to make sure none of the (compiled) documentation breaks:
@@ -175,7 +175,7 @@ To create a pull request, first push all your changes to your fork of the projec
 git push
 ```
 
-Next, [open a new pull request](https://github.com/zio/zio/compare) on GitHub, and select _Compare Across Forks_. On the right hand side, choose your own fork of the ZIO repository, in which you've been making your contribution.
+Next, [open a new pull request](https://github.com/zio/zio-json/compare) on GitHub, and select _Compare Across Forks_. On the right hand side, choose your own fork of the ZIO repository, in which you've been making your contribution.
 
 Provide a description for the pull request, which details the issue it is fixing, and has other information that may be helpful to developers reviewing the pull request.
 

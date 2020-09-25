@@ -3,10 +3,10 @@ package zio.json
 import scala.annotation._
 import scala.collection.immutable
 
-import zio.{ Chunk, Ref, ZIO, ZManaged }
 import zio.blocking._
-import zio.stream._
 import zio.json.internal.{ FastStringWrite, Write, WriteWriter }
+import zio.stream._
+import zio.{ Chunk, Ref, ZIO, ZManaged }
 
 trait JsonEncoder[A] { self =>
 
@@ -72,21 +72,24 @@ trait JsonEncoder[A] { self =>
         runtime     <- ZIO.runtime[Any].toManaged_
         chunkBuffer <- Ref.makeManaged(Chunk.fromIterable(startWith))
         writer <- ZManaged.fromAutoCloseable {
-                   ZIO.effectTotal {
-                     new java.io.BufferedWriter(new java.io.Writer {
-                       override def write(buffer: Array[Char], offset: Int, len: Int): Unit = {
-                         val copy = new Array[Char](len)
-                         System.arraycopy(buffer, offset, copy, 0, len)
+                    ZIO.effectTotal {
+                      new java.io.BufferedWriter(
+                        new java.io.Writer {
+                          override def write(buffer: Array[Char], offset: Int, len: Int): Unit = {
+                            val copy = new Array[Char](len)
+                            System.arraycopy(buffer, offset, copy, 0, len)
 
-                         val chunk = Chunk.fromArray(copy).drop(offset).take(len)
-                         runtime.unsafeRun(chunkBuffer.update(_ ++ chunk))
-                       }
+                            val chunk = Chunk.fromArray(copy).drop(offset).take(len)
+                            runtime.unsafeRun(chunkBuffer.update(_ ++ chunk))
+                          }
 
-                       override def close(): Unit = ()
-                       override def flush(): Unit = ()
-                     }, ZStream.DefaultChunkSize)
-                   }
-                 }
+                          override def close(): Unit = ()
+                          override def flush(): Unit = ()
+                        },
+                        ZStream.DefaultChunkSize
+                      )
+                    }
+                  }
         writeWriter <- ZManaged.succeed(new WriteWriter(writer))
         push = { is: Option[Chunk[A]] =>
           val pushChars = chunkBuffer.getAndUpdate(c => if (c.isEmpty) c else Chunk())
@@ -257,8 +260,7 @@ private[json] trait EncoderLowPriority2 { this: JsonEncoder.type =>
   }
 
   // not implicit because this overlaps with encoders for lists of tuples
-  def keyValueChunk[K, A](
-    implicit
+  def keyValueChunk[K, A](implicit
     K: JsonFieldEncoder[K],
     A: JsonEncoder[A]
   ): JsonEncoder[Chunk[(K, A)]] = new JsonEncoder[Chunk[(K, A)]] {
@@ -269,22 +271,21 @@ private[json] trait EncoderLowPriority2 { this: JsonEncoder.type =>
       val indent_ = bump(indent)
       pad(indent_, out)
       var first = true
-      kvs.foreach {
-        case (k, a) =>
-          if (!A.isNothing(a)) {
-            if (first)
-              first = false
-            else {
-              out.write(',')
-              if (!indent.isEmpty)
-                pad(indent_, out)
-            }
-
-            string.unsafeEncode(K.unsafeEncodeField(k), indent_, out)
-            if (indent.isEmpty) out.write(':')
-            else out.write(" : ")
-            A.unsafeEncode(a, indent_, out)
+      kvs.foreach { case (k, a) =>
+        if (!A.isNothing(a)) {
+          if (first)
+            first = false
+          else {
+            out.write(',')
+            if (!indent.isEmpty)
+              pad(indent_, out)
           }
+
+          string.unsafeEncode(K.unsafeEncodeField(k), indent_, out)
+          if (indent.isEmpty) out.write(':')
+          else out.write(" : ")
+          A.unsafeEncode(a, indent_, out)
+        }
       }
       pad(indent, out)
       out.write('}')
