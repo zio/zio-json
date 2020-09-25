@@ -51,7 +51,8 @@ private[zio] final class UnexpectedEnd
     )
     with NoStackTrace
 
-/** A Reader that can retract and replay the last char that it read.
+/**
+ * A Reader that can retract and replay the last char that it read.
  *
  * This is essential when parsing contents that do not have a terminator
  * character, e.g. numbers, whilst preserving the non-significant character for

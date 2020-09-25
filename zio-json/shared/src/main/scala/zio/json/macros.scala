@@ -57,8 +57,8 @@ object DeriveJsonDecoder {
   type Typeclass[A] = JsonDecoder[A]
 
   def combine[A](ctx: CaseClass[JsonDecoder, A]): JsonDecoder[A] = {
-    val no_extra = ctx.annotations.collectFirst {
-      case _: jsonNoExtraFields => ()
+    val no_extra = ctx.annotations.collectFirst { case _: jsonNoExtraFields =>
+      ()
     }.isDefined
     if (ctx.parameters.isEmpty)
       new JsonDecoder[A] {
@@ -75,8 +75,8 @@ object DeriveJsonDecoder {
     else
       new JsonDecoder[A] {
         val names: Array[String] = ctx.parameters.map { p =>
-          p.annotations.collectFirst {
-            case jsonField(name) => name
+          p.annotations.collectFirst { case jsonField(name) =>
+            name
           }.getOrElse(p.label)
         }.toArray
         val len: Int                = names.length
@@ -128,8 +128,8 @@ object DeriveJsonDecoder {
 
   def dispatch[A](ctx: SealedTrait[JsonDecoder, A]): JsonDecoder[A] = {
     val names: Array[String] = ctx.subtypes.map { p =>
-      p.annotations.collectFirst {
-        case jsonHint(name) => name
+      p.annotations.collectFirst { case jsonHint(name) =>
+        name
       }.getOrElse(p.typeName.short)
     }.toArray
     val matrix: StringMatrix = new StringMatrix(names)
@@ -206,8 +206,8 @@ object DeriveJsonEncoder {
       new JsonEncoder[A] {
         val params = ctx.parameters.toArray
         val names: Array[String] = params.map { p =>
-          p.annotations.collectFirst {
-            case jsonField(name) => name
+          p.annotations.collectFirst { case jsonField(name) =>
+            name
           }.getOrElse(p.label)
         }
         lazy val tcs: Array[JsonEncoder[Any]] = params.map(p => p.typeclass.asInstanceOf[JsonEncoder[Any]])
@@ -243,8 +243,8 @@ object DeriveJsonEncoder {
 
   def dispatch[A](ctx: SealedTrait[JsonEncoder, A]): JsonEncoder[A] = {
     val names: Array[String] = ctx.subtypes.map { p =>
-      p.annotations.collectFirst {
-        case jsonHint(name) => name
+      p.annotations.collectFirst { case jsonHint(name) =>
+        name
       }.getOrElse(p.typeName.short)
     }.toArray
     def discrim = ctx.annotations.collectFirst { case jsonDiscriminator(n) => n }

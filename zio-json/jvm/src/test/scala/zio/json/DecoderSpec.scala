@@ -88,9 +88,8 @@ object DecoderSpec extends DefaultRunnableSpec {
         val response = getResourceAsStringM("google_maps_api_response.json")
         val compact  = getResourceAsStringM("google_maps_api_compact_response.json")
 
-        (response <&> compact).map {
-          case (response, compact) =>
-            assert(response.fromJson[Json])(equalTo(compact.fromJson[Json]))
+        (response <&> compact).map { case (response, compact) =>
+          assert(response.fromJson[Json])(equalTo(compact.fromJson[Json]))
         }
       },
       testM("twitter") {

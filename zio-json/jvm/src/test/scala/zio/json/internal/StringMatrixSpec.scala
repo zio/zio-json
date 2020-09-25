@@ -44,8 +44,8 @@ object StringMatrixSpec extends DefaultRunnableSpec {
 
   private def matcher(xs: List[String], test: String): List[String] = {
     val m = new StringMatrix(xs.toArray)
-    var bs = test.zipWithIndex.foldLeft(m.initial) {
-      case (bs, (c, i)) => m.update(bs, i, c.toInt)
+    var bs = test.zipWithIndex.foldLeft(m.initial) { case (bs, (c, i)) =>
+      m.update(bs, i, c.toInt)
     }
     bs = m.exact(bs, test.length)
     matches(xs, bs)
