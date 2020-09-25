@@ -73,7 +73,7 @@ project coreJVM
 
 ### Find an Issue
 
-You may have your own idea about what contributions to make to ZIO, which is great! If you want to make sure the ZIO contributors are open to your idea, you can [open an issue](https://github.com/-json/issues/new) first on the ZIO project site.
+You may have your own idea about what contributions to make to ZIO, which is great! If you want to make sure the ZIO contributors are open to your idea, you can [open an issue](https://github.com/zio-json/issues/new) first on the ZIO project site.
 
 Otherwise, if you have no ideas about what to contribute, you can find a large supply of feature requests and bugs on the project's [issue tracker](https://github.com/zio/zio-json/issues).
 
