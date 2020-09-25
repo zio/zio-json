@@ -1,16 +1,14 @@
 package zio.json
 
 import scala.annotation._
-import scala.collection.mutable
-import scala.collection.immutable
+import scala.collection.{ immutable, mutable }
 import scala.util.control.NoStackTrace
 
-import JsonDecoder.JsonError
-
-import zio.json.internal._
-import zio.{ Chunk, ZIO }
 import zio.blocking._
+import zio.json.JsonDecoder.JsonError
+import zio.json.internal._
 import zio.stream.ZStream
+import zio.{ Chunk, ZIO }
 
 /**
  * A `JsonDecoder[A]` instance has the ability to decode JSON to values of type `A`, potentially

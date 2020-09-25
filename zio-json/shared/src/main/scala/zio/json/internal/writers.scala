@@ -2,10 +2,10 @@
 // synchronize on a lock
 package zio.json.internal
 
-import scala.annotation.tailrec
-
 import java.nio.CharBuffer
 import java.util.Arrays
+
+import scala.annotation.tailrec
 
 // a minimal subset of java.io.Writer that can be optimised
 trait Write {

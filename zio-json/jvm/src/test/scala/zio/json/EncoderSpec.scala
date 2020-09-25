@@ -1,20 +1,24 @@
 package testzio.json
 
+import java.io.IOException
+
 import io.circe
 import testzio.json.TestUtils._
 import testzio.json.data.geojson.generated._
 import testzio.json.data.googlemaps._
 import testzio.json.data.twitter._
+
 import zio.Chunk
+import zio.blocking.Blocking
 import zio.json._
 import zio.json.ast.Json
+import zio.stream.ZStream
 import zio.test.Assertion._
 import zio.test.{ DefaultRunnableSpec, _ }
-import zio.stream.ZStream
 
 // zioJsonJVM/testOnly testzio.json.EncoderSpec
 object EncoderSpec extends DefaultRunnableSpec {
-  def spec =
+  def spec: Spec[Blocking, TestFailure[Throwable], TestSuccess] =
     suite("Encoder")(
       suite("primitives")(
         test("strings") {
@@ -181,7 +185,7 @@ object EncoderSpec extends DefaultRunnableSpec {
       )
     )
 
-  def testRoundTrip[A: circe.Decoder: JsonEncoder](label: String) =
+  def testRoundTrip[A: circe.Decoder: JsonEncoder](label: String): ZSpec[Blocking, IOException] =
     testM(label) {
       getResourceAsStringM(s"$label.json").map { input =>
         val circeDecoded  = circe.parser.decode[A](input)

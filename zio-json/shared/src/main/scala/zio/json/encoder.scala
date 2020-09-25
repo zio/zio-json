@@ -3,10 +3,10 @@ package zio.json
 import scala.annotation._
 import scala.collection.immutable
 
-import zio.{ Chunk, Ref, ZIO, ZManaged }
 import zio.blocking._
-import zio.stream._
 import zio.json.internal.{ FastStringWrite, Write, WriteWriter }
+import zio.stream._
+import zio.{ Chunk, Ref, ZIO, ZManaged }
 
 trait JsonEncoder[A] { self =>
 

@@ -25,7 +25,10 @@ inThisBuild(
 )
 
 addCommandAlias("fmt", "all scalafmtSbt scalafmt test:scalafmt jmh:scalafmt")
-addCommandAlias("check", "all scalafmtSbtCheck scalafmtCheck test:scalafmtCheck jmh:scalafmtCheck")
+addCommandAlias("fix", "all compile:scalafix test:scalafix")
+addCommandAlias("fmtCheck", "all scalafmtSbtCheck scalafmtCheck test:scalafmtCheck jmh:scalafmtCheck")
+addCommandAlias("fixCheck", "; compile:scalafix --check ; test:scalafix --check ")
+addCommandAlias("prepare", "; fix; fmt")
 
 val zioVersion = "1.0.1"
 

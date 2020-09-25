@@ -7,7 +7,7 @@ import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport._
 import sbtbuildinfo._
 import dotty.tools.sbtplugin.DottyPlugin.autoImport._
 import BuildInfoKeys._
-import scalafix.sbt.ScalafixPlugin.autoImport.scalafixSemanticdb
+import scalafix.sbt.ScalafixPlugin.autoImport._
 
 object BuildHelper {
 
@@ -203,6 +203,13 @@ object BuildHelper {
           compilerPlugin(scalafixSemanticdb)
         )
     },
+    semanticdbEnabled := !isDotty.value,              // enable SemanticDB
+    semanticdbVersion := scalafixSemanticdb.revision, // use Scalafix compatible version
+    ThisBuild / scalafixScalaBinaryVersion := CrossVersion.binaryScalaVersion(scalaVersion.value),
+    ThisBuild / scalafixDependencies ++= List(
+      "com.github.liancheng" %% "organize-imports" % "0.4.0",
+      "com.github.vovapolu"  %% "scaluzzi"         % "0.1.12"
+    ),
     parallelExecution in Test := true,
     incOptions ~= (_.withLogRecompileOnMacro(false)),
     autoAPIMappings := true,

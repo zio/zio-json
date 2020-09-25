@@ -1,14 +1,15 @@
 package testzio.json
 
+import testzio.json.TestUtils._
+
 import zio.json._
 import zio.json.ast.Json
 import zio.random.Random
 import zio.test.Assertion._
 import zio.test._
-import TestUtils._
 
 object RoundTripSpec extends DefaultRunnableSpec {
-  def spec =
+  def spec: ZSpec[Environment, Failure] =
     suite("RoundTrip")(
       testM("booleans") {
         check(Gen.boolean)(assertRoundtrips)
