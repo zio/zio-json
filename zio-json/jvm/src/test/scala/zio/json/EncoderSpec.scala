@@ -14,7 +14,7 @@ import zio.json._
 import zio.json.ast.Json
 import zio.stream.ZStream
 import zio.test.Assertion._
-import zio.test.{ DefaultRunnableSpec, _ }
+import zio.test.{ DefaultRunnableSpec, assert, _ }
 
 // zioJsonJVM/testOnly testzio.json.EncoderSpec
 object EncoderSpec extends DefaultRunnableSpec {
