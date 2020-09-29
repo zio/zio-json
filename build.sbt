@@ -151,6 +151,7 @@ lazy val zioJsonJVM = zioJson.jvm
 
 lazy val docs = project
   .in(file("zio-json-docs"))
+  .dependsOn(zioJsonJVM)
   .settings(
     skip.in(publish) := true,
     moduleName := "zio-json-docs",

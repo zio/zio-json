@@ -22,7 +22,7 @@ const users = [
 
 const siteConfig = {
   title: 'zio-json',
-  tagline: 'TODO: Tagline',
+  tagline: 'zio-json',
   url: 'https://zio.github.io',
   baseUrl: '/zio-json/',
 
