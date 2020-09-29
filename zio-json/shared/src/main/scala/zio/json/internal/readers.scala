@@ -104,7 +104,7 @@ private[zio] final class FastStringReader(s: CharSequence) extends RetractReader
 
 // this tends to be a bit slower than creating an implementation that implements
 // all Reader interfaces that are required.
-final class WithRetractReader(in: java.io.Reader) extends RetractReader {
+final class WithRetractReader(in: java.io.Reader) extends RetractReader with AutoCloseable {
   private[this] var last   = -2
   private[this] var replay = false
 
