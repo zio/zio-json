@@ -233,38 +233,43 @@ private[json] trait EncoderLowPriority0 extends EncoderLowPriority1 { this: Json
 }
 
 private[json] trait EncoderLowPriority1 extends EncoderLowPriority2 { this: JsonEncoder.type =>
-  implicit def list[A: JsonEncoder]: JsonEncoder[List[A]]     = seq[A].contramap(_.toSeq)
-  implicit def vector[A: JsonEncoder]: JsonEncoder[Vector[A]] = seq[A].contramap(_.toSeq)
+  implicit def seq[A: JsonEncoder]: JsonEncoder[Seq[A]]       = iterable[A, Seq]
+  implicit def list[A: JsonEncoder]: JsonEncoder[List[A]]     = iterable[A, List]
+  implicit def vector[A: JsonEncoder]: JsonEncoder[Vector[A]] = iterable[A, Vector]
+  implicit def set[A: JsonEncoder]: JsonEncoder[Set[A]]       = iterable[A, Set]
 
-  // TODO these could be optimised...
+  implicit def map[K: JsonFieldEncoder, V: JsonEncoder]: JsonEncoder[Map[K, V]] =
+    keyValueIterable[K, V, Map]
+
   implicit def sortedMap[K: JsonFieldEncoder, V: JsonEncoder]: JsonEncoder[collection.SortedMap[K, V]] =
-    keyValueChunk[K, V].contramap(Chunk.fromIterable(_))
+    keyValueIterable[K, V, collection.SortedMap]
 
   implicit def sortedSet[A: Ordering: JsonEncoder]: JsonEncoder[immutable.SortedSet[A]] =
     list[A].contramap(_.toList)
 }
 
 private[json] trait EncoderLowPriority2 { this: JsonEncoder.type =>
-  implicit def seq[A](implicit A: JsonEncoder[A]): JsonEncoder[Seq[A]] = new JsonEncoder[Seq[A]] {
-    def unsafeEncode(as: Seq[A], indent: Option[Int], out: Write): Unit = {
-      out.write('[')
-      var first = true
-      as.foreach { a =>
-        if (first) first = false
-        else if (indent.isEmpty) out.write(',')
-        else out.write(", ")
-        A.unsafeEncode(a, indent, out)
+  implicit def iterable[A, T[X] <: Iterable[X]](implicit A: JsonEncoder[A]): JsonEncoder[T[A]] =
+    new JsonEncoder[T[A]] {
+      def unsafeEncode(as: T[A], indent: Option[Int], out: Write): Unit = {
+        out.write('[')
+        var first = true
+        as.foreach { a =>
+          if (first) first = false
+          else if (indent.isEmpty) out.write(',')
+          else out.write(", ")
+          A.unsafeEncode(a, indent, out)
+        }
+        out.write(']')
       }
-      out.write(']')
     }
-  }
 
   // not implicit because this overlaps with encoders for lists of tuples
-  def keyValueChunk[K, A](implicit
+  def keyValueIterable[K, A, T[X, Y] <: Iterable[(X, Y)]](implicit
     K: JsonFieldEncoder[K],
     A: JsonEncoder[A]
-  ): JsonEncoder[Chunk[(K, A)]] = new JsonEncoder[Chunk[(K, A)]] {
-    def unsafeEncode(kvs: Chunk[(K, A)], indent: Option[Int], out: Write): Unit = {
+  ): JsonEncoder[T[K, A]] = new JsonEncoder[T[K, A]] {
+    def unsafeEncode(kvs: T[K, A], indent: Option[Int], out: Write): Unit = {
       if (kvs.isEmpty) return out.write("{}")
 
       out.write('{')
@@ -292,10 +297,12 @@ private[json] trait EncoderLowPriority2 { this: JsonEncoder.type =>
     }
   }
 
-  implicit def map[K: JsonFieldEncoder, V: JsonEncoder]: JsonEncoder[Map[K, V]] =
-    keyValueChunk[K, V].contramap(Chunk.fromIterable(_))
-  implicit def set[A: JsonEncoder]: JsonEncoder[Set[A]] =
-    list[A].contramap(_.toList)
+  // not implicit because this overlaps with encoders for lists of tuples
+  def keyValueChunk[K, A](implicit
+    K: JsonFieldEncoder[K],
+    A: JsonEncoder[A]
+  ): JsonEncoder[({ type lambda[X, Y] = Chunk[(X, Y)] })#lambda[K, A]] =
+    keyValueIterable[K, A, ({ type lambda[X, Y] = Chunk[(X, Y)] })#lambda]
 }
 
 /** When encoding a JSON Object, we only allow keys that implement this interface. */

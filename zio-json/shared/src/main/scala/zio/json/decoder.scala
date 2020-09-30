@@ -320,6 +320,23 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority0 {
     builder.result()
   }
 
+  private[json] def keyValueBuilder[K, V, T[X, Y] <: Iterable[(X, Y)]](
+    trace: List[JsonError],
+    in: RetractReader,
+    builder: mutable.Builder[(K, V), T[K, V]]
+  )(implicit K: JsonFieldDecoder[K], V: JsonDecoder[V]): T[K, V] = {
+    Lexer.char(trace, in, '{')
+    if (Lexer.firstField(trace, in))
+      do {
+        val field  = Lexer.string(trace, in).toString
+        val trace_ = JsonError.ObjectAccess(field) :: trace
+        Lexer.char(trace_, in, ':')
+        val value = V.unsafeDecode(trace_, in)
+        builder += ((K.unsafeDecodeField(trace_, field), value))
+      } while (Lexer.nextField(trace, in))
+    builder.result()
+  }
+
 }
 
 private[json] trait DecoderLowPriority0 extends DecoderLowPriority1 { this: JsonDecoder.type =>
@@ -336,6 +353,11 @@ private[json] trait DecoderLowPriority0 extends DecoderLowPriority1 { this: Json
 }
 
 private[json] trait DecoderLowPriority1 extends DecoderLowPriority2 { this: JsonDecoder.type =>
+  implicit def seq[A: JsonDecoder]: JsonDecoder[Seq[A]] = new JsonDecoder[Seq[A]] {
+    def unsafeDecode(trace: List[JsonError], in: RetractReader): Seq[A] =
+      builder(trace, in, immutable.Seq.newBuilder[A])
+  }
+
   implicit def list[A: JsonDecoder]: JsonDecoder[List[A]] = new JsonDecoder[List[A]] {
     def unsafeDecode(trace: List[JsonError], in: RetractReader): List[A] =
       builder(trace, in, new mutable.ListBuffer[A])
@@ -343,14 +365,31 @@ private[json] trait DecoderLowPriority1 extends DecoderLowPriority2 { this: Json
 
   implicit def vector[A: JsonDecoder]: JsonDecoder[Vector[A]] = new JsonDecoder[Vector[A]] {
     def unsafeDecode(trace: List[JsonError], in: RetractReader): Vector[A] =
-      builder(trace, in, new immutable.VectorBuilder[A]).toVector
+      builder(trace, in, immutable.Vector.newBuilder[A])
   }
 
+  implicit def set[A: JsonDecoder]: JsonDecoder[Set[A]] = new JsonDecoder[Set[A]] {
+    def unsafeDecode(trace: List[JsonError], in: RetractReader): Set[A] =
+      builder(trace, in, immutable.HashSet.newBuilder[A])
+  }
+
+  implicit def map[K: JsonFieldDecoder, V: JsonDecoder]: JsonDecoder[Map[K, V]] =
+    new JsonDecoder[Map[K, V]] {
+      def unsafeDecode(trace: List[JsonError], in: RetractReader): Map[K, V] =
+        keyValueBuilder(trace, in, Map.newBuilder[K, V])
+    }
+
   implicit def sortedSet[A: Ordering: JsonDecoder]: JsonDecoder[immutable.SortedSet[A]] =
-    list[A].map(lst => immutable.SortedSet(lst: _*))
+    new JsonDecoder[immutable.SortedSet[A]] {
+      def unsafeDecode(trace: List[JsonError], in: RetractReader): immutable.SortedSet[A] =
+        builder(trace, in, immutable.SortedSet.newBuilder[A])
+    }
 
   implicit def sortedMap[K: JsonFieldDecoder: Ordering, V: JsonDecoder]: JsonDecoder[collection.SortedMap[K, V]] =
-    keyValueChunk[K, V].map(lst => collection.SortedMap.apply(lst: _*))
+    new JsonDecoder[collection.SortedMap[K, V]] {
+      def unsafeDecode(trace: List[JsonError], in: RetractReader): collection.SortedMap[K, V] =
+        keyValueBuilder(trace, in, collection.SortedMap.newBuilder[K, V])
+    }
 }
 
 // We have a hierarchy of implicits for two reasons:
@@ -367,38 +406,20 @@ private[json] trait DecoderLowPriority1 extends DecoderLowPriority2 { this: Json
 private[json] trait DecoderLowPriority2 {
   this: JsonDecoder.type =>
 
-  implicit def seq[A: JsonDecoder]: JsonDecoder[Seq[A]] = list[A].map(_.toList)
-
   // not implicit because this overlaps with decoders for lists of tuples
   def keyValueChunk[K, A](implicit
     K: JsonFieldDecoder[K],
     A: JsonDecoder[A]
   ): JsonDecoder[Chunk[(K, A)]] =
     new JsonDecoder[Chunk[(K, A)]] {
-      def unsafeDecode(
-        trace: List[JsonError],
-        in: RetractReader
-      ): Chunk[(K, A)] = {
-        val builder = zio.ChunkBuilder.make[(K, A)]()
-        Lexer.char(trace, in, '{')
-        if (Lexer.firstField(trace, in))
-          do {
-            val field  = Lexer.string(trace, in).toString
-            val trace_ = JsonError.ObjectAccess(field) :: trace
-            Lexer.char(trace_, in, ':')
-            val value = A.unsafeDecode(trace_, in)
-            builder += ((K.unsafeDecodeField(trace_, field), value))
-          } while (Lexer.nextField(trace, in))
-        builder.result()
-      }
+      def unsafeDecode(trace: List[JsonError], in: RetractReader): Chunk[(K, A)] =
+        keyValueBuilder[K, A, ({ type lambda[X, Y] = Chunk[(X, Y)] })#lambda](
+          trace,
+          in,
+          zio.ChunkBuilder.make[(K, A)]()
+        )
     }
 
-  implicit def map[K: JsonFieldDecoder, V: JsonDecoder]: JsonDecoder[Map[K, V]] =
-    keyValueChunk[K, V].map(lst => Map.apply(lst: _*))
-
-  // TODO these could be optimised...
-  implicit def set[A: JsonDecoder]: JsonDecoder[Set[A]] =
-    list[A].map(lst => immutable.HashSet(lst: _*))
 }
 
 /** When decoding a JSON Object, we only allow the keys that implement this interface. */
