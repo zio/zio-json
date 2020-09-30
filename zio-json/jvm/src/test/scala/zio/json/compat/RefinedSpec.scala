@@ -1,17 +1,16 @@
 package testzio.json.compat
 
-import zio.json._
-
 import eu.timepit.refined.api.Refined
-import eu.timepit.refined.collection.NonEmpty
 import eu.timepit.refined.auto._
+import eu.timepit.refined.collection.NonEmpty
+
+import zio.json._
 import zio.json.compat.refined._
 import zio.test.Assertion._
-
 import zio.test._
 
 object RefinedSpec extends DefaultRunnableSpec {
-  def spec =
+  def spec: ZSpec[Environment, Failure] =
     suite("Refined")(
       test("Refined") {
         assert("""{"name":""}""".fromJson[Person])(isLeft(equalTo(".name(Predicate isEmpty() did not fail.)"))) &&

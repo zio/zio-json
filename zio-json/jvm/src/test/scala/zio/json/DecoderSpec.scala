@@ -1,22 +1,26 @@
 package testzio.json
 
+import scala.collection.immutable
+
 import io.circe
 import org.typelevel.jawn.{ ast => jawn }
 import testzio.json.TestUtils._
 import testzio.json.data.googlemaps._
 import testzio.json.data.twitter._
+
 import zio.blocking._
+import zio.duration._
 import zio.json._
 import zio.json.ast._
+import zio.stream.ZStream
 import zio.test.Assertion._
+import zio.test.TestAspect._
+import zio.test.environment.{ Live }
 import zio.test.{ DefaultRunnableSpec, _ }
 import zio.{ test => _, _ }
 
-import scala.collection.immutable
-import zio.stream.ZStream
-
 object DecoderSpec extends DefaultRunnableSpec {
-  def spec =
+  def spec: Spec[ZEnv with Live, TestFailure[Any], TestSuccess] =
     suite("Decoder")(
       test("primitives") {
         // this big integer consumes more than 128 bits
@@ -88,9 +92,8 @@ object DecoderSpec extends DefaultRunnableSpec {
         val response = getResourceAsStringM("google_maps_api_response.json")
         val compact  = getResourceAsStringM("google_maps_api_compact_response.json")
 
-        (response <&> compact).map {
-          case (response, compact) =>
-            assert(response.fromJson[Json])(equalTo(compact.fromJson[Json]))
+        (response <&> compact).map { case (response, compact) =>
+          assert(response.fromJson[Json])(equalTo(compact.fromJson[Json]))
         }
       },
       testM("twitter") {
@@ -198,11 +201,106 @@ object DecoderSpec extends DefaultRunnableSpec {
           } yield {
             assert(int)(equalTo(123))
           }
-        }
-      )
-    ) @@ TestAspect.parallel
+        },
+        suite("decodeJsonTransducer")(
+          suite("Newline delimited")(
+            testM("decodes single elements") {
+              ZStream
+                .fromIterable("1001".toSeq)
+                .transduce(JsonDecoder[Int].decodeJsonTransducer(JsonStreamDelimiter.Newline))
+                .runCollect
+                .map { xs =>
+                  assert(xs)(equalTo(Chunk(1001)))
+                }
+            },
+            testM("decodes multiple elements") {
+              ZStream
+                .fromIterable("1001\n1002".toSeq)
+                .transduce(JsonDecoder[Int].decodeJsonTransducer(JsonStreamDelimiter.Newline))
+                .runCollect
+                .map { xs =>
+                  assert(xs)(equalTo(Chunk(1001, 1002)))
+                }
+            },
+            testM("decodes multiple elements when fed in smaller chunks") {
+              ZStream
+                .fromIterable("1001\n1002".toSeq)
+                .chunkN(1)
+                .transduce(JsonDecoder[Int].decodeJsonTransducer(JsonStreamDelimiter.Newline))
+                .runCollect
+                .map { xs =>
+                  assert(xs)(equalTo(Chunk(1001, 1002)))
+                }
+            },
+            testM("accepts trailing NL") {
+              ZStream
+                .fromIterable("1001\n1002\n".toSeq)
+                .transduce(JsonDecoder[Int].decodeJsonTransducer(JsonStreamDelimiter.Newline))
+                .runCollect
+                .map { xs =>
+                  assert(xs)(equalTo(Chunk(1001, 1002)))
+                }
+            },
+            testM("errors") {
+              ZStream
+                .fromIterable("1\nfalse\n3".toSeq)
+                .transduce(JsonDecoder[Int].decodeJsonTransducer(JsonStreamDelimiter.Newline))
+                .runDrain
+                .run
+                .map { exit =>
+                  assert(exit)(fails(anything))
+                }
+            },
+            testM("is interruptible") {
+              (ZStream.fromIterable("1\n2\n3\n4") ++ ZStream.fromEffect(ZIO.interrupt))
+                .transduce(JsonDecoder[Int].decodeJsonTransducer(JsonStreamDelimiter.Newline))
+                .runDrain
+                .run
+                .map { exit =>
+                  assert(exit)(isInterrupted)
+                }
+            } @@ timeout(2.seconds)
+          ),
+          suite("Array delimited")(
+            testM("decodes single elements") {
+              ZStream
+                .fromIterable("[1001]".toSeq)
+                .transduce(JsonDecoder[Int].decodeJsonTransducer(JsonStreamDelimiter.Array))
+                .runCollect
+                .map { xs =>
+                  assert(xs)(equalTo(Chunk(1001)))
+                }
+            },
+            testM("decodes multiple elements") {
+              ZStream
+                .fromIterable("[ 1001, 1002, 1003 ]".toSeq)
+                .transduce(JsonDecoder[Int].decodeJsonTransducer(JsonStreamDelimiter.Array))
+                .runCollect
+                .map { xs =>
+                  assert(xs)(equalTo(Chunk(1001, 1002, 1003)))
+                }
+            },
+            testM("handles whitespace leniently") {
+              val in =
+                """[
+                  1001, 1002,
+                  1003
+                ]"""
 
-  def testAst(label: String) =
+              ZStream
+                .fromIterable(in.toSeq)
+                .transduce(JsonDecoder[Int].decodeJsonTransducer(JsonStreamDelimiter.Array))
+                .runCollect
+                .map { xs =>
+                  assert(xs)(equalTo(Chunk(1001, 1002, 1003)))
+                }
+            }
+          )
+        )
+      )
+    )
+
+  def testAst(label: String): ZSpec[Blocking with zio.console.Console, Throwable] =
     testM(label) {
       getResourceAsStringM(s"jawn/$label.json").flatMap { input =>
         val expected = jawn.JParser.parseFromString(input).toEither.map(fromJawn)

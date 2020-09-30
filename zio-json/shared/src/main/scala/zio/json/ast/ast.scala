@@ -1,10 +1,11 @@
 package zio.json.ast
 
-import zio.Chunk
-import zio.json._
-import zio.json.JsonDecoder.{ JsonError, UnsafeJson }
-import zio.json.internal._
 import scala.annotation._
+
+import zio.Chunk
+import zio.json.JsonDecoder.{ JsonError, UnsafeJson }
+import zio.json._
+import zio.json.internal._
 
 /**
  * This AST of JSON is made available so that arbitrary JSON may be included as

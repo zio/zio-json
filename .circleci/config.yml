@@ -71,6 +71,8 @@ install_yarn: &install_yarn
   - run:
       name: Install Yarn
       command: |
+        sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 78BD65473CB3BD13
+        sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 5DC22404A6F9F1CA
         curl -sL https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add -
         sudo bash -c 'echo "deb https://dl.yarnpkg.com/debian/ stable main" > /etc/apt/sources.list.d/yarn.list'
         sudo apt update && sudo apt install yarn -y
@@ -106,7 +108,7 @@ lint: &lint
     - <<: *load_cache
     - run:
         name: Lint code
-        command: ./sbt ++${SCALA_VERSION}! check
+        command: ./sbt ++${SCALA_VERSION}! fmtCheck fixCheck
     - <<: *save_cache
 
 mdoc: &mdoc
@@ -176,7 +178,7 @@ microsite: &microsite
   steps:
       - add_ssh_keys:
           fingerprints:
-            - "11:2c:fa:98:69:d8:a1:d5:76:2e:38:d0:91:39:85:ce"
+            - "d3:c7:83:fd:0f:14:f9:28:5d:0a:90:d0:bd:6c:16:e4"
       - checkout
       - <<: *load_cache
       - <<: *install_nodejs
@@ -375,4 +377,9 @@ workflows:
           filters:
             <<: *filter_tags
             branches:
-              ignore: /.*/
+              only:
+                - develop
+            # TODO: replace the block above with this one once microsite build
+            # is verified
+            # branches:
+            #   ignore: /.*/

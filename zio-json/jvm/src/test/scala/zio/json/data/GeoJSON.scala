@@ -1,9 +1,9 @@
 package testzio.json.data.geojson
 
+import ai.x.play.json.Encoders.encoder
+import ai.x.play.json.{ Jsonx => Playx }
 import io.circe
 import play.api.libs.{ json => Play }
-import ai.x.play.json.{ Jsonx => Playx }
-import ai.x.play.json.Encoders.encoder
 
 import zio.json._
 import zio.json.ast._

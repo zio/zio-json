@@ -76,11 +76,11 @@ object NeoJmhPlugin extends AutoPlugin {
         mainClass in run := Some("org.openjdk.jmh.Main"),
         fork in run := true,
         dependencyClasspath ++= (fullClasspath in Jmh).value,
-        sourceGenerators += generateJmhSourcesAndResources.map {
-          case (sources, _) => sources
+        sourceGenerators += generateJmhSourcesAndResources.map { case (sources, _) =>
+          sources
         },
-        resourceGenerators += generateJmhSourcesAndResources.map {
-          case (_, res) => res
+        resourceGenerators += generateJmhSourcesAndResources.map { case (_, res) =>
+          res
         },
         generateJmhSourcesAndResources := generateBenchmarkSourcesAndResources.value
       )

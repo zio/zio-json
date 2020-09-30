@@ -1,12 +1,13 @@
 package testzio.json.internal
 
+import testzio.json.TestUtils._
+
 import zio.json.internal._
 import zio.test.Assertion._
 import zio.test.{ DefaultRunnableSpec, _ }
-import testzio.json.TestUtils._
 
 object SafeNumbersSpec extends DefaultRunnableSpec {
-  def spec =
+  def spec: ZSpec[Environment, Failure] =
     suite("SafeNumbers")(
       testM("valid big decimals") {
         check(genBigDecimal)(i => assert(SafeNumbers.bigDecimal(i.toString, 2048))(isSome(equalTo(i))))

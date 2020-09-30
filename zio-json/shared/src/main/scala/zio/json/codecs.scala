@@ -1,8 +1,7 @@
 package zio.json
 
+import zio.json.JsonDecoder.JsonError
 import zio.json.internal._
-
-import JsonDecoder.JsonError
 
 /**
  * A `JsonCodec[A]` instance has the ability to encode values of type `A` into JSON, together with
@@ -35,15 +34,22 @@ object JsonCodec {
    * Derives a `JsonCodec[A]` from an encoder and a decoder.
    */
   implicit def apply[A](implicit encoder0: JsonEncoder[A], decoder0: JsonDecoder[A]): JsonCodec[A] =
-    new JsonCodec[A] {
-      def encoder: JsonEncoder[A] = encoder0
+    (encoder0, decoder0) match {
+      case (e: JsonCodec[_], d: JsonCodec[_]) =>
+        // protects against cycles in implicit resolution, unfortunately the
+        // instantiation of decoder0 could have been wasteful.
+        e
+      case other =>
+        new JsonCodec[A] {
+          def encoder: JsonEncoder[A] = encoder0
 
-      def decoder: JsonDecoder[A] = decoder0
+          def decoder: JsonDecoder[A] = decoder0
 
-      def unsafeDecode(trace: List[JsonError], in: RetractReader): A =
-        decoder0.unsafeDecode(trace, in)
+          def unsafeDecode(trace: List[JsonError], in: RetractReader): A =
+            decoder0.unsafeDecode(trace, in)
 
-      def unsafeEncode(a: A, indent: Option[Int], out: Write): Unit =
-        encoder0.unsafeEncode(a, indent, out)
+          def unsafeEncode(a: A, indent: Option[Int], out: Write): Unit =
+            encoder0.unsafeEncode(a, indent, out)
+        }
     }
 }

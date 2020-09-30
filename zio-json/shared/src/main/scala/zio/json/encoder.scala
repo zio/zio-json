@@ -3,11 +3,10 @@ package zio.json
 import scala.annotation._
 import scala.collection.immutable
 
-import zio.{ Chunk, Exit, ZIO, ZManaged, ZQueue }
 import zio.blocking._
-import zio.stream._
-
 import zio.json.internal.{ FastStringWrite, Write, WriteWriter }
+import zio.stream._
+import zio.{ Chunk, Ref, ZIO, ZManaged }
 
 trait JsonEncoder[A] { self =>
 
@@ -61,34 +60,68 @@ trait JsonEncoder[A] { self =>
    * Encodes the specified value into a character stream.
    */
   final def encodeJsonStream(a: A, indent: Option[Int]): ZStream[Blocking, Throwable, Char] =
-    ZStream.unwrapManaged {
+    ZStream(a).transduce(encodeJsonDelimitedTransducer(None, None, None))
+
+  final private def encodeJsonDelimitedTransducer(
+    startWith: Option[Char],
+    delimiter: Option[Char],
+    endWith: Option[Char]
+  ): ZTransducer[Blocking, Throwable, A, Char] =
+    ZTransducer {
       for {
-        runtime <- ZIO.runtime[Any].toManaged_
-        queue   <- ZQueue.bounded[Exit[Option[Throwable], Chunk[Char]]](1).toManaged_
+        runtime     <- ZIO.runtime[Any].toManaged_
+        chunkBuffer <- Ref.makeManaged(Chunk.fromIterable(startWith))
         writer <- ZManaged.fromAutoCloseable {
-                   ZIO.effectTotal {
-                     new java.io.BufferedWriter(new java.io.Writer {
-                       override def write(buffer: Array[Char], offset: Int, len: Int): Unit = {
-                         val copy = new Array[Char](len)
-                         System.arraycopy(buffer, offset, copy, 0, len)
+                    ZIO.effectTotal {
+                      new java.io.BufferedWriter(
+                        new java.io.Writer {
+                          override def write(buffer: Array[Char], offset: Int, len: Int): Unit = {
+                            val copy = new Array[Char](len)
+                            System.arraycopy(buffer, offset, copy, 0, len)
 
-                         val chunk = Chunk.fromArray(copy).drop(offset).take(len)
-                         runtime.unsafeRun(queue.offer(Exit.succeed(chunk)).unit)
-                       }
+                            val chunk = Chunk.fromArray(copy).drop(offset).take(len)
+                            runtime.unsafeRun(chunkBuffer.update(_ ++ chunk))
+                          }
 
-                       override def close(): Unit =
-                         runtime.unsafeRun(queue.offer(Exit.fail(None)).unit)
+                          override def close(): Unit = ()
+                          override def flush(): Unit = ()
+                        },
+                        ZStream.DefaultChunkSize
+                      )
+                    }
+                  }
+        writeWriter <- ZManaged.succeed(new WriteWriter(writer))
+        push = { is: Option[Chunk[A]] =>
+          val pushChars = chunkBuffer.getAndUpdate(c => if (c.isEmpty) c else Chunk())
 
-                       override def flush(): Unit = ()
-                     }, Stream.DefaultChunkSize)
-                   }
-                 }
-        _ <- effectBlocking {
-              unsafeEncode(a, indent, new WriteWriter(writer))
-              writer.close()
-            }.tapError(t => queue.offer(Exit.fail(Some(t)))).forkManaged
-      } yield ZStream.fromQueue(queue)
-    }.collectWhileSuccess.flattenChunks
+          is match {
+            case None =>
+              effectBlocking(writer.close()) *> pushChars.map { terminal =>
+                endWith.fold(terminal) { last =>
+                  // Chop off terminal deliminator
+                  (if (delimiter.isDefined) terminal.dropRight(1) else terminal) :+ last
+                }
+              }
+
+            case Some(xs) =>
+              effectBlocking {
+                for (x <- xs) {
+                  unsafeEncode(x, indent = None, writeWriter)
+
+                  for (s <- delimiter)
+                    writeWriter.write(s)
+                }
+              } *> pushChars
+          }
+        }
+      } yield push
+    }
+
+  final val encodeJsonLinesTransducer: ZTransducer[Blocking, Throwable, A, Char] =
+    encodeJsonDelimitedTransducer(None, Some('\n'), None)
+
+  final val encodeJsonArrayTransducer: ZTransducer[Blocking, Throwable, A, Char] =
+    encodeJsonDelimitedTransducer(Some('['), Some(','), Some(']'))
 
   /**
    * This default may be overriden when this value may be missing within a JSON object and still
@@ -200,71 +233,76 @@ private[json] trait EncoderLowPriority0 extends EncoderLowPriority1 { this: Json
 }
 
 private[json] trait EncoderLowPriority1 extends EncoderLowPriority2 { this: JsonEncoder.type =>
-  implicit def list[A: JsonEncoder]: JsonEncoder[List[A]]     = seq[A].contramap(_.toSeq)
-  implicit def vector[A: JsonEncoder]: JsonEncoder[Vector[A]] = seq[A].contramap(_.toSeq)
+  implicit def seq[A: JsonEncoder]: JsonEncoder[Seq[A]]       = iterable[A, Seq]
+  implicit def list[A: JsonEncoder]: JsonEncoder[List[A]]     = iterable[A, List]
+  implicit def vector[A: JsonEncoder]: JsonEncoder[Vector[A]] = iterable[A, Vector]
+  implicit def set[A: JsonEncoder]: JsonEncoder[Set[A]]       = iterable[A, Set]
 
-  // TODO these could be optimised...
+  implicit def map[K: JsonFieldEncoder, V: JsonEncoder]: JsonEncoder[Map[K, V]] =
+    keyValueIterable[K, V, Map]
+
   implicit def sortedMap[K: JsonFieldEncoder, V: JsonEncoder]: JsonEncoder[collection.SortedMap[K, V]] =
-    keyValueChunk[K, V].contramap(Chunk.fromIterable(_))
+    keyValueIterable[K, V, collection.SortedMap]
 
   implicit def sortedSet[A: Ordering: JsonEncoder]: JsonEncoder[immutable.SortedSet[A]] =
     list[A].contramap(_.toList)
 }
 
 private[json] trait EncoderLowPriority2 { this: JsonEncoder.type =>
-  implicit def seq[A](implicit A: JsonEncoder[A]): JsonEncoder[Seq[A]] = new JsonEncoder[Seq[A]] {
-    def unsafeEncode(as: Seq[A], indent: Option[Int], out: Write): Unit = {
-      out.write('[')
-      var first = true
-      as.foreach { a =>
-        if (first) first = false
-        else if (indent.isEmpty) out.write(',')
-        else out.write(", ")
-        A.unsafeEncode(a, indent, out)
+  implicit def iterable[A, T[X] <: Iterable[X]](implicit A: JsonEncoder[A]): JsonEncoder[T[A]] =
+    new JsonEncoder[T[A]] {
+      def unsafeEncode(as: T[A], indent: Option[Int], out: Write): Unit = {
+        out.write('[')
+        var first = true
+        as.foreach { a =>
+          if (first) first = false
+          else if (indent.isEmpty) out.write(',')
+          else out.write(", ")
+          A.unsafeEncode(a, indent, out)
+        }
+        out.write(']')
       }
-      out.write(']')
     }
-  }
 
   // not implicit because this overlaps with encoders for lists of tuples
-  def keyValueChunk[K, A](
-    implicit
+  def keyValueIterable[K, A, T[X, Y] <: Iterable[(X, Y)]](implicit
     K: JsonFieldEncoder[K],
     A: JsonEncoder[A]
-  ): JsonEncoder[Chunk[(K, A)]] = new JsonEncoder[Chunk[(K, A)]] {
-    def unsafeEncode(kvs: Chunk[(K, A)], indent: Option[Int], out: Write): Unit = {
+  ): JsonEncoder[T[K, A]] = new JsonEncoder[T[K, A]] {
+    def unsafeEncode(kvs: T[K, A], indent: Option[Int], out: Write): Unit = {
       if (kvs.isEmpty) return out.write("{}")
 
       out.write('{')
       val indent_ = bump(indent)
       pad(indent_, out)
       var first = true
-      kvs.foreach {
-        case (k, a) =>
-          if (!A.isNothing(a)) {
-            if (first)
-              first = false
-            else {
-              out.write(',')
-              if (!indent.isEmpty)
-                pad(indent_, out)
-            }
-
-            string.unsafeEncode(K.unsafeEncodeField(k), indent_, out)
-            if (indent.isEmpty) out.write(':')
-            else out.write(" : ")
-            A.unsafeEncode(a, indent_, out)
+      kvs.foreach { case (k, a) =>
+        if (!A.isNothing(a)) {
+          if (first)
+            first = false
+          else {
+            out.write(',')
+            if (!indent.isEmpty)
+              pad(indent_, out)
           }
+
+          string.unsafeEncode(K.unsafeEncodeField(k), indent_, out)
+          if (indent.isEmpty) out.write(':')
+          else out.write(" : ")
+          A.unsafeEncode(a, indent_, out)
+        }
       }
       pad(indent, out)
       out.write('}')
     }
   }
 
-  implicit def map[K: JsonFieldEncoder, V: JsonEncoder]: JsonEncoder[Map[K, V]] =
-    keyValueChunk[K, V].contramap(Chunk.fromIterable(_))
-  implicit def set[A: JsonEncoder]: JsonEncoder[Set[A]] =
-    list[A].contramap(_.toList)
+  // not implicit because this overlaps with encoders for lists of tuples
+  def keyValueChunk[K, A](implicit
+    K: JsonFieldEncoder[K],
+    A: JsonEncoder[A]
+  ): JsonEncoder[({ type lambda[X, Y] = Chunk[(X, Y)] })#lambda[K, A]] =
+    keyValueIterable[K, A, ({ type lambda[X, Y] = Chunk[(X, Y)] })#lambda]
 }
 
 /** When encoding a JSON Object, we only allow keys that implement this interface. */

@@ -4,8 +4,9 @@
 // sizes.
 package zio.json.internal
 
-import scala.annotation._
 import java.util.Arrays
+
+import scala.annotation._
 import scala.util.control.NoStackTrace
 
 // https://github.com/openjdk/jdk/blob/master/src/java.base/share/classes/java/io/PushbackReader.java
@@ -51,7 +52,8 @@ private[zio] final class UnexpectedEnd
     )
     with NoStackTrace
 
-/** A Reader that can retract and replay the last char that it read.
+/**
+ * A Reader that can retract and replay the last char that it read.
  *
  * This is essential when parsing contents that do not have a terminator
  * character, e.g. numbers, whilst preserving the non-significant character for
@@ -102,7 +104,7 @@ private[zio] final class FastStringReader(s: CharSequence) extends RetractReader
 
 // this tends to be a bit slower than creating an implementation that implements
 // all Reader interfaces that are required.
-final class WithRetractReader(in: java.io.Reader) extends RetractReader {
+final class WithRetractReader(in: java.io.Reader) extends RetractReader with AutoCloseable {
   private[this] var last   = -2
   private[this] var replay = false
 

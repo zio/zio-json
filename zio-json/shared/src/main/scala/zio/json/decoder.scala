@@ -1,16 +1,14 @@
 package zio.json
 
 import scala.annotation._
-import scala.collection.mutable
-import scala.collection.immutable
+import scala.collection.{ immutable, mutable }
 import scala.util.control.NoStackTrace
 
-import JsonDecoder.JsonError
-
-import zio.json.internal._
-import zio.{ Chunk, ZIO }
 import zio.blocking._
-import zio.stream.ZStream
+import zio.json.JsonDecoder.JsonError
+import zio.json.internal._
+import zio.stream.{ Take, ZStream, ZTransducer }
+import zio.{ Chunk, IO, Queue, Ref, ZIO, ZManaged }
 
 /**
  * A `JsonDecoder[A]` instance has the ability to decode JSON to values of type `A`, potentially
@@ -71,6 +69,113 @@ trait JsonDecoder[A] { self =>
           case _: internal.UnexpectedEnd     => throw new Exception("unexpected end of input")
         }
       }
+    }
+
+  final def decodeJsonTransducer(
+    delimiter: JsonStreamDelimiter = JsonStreamDelimiter.Array
+  ): ZTransducer[Blocking, Throwable, Char, A] =
+    ZTransducer {
+      for {
+        // format: off
+        runtime    <- ZIO.runtime[Any].toManaged_
+        inQueue    <- Queue.unbounded[Take[Nothing, Char]].toManaged_
+        outQueue   <- Queue.unbounded[Take[Throwable, A]].toManaged_
+        ended      <- Ref.makeManaged(false)
+        reader     <- ZManaged.fromAutoCloseable {
+                        ZIO.effectTotal {
+                          def readPull: Iterator[Chunk[Char]] =
+                            runtime.unsafeRun(inQueue.take)
+                              .fold(
+                                end   = Iterator.empty,
+                                error = _ => Iterator.empty, // impossible
+                                value = v => Iterator.single(v) ++ readPull
+                              )
+
+                          new zio.stream.internal.ZReader(Iterator.empty ++ readPull)
+                        }
+                      }
+        jsonReader <- ZManaged.fromAutoCloseable(ZIO.effectTotal(new WithRetractReader(reader)))
+        process    <- effectBlockingInterrupt {
+                        // Exceptions fall through and are pushed into the queue
+                        @tailrec def loop(atBeginning: Boolean): Unit = {
+                          val nextElem = try {
+                            if (atBeginning && delimiter == JsonStreamDelimiter.Array)  {
+                              Lexer.char(Nil, jsonReader, '[')
+                            } else {
+                              delimiter match {
+                                case JsonStreamDelimiter.Newline =>
+                                  jsonReader.readChar() match {
+                                    case '\r' =>
+                                      jsonReader.readChar() match {
+                                        case '\n' => ()
+                                        case _    => jsonReader.retract()
+                                      }
+                                    case '\n' => ()
+                                    case _    => jsonReader.retract()
+                                  }
+
+                               case JsonStreamDelimiter.Array =>
+                                  jsonReader.nextNonWhitespace() match {
+                                    case ',' | ']' => ()
+                                    case _         => jsonReader.retract()
+                                  }
+                              }
+                            }
+
+                            unsafeDecode(Nil, jsonReader)
+                          } catch {
+                            case t @ JsonDecoder.UnsafeJson(trace) =>
+                              throw new Exception(JsonError.render(trace))
+                          }
+
+                          runtime.unsafeRun(outQueue.offer(Take.single(nextElem)))
+
+                          loop(false)
+                        }
+
+                        loop(true)
+                      }
+                      .catchAll {
+                        case t: internal.UnexpectedEnd =>
+                          // swallow if stream ended
+                          ZIO.unlessM(ended.get) {
+                            outQueue.offer(Take.fail(t))
+                          }
+
+                        case t: Throwable =>
+                          outQueue.offer(Take.fail(t))
+                      }
+                      .interruptible
+                      .forkManaged
+        push = { is: Option[Chunk[Char]] =>
+          val pollElements: IO[Throwable, Chunk[A]] =
+            outQueue
+              .takeUpTo(ZStream.DefaultChunkSize)
+              .flatMap { takes =>
+                ZIO.foldLeft(takes)(Chunk[A]()) { case (acc, take) =>
+                  take.fold(ZIO.succeedNow(acc), e => ZIO.fail(e.squash), c => ZIO.succeedNow(acc ++ c))
+                }
+              }
+
+          val pullRest =
+            outQueue
+              .takeAll
+              .flatMap { takes =>
+                ZIO.foldLeft(takes)(Chunk[A]()) { case (acc, take) =>
+                  take.fold(ZIO.succeedNow(acc), e => ZIO.fail(e.squash), c => ZIO.succeedNow(acc ++ c))
+                }
+              }
+
+          is match {
+            case Some(c) =>
+              inQueue.offer(Take.chunk(c)) *> pollElements
+
+            case None =>
+              ended.set(true) *> inQueue.offer(Take.end) *> process.join *> pullRest
+          }
+        }
+      } yield push
+      // format: on
     }
 
   /**
@@ -164,7 +269,6 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority0 {
   def apply[A](implicit a: JsonDecoder[A]): JsonDecoder[A] = a
 
   /**
-   *
    * Design note: we could require the position in the stream here to improve
    * debugging messages. But the cost would be that the RetractReader would need
    * to keep track and any wrappers would need to preserve the position. It may
@@ -260,8 +364,7 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority0 {
   // supports multiple representations for compatibility with other libraries,
   // but does not support the "discriminator field" encoding with a field named
   // "value" used by some libraries.
-  implicit def either[A, B](
-    implicit
+  implicit def either[A, B](implicit
     A: JsonDecoder[A],
     B: JsonDecoder[B]
   ): JsonDecoder[Either[A, B]] =
@@ -324,6 +427,23 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority0 {
     builder.result()
   }
 
+  private[json] def keyValueBuilder[K, V, T[X, Y] <: Iterable[(X, Y)]](
+    trace: List[JsonError],
+    in: RetractReader,
+    builder: mutable.Builder[(K, V), T[K, V]]
+  )(implicit K: JsonFieldDecoder[K], V: JsonDecoder[V]): T[K, V] = {
+    Lexer.char(trace, in, '{')
+    if (Lexer.firstField(trace, in))
+      do {
+        val field  = Lexer.string(trace, in).toString
+        val trace_ = JsonError.ObjectAccess(field) :: trace
+        Lexer.char(trace_, in, ':')
+        val value = V.unsafeDecode(trace_, in)
+        builder += ((K.unsafeDecodeField(trace_, field), value))
+      } while (Lexer.nextField(trace, in))
+    builder.result()
+  }
+
 }
 
 private[json] trait DecoderLowPriority0 extends DecoderLowPriority1 { this: JsonDecoder.type =>
@@ -340,6 +460,11 @@ private[json] trait DecoderLowPriority0 extends DecoderLowPriority1 { this: Json
 }
 
 private[json] trait DecoderLowPriority1 extends DecoderLowPriority2 { this: JsonDecoder.type =>
+  implicit def seq[A: JsonDecoder]: JsonDecoder[Seq[A]] = new JsonDecoder[Seq[A]] {
+    def unsafeDecode(trace: List[JsonError], in: RetractReader): Seq[A] =
+      builder(trace, in, immutable.Seq.newBuilder[A])
+  }
+
   implicit def list[A: JsonDecoder]: JsonDecoder[List[A]] = new JsonDecoder[List[A]] {
     def unsafeDecode(trace: List[JsonError], in: RetractReader): List[A] =
       builder(trace, in, new mutable.ListBuffer[A])
@@ -347,14 +472,31 @@ private[json] trait DecoderLowPriority1 extends DecoderLowPriority2 { this: Json
 
   implicit def vector[A: JsonDecoder]: JsonDecoder[Vector[A]] = new JsonDecoder[Vector[A]] {
     def unsafeDecode(trace: List[JsonError], in: RetractReader): Vector[A] =
-      builder(trace, in, new immutable.VectorBuilder[A]).toVector
+      builder(trace, in, immutable.Vector.newBuilder[A])
   }
 
+  implicit def set[A: JsonDecoder]: JsonDecoder[Set[A]] = new JsonDecoder[Set[A]] {
+    def unsafeDecode(trace: List[JsonError], in: RetractReader): Set[A] =
+      builder(trace, in, immutable.HashSet.newBuilder[A])
+  }
+
+  implicit def map[K: JsonFieldDecoder, V: JsonDecoder]: JsonDecoder[Map[K, V]] =
+    new JsonDecoder[Map[K, V]] {
+      def unsafeDecode(trace: List[JsonError], in: RetractReader): Map[K, V] =
+        keyValueBuilder(trace, in, Map.newBuilder[K, V])
+    }
+
   implicit def sortedSet[A: Ordering: JsonDecoder]: JsonDecoder[immutable.SortedSet[A]] =
-    list[A].map(lst => immutable.SortedSet(lst: _*))
+    new JsonDecoder[immutable.SortedSet[A]] {
+      def unsafeDecode(trace: List[JsonError], in: RetractReader): immutable.SortedSet[A] =
+        builder(trace, in, immutable.SortedSet.newBuilder[A])
+    }
 
   implicit def sortedMap[K: JsonFieldDecoder: Ordering, V: JsonDecoder]: JsonDecoder[collection.SortedMap[K, V]] =
-    keyValueChunk[K, V].map(lst => collection.SortedMap.apply(lst: _*))
+    new JsonDecoder[collection.SortedMap[K, V]] {
+      def unsafeDecode(trace: List[JsonError], in: RetractReader): collection.SortedMap[K, V] =
+        keyValueBuilder(trace, in, collection.SortedMap.newBuilder[K, V])
+    }
 }
 
 // We have a hierarchy of implicits for two reasons:
@@ -371,39 +513,20 @@ private[json] trait DecoderLowPriority1 extends DecoderLowPriority2 { this: Json
 private[json] trait DecoderLowPriority2 {
   this: JsonDecoder.type =>
 
-  implicit def seq[A: JsonDecoder]: JsonDecoder[Seq[A]] = list[A].map(_.toList)
-
   // not implicit because this overlaps with decoders for lists of tuples
-  def keyValueChunk[K, A](
-    implicit
+  def keyValueChunk[K, A](implicit
     K: JsonFieldDecoder[K],
     A: JsonDecoder[A]
   ): JsonDecoder[Chunk[(K, A)]] =
     new JsonDecoder[Chunk[(K, A)]] {
-      def unsafeDecode(
-        trace: List[JsonError],
-        in: RetractReader
-      ): Chunk[(K, A)] = {
-        val builder = zio.ChunkBuilder.make[(K, A)]()
-        Lexer.char(trace, in, '{')
-        if (Lexer.firstField(trace, in))
-          do {
-            val field  = Lexer.string(trace, in).toString
-            val trace_ = JsonError.ObjectAccess(field) :: trace
-            Lexer.char(trace_, in, ':')
-            val value = A.unsafeDecode(trace_, in)
-            builder += ((K.unsafeDecodeField(trace_, field), value))
-          } while (Lexer.nextField(trace, in))
-        builder.result()
-      }
+      def unsafeDecode(trace: List[JsonError], in: RetractReader): Chunk[(K, A)] =
+        keyValueBuilder[K, A, ({ type lambda[X, Y] = Chunk[(X, Y)] })#lambda](
+          trace,
+          in,
+          zio.ChunkBuilder.make[(K, A)]()
+        )
     }
 
-  implicit def map[K: JsonFieldDecoder, V: JsonDecoder]: JsonDecoder[Map[K, V]] =
-    keyValueChunk[K, V].map(lst => Map.apply(lst: _*))
-
-  // TODO these could be optimised...
-  implicit def set[A: JsonDecoder]: JsonDecoder[Set[A]] =
-    list[A].map(lst => immutable.HashSet(lst: _*))
 }
 
 /** When decoding a JSON Object, we only allow the keys that implement this interface. */
