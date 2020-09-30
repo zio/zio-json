@@ -10,6 +10,8 @@ import zio.test._
 
 object JsonTestSuiteSpec extends DefaultRunnableSpec {
   def spec = suite("JsonTestSuite")(
+    // Uses files from JSONTestSuite by Nicolas Seriot:
+    //   https://github.com/nst/JSONTestSuite
     testM("passes all tests") {
       for {
         f <- getResourcePaths("json_test_suite")
