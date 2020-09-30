@@ -176,7 +176,7 @@ microsite: &microsite
   steps:
       - add_ssh_keys:
           fingerprints:
-            - "11:2c:fa:98:69:d8:a1:d5:76:2e:38:d0:91:39:85:ce"
+            - "d3:c7:83:fd:0f:14:f9:28:5d:0a:90:d0:bd:6c:16:e4"
       - checkout
       - <<: *load_cache
       - <<: *install_nodejs
