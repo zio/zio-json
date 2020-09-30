@@ -64,7 +64,6 @@ class HomeSplash extends React.Component {
                     <ProjectTitle siteConfig={siteConfig}/>
                     <PromoSection>
                         <Button href={docUrl('overview/overview_index')}>Overview</Button>
-                        <Button href={docUrl('usecases/usecases_index')}>Use Cases</Button>
                         <Button href="https://github.com/zio/zio-json" target="_blank">GitHub</Button>
                     </PromoSection>
                 </div>
@@ -97,18 +96,15 @@ class Index extends React.Component {
                 style={{textAlign: 'center'}}>
                 <h2>Welcome to zio-json</h2>
                 <MarkdownBlock>
-                    TODO: Tagline
-                </MarkdownBlock>
-
-                <MarkdownBlock>
-                    TODO: Long description (paragraph)
+                  The goal of this project is to create the best all-round JSON library for Scala.
                 </MarkdownBlock>
             </div>
         );
 
         const Features = () => (
             <Block layout="fourColumn">
-                {[
+                {
+                [
                     {
                         content: 'TODO: Content 1',
                         image: `${baseUrl}img/undraw_tweetstorm.svg`,
@@ -121,7 +117,8 @@ class Index extends React.Component {
                         imageAlign: 'top',
                         title: 'TODO: Title 2',
                     },
-                ]}
+                ]
+                }
             </Block>
         );
 
@@ -129,7 +126,6 @@ class Index extends React.Component {
             <div>
                 <HomeSplash siteConfig={siteConfig} language={language}/>
                 <div className="mainContainer">
-                    <Features/>
                     <FeatureCallout/>
                 </div>
             </div>
