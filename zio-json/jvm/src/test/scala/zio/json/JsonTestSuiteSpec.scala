@@ -8,7 +8,6 @@ import zio.test.Assertion._
 import zio.test.TestAspect._
 import zio.test._
 
-// zioJsonJVM/testOnly testzio.json.EncoderSpec
 object JsonTestSuiteSpec extends DefaultRunnableSpec {
   def spec = suite("JsonTestSuite")(
     testM("passes all tests") {
