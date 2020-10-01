@@ -1,12 +1,9 @@
 {
   "overview-sidebar": {
     "Overview": [
-      "overview/overview_index"
-    ]
-  },
-  "usecases-sidebar": {
-    "Use Cases": [
-      "usecases/usecases_index"
+      "overview/overview_index",
+      "overview/overview_decoding",
+      "overview/overview_encoding"
     ]
   },
   "about-sidebar": {
