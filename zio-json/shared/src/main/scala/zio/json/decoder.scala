@@ -297,7 +297,7 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority0 {
     final case class SumType(cons: String)       extends JsonError
   }
 
-  implicit val string: JsonDecoder[String] = new JsonDecoder[String] {
+  implicit def string: JsonDecoder[String] = new JsonDecoder[String] {
     def unsafeDecode(trace: List[JsonError], in: RetractReader): String =
       Lexer.string(trace, in).toString
   }
@@ -315,7 +315,7 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority0 {
   implicit val byte: JsonDecoder[Byte]   = number(Lexer.byte)
   implicit val short: JsonDecoder[Short] = number(Lexer.short)
   implicit val int: JsonDecoder[Int]     = number(Lexer.int)
-  implicit val long: JsonDecoder[Long]   = number(Lexer.long)
+  implicit def long: JsonDecoder[Long]   = number(Lexer.long)
   implicit val bigInteger: JsonDecoder[java.math.BigInteger] = number(
     Lexer.bigInteger
   )
@@ -324,6 +324,7 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority0 {
   implicit val bigDecimal: JsonDecoder[java.math.BigDecimal] = number(
     Lexer.bigDecimal
   )
+
   // numbers decode from numbers or strings for maximum compatibility
   private[this] def number[A](
     f: (List[JsonError], RetractReader) => A
@@ -510,7 +511,7 @@ private[json] trait DecoderLowPriority1 extends DecoderLowPriority2 { this: Json
 //    optimised instances, and a fallback for the more general case that would
 //    otherwise conflict in a lower priority scope. A good example of this is to
 //    have specialised decoders for collection types, falling back to BuildFrom.
-private[json] trait DecoderLowPriority2 {
+private[json] trait DecoderLowPriority2 extends DecoderLowPriority3 {
   this: JsonDecoder.type =>
 
   // not implicit because this overlaps with decoders for lists of tuples
@@ -527,6 +528,50 @@ private[json] trait DecoderLowPriority2 {
         )
     }
 
+}
+
+private[json] trait DecoderLowPriority3 { this: JsonDecoder.type =>
+  import java.time._
+  import java.time.DateTimeException
+  import java.time.format.{ DateTimeFormatter, DateTimeParseException }
+  import java.time.zone.ZoneRulesException
+
+  implicit val dayOfWeek: JsonDecoder[DayOfWeek] =
+    string.mapOrFail(s => parseJavaTime(DayOfWeek.valueOf, s.toUpperCase))
+  implicit val duration: JsonDecoder[Duration] = long.map(Duration.ofMillis)
+  implicit val instant: JsonDecoder[Instant]   = string.mapOrFail(parseJavaTime(Instant.parse, _))
+  implicit val localDate: JsonDecoder[LocalDate] =
+    string.mapOrFail(parseJavaTime(LocalDate.parse(_, DateTimeFormatter.ISO_LOCAL_DATE), _))
+  implicit val localDateTime: JsonDecoder[LocalDateTime] =
+    string.mapOrFail(parseJavaTime(LocalDateTime.parse(_, DateTimeFormatter.ISO_LOCAL_DATE_TIME), _))
+  implicit val localTime: JsonDecoder[LocalTime] =
+    string.mapOrFail(parseJavaTime(LocalTime.parse(_, DateTimeFormatter.ISO_LOCAL_TIME), _))
+  implicit val month: JsonDecoder[Month]       = string.mapOrFail(s => parseJavaTime(Month.valueOf, s.toUpperCase))
+  implicit val monthDay: JsonDecoder[MonthDay] = string.mapOrFail(parseJavaTime(MonthDay.parse, _))
+  implicit val offsetDateTime: JsonDecoder[OffsetDateTime] =
+    string.mapOrFail(parseJavaTime(OffsetDateTime.parse(_, DateTimeFormatter.ISO_OFFSET_DATE_TIME), _))
+  implicit val offsetTime: JsonDecoder[OffsetTime] =
+    string.mapOrFail(parseJavaTime(OffsetTime.parse(_, DateTimeFormatter.ISO_OFFSET_TIME), _))
+  implicit val period: JsonDecoder[Period] = string.mapOrFail(parseJavaTime(Period.parse, _))
+  implicit val year: JsonDecoder[Year]     = string.mapOrFail(parseJavaTime(Year.parse, _))
+  implicit val yearMonth: JsonDecoder[YearMonth] =
+    string.mapOrFail(parseJavaTime(YearMonth.parse, _))
+  implicit val zonedDateTime: JsonDecoder[ZonedDateTime] =
+    string.mapOrFail(parseJavaTime(ZonedDateTime.parse(_, DateTimeFormatter.ISO_ZONED_DATE_TIME), _))
+  implicit val zoneId: JsonDecoder[ZoneId] = string.mapOrFail(parseJavaTime(ZoneId.of, _))
+  implicit val zoneOffset: JsonDecoder[ZoneOffset] =
+    string.mapOrFail(parseJavaTime(ZoneOffset.of, _))
+
+  // Commonized handling for decoding from string to java.time Class
+  private[json] def parseJavaTime[A](f: String => A, s: String): Either[String, A] =
+    try {
+      Right(f(s))
+    } catch {
+      case zre: ZoneRulesException      => Left(s"${s} is not a valid ISO-8601 format, ${zre.getMessage}")
+      case dtpe: DateTimeParseException => Left(s"${s} is not a valid ISO-8601 format, ${dtpe.getMessage}")
+      case dte: DateTimeException       => Left(s"${s} is not a valid ISO-8601 format, ${dte.getMessage}")
+      case ex: Exception                => Left(ex.getMessage)
+    }
 }
 
 /** When decoding a JSON Object, we only allow the keys that implement this interface. */

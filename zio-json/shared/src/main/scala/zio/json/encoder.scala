@@ -164,7 +164,7 @@ object JsonEncoder extends GeneratedTupleEncoders with EncoderLowPriority0 {
 
   }
 
-  private[this] def explicit[A](f: A => String): JsonEncoder[A] = new JsonEncoder[A] {
+  private[json] def explicit[A](f: A => String): JsonEncoder[A] = new JsonEncoder[A] {
     def unsafeEncode(a: A, indent: Option[Int], out: Write): Unit = out.write(f(a))
   }
   implicit val boolean: JsonEncoder[Boolean] = explicit(_.toString)
@@ -248,7 +248,7 @@ private[json] trait EncoderLowPriority1 extends EncoderLowPriority2 { this: Json
     list[A].contramap(_.toList)
 }
 
-private[json] trait EncoderLowPriority2 { this: JsonEncoder.type =>
+private[json] trait EncoderLowPriority2 extends EncoderLowPriority3 { this: JsonEncoder.type =>
   implicit def iterable[A, T[X] <: Iterable[X]](implicit A: JsonEncoder[A]): JsonEncoder[T[A]] =
     new JsonEncoder[T[A]] {
       def unsafeEncode(as: T[A], indent: Option[Int], out: Write): Unit = {
@@ -303,6 +303,40 @@ private[json] trait EncoderLowPriority2 { this: JsonEncoder.type =>
     A: JsonEncoder[A]
   ): JsonEncoder[({ type lambda[X, Y] = Chunk[(X, Y)] })#lambda[K, A]] =
     keyValueIterable[K, A, ({ type lambda[X, Y] = Chunk[(X, Y)] })#lambda]
+}
+
+private[json] trait EncoderLowPriority3 { this: JsonEncoder.type =>
+  import java.time._
+  import java.time.format.DateTimeFormatter
+
+  implicit val dayOfWeek: JsonEncoder[DayOfWeek] = explicit(_.toString)
+  implicit val duration: JsonEncoder[Duration]   = explicit(_.toMillis.toString)
+  implicit val instant: JsonEncoder[Instant]     = explicit(_.toString)
+  implicit val localDate: JsonEncoder[LocalDate] = explicit(
+    _.format(DateTimeFormatter.ISO_LOCAL_DATE)
+  )
+  implicit val localDateTime: JsonEncoder[LocalDateTime] = explicit(
+    _.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+  )
+  implicit val localTime: JsonEncoder[LocalTime] = explicit(
+    _.format(DateTimeFormatter.ISO_LOCAL_TIME)
+  )
+  implicit val month: JsonEncoder[Month]       = explicit(_.toString)
+  implicit val monthDay: JsonEncoder[MonthDay] = explicit(_.toString)
+  implicit val offsetDateTime: JsonEncoder[OffsetDateTime] = explicit(
+    _.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)
+  )
+  implicit val offsetTime: JsonEncoder[OffsetTime] = explicit(
+    _.format(DateTimeFormatter.ISO_OFFSET_TIME)
+  )
+  implicit val period: JsonEncoder[Period]       = explicit(_.toString)
+  implicit val year: JsonEncoder[Year]           = explicit(_.toString)
+  implicit val yearMonth: JsonEncoder[YearMonth] = explicit(_.toString)
+  implicit val zonedDateTime: JsonEncoder[ZonedDateTime] = explicit(
+    _.format(DateTimeFormatter.ISO_ZONED_DATE_TIME)
+  )
+  implicit val zoneId: JsonEncoder[ZoneId]         = explicit(_.toString)
+  implicit val zoneOffset: JsonEncoder[ZoneOffset] = explicit(_.toString)
 }
 
 /** When encoding a JSON Object, we only allow keys that implement this interface. */
