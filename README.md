@@ -469,8 +469,13 @@ See the [Code of Conduct](https://zio.github.io/zio-json/docs/about/about_coc)
 
 Come chat with us on [![Badge-Discord]][Link-Discord].
 
-# License
+## License
+
 [License](LICENSE)
+
+## Acknowledgements
+
+- Uses [JsonTestSuite](https://github.com/nst/JSONTestSuite) to test parsing. (c) 2016 Nicolas Seriot)
 
 [Badge-SonatypeReleases]: https://img.shields.io/nexus/r/https/oss.sonatype.org/dev.zio/zio-json_2.12.svg "Sonatype Releases"
 [Badge-SonatypeSnapshots]: https://img.shields.io/nexus/s/https/oss.sonatype.org/dev.zio/zio-json_2.12.svg "Sonatype Snapshots"

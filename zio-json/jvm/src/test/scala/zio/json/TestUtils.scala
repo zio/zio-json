@@ -1,6 +1,6 @@
 package testzio.json
 
-import java.io.{ FileNotFoundException, IOException }
+import java.io.{ File, FileNotFoundException, IOException }
 import java.math.BigInteger
 
 import zio._
@@ -62,6 +62,14 @@ object TestUtils {
       ZManaged.fromAutoCloseable(acquire)
     }.flatMap(inputStream => ZStream.fromInputStream(inputStream).transduce(ZTransducer.utf8Decode))
       .fold("")(_ ++ _)
+
+  def getResourcePaths(folderPath: String): ZIO[Blocking, IOException, Vector[String]] =
+    effectBlockingIO {
+      val url    = getClass.getClassLoader.getResource(folderPath)
+      val folder = new File(url.getPath)
+
+      folder.listFiles.toVector.map(p => folder.toPath.relativize(p.toPath).toString)
+    }
 
   def asChars(str: String): CharSequence =
     new zio.json.internal.FastCharSequence(str.toCharArray)
