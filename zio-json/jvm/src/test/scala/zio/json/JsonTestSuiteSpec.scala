@@ -3,12 +3,12 @@ package testzio.json
 import testzio.json.TestUtils._
 
 import zio._
+import zio.blocking.Blocking
 import zio.json._
 import zio.json.ast.Json
 import zio.test.Assertion._
 import zio.test.TestAspect._
 import zio.test._
-import zio.blocking.Blocking
 
 object JsonTestSuiteSpec extends DefaultRunnableSpec {
   def spec: Spec[Blocking with Annotations, TestFailure[Any], TestSuccess] = suite("JsonTestSuite")(
