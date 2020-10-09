@@ -30,7 +30,7 @@ addCommandAlias("fmtCheck", "all scalafmtSbtCheck scalafmtCheck test:scalafmtChe
 addCommandAlias("fixCheck", "; compile:scalafix --check ; test:scalafix --check ")
 addCommandAlias("prepare", "; fix; fmt")
 
-val zioVersion = "1.0.1"
+val zioVersion = "1.0.3"
 
 lazy val root = project
   .in(file("."))
