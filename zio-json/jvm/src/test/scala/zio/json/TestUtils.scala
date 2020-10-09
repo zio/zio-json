@@ -22,9 +22,6 @@ object TestUtils {
       .map(_.bigDecimal)
       .filter(_.toBigInteger.bitLength < 128)
 
-  // Something seems to be up with zio-test’s Gen.usASCII, it returns
-  // strings like 'Chunk(<>)' (Chunk#toString?) containing any ASCII chars
-  // This generator matches ScalaProps
   val genUsAsciiString: Gen[Random with Sized, String] =
     Gen.string(Gen.oneOf(Gen.char('!', '~')))
 
