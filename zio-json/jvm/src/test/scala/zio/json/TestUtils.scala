@@ -1,6 +1,6 @@
 package testzio.json
 
-import java.io.{ File, FileNotFoundException, IOException }
+import java.io.{ File, IOException }
 import java.math.BigInteger
 
 import zio._
@@ -22,9 +22,6 @@ object TestUtils {
       .map(_.bigDecimal)
       .filter(_.toBigInteger.bitLength < 128)
 
-  // Something seems to be up with zio-test’s Gen.usASCII, it returns
-  // strings like 'Chunk(<>)' (Chunk#toString?) containing any ASCII chars
-  // This generator matches ScalaProps
   val genUsAsciiString: Gen[Random with Sized, String] =
     Gen.string(Gen.oneOf(Gen.char('!', '~')))
 
@@ -51,17 +48,10 @@ object TestUtils {
   }
 
   def getResourceAsStringM(res: String): ZIO[Blocking, IOException, String] =
-    ZStream.managed {
-      val acquire = effectBlockingIO(getClass.getClassLoader.getResourceAsStream(res)).flatMap { x =>
-        if (x == null)
-          ZIO.fail(new FileNotFoundException(s"No such resource: '$res'"))
-        else
-          ZIO.succeed(x)
-      }
-
-      ZManaged.fromAutoCloseable(acquire)
-    }.flatMap(inputStream => ZStream.fromInputStream(inputStream).transduce(ZTransducer.utf8Decode))
-      .fold("")(_ ++ _)
+    ZStream
+      .fromResource(res)
+      .transduce(ZTransducer.utf8Decode)
+      .run(ZSink.foldLeftChunks("")((acc, c) => acc ++ c.mkString))
 
   def getResourcePaths(folderPath: String): ZIO[Blocking, IOException, Vector[String]] =
     effectBlockingIO {
