@@ -38,6 +38,16 @@ object DecoderSpec extends DefaultRunnableSpec {
           forall(isRight(isRight(equalTo(2))))
         )
       },
+      testM("excessively nested structures") {
+        val testFile = "json_test_suite/n_structure_open_array_object.json"
+
+        for {
+          s <- getResourceAsStringM(testFile)
+          r <- ZIO.fromEither(s.fromJson[Json]).run
+        } yield {
+          assert(r)(fails(equalTo("Unexpected structure")))
+        }
+      },
       test("parameterless products") {
         import exampleproducts._
 
