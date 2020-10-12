@@ -17,7 +17,7 @@ object JsonTestSuiteSpec extends DefaultRunnableSpec {
     testM("passes all tests") {
       for {
         f <- getResourcePaths("json_test_suite")
-        a <- ZIO.foreachPar(f) { path =>
+        a <- ZIO.foreach(f.sorted) { path =>
                for {
                  input <- getResourceAsStringM(s"json_test_suite/$path")
                  exit <- ZIO.effectTotal {
@@ -39,6 +39,6 @@ object JsonTestSuiteSpec extends DefaultRunnableSpec {
                  }
              }
       } yield a.reduce(_ && _)
-    } @@ ignore
-  )
+    }
+  ) @@ ignore
 }
