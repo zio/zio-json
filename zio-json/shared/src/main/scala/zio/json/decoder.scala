@@ -52,6 +52,7 @@ trait JsonDecoder[A] { self =>
     catch {
       case JsonDecoder.UnsafeJson(trace) => Left(JsonError.render(trace))
       case _: internal.UnexpectedEnd     => Left("Unexpected end of input")
+      case _: StackOverflowError         => Left("Unexpected structure")
     }
 
   /**
