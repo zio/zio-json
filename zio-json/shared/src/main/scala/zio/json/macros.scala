@@ -218,11 +218,13 @@ object DeriveJsonEncoder {
           val indent_ = JsonEncoder.bump(indent)
           JsonEncoder.pad(indent_, out)
 
+          var prevFields = false // whether any fields have been written
           while (i < len) {
             val tc = tcs(i)
             val p  = params(i).dereference(a)
             if (!tc.isNothing(p)) {
-              if (i > 0) {
+              // if we have at least one field already, we need a comma
+              if (prevFields) { 
                 if (indent.isEmpty) out.write(",")
                 else {
                   out.write(",")
@@ -233,6 +235,7 @@ object DeriveJsonEncoder {
               if (indent.isEmpty) out.write(":")
               else out.write(" : ")
               tc.unsafeEncode(p, indent_, out)
+              prevFields = true // record that we have at least one field so far
             }
             i += 1
           }
