@@ -224,7 +224,7 @@ object DeriveJsonEncoder {
             val p  = params(i).dereference(a)
             if (!tc.isNothing(p)) {
               // if we have at least one field already, we need a comma
-              if (prevFields) { 
+              if (prevFields) {
                 if (indent.isEmpty) out.write(",")
                 else {
                   out.write(",")

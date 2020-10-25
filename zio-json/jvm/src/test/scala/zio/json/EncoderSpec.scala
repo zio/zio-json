@@ -216,7 +216,7 @@ object EncoderSpec extends DefaultRunnableSpec {
       implicit val encoder: JsonEncoder[CoupleOfThings] =
         DeriveJsonEncoder.gen[CoupleOfThings]
     }
-    case class OptionalAndRequired (i: Option[Int], s: String)
+    case class OptionalAndRequired(i: Option[Int], s: String)
     object OptionalAndRequired {
       implicit val encoder: JsonEncoder[OptionalAndRequired] =
         DeriveJsonEncoder.gen[OptionalAndRequired]
