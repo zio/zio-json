@@ -102,7 +102,8 @@ object EncoderSpec extends DefaultRunnableSpec {
         assert(CoupleOfThings(-1, Some(10.0f), false).toJsonPretty)(
           equalTo("{\n  \"j\" : -1,\n  \"f\" : 10.0,\n  \"b\" : false\n}")
         ) &&
-        assert(CoupleOfThings(0, None, true).toJsonPretty)(equalTo("{\n  \"j\" : 0,\n  \"b\" : true\n}"))
+        assert(CoupleOfThings(0, None, true).toJsonPretty)(equalTo("{\n  \"j\" : 0,\n  \"b\" : true\n}")) &&
+        assert(OptionalAndRequired(None, "foo").toJson)(equalTo("""{"s":"foo"}"""))
       },
       test("sum encoding") {
         import examplesum._
@@ -214,6 +215,11 @@ object EncoderSpec extends DefaultRunnableSpec {
     object CoupleOfThings {
       implicit val encoder: JsonEncoder[CoupleOfThings] =
         DeriveJsonEncoder.gen[CoupleOfThings]
+    }
+    case class OptionalAndRequired (i: Option[Int], s: String)
+    object OptionalAndRequired {
+      implicit val encoder: JsonEncoder[OptionalAndRequired] =
+        DeriveJsonEncoder.gen[OptionalAndRequired]
     }
   }
 
