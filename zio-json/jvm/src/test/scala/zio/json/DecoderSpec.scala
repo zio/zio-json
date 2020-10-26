@@ -1,5 +1,8 @@
 package testzio.json
 
+import java.nio.file.Paths
+import java.time.Instant
+
 import scala.collection.immutable
 
 import io.circe
@@ -15,7 +18,7 @@ import zio.json.ast._
 import zio.stream.ZStream
 import zio.test.Assertion._
 import zio.test.TestAspect._
-import zio.test.environment.{ Live }
+import zio.test.environment.Live
 import zio.test.{ DefaultRunnableSpec, _ }
 import zio.{ test => _, _ }
 
@@ -306,6 +309,30 @@ object DecoderSpec extends DefaultRunnableSpec {
                 }
             }
           )
+        ),
+        suite("helpers in zio.json")(
+          testM("readJsonLines reads from files") {
+            import logEvent._
+
+            for {
+              lines <- readJsonLinesAs[Event](Paths.get("zio-json/jvm/src/test/resources/log.jsonlines")).runCollect
+            } yield {
+              assert(lines(0))(equalTo(Event(Instant.ofEpochSecond(1603669875), "hello"))) &&
+              assert(lines(1))(equalTo(Event(Instant.ofEpochSecond(1603669876), "world")))
+            }
+          },
+          testM("readJsonLines reads from URLs") {
+            import logEvent._
+
+            val url = this.getClass.getClassLoader.getResource("log.jsonlines")
+
+            for {
+              lines <- readJsonLinesAs[Event](url).runCollect
+            } yield {
+              assert(lines(0))(equalTo(Event(Instant.ofEpochSecond(1603669875), "hello"))) &&
+              assert(lines(1))(equalTo(Event(Instant.ofEpochSecond(1603669876), "world")))
+            }
+          }
         )
       )
     )
@@ -419,5 +446,10 @@ object DecoderSpec extends DefaultRunnableSpec {
 
     @jsonHint("Abel")
     case class Child2() extends Parent
+  }
+
+  object logEvent {
+    case class Event(at: Instant, message: String)
+    implicit val eventDecoder: JsonDecoder[Event] = DeriveJsonDecoder.gen[Event]
   }
 }
