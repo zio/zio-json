@@ -317,8 +317,8 @@ object DecoderSpec extends DefaultRunnableSpec {
             for {
               lines <- readJsonLinesAs[Event](Paths.get("zio-json/jvm/src/test/resources/log.jsonlines")).runCollect
             } yield {
-              assert(lines(0))(equalTo(Event(Instant.ofEpochSecond(1603669875), "hello"))) &&
-              assert(lines(1))(equalTo(Event(Instant.ofEpochSecond(1603669876), "world")))
+              assert(lines(0))(equalTo(Event(1603669875, "hello"))) &&
+              assert(lines(1))(equalTo(Event(1603669876, "world")))
             }
           },
           testM("readJsonLines reads from URLs") {
@@ -329,8 +329,8 @@ object DecoderSpec extends DefaultRunnableSpec {
             for {
               lines <- readJsonLinesAs[Event](url).runCollect
             } yield {
-              assert(lines(0))(equalTo(Event(Instant.ofEpochSecond(1603669875), "hello"))) &&
-              assert(lines(1))(equalTo(Event(Instant.ofEpochSecond(1603669876), "world")))
+              assert(lines(0))(equalTo(Event(1603669875, "hello"))) &&
+              assert(lines(1))(equalTo(Event(1603669876, "world")))
             }
           }
         )
@@ -449,7 +449,9 @@ object DecoderSpec extends DefaultRunnableSpec {
   }
 
   object logEvent {
-    case class Event(at: Instant, message: String)
+    case class Event(at: Long, message: String)
+
     implicit val eventDecoder: JsonDecoder[Event] = DeriveJsonDecoder.gen[Event]
+    implicit val eventEncoder: JsonEncoder[Event] = DeriveJsonEncoder.gen[Event]
   }
 }

@@ -6,6 +6,7 @@ import java.nio.file.{ Path, Paths }
 
 import zio.blocking.Blocking
 import zio.stream._
+import java.nio.charset.StandardCharsets
 
 package object json {
   implicit final class EncoderOps[A](private val a: A) extends AnyVal {
@@ -72,8 +73,29 @@ package object json {
       )
   }
 
+  def writeJsonLinesAs[R <: Blocking, A: JsonEncoder](file: Path, stream: ZStream[R, Throwable, A]): RIO[R, Unit] =
+    stream
+      .transduce(
+        JsonEncoder[A].encodeJsonLinesTransducer >>>
+        charsToUtf8
+      )
+      .run(ZSink.fromFile(file))
+      .unit
+
   private def stringToChars: ZTransducer[Any, Nothing, String, Char] =
     ZTransducer
       .fromFunction[String, Chunk[Char]](s => Chunk.fromArray(s.toCharArray))
       .mapChunks(_.flatten)
+
+  private def charsToUtf8: ZTransducer[Any, Nothing, Char, Byte] =
+    ZTransducer
+      .fromPush {
+        case None =>
+          ZIO.succeed(Chunk.empty)
+
+        case Some(xs) =>
+          ZIO.effectTotal {
+            Chunk.fromArray((new String(xs.toArray)).getBytes(StandardCharsets.UTF_8))
+          }
+      }
 }

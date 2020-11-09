@@ -15,6 +15,9 @@ import zio.json.ast.Json
 import zio.stream.ZStream
 import zio.test.Assertion._
 import zio.test.{ DefaultRunnableSpec, assert, _ }
+import zio.ZManaged
+import java.nio.file.Files
+import java.time.Instant
 
 // zioJsonJVM/testOnly testzio.json.EncoderSpec
 object EncoderSpec extends DefaultRunnableSpec {
@@ -181,6 +184,24 @@ object EncoderSpec extends DefaultRunnableSpec {
             xs <- ints.transduce(JsonEncoder[Json].encodeJsonArrayTransducer).runCollect
           } yield {
             assert(xs.mkString)(equalTo("""[{"id":1},{"id":2},{"id":3}]"""))
+          }
+        }
+      ),
+      suite("helpers in zio.json")(
+        testM("writeJsonLines writes JSON lines") {
+          import DecoderSpec.logEvent._
+
+          val path = Files.createTempFile("log", "json")
+          val events = Chunk(
+            Event(1603669876, "hello"),
+            Event(1603669875, "world")
+          )
+
+          for {
+            _  <- writeJsonLinesAs(path, ZStream.fromIterable(events))
+            xs <- readJsonLinesAs[Event](path).runCollect
+          } yield {
+            assert(xs)(equalTo(events))
           }
         }
       )
