@@ -31,6 +31,18 @@ package object json {
     def fromJson[A](implicit A: JsonDecoder[A]): Either[String, A] = A.decodeJson(json)
   }
 
+  def readJsonAs(file: File): ZStream[Blocking, Throwable, ast.Json] =
+    readJsonLinesAs[ast.Json](file)
+
+  def readJsonAs(path: Path): ZStream[Blocking, Throwable, ast.Json] =
+    readJsonLinesAs[ast.Json](path)
+
+  def readJsonAs(path: String): ZStream[Blocking, Throwable, ast.Json] =
+    readJsonLinesAs[ast.Json](path)
+
+  def readJsonAs(url: URL): ZStream[Blocking, Throwable, ast.Json] =
+    readJsonLinesAs[ast.Json](url)
+
   def readJsonLinesAs[A: JsonDecoder](file: File): ZStream[Blocking, Throwable, A] =
     readJsonLinesAs(file.toPath)
 
@@ -39,8 +51,8 @@ package object json {
       .fromFile(path)
       .transduce(
         ZTransducer.utf8Decode >>>
-          stringToChars >>>
-          JsonDecoder[A].decodeJsonTransducer(JsonStreamDelimiter.Newline)
+        stringToChars >>>
+        JsonDecoder[A].decodeJsonTransducer(JsonStreamDelimiter.Newline)
       )
 
   def readJsonLinesAs[A: JsonDecoder](path: String): ZStream[Blocking, Throwable, A] =
