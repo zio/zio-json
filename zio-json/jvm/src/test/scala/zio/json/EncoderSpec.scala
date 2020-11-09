@@ -9,13 +9,13 @@ import testzio.json.data.geojson.generated._
 import testzio.json.data.googlemaps._
 import testzio.json.data.twitter._
 
+import zio.{ Chunk }
 import zio.blocking.Blocking
 import zio.json._
 import zio.json.ast.Json
 import zio.stream.ZStream
 import zio.test.Assertion._
 import zio.test.{ DefaultRunnableSpec, assert, _ }
-import zio.{ Chunk }
 
 // zioJsonJVM/testOnly testzio.json.EncoderSpec
 object EncoderSpec extends DefaultRunnableSpec {
