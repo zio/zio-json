@@ -2,11 +2,11 @@ package zio
 
 import java.io.{ File, IOException }
 import java.net.URL
+import java.nio.charset.StandardCharsets
 import java.nio.file.{ Path, Paths }
 
 import zio.blocking.Blocking
 import zio.stream._
-import java.nio.charset.StandardCharsets
 
 package object json {
   implicit final class EncoderOps[A](private val a: A) extends AnyVal {
@@ -52,8 +52,8 @@ package object json {
       .fromFile(path)
       .transduce(
         ZTransducer.utf8Decode >>>
-        stringToChars >>>
-        JsonDecoder[A].decodeJsonTransducer(JsonStreamDelimiter.Newline)
+          stringToChars >>>
+          JsonDecoder[A].decodeJsonTransducer(JsonStreamDelimiter.Newline)
       )
 
   def readJsonLinesAs[A: JsonDecoder](path: String): ZStream[Blocking, Throwable, A] =
@@ -73,14 +73,29 @@ package object json {
       )
   }
 
-  def writeJsonLinesAs[R <: Blocking, A: JsonEncoder](file: Path, stream: ZStream[R, Throwable, A]): RIO[R, Unit] =
+  def writeJsonLines[R <: Blocking](file: File, stream: ZStream[R, Throwable, ast.Json]): RIO[R, Unit] =
+    writeJsonLinesAs(file, stream)
+
+  def writeJsonLines[R <: Blocking](path: Path, stream: ZStream[R, Throwable, ast.Json]): RIO[R, Unit] =
+    writeJsonLinesAs(path, stream)
+
+  def writeJsonLines[R <: Blocking](path: String, stream: ZStream[R, Throwable, ast.Json]): RIO[R, Unit] =
+    writeJsonLinesAs(path, stream)
+
+  def writeJsonLinesAs[R <: Blocking, A: JsonEncoder](file: File, stream: ZStream[R, Throwable, A]): RIO[R, Unit] =
+    writeJsonLinesAs(file.toPath, stream)
+
+  def writeJsonLinesAs[R <: Blocking, A: JsonEncoder](path: Path, stream: ZStream[R, Throwable, A]): RIO[R, Unit] =
     stream
       .transduce(
         JsonEncoder[A].encodeJsonLinesTransducer >>>
-        charsToUtf8
+          charsToUtf8
       )
-      .run(ZSink.fromFile(file))
+      .run(ZSink.fromFile(path))
       .unit
+
+  def writeJsonLinesAs[R <: Blocking, A: JsonEncoder](path: String, stream: ZStream[R, Throwable, A]): RIO[R, Unit] =
+    writeJsonLinesAs(Paths.get(path), stream)
 
   private def stringToChars: ZTransducer[Any, Nothing, String, Char] =
     ZTransducer
@@ -88,14 +103,13 @@ package object json {
       .mapChunks(_.flatten)
 
   private def charsToUtf8: ZTransducer[Any, Nothing, Char, Byte] =
-    ZTransducer
-      .fromPush {
-        case None =>
-          ZIO.succeed(Chunk.empty)
+    ZTransducer.fromPush {
+      case None =>
+        ZIO.succeed(Chunk.empty)
 
-        case Some(xs) =>
-          ZIO.effectTotal {
-            Chunk.fromArray((new String(xs.toArray)).getBytes(StandardCharsets.UTF_8))
-          }
-      }
+      case Some(xs) =>
+        ZIO.effectTotal {
+          Chunk.fromArray((new String(xs.toArray)).getBytes(StandardCharsets.UTF_8))
+        }
+    }
 }

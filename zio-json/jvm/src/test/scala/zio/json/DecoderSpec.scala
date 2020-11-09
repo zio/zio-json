@@ -1,7 +1,6 @@
 package testzio.json
 
 import java.nio.file.Paths
-import java.time.Instant
 
 import scala.collection.immutable
 
