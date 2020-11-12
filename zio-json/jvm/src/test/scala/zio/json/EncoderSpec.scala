@@ -1,6 +1,7 @@
 package testzio.json
 
 import java.io.IOException
+import java.nio.file.Files
 
 import io.circe
 import testzio.json.TestUtils._
@@ -8,7 +9,7 @@ import testzio.json.data.geojson.generated._
 import testzio.json.data.googlemaps._
 import testzio.json.data.twitter._
 
-import zio.Chunk
+import zio.{ Chunk }
 import zio.blocking.Blocking
 import zio.json._
 import zio.json.ast.Json
@@ -181,6 +182,24 @@ object EncoderSpec extends DefaultRunnableSpec {
             xs <- ints.transduce(JsonEncoder[Json].encodeJsonArrayTransducer).runCollect
           } yield {
             assert(xs.mkString)(equalTo("""[{"id":1},{"id":2},{"id":3}]"""))
+          }
+        }
+      ),
+      suite("helpers in zio.json")(
+        testM("writeJsonLines writes JSON lines") {
+          import DecoderSpec.logEvent._
+
+          val path = Files.createTempFile("log", "json")
+          val events = Chunk(
+            Event(1603669876, "hello"),
+            Event(1603669875, "world")
+          )
+
+          for {
+            _  <- writeJsonLinesAs(path, ZStream.fromIterable(events))
+            xs <- readJsonLinesAs[Event](path).runCollect
+          } yield {
+            assert(xs)(equalTo(events))
           }
         }
       )
