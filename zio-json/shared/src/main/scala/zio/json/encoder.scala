@@ -70,7 +70,7 @@ trait JsonEncoder[A] { self =>
     ZTransducer {
       for {
         runtime     <- ZIO.runtime[Any].toManaged_
-        chunkBuffer <- Ref.makeManaged(Chunk.fromIterable(startWith))
+        chunkBuffer <- Ref.makeManaged(Chunk.fromIterable(startWith.toIterable))
         writer <- ZManaged.fromAutoCloseable {
                     ZIO.effectTotal {
                       new java.io.BufferedWriter(
