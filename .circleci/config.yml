@@ -377,9 +377,4 @@ workflows:
           filters:
             <<: *filter_tags
             branches:
-              only:
-                - develop
-            # TODO: replace the block above with this one once microsite build
-            # is verified
-            # branches:
-            #   ignore: /.*/
+              ignore: /.*/
