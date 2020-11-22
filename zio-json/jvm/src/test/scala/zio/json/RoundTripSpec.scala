@@ -2,8 +2,8 @@ package testzio.json
 
 import java.time._
 
+import testzio.json.JavaTimeSpec.equalToStringified
 import testzio.json.TestUtils._
-
 import zio.json._
 import zio.json.ast.Json
 import zio.random.Random
@@ -47,7 +47,8 @@ object RoundTripSpec extends DefaultRunnableSpec {
           assertRoundtrips(DayOfWeek.MONDAY)
         },
         test("Duration") {
-          assertRoundtrips(Duration.ofDays(1))
+          assertRoundtrips(Duration.ofDays(1)) &&
+          assertRoundtrips(Duration.ofSeconds(Long.MaxValue, 999_999_999L))
         },
         test("Instant") {
           assertRoundtrips(Instant.EPOCH)

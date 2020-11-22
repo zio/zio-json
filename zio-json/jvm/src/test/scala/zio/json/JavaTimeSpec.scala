@@ -30,7 +30,10 @@ object JavaTimeSpec extends DefaultRunnableSpec {
         test("Duration") {
           assert(Duration.ofDays(1).toJson)(equalToStringified("86400000")) &&
           assert(Duration.ofHours(24).toJson)(equalToStringified("86400000")) &&
-          assert(Duration.ofMinutes(1440).toJson)(equalToStringified("86400000"))
+          assert(Duration.ofMinutes(1440).toJson)(equalToStringified("86400000")) &&
+          assert(Duration.ofSeconds(Long.MaxValue, 999_999_999L).toJson)(
+            equalToStringified(s"${Long.MaxValue.toString}.999999999")
+          )
         },
         test("Instant") {
           val n = Instant.now()
