@@ -79,6 +79,8 @@ object RoundTripSpec extends DefaultRunnableSpec {
         test("Year") {
           assertRoundtrips(Year.of(1999))
           assertRoundtrips(Year.of(10000))
+          assertRoundtrips(Year.MIN_VALUE)
+          assertRoundtrips(Year.MAX_VALUE)
         },
         test("YearMonth") {
           assertRoundtrips(YearMonth.of(1999, 12))

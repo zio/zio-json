@@ -97,7 +97,8 @@ object JavaTimeSpec extends DefaultRunnableSpec {
         test("Year") {
           val n = Year.now()
           assert(n.toJson)(equalToStringified(n.toString)) &&
-          assert(Year.of(1999).toJson)(equalToStringified("1999"))
+          assert(Year.of(1999).toJson)(equalToStringified("1999")) &&
+          assert(Year.of(10000).toJson)(equalToStringified("+10000"))
         },
         test("YearMonth") {
           val n = YearMonth.now()
@@ -215,8 +216,8 @@ object JavaTimeSpec extends DefaultRunnableSpec {
         test("Year") {
           val n = Year.now()
           assert(stringify(n).fromJson[Year])(isRight(equalTo(n))) &&
-          assert(stringify("1999").fromJson[Year])(isRight(equalTo(Year.of(1999))))
-
+          assert(stringify("1999").fromJson[Year])(isRight(equalTo(Year.of(1999)))) &&
+          assert(stringify("+10000").fromJson[Year])(isRight(equalTo(Year.of(10000))))
         },
         test("YearMonth") {
           val n = YearMonth.now()
