@@ -167,6 +167,11 @@ object JsonEncoder extends GeneratedTupleEncoders with EncoderLowPriority0 {
   private[json] def explicit[A](f: A => String): JsonEncoder[A] = new JsonEncoder[A] {
     def unsafeEncode(a: A, indent: Option[Int], out: Write): Unit = out.write(f(a))
   }
+
+  private[json] def stringify[A](f: A => String): JsonEncoder[A] = new JsonEncoder[A] {
+    def unsafeEncode(a: A, indent: Option[Int], out: Write): Unit = out.write(s""""${f(a)}"""")
+  }
+
   implicit val boolean: JsonEncoder[Boolean] = explicit(_.toString)
   implicit val char: JsonEncoder[Char]       = string.contramap(_.toString)
   implicit val symbol: JsonEncoder[Symbol]   = string.contramap(_.name)
@@ -309,34 +314,34 @@ private[json] trait EncoderLowPriority3 { this: JsonEncoder.type =>
   import java.time._
   import java.time.format.DateTimeFormatter
 
-  implicit val dayOfWeek: JsonEncoder[DayOfWeek] = explicit(_.toString)
-  implicit val duration: JsonEncoder[Duration]   = explicit(_.toMillis.toString)
-  implicit val instant: JsonEncoder[Instant]     = explicit(_.toString)
-  implicit val localDate: JsonEncoder[LocalDate] = explicit(
+  implicit val dayOfWeek: JsonEncoder[DayOfWeek] = stringify(_.toString)
+  implicit val duration: JsonEncoder[Duration]   = stringify(_.toMillis.toString)
+  implicit val instant: JsonEncoder[Instant]     = stringify(_.toString)
+  implicit val localDate: JsonEncoder[LocalDate] = stringify(
     _.format(DateTimeFormatter.ISO_LOCAL_DATE)
   )
-  implicit val localDateTime: JsonEncoder[LocalDateTime] = explicit(
+  implicit val localDateTime: JsonEncoder[LocalDateTime] = stringify(
     _.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
   )
-  implicit val localTime: JsonEncoder[LocalTime] = explicit(
+  implicit val localTime: JsonEncoder[LocalTime] = stringify(
     _.format(DateTimeFormatter.ISO_LOCAL_TIME)
   )
-  implicit val month: JsonEncoder[Month]       = explicit(_.toString)
-  implicit val monthDay: JsonEncoder[MonthDay] = explicit(_.toString)
-  implicit val offsetDateTime: JsonEncoder[OffsetDateTime] = explicit(
+  implicit val month: JsonEncoder[Month]       = stringify(_.toString)
+  implicit val monthDay: JsonEncoder[MonthDay] = stringify(_.toString)
+  implicit val offsetDateTime: JsonEncoder[OffsetDateTime] = stringify(
     _.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)
   )
-  implicit val offsetTime: JsonEncoder[OffsetTime] = explicit(
+  implicit val offsetTime: JsonEncoder[OffsetTime] = stringify(
     _.format(DateTimeFormatter.ISO_OFFSET_TIME)
   )
-  implicit val period: JsonEncoder[Period]       = explicit(_.toString)
-  implicit val year: JsonEncoder[Year]           = explicit(_.toString)
-  implicit val yearMonth: JsonEncoder[YearMonth] = explicit(_.toString)
-  implicit val zonedDateTime: JsonEncoder[ZonedDateTime] = explicit(
+  implicit val period: JsonEncoder[Period]       = stringify(_.toString)
+  implicit val year: JsonEncoder[Year]           = stringify(_.toString)
+  implicit val yearMonth: JsonEncoder[YearMonth] = stringify(_.toString)
+  implicit val zonedDateTime: JsonEncoder[ZonedDateTime] = stringify(
     _.format(DateTimeFormatter.ISO_ZONED_DATE_TIME)
   )
-  implicit val zoneId: JsonEncoder[ZoneId]         = explicit(_.toString)
-  implicit val zoneOffset: JsonEncoder[ZoneOffset] = explicit(_.toString)
+  implicit val zoneId: JsonEncoder[ZoneId]         = stringify(_.toString)
+  implicit val zoneOffset: JsonEncoder[ZoneOffset] = stringify(_.toString)
 }
 
 /** When encoding a JSON Object, we only allow keys that implement this interface. */
