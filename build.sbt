@@ -75,7 +75,7 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform)
       "com.typesafe.play"                     %% "play-json"               % "2.9.1"            % "test",
       "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-core"     % "2.6.2"            % "test",
       "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-macros"   % "2.6.2"            % "test",
-      "org.typelevel"                         %% "jawn-ast"                % "1.0.1"
+      "org.typelevel"                         %% "jawn-ast"                % "1.0.1"            % "test"
     ),
     sourceGenerators in Compile += Def.task {
       val dir  = (sourceManaged in Compile).value
