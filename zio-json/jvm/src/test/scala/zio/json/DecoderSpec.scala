@@ -12,14 +12,18 @@ import testzio.json.data.twitter._
 
 import zio.blocking._
 import zio.duration._
+import zio.json.JsonDecoder.JsonError
 import zio.json._
 import zio.json.ast._
+import zio.json.internal.RetractReader
 import zio.stream.ZStream
 import zio.test.Assertion._
 import zio.test.TestAspect._
 import zio.test.environment.Live
 import zio.test.{ DefaultRunnableSpec, _ }
 import zio.{ test => _, _ }
+
+import scala.annotation.switch
 
 object DecoderSpec extends DefaultRunnableSpec {
   def spec: Spec[ZEnv with Live, TestFailure[Any], TestSuccess] =
@@ -331,6 +335,28 @@ object DecoderSpec extends DefaultRunnableSpec {
               assert(lines(0))(equalTo(Event(1603669875, "hello"))) &&
               assert(lines(1))(equalTo(Event(1603669876, "world")))
             }
+          }
+        ),
+        suite("combinators")(
+          test("test JsonDecoder.orElse") {
+            val decoder = JsonDecoder[Int].asInstanceOf[JsonDecoder[AnyVal]].orElse(JsonDecoder[Boolean].asInstanceOf[JsonDecoder[AnyVal]])
+            assert(decoder.decodeJson("true"))(equalTo(Right(true.asInstanceOf[AnyVal])))
+          },
+          test("test hand-coded alternative in `orElse` comment") {
+            val decoder: JsonDecoder[AnyVal] = new JsonDecoder[AnyVal] {
+              def unsafeDecode(trace: List[JsonError], in: RetractReader): AnyVal =
+                (in.nextNonWhitespace(): @switch) match {
+                  case 't' | 'f' =>
+                    in.retract()
+                    JsonDecoder[Boolean].unsafeDecode(JsonError.SumType("Boolean") :: trace, in)
+                  case c =>
+                    in.retract()
+                    JsonDecoder[Int].unsafeDecode(JsonError.SumType("Int") :: trace, in)
+              }
+            }
+            assert(decoder.decodeJson("true"))(equalTo(Right(true.asInstanceOf[AnyVal]))) &&
+            assert(decoder.decodeJson("42"))(equalTo(Right(42.asInstanceOf[AnyVal]))) &&
+            assert(decoder.decodeJson("\"a string\""))(equalTo(Left("{Int}(expected a number, got a)")))
           }
         )
       )

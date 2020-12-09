@@ -155,9 +155,11 @@ private[zio] sealed trait PlaybackReader extends OneCharReader {
   def history(i: Int): Char
 }
 
+// A reader that can copy another one and rewing when needed.
 private[zio] final class WithRecordingReader(in: OneCharReader, initial: Int)
     extends RecordingReader
     with PlaybackReader {
+  if(initial <= 0) throw new IllegalArgumentException(s"Initial size of copy buffer must be >= 1")
   private[this] var tape: Array[Char] = Array.ofDim(initial)
   private[this] var eob: Int          = -1
   private[this] var writing: Int      = 0
