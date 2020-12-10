@@ -179,7 +179,6 @@ trait JsonDecoder[A] { self =>
       // format: on
     }
 
-
   /**
    * Returns this decoder but widened to the its given super-type
    */

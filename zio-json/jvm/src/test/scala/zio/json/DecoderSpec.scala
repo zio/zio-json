@@ -352,7 +352,7 @@ object DecoderSpec extends DefaultRunnableSpec {
                   case c =>
                     in.retract()
                     JsonDecoder[Int].unsafeDecode(trace, in)
-              }
+                }
             }
             assert(decoder.decodeJson("true"))(equalTo(Right(true.asInstanceOf[AnyVal]))) &&
             assert(decoder.decodeJson("42"))(equalTo(Right(42.asInstanceOf[AnyVal]))) &&
