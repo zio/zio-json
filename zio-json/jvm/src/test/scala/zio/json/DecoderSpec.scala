@@ -339,7 +339,7 @@ object DecoderSpec extends DefaultRunnableSpec {
         ),
         suite("combinators")(
           test("test JsonDecoder.orElse") {
-            val decoder = JsonDecoder[Int].asInstanceOf[JsonDecoder[AnyVal]].orElse(JsonDecoder[Boolean].asInstanceOf[JsonDecoder[AnyVal]])
+            val decoder = JsonDecoder[Int].widen[AnyVal].orElse(JsonDecoder[Boolean].widen[AnyVal])
             assert(decoder.decodeJson("true"))(equalTo(Right(true.asInstanceOf[AnyVal])))
           },
           test("test hand-coded alternative in `orElse` comment") {
@@ -348,15 +348,15 @@ object DecoderSpec extends DefaultRunnableSpec {
                 (in.nextNonWhitespace(): @switch) match {
                   case 't' | 'f' =>
                     in.retract()
-                    JsonDecoder[Boolean].unsafeDecode(JsonError.SumType("Boolean") :: trace, in)
+                    JsonDecoder[Boolean].unsafeDecode(trace, in)
                   case c =>
                     in.retract()
-                    JsonDecoder[Int].unsafeDecode(JsonError.SumType("Int") :: trace, in)
+                    JsonDecoder[Int].unsafeDecode(trace, in)
               }
             }
             assert(decoder.decodeJson("true"))(equalTo(Right(true.asInstanceOf[AnyVal]))) &&
             assert(decoder.decodeJson("42"))(equalTo(Right(42.asInstanceOf[AnyVal]))) &&
-            assert(decoder.decodeJson("\"a string\""))(equalTo(Left("{Int}(expected a number, got a)")))
+            assert(decoder.decodeJson("\"a string\""))(equalTo(Left("(expected a number, got a)")))
           }
         )
       )

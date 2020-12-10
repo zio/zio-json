@@ -179,6 +179,17 @@ trait JsonDecoder[A] { self =>
       // format: on
     }
 
+
+  /**
+   * Returns this decoder but widened to the its given super-type
+   */
+  final def widen[B >: A]: JsonDecoder[B] = self.asInstanceOf[JsonDecoder[B]]
+
+  /**
+   * Returns this decoder but narrowed to the its given sub-type
+   */
+  final def narrow[B <: A]: JsonEncoder[B] = self.asInstanceOf[JsonEncoder[B]]
+
   /**
    * Returns a new codec that combines this codec and the specified codec using fallback semantics:
    * such that if this codec fails, the specified codec will be tried instead.
