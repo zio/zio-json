@@ -134,6 +134,11 @@ trait JsonEncoder[A] { self =>
   def xmap[B](f: A => B, g: B => A): JsonEncoder[B] = contramap(g)
 
   def unsafeEncode(a: A, indent: Option[Int], out: Write): Unit
+
+  /**
+   * Returns this encoder but narrowed to the its given sub-type
+   */
+  final def narrow[B <: A]: JsonEncoder[B] = self.asInstanceOf[JsonEncoder[B]]
 }
 
 object JsonEncoder extends GeneratedTupleEncoders with EncoderLowPriority0 {

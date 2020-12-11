@@ -185,11 +185,6 @@ trait JsonDecoder[A] { self =>
   final def widen[B >: A]: JsonDecoder[B] = self.asInstanceOf[JsonDecoder[B]]
 
   /**
-   * Returns this decoder but narrowed to the its given sub-type
-   */
-  final def narrow[B <: A]: JsonEncoder[B] = self.asInstanceOf[JsonEncoder[B]]
-
-  /**
    * Returns a new codec that combines this codec and the specified codec using fallback semantics:
    * such that if this codec fails, the specified codec will be tried instead.
    * This method may be unsafe from a security perspective: it can use more memory than hand coded
