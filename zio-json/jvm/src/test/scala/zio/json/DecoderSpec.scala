@@ -2,6 +2,7 @@ package testzio.json
 
 import java.nio.file.Paths
 
+import scala.annotation.switch
 import scala.collection.immutable
 
 import io.circe
@@ -22,8 +23,6 @@ import zio.test.TestAspect._
 import zio.test.environment.Live
 import zio.test.{ DefaultRunnableSpec, _ }
 import zio.{ test => _, _ }
-
-import scala.annotation.switch
 
 object DecoderSpec extends DefaultRunnableSpec {
   def spec: Spec[ZEnv with Live, TestFailure[Any], TestSuccess] =
