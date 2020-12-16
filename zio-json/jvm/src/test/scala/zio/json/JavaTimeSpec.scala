@@ -11,118 +11,121 @@ import zio.{ test => _, _ }
 
 // zioJsonJVM/testOnly testzio.json.JavaTimeSpec
 object JavaTimeSpec extends DefaultRunnableSpec {
-  private def stringify(s: String): String = s""" "${s}" """
+  private def stringify(s: Any): String = s""" "${s.toString}" """
+
+  private def equalToStringified(expected: String) = equalTo(s""""$expected"""")
 
   def spec: ZSpec[Has[Blocking.Service], Any] =
     suite("java.time")(
       suite("Encoder")(
         test("DayOfWeek") {
-          assert(DayOfWeek.MONDAY.toJson)(equalTo("MONDAY")) &&
-          assert(DayOfWeek.TUESDAY.toJson)(equalTo("TUESDAY")) &&
-          assert(DayOfWeek.WEDNESDAY.toJson)(equalTo("WEDNESDAY")) &&
-          assert(DayOfWeek.THURSDAY.toJson)(equalTo("THURSDAY")) &&
-          assert(DayOfWeek.FRIDAY.toJson)(equalTo("FRIDAY")) &&
-          assert(DayOfWeek.SATURDAY.toJson)(equalTo("SATURDAY")) &&
-          assert(DayOfWeek.SUNDAY.toJson)(equalTo("SUNDAY"))
+          assert(DayOfWeek.MONDAY.toJson)(equalToStringified("MONDAY")) &&
+          assert(DayOfWeek.TUESDAY.toJson)(equalToStringified("TUESDAY")) &&
+          assert(DayOfWeek.WEDNESDAY.toJson)(equalToStringified("WEDNESDAY")) &&
+          assert(DayOfWeek.THURSDAY.toJson)(equalToStringified("THURSDAY")) &&
+          assert(DayOfWeek.FRIDAY.toJson)(equalToStringified("FRIDAY")) &&
+          assert(DayOfWeek.SATURDAY.toJson)(equalToStringified("SATURDAY")) &&
+          assert(DayOfWeek.SUNDAY.toJson)(equalToStringified("SUNDAY"))
         },
         test("Duration") {
-          assert(Duration.ofDays(1).toJson)(equalTo("86400000")) &&
-          assert(Duration.ofHours(24).toJson)(equalTo("86400000")) &&
-          assert(Duration.ofMinutes(1440).toJson)(equalTo("86400000"))
+          assert(Duration.ofDays(1).toJson)(equalToStringified("86400000")) &&
+          assert(Duration.ofHours(24).toJson)(equalToStringified("86400000")) &&
+          assert(Duration.ofMinutes(1440).toJson)(equalToStringified("86400000"))
         },
         test("Instant") {
           val n = Instant.now()
-          assert(Instant.EPOCH.toJson)(equalTo("1970-01-01T00:00:00Z")) &&
-          assert(n.toJson)(equalTo(n.toString))
+          assert(Instant.EPOCH.toJson)(equalToStringified("1970-01-01T00:00:00Z")) &&
+          assert(n.toJson)(equalToStringified(n.toString))
         },
         test("LocalDate") {
           val n = LocalDate.now()
           val p = LocalDate.of(2020, 1, 1)
-          assert(n.toJson)(equalTo(n.format(DateTimeFormatter.ISO_LOCAL_DATE))) &&
-          assert(p.toJson)(equalTo("2020-01-01"))
+          assert(n.toJson)(equalToStringified(n.format(DateTimeFormatter.ISO_LOCAL_DATE))) &&
+          assert(p.toJson)(equalToStringified("2020-01-01"))
         },
         test("LocalDateTime") {
           val n = LocalDateTime.now()
           val p = LocalDateTime.of(2020, 1, 1, 12, 36, 0)
-          assert(n.toJson)(equalTo(n.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME))) &&
-          assert(p.toJson)(equalTo("2020-01-01T12:36:00"))
+          assert(n.toJson)(equalToStringified(n.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME))) &&
+          assert(p.toJson)(equalToStringified("2020-01-01T12:36:00"))
         },
         test("LocalTime") {
           val n = LocalTime.now()
           val p = LocalTime.of(12, 36, 0)
-          assert(n.toJson)(equalTo(n.format(DateTimeFormatter.ISO_LOCAL_TIME))) &&
-          assert(p.toJson)(equalTo("12:36:00"))
+          assert(n.toJson)(equalToStringified(n.format(DateTimeFormatter.ISO_LOCAL_TIME))) &&
+          assert(p.toJson)(equalToStringified("12:36:00"))
         },
         test("Month") {
-          assert(Month.JANUARY.toJson)(equalTo("JANUARY")) &&
-          assert(Month.FEBRUARY.toJson)(equalTo("FEBRUARY")) &&
-          assert(Month.MARCH.toJson)(equalTo("MARCH")) &&
-          assert(Month.APRIL.toJson)(equalTo("APRIL")) &&
-          assert(Month.MAY.toJson)(equalTo("MAY")) &&
-          assert(Month.JUNE.toJson)(equalTo("JUNE")) &&
-          assert(Month.JULY.toJson)(equalTo("JULY")) &&
-          assert(Month.AUGUST.toJson)(equalTo("AUGUST")) &&
-          assert(Month.SEPTEMBER.toJson)(equalTo("SEPTEMBER")) &&
-          assert(Month.OCTOBER.toJson)(equalTo("OCTOBER")) &&
-          assert(Month.NOVEMBER.toJson)(equalTo("NOVEMBER")) &&
-          assert(Month.DECEMBER.toJson)(equalTo("DECEMBER"))
+          assert(Month.JANUARY.toJson)(equalToStringified("JANUARY")) &&
+          assert(Month.FEBRUARY.toJson)(equalToStringified("FEBRUARY")) &&
+          assert(Month.MARCH.toJson)(equalToStringified("MARCH")) &&
+          assert(Month.APRIL.toJson)(equalToStringified("APRIL")) &&
+          assert(Month.MAY.toJson)(equalToStringified("MAY")) &&
+          assert(Month.JUNE.toJson)(equalToStringified("JUNE")) &&
+          assert(Month.JULY.toJson)(equalToStringified("JULY")) &&
+          assert(Month.AUGUST.toJson)(equalToStringified("AUGUST")) &&
+          assert(Month.SEPTEMBER.toJson)(equalToStringified("SEPTEMBER")) &&
+          assert(Month.OCTOBER.toJson)(equalToStringified("OCTOBER")) &&
+          assert(Month.NOVEMBER.toJson)(equalToStringified("NOVEMBER")) &&
+          assert(Month.DECEMBER.toJson)(equalToStringified("DECEMBER"))
         },
         test("MonthDay") {
           val n = MonthDay.now()
           val p = MonthDay.of(1, 1)
-          assert(n.toJson)(equalTo(n.toString)) &&
-          assert(p.toJson)(equalTo("--01-01"))
+          assert(n.toJson)(equalToStringified(n.toString)) &&
+          assert(p.toJson)(equalToStringified("--01-01"))
         },
         test("OffsetDateTime") {
           val n = OffsetDateTime.now()
           val p = OffsetDateTime.of(2020, 1, 1, 12, 36, 12, 0, ZoneOffset.UTC)
-          assert(n.toJson)(equalTo(n.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME))) &&
-          assert(p.toJson)(equalTo("2020-01-01T12:36:12Z"))
+          assert(n.toJson)(equalToStringified(n.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME))) &&
+          assert(p.toJson)(equalToStringified("2020-01-01T12:36:12Z"))
         },
         test("OffsetTime") {
           val n = OffsetTime.now()
           val p = OffsetTime.of(12, 36, 12, 0, ZoneOffset.ofHours(-4))
-          assert(n.toJson)(equalTo(n.format(DateTimeFormatter.ISO_OFFSET_TIME))) &&
-          assert(p.toJson)(equalTo("12:36:12-04:00"))
+          assert(n.toJson)(equalToStringified(n.format(DateTimeFormatter.ISO_OFFSET_TIME))) &&
+          assert(p.toJson)(equalToStringified("12:36:12-04:00"))
         },
         test("Period") {
-          assert(Period.ZERO.toJson)(equalTo("P0D")) &&
-          assert(Period.ofDays(1).toJson)(equalTo("P1D")) &&
-          assert(Period.ofMonths(2).toJson)(equalTo("P2M")) &&
-          assert(Period.ofWeeks(52).toJson)(equalTo("P364D")) &&
-          assert(Period.ofYears(10).toJson)(equalTo("P10Y"))
+          assert(Period.ZERO.toJson)(equalToStringified("P0D")) &&
+          assert(Period.ofDays(1).toJson)(equalToStringified("P1D")) &&
+          assert(Period.ofMonths(2).toJson)(equalToStringified("P2M")) &&
+          assert(Period.ofWeeks(52).toJson)(equalToStringified("P364D")) &&
+          assert(Period.ofYears(10).toJson)(equalToStringified("P10Y"))
         },
         test("Year") {
           val n = Year.now()
-          assert(n.toJson)(equalTo(n.toString)) &&
-          assert(Year.of(1999).toJson)(equalTo("1999"))
+          assert(n.toJson)(equalToStringified(n.toString)) &&
+          assert(Year.of(1999).toJson)(equalToStringified("1999")) &&
+          assert(Year.of(10000).toJson)(equalToStringified("+10000"))
         },
         test("YearMonth") {
           val n = YearMonth.now()
-          assert(n.toJson)(equalTo(n.toString)) &&
-          assert(YearMonth.of(1999, 12).toJson)(equalTo("1999-12")) &&
-          assert(YearMonth.of(1999, 1).toJson)(equalTo("1999-01"))
+          assert(n.toJson)(equalToStringified(n.toString)) &&
+          assert(YearMonth.of(1999, 12).toJson)(equalToStringified("1999-12")) &&
+          assert(YearMonth.of(1999, 1).toJson)(equalToStringified("1999-01"))
         },
         test("ZonedDateTime") {
           val n   = ZonedDateTime.now()
           val ld  = LocalDateTime.of(2020, 1, 1, 12, 36, 0)
           val est = ZonedDateTime.of(ld, ZoneId.of("America/New_York"))
           val utc = ZonedDateTime.of(ld, ZoneId.of("Etc/UTC"))
-          assert(n.toJson)(equalTo(n.format(DateTimeFormatter.ISO_ZONED_DATE_TIME))) &&
-          assert(est.toJson)(equalTo("2020-01-01T12:36:00-05:00[America/New_York]")) &&
-          assert(utc.toJson)(equalTo("2020-01-01T12:36:00Z[Etc/UTC]"))
+          assert(n.toJson)(equalToStringified(n.format(DateTimeFormatter.ISO_ZONED_DATE_TIME))) &&
+          assert(est.toJson)(equalToStringified("2020-01-01T12:36:00-05:00[America/New_York]")) &&
+          assert(utc.toJson)(equalToStringified("2020-01-01T12:36:00Z[Etc/UTC]"))
         },
         test("ZoneId") {
-          assert(ZoneId.of("America/New_York").toJson)(equalTo("America/New_York")) &&
-          assert(ZoneId.of("Etc/UTC").toJson)(equalTo("Etc/UTC")) &&
-          assert(ZoneId.of("Pacific/Auckland").toJson)(equalTo("Pacific/Auckland")) &&
-          assert(ZoneId.of("Asia/Shanghai").toJson)(equalTo("Asia/Shanghai")) &&
-          assert(ZoneId.of("Africa/Cairo").toJson)(equalTo("Africa/Cairo"))
+          assert(ZoneId.of("America/New_York").toJson)(equalToStringified("America/New_York")) &&
+          assert(ZoneId.of("Etc/UTC").toJson)(equalToStringified("Etc/UTC")) &&
+          assert(ZoneId.of("Pacific/Auckland").toJson)(equalToStringified("Pacific/Auckland")) &&
+          assert(ZoneId.of("Asia/Shanghai").toJson)(equalToStringified("Asia/Shanghai")) &&
+          assert(ZoneId.of("Africa/Cairo").toJson)(equalToStringified("Africa/Cairo"))
         },
         test("ZoneOffset") {
-          assert(ZoneOffset.UTC.toJson)(equalTo("Z")) &&
-          assert(ZoneOffset.ofHours(5).toJson)(equalTo("+05:00")) &&
-          assert(ZoneOffset.ofHours(-5).toJson)(equalTo("-05:00"))
+          assert(ZoneOffset.UTC.toJson)(equalToStringified("Z")) &&
+          assert(ZoneOffset.ofHours(5).toJson)(equalToStringified("+05:00")) &&
+          assert(ZoneOffset.ofHours(-5).toJson)(equalToStringified("-05:00"))
         }
       ),
       suite("Decoder")(
@@ -149,24 +152,24 @@ object JavaTimeSpec extends DefaultRunnableSpec {
         test("Instant") {
           val n = Instant.now()
           assert(stringify("1970-01-01T00:00:00Z").fromJson[Instant])(isRight(equalTo(Instant.EPOCH))) &&
-          assert(stringify(n.toJson).fromJson[Instant])(isRight(equalTo(n)))
+          assert(stringify(n).fromJson[Instant])(isRight(equalTo(n)))
         },
         test("LocalDate") {
           val n = LocalDate.now()
           val p = LocalDate.of(2020, 1, 1)
-          assert(stringify(n.toJson).fromJson[LocalDate])(isRight(equalTo(n))) &&
-          assert(stringify(p.toJson).fromJson[LocalDate])(isRight(equalTo(p)))
+          assert(stringify(n).fromJson[LocalDate])(isRight(equalTo(n))) &&
+          assert(stringify(p).fromJson[LocalDate])(isRight(equalTo(p)))
         },
         test("LocalDateTime") {
           val n = LocalDateTime.now()
           val p = LocalDateTime.of(2020, 1, 1, 12, 36, 0)
-          assert(stringify(n.toJson).fromJson[LocalDateTime])(isRight(equalTo(n))) &&
+          assert(stringify(n).fromJson[LocalDateTime])(isRight(equalTo(n))) &&
           assert(stringify("2020-01-01T12:36").fromJson[LocalDateTime])(isRight(equalTo(p)))
         },
         test("LocalTime") {
           val n = LocalTime.now()
           val p = LocalTime.of(12, 36, 0)
-          assert(stringify(n.toJson).fromJson[LocalTime])(isRight(equalTo(n))) &&
+          assert(stringify(n).fromJson[LocalTime])(isRight(equalTo(n))) &&
           assert(stringify("12:36").fromJson[LocalTime])(isRight(equalTo(p)))
         },
         test("Month") {
@@ -188,19 +191,19 @@ object JavaTimeSpec extends DefaultRunnableSpec {
         test("MonthDay") {
           val n = MonthDay.now()
           val p = MonthDay.of(1, 1)
-          assert(stringify(n.toJson).fromJson[MonthDay])(isRight(equalTo(n))) &&
+          assert(stringify(n).fromJson[MonthDay])(isRight(equalTo(n))) &&
           assert(stringify("--01-01").fromJson[MonthDay])(isRight(equalTo(p)))
         },
         test("OffsetDateTime") {
           val n = OffsetDateTime.now()
           val p = OffsetDateTime.of(2020, 1, 1, 12, 36, 12, 0, ZoneOffset.UTC)
-          assert(stringify(n.toJson).fromJson[OffsetDateTime])(isRight(equalTo(n))) &&
+          assert(stringify(n).fromJson[OffsetDateTime])(isRight(equalTo(n))) &&
           assert(stringify("2020-01-01T12:36:12Z").fromJson[OffsetDateTime])(isRight(equalTo(p)))
         },
         test("OffsetTime") {
           val n = OffsetTime.now()
           val p = OffsetTime.of(12, 36, 12, 0, ZoneOffset.ofHours(-4))
-          assert(stringify(n.toJson).fromJson[OffsetTime])(isRight(equalTo(n))) &&
+          assert(stringify(n).fromJson[OffsetTime])(isRight(equalTo(n))) &&
           assert(stringify("12:36:12-04:00").fromJson[OffsetTime])(isRight(equalTo(p)))
         },
         test("Period") {
@@ -212,13 +215,13 @@ object JavaTimeSpec extends DefaultRunnableSpec {
         },
         test("Year") {
           val n = Year.now()
-          assert(stringify(n.toJson).fromJson[Year])(isRight(equalTo(n))) &&
-          assert(stringify("1999").fromJson[Year])(isRight(equalTo(Year.of(1999))))
-
+          assert(stringify(n).fromJson[Year])(isRight(equalTo(n))) &&
+          assert(stringify("1999").fromJson[Year])(isRight(equalTo(Year.of(1999)))) &&
+          assert(stringify("+10000").fromJson[Year])(isRight(equalTo(Year.of(10000))))
         },
         test("YearMonth") {
           val n = YearMonth.now()
-          assert(stringify(n.toJson).fromJson[YearMonth])(isRight(equalTo(n))) &&
+          assert(stringify(n).fromJson[YearMonth])(isRight(equalTo(n))) &&
           assert(stringify("1999-12").fromJson[YearMonth])(isRight(equalTo(YearMonth.of(1999, 12)))) &&
           assert(stringify("1999-01").fromJson[YearMonth])(isRight(equalTo(YearMonth.of(1999, 1))))
         },
@@ -227,7 +230,7 @@ object JavaTimeSpec extends DefaultRunnableSpec {
           val ld  = LocalDateTime.of(2020, 1, 1, 12, 36, 0)
           val est = ZonedDateTime.of(ld, ZoneId.of("America/New_York"))
           val utc = ZonedDateTime.of(ld, ZoneId.of("Etc/UTC"))
-          assert(stringify(n.toJson).fromJson[ZonedDateTime])(isRight(equalTo(n))) &&
+          assert(stringify(n).fromJson[ZonedDateTime])(isRight(equalTo(n))) &&
           assert(stringify("2020-01-01T12:36-05:00[America/New_York]").fromJson[ZonedDateTime])(
             isRight(equalTo(est))
           ) &&
