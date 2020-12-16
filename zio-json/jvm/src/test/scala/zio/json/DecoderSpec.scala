@@ -2,7 +2,6 @@ package testzio.json
 
 import java.nio.file.Paths
 
-import scala.annotation.switch
 import scala.collection.immutable
 
 import io.circe
@@ -13,10 +12,8 @@ import testzio.json.data.twitter._
 
 import zio.blocking._
 import zio.duration._
-import zio.json.JsonDecoder.JsonError
 import zio.json._
 import zio.json.ast._
-import zio.json.internal.RetractReader
 import zio.stream.ZStream
 import zio.test.Assertion._
 import zio.test.TestAspect._
@@ -342,16 +339,9 @@ object DecoderSpec extends DefaultRunnableSpec {
             assert(decoder.decodeJson("true"))(equalTo(Right(true.asInstanceOf[AnyVal])))
           },
           test("test hand-coded alternative in `orElse` comment") {
-            val decoder: JsonDecoder[AnyVal] = new JsonDecoder[AnyVal] {
-              def unsafeDecode(trace: List[JsonError], in: RetractReader): AnyVal =
-                (in.nextNonWhitespace(): @switch) match {
-                  case 't' | 'f' =>
-                    in.retract()
-                    JsonDecoder[Boolean].unsafeDecode(trace, in)
-                  case c =>
-                    in.retract()
-                    JsonDecoder[Int].unsafeDecode(trace, in)
-                }
+            val decoder: JsonDecoder[AnyVal] = JsonDecoder.peekChar[AnyVal] {
+              case 't' | 'f' => JsonDecoder[Boolean].widen
+              case c         => JsonDecoder[Int].widen
             }
             assert(decoder.decodeJson("true"))(equalTo(Right(true.asInstanceOf[AnyVal]))) &&
             assert(decoder.decodeJson("42"))(equalTo(Right(42.asInstanceOf[AnyVal]))) &&

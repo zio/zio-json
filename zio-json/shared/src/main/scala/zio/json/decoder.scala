@@ -190,20 +190,13 @@ trait JsonDecoder[A] { self =>
    * This method may be unsafe from a security perspective: it can use more memory than hand coded
    * alternative and so lead to DOS.
    *
-   * For example, in the case of an alternative between `Int` and `Boolean`, an hand coded
+   * For example, in the case of an alternative between `Int` and `Boolean`, a hand coded
    * alternative would look like:
    *
    * ```
-   * val decoder: JsonDecoder[AnyVal] = new JsonDecoder[AnyVal] {
-   *   def unsafeDecode(trace: List[JsonError], in: RetractReader): AnyVal =
-   *     (in.nextNonWhitespace(): @switch) match {
-   *       case 't' | 'f' =>
-   *         in.retract()
-   *         JsonDecoder[Boolean].unsafeDecode(JsonError.SumType("Boolean") :: trace, in).asInstanceOf[AnyVal]
-   *       case c =>
-   *         in.retract()
-   *         JsonDecoder[Int].unsafeDecode(JsonError.SumType("Int") :: trace, in).asInstanceOf[AnyVal]
-   *   }
+   * val decoder: JsonDecoder[AnyVal] = JsonDecoder.peekChar[AnyVal] {
+   *   case 't' | 'f' => JsonDecoder[Boolean].widen
+   *   case c         => JsonDecoder[Int].widen
    * }
    * ```
    */
@@ -320,6 +313,18 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority0 {
     final case class ArrayAccess(i: Int)         extends JsonError
     final case class ObjectAccess(field: String) extends JsonError
     final case class SumType(cons: String)       extends JsonError
+  }
+
+  def peekChar[A](partialFunction: PartialFunction[Char, JsonDecoder[A]]): JsonDecoder[A] = new JsonDecoder[A] {
+    override def unsafeDecode(trace: List[JsonError], in: RetractReader): A = {
+      val c = in.nextNonWhitespace()
+      if (partialFunction.isDefinedAt(c)) {
+        in.retract()
+        partialFunction(c).unsafeDecode(trace, in)
+      } else {
+        throw UnsafeJson(JsonError.Message(s"missing case in `peekChar` for '${c}''") :: trace)
+      }
+    }
   }
 
   implicit def string: JsonDecoder[String] = new JsonDecoder[String] {
