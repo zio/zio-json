@@ -180,13 +180,37 @@ trait JsonDecoder[A] { self =>
     }
 
   /**
+   * Returns this decoder but widened to the its given super-type
+   */
+  final def widen[B >: A]: JsonDecoder[B] = self.asInstanceOf[JsonDecoder[B]]
+
+  /**
    * Returns a new codec that combines this codec and the specified codec using fallback semantics:
    * such that if this codec fails, the specified codec will be tried instead.
+   * This method may be unsafe from a security perspective: it can use more memory than hand coded
+   * alternative and so lead to DOS.
+   *
+   * For example, in the case of an alternative between `Int` and `Boolean`, an hand coded
+   * alternative would look like:
+   *
+   * ```
+   * val decoder: JsonDecoder[AnyVal] = new JsonDecoder[AnyVal] {
+   *   def unsafeDecode(trace: List[JsonError], in: RetractReader): AnyVal =
+   *     (in.nextNonWhitespace(): @switch) match {
+   *       case 't' | 'f' =>
+   *         in.retract()
+   *         JsonDecoder[Boolean].unsafeDecode(JsonError.SumType("Boolean") :: trace, in).asInstanceOf[AnyVal]
+   *       case c =>
+   *         in.retract()
+   *         JsonDecoder[Int].unsafeDecode(JsonError.SumType("Int") :: trace, in).asInstanceOf[AnyVal]
+   *   }
+   * }
+   * ```
    */
   final def orElse[A1 >: A](that: => JsonDecoder[A1]): JsonDecoder[A1] =
     new JsonDecoder[A1] {
       def unsafeDecode(trace: List[JsonError], in: RetractReader): A1 = {
-        val in2 = new zio.json.internal.WithRecordingReader(in, 0)
+        val in2 = new zio.json.internal.WithRecordingReader(in, 64)
 
         try self.unsafeDecode(trace, in2)
         catch {
