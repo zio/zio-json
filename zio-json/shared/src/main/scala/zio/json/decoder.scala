@@ -194,7 +194,7 @@ trait JsonDecoder[A] { self =>
    * alternative would look like:
    *
    * ```
-   * val decoder: JsonDecoder[AnyVal] = JsonDecoder.manualSumSwitch[AnyVal] {
+   * val decoder: JsonDecoder[AnyVal] = JsonDecoder.peekChar[AnyVal] {
    *   case 't' | 'f' => JsonDecoder[Boolean].widen
    *   case c         => JsonDecoder[Int].widen
    * }
@@ -315,14 +315,14 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority0 {
     final case class SumType(cons: String)       extends JsonError
   }
 
-  def manualSumSwitch[A](partialFunction: PartialFunction[Char, JsonDecoder[A]]): JsonDecoder[A] = new JsonDecoder[A] {
+  def peekChar[A](partialFunction: PartialFunction[Char, JsonDecoder[A]]): JsonDecoder[A] = new JsonDecoder[A] {
     override def unsafeDecode(trace: List[JsonError], in: RetractReader): A = {
       val c = in.nextNonWhitespace()
       if (partialFunction.isDefinedAt(c)) {
         in.retract()
         partialFunction(c).unsafeDecode(trace, in)
       } else {
-        throw UnsafeJson(JsonError.Message(s"missing manual sum switch case for '${c}''") :: trace)
+        throw UnsafeJson(JsonError.Message(s"missing case in `peekChar` for '${c}''") :: trace)
       }
     }
   }

@@ -2,7 +2,6 @@ package testzio.json
 
 import java.nio.file.Paths
 
-import scala.annotation.switch
 import scala.collection.immutable
 
 import io.circe
@@ -340,7 +339,7 @@ object DecoderSpec extends DefaultRunnableSpec {
             assert(decoder.decodeJson("true"))(equalTo(Right(true.asInstanceOf[AnyVal])))
           },
           test("test hand-coded alternative in `orElse` comment") {
-            val decoder: JsonDecoder[AnyVal] = JsonDecoder.manualSumSwitch[AnyVal] {
+            val decoder: JsonDecoder[AnyVal] = JsonDecoder.peekChar[AnyVal] {
               case 't' | 'f' => JsonDecoder[Boolean].widen
               case c         => JsonDecoder[Int].widen
             }
