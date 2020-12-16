@@ -578,7 +578,7 @@ private[json] trait DecoderLowPriority3 { this: JsonDecoder.type =>
   implicit val offsetTime: JsonDecoder[OffsetTime] =
     string.mapOrFail(parseJavaTime(OffsetTime.parse(_, DateTimeFormatter.ISO_OFFSET_TIME), _))
   implicit val period: JsonDecoder[Period] = string.mapOrFail(parseJavaTime(Period.parse, _))
-  implicit val year: JsonDecoder[Year]     = string.mapOrFail(parseJavaTime(Year.parse, _))
+  implicit val year: JsonDecoder[Year]     = string.mapOrFail(parseJavaTime(Year.parse(_), _))
   implicit val yearMonth: JsonDecoder[YearMonth] =
     string.mapOrFail(parseJavaTime(YearMonth.parse, _))
   implicit val zonedDateTime: JsonDecoder[ZonedDateTime] =

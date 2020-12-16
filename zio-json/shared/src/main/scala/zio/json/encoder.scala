@@ -1,5 +1,8 @@
 package zio.json
 
+import java.time.format.{ DateTimeFormatterBuilder, SignStyle }
+import java.time.temporal.ChronoField.YEAR
+
 import scala.annotation._
 import scala.collection.immutable
 
@@ -339,8 +342,10 @@ private[json] trait EncoderLowPriority3 { this: JsonEncoder.type =>
   implicit val offsetTime: JsonEncoder[OffsetTime] = stringify(
     _.format(DateTimeFormatter.ISO_OFFSET_TIME)
   )
-  implicit val period: JsonEncoder[Period]       = stringify(_.toString)
-  implicit val year: JsonEncoder[Year]           = stringify(_.toString)
+  implicit val period: JsonEncoder[Period] = stringify(_.toString)
+  private val yearFormatter =
+    new DateTimeFormatterBuilder().appendValue(YEAR, 4, 10, SignStyle.EXCEEDS_PAD).toFormatter
+  implicit val year: JsonEncoder[Year]           = stringify(_.format(yearFormatter))
   implicit val yearMonth: JsonEncoder[YearMonth] = stringify(_.toString)
   implicit val zonedDateTime: JsonEncoder[ZonedDateTime] = stringify(
     _.format(DateTimeFormatter.ISO_ZONED_DATE_TIME)
