@@ -48,7 +48,7 @@ object RoundTripSpec extends DefaultRunnableSpec {
         },
         test("Duration") {
           assertRoundtrips(Duration.ofDays(1)) &&
-          assertRoundtrips(Duration.ofSeconds(Long.MaxValue, 999_999_999L))
+          assertRoundtrips(Duration.ofSeconds(Long.MaxValue, 999999999L))
         },
         test("Instant") {
           assertRoundtrips(Instant.EPOCH)
