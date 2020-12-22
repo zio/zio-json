@@ -323,7 +323,7 @@ private[json] trait EncoderLowPriority3 { this: JsonEncoder.type =>
   import java.time.format.DateTimeFormatter
 
   implicit val dayOfWeek: JsonEncoder[DayOfWeek] = stringify(_.toString)
-  implicit val duration: JsonEncoder[Duration]   = stringify(_.toMillis.toString)
+  implicit val duration: JsonEncoder[Duration]   = stringify(_.toString)
   implicit val instant: JsonEncoder[Instant]     = stringify(_.toString)
   implicit val localDate: JsonEncoder[LocalDate] = stringify(
     _.format(DateTimeFormatter.ISO_LOCAL_DATE)
