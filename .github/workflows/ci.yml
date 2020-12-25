@@ -86,10 +86,10 @@ jobs:
             ~/.cache
           key: sbt-cache-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('project/build.properties') }}
       - name: Run tests
-        if: matrix.target-platform == 'JVM'
+        if: matrix.platform == 'JVM'
         run: sbt ++${{ matrix.scala }}! testJVM
       - name: Run tests
-        if: matrix.target-platform == 'JS'
+        if: matrix.platform == 'JS'
         run: sbt ++${{ matrix.scala }}! testJS
 
   publish:
