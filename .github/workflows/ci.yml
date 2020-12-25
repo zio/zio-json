@@ -87,7 +87,7 @@ jobs:
             ~/.sbt
             ~/.m2
             ~/.cache
-          key: sbt-cache-js-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('project/build.properties') }}
+          key: sbt-cache-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('project/build.properties') }}
       - name: Run tests
         run: sbt ++${{ matrix.scala }}! testJS
 
@@ -115,7 +115,7 @@ jobs:
             ~/.sbt
             ~/.m2
             ~/.cache
-          key: sbt-cache-jvm-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('project/build.properties') }}
+          key: sbt-cache-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('project/build.properties') }}
       - name: Run tests
         run: sbt ++${{ matrix.scala }}! testJVM
 
