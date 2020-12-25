@@ -66,6 +66,7 @@ jobs:
       matrix:
         java: ['adopt@1.8', 'adopt@1.11']
         scala: ['2.12.12', '2.13.3']
+        platform: ['JVM', 'JS']
     steps:
       - name: Checkout current branch
         uses: actions/checkout@v2.3.4
@@ -85,7 +86,11 @@ jobs:
             ~/.cache
           key: sbt-cache-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('project/build.properties') }}
       - name: Run tests
-        run: sbt ++${{ matrix.scala }}! test
+        if: matrix.target-platform == 'JVM'
+        run: sbt ++${{ matrix.scala }}! testJVM
+      - name: Run tests
+        if: matrix.target-platform == 'JS'
+        run: sbt ++${{ matrix.scala }}! testJS
 
   publish:
     runs-on: ubuntu-20.04
