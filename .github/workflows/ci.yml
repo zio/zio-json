@@ -31,6 +31,34 @@ jobs:
       - name: Lint code
         run: sbt ++${{ matrix.scala }}! fmtCheck fixCheck
 
+  benchmarks:
+    runs-on: ubuntu-20.04
+    strategy:
+      fail-fast: false
+      matrix:
+        java: ['adopt@1.8', 'adopt@1.11']
+        scala: ['2.12.12', '2.13.3', '0.20.0-RC1']
+    steps:
+      - name: Checkout current branch
+        uses: actions/checkout@v2.3.4
+        with:
+          fetch-depth: 0
+      - name: Setup Scala and Java
+        uses: olafurpg/setup-scala@v10
+        with:
+          java-version: ${{ matrix.java }}
+      - name: Cache scala dependencies
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.ivy2/cache
+            ~/.sbt
+            ~/.m2
+            ~/.cache
+          key: sbt-cache-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('project/build.properties') }}
+      - name: Compile benchmarks
+        run: sbt ++${{ matrix.scala }}! jmh:compile
+
   test:
     runs-on: ubuntu-20.04
     strategy:
@@ -58,12 +86,10 @@ jobs:
           key: sbt-cache-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('project/build.properties') }}
       - name: Run tests
         run: sbt ++${{ matrix.scala }}! test
-      - name: Compile benchmarks
-        run: sbt ++${{ matrix.scala }}! jmh:compile
 
   publish:
     runs-on: ubuntu-20.04
-    needs: [lint, test]
+    needs: [lint, benchmarks, test]
     if: github.event_name != 'pull_request'
     steps:
       - name: Checkout current branch
