@@ -14,7 +14,7 @@ jobs:
       fail-fast: false
       matrix:
         java: ['adopt@1.8', 'adopt@1.11']
-        scala: ['2.11.12', '2.12.12', '2.13.3', '0.23.0-RC1']
+        scala: ['2.11.12', '2.12.12', '2.13.3', '0.20.0-RC1']
     steps:
       - name: Checkout current branch
         uses: actions/checkout@v2.3.4
@@ -42,7 +42,7 @@ jobs:
       fail-fast: false
       matrix:
         java: ['adopt@1.8', 'adopt@1.11']
-        scala: ['2.11.12', '2.12.12', '2.13.3', '0.23.0-RC1']
+        scala: ['2.11.12', '2.12.12', '2.13.3', '0.20.0-RC1']
     steps:
       - name: Checkout current branch
         uses: actions/checkout@v2.3.4
