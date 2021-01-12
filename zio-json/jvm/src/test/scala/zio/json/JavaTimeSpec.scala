@@ -28,9 +28,12 @@ object JavaTimeSpec extends DefaultRunnableSpec {
           assert(DayOfWeek.SUNDAY.toJson)(equalToStringified("SUNDAY"))
         },
         test("Duration") {
-          assert(Duration.ofDays(1).toJson)(equalToStringified("86400000")) &&
-          assert(Duration.ofHours(24).toJson)(equalToStringified("86400000")) &&
-          assert(Duration.ofMinutes(1440).toJson)(equalToStringified("86400000"))
+          assert(Duration.ofDays(1).toJson)(equalToStringified("PT24H")) &&
+          assert(Duration.ofHours(24).toJson)(equalToStringified("PT24H")) &&
+          assert(Duration.ofMinutes(1440).toJson)(equalToStringified("PT24H")) &&
+          assert(Duration.ofSeconds(Long.MaxValue, 999999999L).toJson)(
+            equalToStringified("PT2562047788015215H30M7.999999999S")
+          )
         },
         test("Instant") {
           val n = Instant.now()
@@ -145,9 +148,10 @@ object JavaTimeSpec extends DefaultRunnableSpec {
           )
         },
         test("Duration") {
-          assert("86400000".fromJson[Duration])(isRight(equalTo(Duration.ofDays(1)))) &&
-          assert("86400000".fromJson[Duration])(isRight(equalTo(Duration.ofHours(24)))) &&
-          assert("86400000".fromJson[Duration])(isRight(equalTo(Duration.ofMinutes(1440))))
+          assert(stringify("PT24H").fromJson[Duration])(isRight(equalTo(Duration.ofHours(24)))) &&
+          assert(stringify("PT2562047788015215H30M7.999999999S").fromJson[Duration])(
+            isRight(equalTo(Duration.ofSeconds(Long.MaxValue, 999999999L)))
+          )
         },
         test("Instant") {
           val n = Instant.now()
