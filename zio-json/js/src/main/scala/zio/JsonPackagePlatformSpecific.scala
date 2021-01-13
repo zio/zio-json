@@ -1,0 +1,3 @@
+package zio
+
+trait JsonPackagePlatformSpecific {}

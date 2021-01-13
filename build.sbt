@@ -24,13 +24,11 @@ inThisBuild(
   )
 )
 
-addCommandAlias("fix", "scalafixAll")
-addCommandAlias("fixCheck", "scalafixAll --check")
-addCommandAlias("fmt", "all scalafmtSbt scalafmtAll")
-addCommandAlias("fmtCheck", "all scalafmtSbtCheck scalafmtCheckAll")
-addCommandAlias("prepare", "fix; fmt")
-addCommandAlias("testJVM", "zioJsonJVM/test")
-addCommandAlias("testJS", "zioJsonJS/test")
+addCommandAlias("fmt", "all scalafmtSbt scalafmt test:scalafmt jmh:scalafmt")
+addCommandAlias("fix", "all compile:scalafix test:scalafix")
+addCommandAlias("fmtCheck", "all scalafmtSbtCheck scalafmtCheck test:scalafmtCheck jmh:scalafmtCheck")
+addCommandAlias("fixCheck", "; compile:scalafix --check ; test:scalafix --check ")
+addCommandAlias("prepare", "; fix; fmt")
 
 val zioVersion = "1.0.3"
 
@@ -60,24 +58,22 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform)
     scalacOptions -= "-opt:l:inline",
     scalacOptions -= "-opt-inline-from:zio.internal.**",
     libraryDependencies ++= Seq(
-      "com.propensive"                        %% "magnolia"                % "0.17.0",
-      "org.scalaz"                            %% "scalaz-core"             % "7.3.2" intransitive (),
-      "eu.timepit"                            %% "refined"                 % "0.9.20" intransitive (),
-      "org.scala-lang"                         % "scala-reflect"           % scalaVersion.value % Provided,
-      "dev.zio"                               %% "zio"                     % zioVersion,
-      "dev.zio"                               %% "zio-streams"             % zioVersion,
-      "org.scala-lang.modules"                %% "scala-collection-compat" % "2.3.2",
-      "dev.zio"                               %% "zio-test"                % zioVersion         % "test",
-      "dev.zio"                               %% "zio-test-sbt"            % zioVersion         % "test",
-      "io.circe"                              %% "circe-core"              % circeVersion       % "test",
-      "io.circe"                              %% "circe-generic"           % circeVersion       % "test",
-      "io.circe"                              %% "circe-parser"            % circeVersion       % "test",
-      "ai.x"                                  %% "play-json-extensions"    % "0.42.0"           % "test",
-      "io.circe"                              %% "circe-generic-extras"    % circeVersion       % "test",
-      "com.typesafe.play"                     %% "play-json"               % "2.9.2"            % "test",
-      "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-core"     % "2.6.2"            % "test",
-      "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-macros"   % "2.6.2"            % "test",
-      "org.typelevel"                         %% "jawn-ast"                % "1.0.3"            % "test"
+      "com.propensive"                        %%% "magnolia"                % "0.17.0",
+      "org.scalaz"                            %%% "scalaz-core"             % "7.3.2" intransitive (),
+      "eu.timepit"                            %%% "refined"                 % "0.9.19" intransitive (),
+      "org.scala-lang"                          % "scala-reflect"           % scalaVersion.value % Provided,
+      "dev.zio"                               %%% "zio"                     % zioVersion,
+      "dev.zio"                               %%% "zio-streams"             % zioVersion,
+      "org.scala-lang.modules"                %%% "scala-collection-compat" % "2.3.1",
+      "dev.zio"                               %%% "zio-test"                % zioVersion         % "test",
+      "dev.zio"                               %%% "zio-test-sbt"            % zioVersion         % "test",
+      "io.circe"                              %%% "circe-core"              % circeVersion       % "test",
+      "io.circe"                              %%% "circe-generic"           % circeVersion       % "test",
+      "io.circe"                              %%% "circe-parser"            % circeVersion       % "test",
+      "io.circe"                              %%% "circe-generic-extras"    % circeVersion       % "test",
+      "com.typesafe.play"                     %%% "play-json"               % "2.9.1"            % "test",
+      "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-core"     % "2.6.2"            % "test",
+      "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-macros"   % "2.6.2"            % "test"
     ),
     sourceGenerators in Compile += Def.task {
       val dir  = (sourceManaged in Compile).value
@@ -145,9 +141,18 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform)
     inConfig(Jmh)(org.scalafmt.sbt.ScalafmtPlugin.scalafmtConfigSettings)
   )
   .settings(testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework"))
+  .jvmSettings(
+    libraryDependencies ++= Seq(
+      "ai.x"          %% "play-json-extensions" % "0.42.0" % "test",
+      "org.typelevel" %% "jawn-ast"             % "1.0.3"  % "test"
+    )
+  )
 
 lazy val zioJsonJS = zioJson.js
-  .settings(scalaJSUseMainModuleInitializer := true)
+  .settings(
+    scalaJSUseMainModuleInitializer := true,
+    testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework")
+  )
 
 lazy val zioJsonJVM = zioJson.jvm
 
@@ -161,7 +166,7 @@ lazy val docs = project
     scalacOptions -= "-Xfatal-warnings",
     libraryDependencies ++= Seq(
       "dev.zio"    %% "zio"     % zioVersion,
-      "eu.timepit" %% "refined" % "0.9.20"
+      "eu.timepit" %% "refined" % "0.9.19"
     ),
     unidocProjectFilter in (ScalaUnidoc, unidoc) := inProjects(root),
     target in (ScalaUnidoc, unidoc) := (baseDirectory in LocalRootProject).value / "website" / "static" / "api",
