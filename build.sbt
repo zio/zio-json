@@ -25,15 +25,10 @@ inThisBuild(
 )
 
 addCommandAlias("fix", "scalafixAll")
-addCommandAlias("fmt", "all scalafmtSbt scalafmt test:scalafmt jmh:scalafmt")
 addCommandAlias("fixCheck", "scalafixAll --check")
-addCommandAlias("fix", "all compile:scalafix test:scalafix")
 addCommandAlias("fmt", "all scalafmtSbt scalafmtAll")
-addCommandAlias("fmtCheck", "all scalafmtSbtCheck scalafmtCheck test:scalafmtCheck jmh:scalafmtCheck")
 addCommandAlias("fmtCheck", "all scalafmtSbtCheck scalafmtCheckAll")
-addCommandAlias("fixCheck", "; compile:scalafix --check ; test:scalafix --check ")
 addCommandAlias("prepare", "fix; fmt")
-addCommandAlias("prepare", "; fix; fmt")
 addCommandAlias("testJVM", "zioJsonJVM/test")
 addCommandAlias("testJS", "zioJsonJS/test")
 
@@ -67,11 +62,11 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform)
     libraryDependencies ++= Seq(
       "com.propensive"                        %%% "magnolia"                % "0.17.0",
       "org.scalaz"                            %%% "scalaz-core"             % "7.3.2" intransitive (),
-      "eu.timepit"                            %%% "refined"                 % "0.9.19" intransitive (),
+      "eu.timepit"                            %%% "refined"                 % "0.9.20" intransitive (),
       "org.scala-lang"                          % "scala-reflect"           % scalaVersion.value % Provided,
       "dev.zio"                               %%% "zio"                     % zioVersion,
       "dev.zio"                               %%% "zio-streams"             % zioVersion,
-      "org.scala-lang.modules"                %%% "scala-collection-compat" % "2.3.1",
+      "org.scala-lang.modules"                %%% "scala-collection-compat" % "2.3.2",
       "dev.zio"                               %%% "zio-test"                % zioVersion         % "test",
       "dev.zio"                               %%% "zio-test-sbt"            % zioVersion         % "test",
       "io.circe"                              %%% "circe-core"              % circeVersion       % "test",
