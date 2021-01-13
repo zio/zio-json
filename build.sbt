@@ -24,11 +24,18 @@ inThisBuild(
   )
 )
 
+addCommandAlias("fix", "scalafixAll")
 addCommandAlias("fmt", "all scalafmtSbt scalafmt test:scalafmt jmh:scalafmt")
+addCommandAlias("fixCheck", "scalafixAll --check")
 addCommandAlias("fix", "all compile:scalafix test:scalafix")
+addCommandAlias("fmt", "all scalafmtSbt scalafmtAll")
 addCommandAlias("fmtCheck", "all scalafmtSbtCheck scalafmtCheck test:scalafmtCheck jmh:scalafmtCheck")
+addCommandAlias("fmtCheck", "all scalafmtSbtCheck scalafmtCheckAll")
 addCommandAlias("fixCheck", "; compile:scalafix --check ; test:scalafix --check ")
+addCommandAlias("prepare", "fix; fmt")
 addCommandAlias("prepare", "; fix; fmt")
+addCommandAlias("testJVM", "zioJsonJVM/test")
+addCommandAlias("testJS", "zioJsonJS/test")
 
 val zioVersion = "1.0.3"
 
@@ -71,7 +78,7 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform)
       "io.circe"                              %%% "circe-generic"           % circeVersion       % "test",
       "io.circe"                              %%% "circe-parser"            % circeVersion       % "test",
       "io.circe"                              %%% "circe-generic-extras"    % circeVersion       % "test",
-      "com.typesafe.play"                     %%% "play-json"               % "2.9.1"            % "test",
+      "com.typesafe.play"                     %%% "play-json"               % "2.9.2"            % "test",
       "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-core"     % "2.6.2"            % "test",
       "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-macros"   % "2.6.2"            % "test"
     ),
@@ -166,7 +173,7 @@ lazy val docs = project
     scalacOptions -= "-Xfatal-warnings",
     libraryDependencies ++= Seq(
       "dev.zio"    %% "zio"     % zioVersion,
-      "eu.timepit" %% "refined" % "0.9.19"
+      "eu.timepit" %% "refined" % "0.9.20"
     ),
     unidocProjectFilter in (ScalaUnidoc, unidoc) := inProjects(root),
     target in (ScalaUnidoc, unidoc) := (baseDirectory in LocalRootProject).value / "website" / "static" / "api",
