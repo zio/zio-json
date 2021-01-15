@@ -1,7 +1,6 @@
 package zio.json.internal
 
 import scala.annotation._
-import scala.util.Properties.propOrNone
 
 import zio.json.JsonDecoder.{ JsonError, UnsafeJson }
 
@@ -12,7 +11,7 @@ object Lexer {
   // TODO need a variant that doesn't skip whitespace, so that attack vectors
   // consisting of an infinite stream of space can exit early.
 
-  val NumberMaxBits: Int = propOrNone("zio.json.number.bits").getOrElse("128").toInt
+  val NumberMaxBits: Int = 128
 
   // True if we got a string (implies a retraction), False for }
   def firstField(trace: List[JsonError], in: RetractReader): Boolean =

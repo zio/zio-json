@@ -2,8 +2,6 @@ package testzio.json
 
 import java.nio.file.Paths
 
-import scala.collection.immutable
-
 import io.circe
 import org.typelevel.jawn.{ ast => jawn }
 import testzio.json.TestUtils._
@@ -21,26 +19,11 @@ import zio.test.environment.Live
 import zio.test.{ DefaultRunnableSpec, _ }
 import zio.{ test => _, _ }
 
-object DecoderSpec extends DefaultRunnableSpec {
+object DecoderPlatformSpecificSpec extends DefaultRunnableSpec {
   def spec: Spec[ZEnv with Live, TestFailure[Any], TestSuccess] =
     suite("Decoder")(
-      test("primitives") {
-        // this big integer consumes more than 128 bits
-        assert("170141183460469231731687303715884105728".fromJson[java.math.BigInteger])(
-          isLeft(equalTo("(expected a 128 bit BigInteger)"))
-        )
-      },
-      test("eithers") {
-        val bernies = List("""{"a":1}""", """{"left":1}""", """{"Left":1}""")
-        val trumps  = List("""{"b":2}""", """{"right":2}""", """{"Right":2}""")
-
-        assert(bernies.map(_.fromJson[Either[Int, Int]]))(
-          forall(isRight(isLeft(equalTo(1))))
-        ) && assert(trumps.map(_.fromJson[Either[Int, Int]]))(
-          forall(isRight(isRight(equalTo(2))))
-        )
-      },
       testM("excessively nested structures") {
+        // JVM specific: getResourceAsString not yet supported
         val testFile = "json_test_suite/n_structure_open_array_object.json"
 
         for {
@@ -49,36 +32,6 @@ object DecoderSpec extends DefaultRunnableSpec {
         } yield {
           assert(r)(fails(equalTo("Unexpected structure")))
         }
-      },
-      test("parameterless products") {
-        import exampleproducts._
-
-        // actually anything works... consider this a canary test because if only
-        // the empty object is supported that's fine.
-        assert("""{}""".fromJson[Parameterless])(isRight(equalTo(Parameterless()))) &&
-        assert("""null""".fromJson[Parameterless])(isRight(equalTo(Parameterless()))) &&
-        assert("""{"field":"value"}""".fromJson[Parameterless])(isRight(equalTo(Parameterless())))
-      },
-      test("no extra fields") {
-        import exampleproducts._
-
-        assert("""{"s":""}""".fromJson[OnlyString])(isRight(equalTo(OnlyString("")))) &&
-        assert("""{"s":"","t":""}""".fromJson[OnlyString])(isLeft(equalTo("(invalid extra field)")))
-      },
-      test("sum encoding") {
-        import examplesum._
-
-        assert("""{"Child1":{}}""".fromJson[Parent])(isRight(equalTo(Child1()))) &&
-        assert("""{"Child2":{}}""".fromJson[Parent])(isRight(equalTo(Child2()))) &&
-        assert("""{"type":"Child1"}""".fromJson[Parent])(isLeft(equalTo("(invalid disambiguator)")))
-      },
-      test("sum alternative encoding") {
-        import examplealtsum._
-
-        assert("""{"hint":"Cain"}""".fromJson[Parent])(isRight(equalTo(Child1()))) &&
-        assert("""{"hint":"Abel"}""".fromJson[Parent])(isRight(equalTo(Child2()))) &&
-        assert("""{"hint":"Samson"}""".fromJson[Parent])(isLeft(equalTo("(invalid disambiguator)"))) &&
-        assert("""{"Cain":{}}""".fromJson[Parent])(isLeft(equalTo("(missing hint 'hint')")))
       },
       testM("googleMapsNormal") {
         getResourceAsStringM("google_maps_api_response.json").map { str =>
@@ -149,51 +102,6 @@ object DecoderSpec extends DefaultRunnableSpec {
             }
           }
         }
-      },
-      test("unicode") {
-        assert(""""€🐵🥰"""".fromJson[String])(isRight(equalTo("€🐵🥰")))
-      },
-      test("Seq") {
-        val jsonStr  = """["5XL","2XL","XL"]"""
-        val expected = Seq("5XL", "2XL", "XL")
-
-        assert(jsonStr.fromJson[Seq[String]])(isRight(equalTo(expected)))
-      },
-      test("Vector") {
-        val jsonStr  = """["5XL","2XL","XL"]"""
-        val expected = Vector("5XL", "2XL", "XL")
-
-        assert(jsonStr.fromJson[Vector[String]])(isRight(equalTo(expected)))
-      },
-      test("SortedSet") {
-        val jsonStr  = """["5XL","2XL","XL"]"""
-        val expected = immutable.SortedSet("5XL", "2XL", "XL")
-
-        assert(jsonStr.fromJson[immutable.SortedSet[String]])(isRight(equalTo(expected)))
-      },
-      test("HashSet") {
-        val jsonStr  = """["5XL","2XL","XL"]"""
-        val expected = immutable.HashSet("5XL", "2XL", "XL")
-
-        assert(jsonStr.fromJson[immutable.HashSet[String]])(isRight(equalTo(expected)))
-      },
-      test("Set") {
-        val jsonStr  = """["5XL","2XL","XL"]"""
-        val expected = Set("5XL", "2XL", "XL")
-
-        assert(jsonStr.fromJson[Set[String]])(isRight(equalTo(expected)))
-      },
-      test("Map") {
-        val jsonStr  = """{"5XL":3,"2XL":14,"XL":159}"""
-        val expected = Map("5XL" -> 3, "2XL" -> 14, "XL" -> 159)
-
-        assert(jsonStr.fromJson[Map[String, Int]])(isRight(equalTo(expected)))
-      },
-      test("zio.Chunk") {
-        val jsonStr  = """["5XL","2XL","XL"]"""
-        val expected = Chunk("5XL", "2XL", "XL")
-
-        assert(jsonStr.fromJson[Chunk[String]])(isRight(equalTo(expected)))
       },
       suite("jawn")(
         testAst("bar"),
