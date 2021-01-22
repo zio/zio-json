@@ -5,7 +5,9 @@ on:
     branches: ['*']
   push:
     branches: ['develop']
-    tags: ['v*']
+  release:
+    types:
+      - published
 
 jobs:
   lint:
