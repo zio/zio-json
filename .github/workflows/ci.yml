@@ -2,7 +2,6 @@ name: CI
 
 on:
   pull_request:
-    branches: ['*']
   push:
     branches: ['develop']
   release:
@@ -22,14 +21,7 @@ jobs:
       - name: Setup Scala and Java
         uses: olafurpg/setup-scala@v10
       - name: Cache scala dependencies
-        uses: actions/cache@v2
-        with:
-          path: |
-            ~/.ivy2/cache
-            ~/.sbt
-            ~/.m2
-            ~/.cache
-          key: sbt-cache-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('project/build.properties') }}
+        uses: coursier/cache-action@v5
       - name: Lint code
         run: sbt fmtCheck fixCheck
 
@@ -50,14 +42,7 @@ jobs:
         with:
           java-version: ${{ matrix.java }}
       - name: Cache scala dependencies
-        uses: actions/cache@v2
-        with:
-          path: |
-            ~/.ivy2/cache
-            ~/.sbt
-            ~/.m2
-            ~/.cache
-          key: sbt-cache-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('project/build.properties') }}
+        uses: coursier/cache-action@v5
       - name: Compile benchmarks
         run: sbt ++${{ matrix.scala }}! jmh:compile
 
@@ -82,14 +67,7 @@ jobs:
         with:
           node-version: '10'
       - name: Cache scala dependencies
-        uses: actions/cache@v2
-        with:
-          path: |
-            ~/.ivy2/cache
-            ~/.sbt
-            ~/.m2
-            ~/.cache
-          key: sbt-cache-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('project/build.properties') }}
+        uses: coursier/cache-action@v5
       - name: Run tests
         run: sbt ++${{ matrix.scala }}! testJS
 
@@ -110,14 +88,7 @@ jobs:
         with:
           java-version: ${{ matrix.java }}
       - name: Cache scala dependencies
-        uses: actions/cache@v2
-        with:
-          path: |
-            ~/.ivy2/cache
-            ~/.sbt
-            ~/.m2
-            ~/.cache
-          key: sbt-cache-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('project/build.properties') }}
+        uses: coursier/cache-action@v5
       - name: Run tests
         run: sbt ++${{ matrix.scala }}! testJVM
 
@@ -133,14 +104,7 @@ jobs:
       - name: Setup Scala and Java 
         uses: olafurpg/setup-scala@v10
       - name: Cache scala dependencies
-        uses: actions/cache@v2
-        with:
-          path: |
-            ~/.ivy2/cache
-            ~/.sbt
-            ~/.m2
-            ~/.cache
-          key: sbt-cache-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('project/build.properties') }}
+        uses: coursier/cache-action@v5
       - name: Setup GPG
         uses: olafurpg/setup-gpg@v3
       - name: Release artifacts
