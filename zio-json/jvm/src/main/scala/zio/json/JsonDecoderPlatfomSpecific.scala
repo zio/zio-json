@@ -1,5 +1,7 @@
 package zio.json
 
+import java.nio.charset.{ Charset, StandardCharsets }
+
 import scala.annotation.tailrec
 
 import zio._
@@ -11,22 +13,41 @@ import zio.stream.{ Take, ZStream, ZTransducer }
 
 trait JsonDecoderPlatformSpecific[A] { self: JsonDecoder[A] =>
 
+  private def readAll(reader: java.io.Reader): ZIO[Blocking, Throwable, A] =
+    effectBlocking {
+      try unsafeDecode(Nil, new zio.json.internal.WithRetractReader(reader))
+      catch {
+        case JsonDecoder.UnsafeJson(trace)      => throw new Exception(JsonError.render(trace))
+        case _: zio.json.internal.UnexpectedEnd => throw new Exception("unexpected end of input")
+      }
+    }
+
+  /**
+   * Attempts to decode a stream of bytes using the user supplied Charset into a single value of type `A`, but may fail with
+   * a human-readable exception if the stream does not encode a value of this type.
+   *
+   * Note: This method may not consume the full string.
+   *
+   * @see [[decodeJsonStream]] For a `Char` stream variant
+   */
+  final def decodeJsonStreamInput[R <: Blocking](
+    stream: ZStream[R, Throwable, Byte],
+    charset: Charset = StandardCharsets.UTF_8
+  ): ZIO[R, Throwable, A] =
+    stream.toInputStream
+      .flatMap(is => ZManaged.fromAutoCloseable(UIO(new java.io.InputStreamReader(is, charset))))
+      .use(readAll)
+
   /**
    * Attempts to decode a stream of characters into a single value of type `A`, but may fail with
    * a human-readable exception if the stream does not encode a value of this type.
    *
    * Note: This method may not consume the full string.
+   *
+   * @see also [[decodeJsonStreamInput]]
    */
   final def decodeJsonStream[R <: Blocking](stream: ZStream[R, Throwable, Char]): ZIO[R, Throwable, A] =
-    stream.toReader.use { reader =>
-      effectBlocking {
-        try unsafeDecode(Nil, new zio.json.internal.WithRetractReader(reader))
-        catch {
-          case JsonDecoder.UnsafeJson(trace)      => throw new Exception(JsonError.render(trace))
-          case _: zio.json.internal.UnexpectedEnd => throw new Exception("unexpected end of input")
-        }
-      }
-    }
+    stream.toReader.use(readAll)
 
   final def decodeJsonTransducer(
     delimiter: JsonStreamDelimiter = JsonStreamDelimiter.Array
