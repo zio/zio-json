@@ -1,5 +1,6 @@
 package testzio.json
 
+import java.nio.charset.StandardCharsets
 import java.nio.file.Paths
 
 import io.circe
@@ -121,6 +122,11 @@ object DecoderPlatformSpecificSpec extends DefaultRunnableSpec {
           } yield {
             assert(int)(equalTo(123))
           }
+        },
+        testM("decodes an encoded stream of bytes") {
+          for {
+            int <- JsonDecoder[Int].decodeJsonStreamInput(ZStream.fromIterable("123".getBytes(StandardCharsets.UTF_8)))
+          } yield assert(int)(equalTo(123))
         },
         suite("decodeJsonTransducer")(
           suite("Newline delimited")(
