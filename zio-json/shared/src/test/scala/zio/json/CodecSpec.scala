@@ -20,10 +20,11 @@ object CodecSpec extends DefaultRunnableSpec {
           )
         },
         test("primitives") {
+          val exampleBDString = "234234.234"
           // this big integer consumes more than 128 bits
           assert("170141183460469231731687303715884105728".fromJson[java.math.BigInteger])(
             isLeft(equalTo("(expected a 128 bit BigInteger)"))
-          )
+          ) && assert(exampleBDString.fromJson[BigDecimal])(isRight(equalTo(BigDecimal(exampleBDString))))
         },
         test("eithers") {
           val bernies = List("""{"a":1}""", """{"left":1}""", """{"Left":1}""")

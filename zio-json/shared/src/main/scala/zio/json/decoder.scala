@@ -76,6 +76,7 @@ trait JsonDecoder[A] extends JsonDecoderPlatformSpecific[A] { self =>
    */
   final def orElse[A1 >: A](that: => JsonDecoder[A1]): JsonDecoder[A1] =
     new JsonDecoder[A1] {
+
       def unsafeDecode(trace: List[JsonError], in: RetractReader): A1 = {
         val in2 = new zio.json.internal.WithRecordingReader(in, 64)
 
@@ -104,6 +105,7 @@ trait JsonDecoder[A] extends JsonDecoderPlatformSpecific[A] { self =>
    */
   final def map[B](f: A => B): JsonDecoder[B] =
     new JsonDecoder[B] {
+
       def unsafeDecode(trace: List[JsonError], in: RetractReader): B =
         f(self.unsafeDecode(trace, in))
     }
@@ -114,6 +116,7 @@ trait JsonDecoder[A] extends JsonDecoderPlatformSpecific[A] { self =>
    */
   final def mapOrFail[B](f: A => Either[String, B]): JsonDecoder[B] =
     new JsonDecoder[B] {
+
       def unsafeDecode(trace: List[JsonError], in: RetractReader): B =
         f(self.unsafeDecode(trace, in)) match {
           case Left(err) =>
@@ -175,7 +178,9 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority0 {
    * to facilitate human-readable error messages during decoding failures.
    */
   sealed abstract class JsonError
+
   object JsonError {
+
     def render(trace: List[JsonError]): String =
       trace.reverse.map {
         case Message(txt)        => s"($txt)"
@@ -190,6 +195,7 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority0 {
   }
 
   def peekChar[A](partialFunction: PartialFunction[Char, JsonDecoder[A]]): JsonDecoder[A] = new JsonDecoder[A] {
+
     override def unsafeDecode(trace: List[JsonError], in: RetractReader): A = {
       val c = in.nextNonWhitespace()
       if (partialFunction.isDefinedAt(c)) {
@@ -202,10 +208,13 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority0 {
   }
 
   implicit def string: JsonDecoder[String] = new JsonDecoder[String] {
+
     def unsafeDecode(trace: List[JsonError], in: RetractReader): String =
       Lexer.string(trace, in).toString
   }
+
   implicit val boolean: JsonDecoder[Boolean] = new JsonDecoder[Boolean] {
+
     def unsafeDecode(trace: List[JsonError], in: RetractReader): Boolean =
       Lexer.boolean(trace, in)
   }
@@ -216,24 +225,22 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority0 {
   }
   implicit val symbol: JsonDecoder[Symbol] = string.map(Symbol(_))
 
-  implicit val byte: JsonDecoder[Byte]   = number(Lexer.byte)
-  implicit val short: JsonDecoder[Short] = number(Lexer.short)
-  implicit val int: JsonDecoder[Int]     = number(Lexer.int)
-  implicit def long: JsonDecoder[Long]   = number(Lexer.long)
-  implicit val bigInteger: JsonDecoder[java.math.BigInteger] = number(
-    Lexer.bigInteger
-  )
-  implicit val float: JsonDecoder[Float]   = number(Lexer.float)
-  implicit val double: JsonDecoder[Double] = number(Lexer.double)
-  implicit val bigDecimal: JsonDecoder[java.math.BigDecimal] = number(
-    Lexer.bigDecimal
-  )
+  implicit val byte: JsonDecoder[Byte]                       = number(Lexer.byte)
+  implicit val short: JsonDecoder[Short]                     = number(Lexer.short)
+  implicit val int: JsonDecoder[Int]                         = number(Lexer.int)
+  implicit def long: JsonDecoder[Long]                       = number(Lexer.long)
+  implicit val bigInteger: JsonDecoder[java.math.BigInteger] = number(Lexer.bigInteger)
+  implicit val float: JsonDecoder[Float]                     = number(Lexer.float)
+  implicit val double: JsonDecoder[Double]                   = number(Lexer.double)
+  implicit val bigDecimal: JsonDecoder[java.math.BigDecimal] = number(Lexer.bigDecimal)
+  implicit val scalaBigDecimal: JsonDecoder[BigDecimal]      = bigDecimal.map(x => x)
 
   // numbers decode from numbers or strings for maximum compatibility
   private[this] def number[A](
     f: (List[JsonError], RetractReader) => A
   ): JsonDecoder[A] =
     new JsonDecoder[A] {
+
       def unsafeDecode(trace: List[JsonError], in: RetractReader): A =
         (in.nextNonWhitespace(): @switch) match {
           case '"' =>
@@ -253,8 +260,10 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority0 {
   implicit def option[A](implicit A: JsonDecoder[A]): JsonDecoder[Option[A]] =
     new JsonDecoder[Option[A]] {
       private[this] val ull: Array[Char] = "ull".toCharArray
+
       override def unsafeDecodeMissing(trace: List[JsonError]): Option[A] =
         Option.empty
+
       def unsafeDecode(trace: List[JsonError], in: RetractReader): Option[A] =
         (in.nextNonWhitespace(): @switch) match {
           case 'n' =>
@@ -274,6 +283,7 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority0 {
     B: JsonDecoder[B]
   ): JsonDecoder[Either[A, B]] =
     new JsonDecoder[Either[A, B]] {
+
       val names: Array[String] =
         Array("a", "Left", "left", "b", "Right", "right")
       val matrix: StringMatrix    = new StringMatrix(names)
@@ -352,7 +362,9 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority0 {
 }
 
 private[json] trait DecoderLowPriority0 extends DecoderLowPriority1 { this: JsonDecoder.type =>
+
   implicit def chunk[A: JsonDecoder]: JsonDecoder[Chunk[A]] = new JsonDecoder[Chunk[A]] {
+
     def unsafeDecode(trace: List[JsonError], in: RetractReader): Chunk[A] =
       builder(trace, in, zio.ChunkBuilder.make[A]())
   }
@@ -365,40 +377,48 @@ private[json] trait DecoderLowPriority0 extends DecoderLowPriority1 { this: Json
 }
 
 private[json] trait DecoderLowPriority1 extends DecoderLowPriority2 { this: JsonDecoder.type =>
+
   implicit def seq[A: JsonDecoder]: JsonDecoder[Seq[A]] = new JsonDecoder[Seq[A]] {
+
     def unsafeDecode(trace: List[JsonError], in: RetractReader): Seq[A] =
       builder(trace, in, immutable.Seq.newBuilder[A])
   }
 
   implicit def list[A: JsonDecoder]: JsonDecoder[List[A]] = new JsonDecoder[List[A]] {
+
     def unsafeDecode(trace: List[JsonError], in: RetractReader): List[A] =
       builder(trace, in, new mutable.ListBuffer[A])
   }
 
   implicit def vector[A: JsonDecoder]: JsonDecoder[Vector[A]] = new JsonDecoder[Vector[A]] {
+
     def unsafeDecode(trace: List[JsonError], in: RetractReader): Vector[A] =
       builder(trace, in, immutable.Vector.newBuilder[A])
   }
 
   implicit def set[A: JsonDecoder]: JsonDecoder[Set[A]] = new JsonDecoder[Set[A]] {
+
     def unsafeDecode(trace: List[JsonError], in: RetractReader): Set[A] =
       builder(trace, in, immutable.HashSet.newBuilder[A])
   }
 
   implicit def map[K: JsonFieldDecoder, V: JsonDecoder]: JsonDecoder[Map[K, V]] =
     new JsonDecoder[Map[K, V]] {
+
       def unsafeDecode(trace: List[JsonError], in: RetractReader): Map[K, V] =
         keyValueBuilder(trace, in, Map.newBuilder[K, V])
     }
 
   implicit def sortedSet[A: Ordering: JsonDecoder]: JsonDecoder[immutable.SortedSet[A]] =
     new JsonDecoder[immutable.SortedSet[A]] {
+
       def unsafeDecode(trace: List[JsonError], in: RetractReader): immutable.SortedSet[A] =
         builder(trace, in, immutable.SortedSet.newBuilder[A])
     }
 
   implicit def sortedMap[K: JsonFieldDecoder: Ordering, V: JsonDecoder]: JsonDecoder[collection.SortedMap[K, V]] =
     new JsonDecoder[collection.SortedMap[K, V]] {
+
       def unsafeDecode(trace: List[JsonError], in: RetractReader): collection.SortedMap[K, V] =
         keyValueBuilder(trace, in, collection.SortedMap.newBuilder[K, V])
     }
@@ -424,6 +444,7 @@ private[json] trait DecoderLowPriority2 extends DecoderLowPriority3 {
     A: JsonDecoder[A]
   ): JsonDecoder[Chunk[(K, A)]] =
     new JsonDecoder[Chunk[(K, A)]] {
+
       def unsafeDecode(trace: List[JsonError], in: RetractReader): Chunk[(K, A)] =
         keyValueBuilder[K, A, ({ type lambda[X, Y] = Chunk[(X, Y)] })#lambda](
           trace,
@@ -444,25 +465,33 @@ private[json] trait DecoderLowPriority3 { this: JsonDecoder.type =>
     string.mapOrFail(s => parseJavaTime(DayOfWeek.valueOf, s.toUpperCase))
   implicit val duration: JsonDecoder[Duration] = string.mapOrFail(parseJavaTime(Duration.parse, _))
   implicit val instant: JsonDecoder[Instant]   = string.mapOrFail(parseJavaTime(Instant.parse, _))
+
   implicit val localDate: JsonDecoder[LocalDate] =
     string.mapOrFail(parseJavaTime(LocalDate.parse(_, DateTimeFormatter.ISO_LOCAL_DATE), _))
+
   implicit val localDateTime: JsonDecoder[LocalDateTime] =
     string.mapOrFail(parseJavaTime(LocalDateTime.parse(_, DateTimeFormatter.ISO_LOCAL_DATE_TIME), _))
+
   implicit val localTime: JsonDecoder[LocalTime] =
     string.mapOrFail(parseJavaTime(LocalTime.parse(_, DateTimeFormatter.ISO_LOCAL_TIME), _))
   implicit val month: JsonDecoder[Month]       = string.mapOrFail(s => parseJavaTime(Month.valueOf, s.toUpperCase))
   implicit val monthDay: JsonDecoder[MonthDay] = string.mapOrFail(parseJavaTime(MonthDay.parse, _))
+
   implicit val offsetDateTime: JsonDecoder[OffsetDateTime] =
     string.mapOrFail(parseJavaTime(OffsetDateTime.parse(_, DateTimeFormatter.ISO_OFFSET_DATE_TIME), _))
+
   implicit val offsetTime: JsonDecoder[OffsetTime] =
     string.mapOrFail(parseJavaTime(OffsetTime.parse(_, DateTimeFormatter.ISO_OFFSET_TIME), _))
   implicit val period: JsonDecoder[Period] = string.mapOrFail(parseJavaTime(Period.parse, _))
   implicit val year: JsonDecoder[Year]     = string.mapOrFail(parseJavaTime(Year.parse(_), _))
+
   implicit val yearMonth: JsonDecoder[YearMonth] =
     string.mapOrFail(parseJavaTime(YearMonth.parse, _))
+
   implicit val zonedDateTime: JsonDecoder[ZonedDateTime] =
     string.mapOrFail(parseJavaTime(ZonedDateTime.parse(_, DateTimeFormatter.ISO_ZONED_DATE_TIME), _))
   implicit val zoneId: JsonDecoder[ZoneId] = string.mapOrFail(parseJavaTime(ZoneId.of, _))
+
   implicit val zoneOffset: JsonDecoder[ZoneOffset] =
     string.mapOrFail(parseJavaTime(ZoneOffset.of, _))
 
@@ -480,13 +509,17 @@ private[json] trait DecoderLowPriority3 { this: JsonDecoder.type =>
 
 /** When decoding a JSON Object, we only allow the keys that implement this interface. */
 trait JsonFieldDecoder[+A] { self =>
+
   final def map[B](f: A => B): JsonFieldDecoder[B] =
     new JsonFieldDecoder[B] {
+
       def unsafeDecodeField(trace: List[JsonError], in: String): B =
         f(self.unsafeDecodeField(trace, in))
     }
+
   final def mapOrFail[B](f: A => Either[String, B]): JsonFieldDecoder[B] =
     new JsonFieldDecoder[B] {
+
       def unsafeDecodeField(trace: List[JsonError], in: String): B =
         f(self.unsafeDecodeField(trace, in)) match {
           case Left(err) =>
@@ -497,7 +530,9 @@ trait JsonFieldDecoder[+A] { self =>
 
   def unsafeDecodeField(trace: List[JsonError], in: String): A
 }
+
 object JsonFieldDecoder {
+
   implicit val string: JsonFieldDecoder[String] = new JsonFieldDecoder[String] {
     def unsafeDecodeField(trace: List[JsonError], in: String): String = in
   }

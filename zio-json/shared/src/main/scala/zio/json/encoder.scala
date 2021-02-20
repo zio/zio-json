@@ -6,7 +6,7 @@ import java.time.temporal.ChronoField.YEAR
 import scala.annotation._
 import scala.collection.immutable
 
-import zio.{ Chunk }
+import zio.Chunk
 import zio.json.internal.{ FastStringWrite, Write }
 
 trait JsonEncoder[A] extends JsonEncoderPlatformSpecific[A] { self =>
@@ -29,6 +29,7 @@ trait JsonEncoder[A] extends JsonEncoderPlatformSpecific[A] { self =>
    * by the specified user-defined function.
    */
   final def contramap[B](f: B => A): JsonEncoder[B] = new JsonEncoder[B] {
+
     override def unsafeEncode(b: B, indent: Option[Int], out: Write): Unit =
       self.unsafeEncode(f(b), indent, out)
     override def isNothing(b: B): Boolean = self.isNothing(f(b))
@@ -79,6 +80,7 @@ object JsonEncoder extends GeneratedTupleEncoders with EncoderLowPriority0 {
   def apply[A](implicit a: JsonEncoder[A]): JsonEncoder[A] = a
 
   implicit val string: JsonEncoder[String] = new JsonEncoder[String] {
+
     override def unsafeEncode(a: String, indent: Option[Int], out: Write): Unit = {
       out.write('"')
       var i   = 0
@@ -111,23 +113,25 @@ object JsonEncoder extends GeneratedTupleEncoders with EncoderLowPriority0 {
     def unsafeEncode(a: A, indent: Option[Int], out: Write): Unit = out.write(s""""${f(a)}"""")
   }
 
-  implicit val boolean: JsonEncoder[Boolean] = explicit(_.toString)
-  implicit val char: JsonEncoder[Char]       = string.contramap(_.toString)
-  implicit val symbol: JsonEncoder[Symbol]   = string.contramap(_.name)
-
+  implicit val boolean: JsonEncoder[Boolean]                 = explicit(_.toString)
+  implicit val char: JsonEncoder[Char]                       = string.contramap(_.toString)
+  implicit val symbol: JsonEncoder[Symbol]                   = string.contramap(_.name)
   implicit val byte: JsonEncoder[Byte]                       = explicit(_.toString)
   implicit val short: JsonEncoder[Short]                     = explicit(_.toString)
   implicit val int: JsonEncoder[Int]                         = explicit(_.toString)
   implicit val long: JsonEncoder[Long]                       = explicit(_.toString)
   implicit val bigInteger: JsonEncoder[java.math.BigInteger] = explicit(_.toString)
+
   implicit val double: JsonEncoder[Double] = explicit { n =>
     if (n.isNaN || n.isInfinite) s""""$n""""
     else n.toString
   }
   implicit val float: JsonEncoder[Float]                     = double.contramap(_.toDouble)
   implicit val bigDecimal: JsonEncoder[java.math.BigDecimal] = explicit(_.toString)
+  implicit val scalaBigDecimal: JsonEncoder[BigDecimal]      = explicit(_.toString)
 
   implicit def option[A](implicit A: JsonEncoder[A]): JsonEncoder[Option[A]] = new JsonEncoder[Option[A]] {
+
     def unsafeEncode(oa: Option[A], indent: Option[Int], out: Write): Unit = oa match {
       case None    => out.write("null")
       case Some(a) => A.unsafeEncode(a, indent, out)
@@ -139,11 +143,13 @@ object JsonEncoder extends GeneratedTupleEncoders with EncoderLowPriority0 {
     case None    => None
     case Some(i) => Some(i + 1)
   }
+
   def pad(indent: Option[Int], out: Write): Unit =
     indent.foreach(i => out.write("\n" + (" " * 2 * i)))
 
   implicit def either[A, B](implicit A: JsonEncoder[A], B: JsonEncoder[B]): JsonEncoder[Either[A, B]] =
     new JsonEncoder[Either[A, B]] {
+
       def unsafeEncode(eab: Either[A, B], indent: Option[Int], out: Write): Unit = {
         out.write('{')
         val indent_ = bump(indent)
@@ -193,8 +199,10 @@ private[json] trait EncoderLowPriority1 extends EncoderLowPriority2 { this: Json
 }
 
 private[json] trait EncoderLowPriority2 extends EncoderLowPriority3 { this: JsonEncoder.type =>
+
   implicit def iterable[A, T[X] <: Iterable[X]](implicit A: JsonEncoder[A]): JsonEncoder[T[A]] =
     new JsonEncoder[T[A]] {
+
       def unsafeEncode(as: T[A], indent: Option[Int], out: Write): Unit = {
         out.write('[')
         var first = true
@@ -213,6 +221,7 @@ private[json] trait EncoderLowPriority2 extends EncoderLowPriority3 { this: Json
     K: JsonFieldEncoder[K],
     A: JsonEncoder[A]
   ): JsonEncoder[T[K, A]] = new JsonEncoder[T[K, A]] {
+
     def unsafeEncode(kvs: T[K, A], indent: Option[Int], out: Write): Unit = {
       if (kvs.isEmpty) return out.write("{}")
 
@@ -256,28 +265,35 @@ private[json] trait EncoderLowPriority3 { this: JsonEncoder.type =>
   implicit val dayOfWeek: JsonEncoder[DayOfWeek] = stringify(_.toString)
   implicit val duration: JsonEncoder[Duration]   = stringify(_.toString)
   implicit val instant: JsonEncoder[Instant]     = stringify(_.toString)
+
   implicit val localDate: JsonEncoder[LocalDate] = stringify(
     _.format(DateTimeFormatter.ISO_LOCAL_DATE)
   )
+
   implicit val localDateTime: JsonEncoder[LocalDateTime] = stringify(
     _.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
   )
+
   implicit val localTime: JsonEncoder[LocalTime] = stringify(
     _.format(DateTimeFormatter.ISO_LOCAL_TIME)
   )
   implicit val month: JsonEncoder[Month]       = stringify(_.toString)
   implicit val monthDay: JsonEncoder[MonthDay] = stringify(_.toString)
+
   implicit val offsetDateTime: JsonEncoder[OffsetDateTime] = stringify(
     _.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)
   )
+
   implicit val offsetTime: JsonEncoder[OffsetTime] = stringify(
     _.format(DateTimeFormatter.ISO_OFFSET_TIME)
   )
   implicit val period: JsonEncoder[Period] = stringify(_.toString)
+
   private val yearFormatter =
     new DateTimeFormatterBuilder().appendValue(YEAR, 4, 10, SignStyle.EXCEEDS_PAD).toFormatter
   implicit val year: JsonEncoder[Year]           = stringify(_.format(yearFormatter))
   implicit val yearMonth: JsonEncoder[YearMonth] = stringify(_.toString)
+
   implicit val zonedDateTime: JsonEncoder[ZonedDateTime] = stringify(
     _.format(DateTimeFormatter.ISO_ZONED_DATE_TIME)
   )
@@ -294,7 +310,9 @@ trait JsonFieldEncoder[-A] { self =>
 
   def unsafeEncodeField(in: A): String
 }
+
 object JsonFieldEncoder {
+
   implicit val string: JsonFieldEncoder[String] = new JsonFieldEncoder[String] {
     def unsafeEncodeField(in: String): String = in
   }

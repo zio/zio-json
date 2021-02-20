@@ -9,9 +9,13 @@ import zio.test.{ DefaultRunnableSpec, _ }
 import zio.{ test => _, _ }
 
 object DecoderSpec extends DefaultRunnableSpec {
+
   def spec: Spec[ZEnv with Live, TestFailure[Any], TestSuccess] =
     suite("Decoder")(
-      test("primitives") {
+      test("BigDecimal") {
+        assert("123".fromJson[BigDecimal])(isRight(equalTo(BigDecimal(123))))
+      },
+      test("BigInteger too large") {
         // this big integer consumes more than 128 bits
         assert("170141183460469231731687303715884105728".fromJson[java.math.BigInteger])(
           isLeft(equalTo("(expected a 128 bit BigInteger)"))
@@ -106,14 +110,18 @@ object DecoderSpec extends DefaultRunnableSpec {
 
   object exampleproducts {
     case class Parameterless()
+
     object Parameterless {
+
       implicit val decoder: JsonDecoder[Parameterless] =
         DeriveJsonDecoder.gen[Parameterless]
     }
 
     @jsonNoExtraFields
     case class OnlyString(s: String)
+
     object OnlyString {
+
       implicit val decoder: JsonDecoder[OnlyString] =
         DeriveJsonDecoder.gen[OnlyString]
     }
@@ -121,6 +129,7 @@ object DecoderSpec extends DefaultRunnableSpec {
 
   object examplesum {
     sealed abstract class Parent
+
     object Parent {
       implicit val decoder: JsonDecoder[Parent] = DeriveJsonDecoder.gen[Parent]
     }
@@ -129,8 +138,10 @@ object DecoderSpec extends DefaultRunnableSpec {
   }
 
   object examplealtsum {
+
     @jsonDiscriminator("hint")
     sealed abstract class Parent
+
     object Parent {
       implicit val decoder: JsonDecoder[Parent] = DeriveJsonDecoder.gen[Parent]
     }

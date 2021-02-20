@@ -44,6 +44,9 @@ object JsonCodec {
   implicit val float: JsonCodec[Float]                     = JsonCodec(JsonEncoder.float, JsonDecoder.float)
   implicit val bigDecimal: JsonCodec[java.math.BigDecimal] = JsonCodec(JsonEncoder.bigDecimal, JsonDecoder.bigDecimal)
 
+  implicit val scalaBigDecimal: JsonCodec[BigDecimal] =
+    JsonCodec(JsonEncoder.scalaBigDecimal, JsonDecoder.scalaBigDecimal)
+
   implicit def option[A](implicit c: JsonCodec[A]): JsonCodec[Option[A]] =
     JsonCodec(JsonEncoder.option(c.encoder), JsonDecoder.option(c.decoder))
 

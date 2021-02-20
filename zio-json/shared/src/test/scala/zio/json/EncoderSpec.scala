@@ -3,7 +3,7 @@ package testzio.json
 import zio.json._
 import zio.test.Assertion._
 import zio.test.TestAspect._
-import zio.test.{ DefaultRunnableSpec, assert, _ }
+import zio.test._
 
 // zioJsonJVM/testOnly testzio.json.EncoderSpec
 object EncoderSpec extends DefaultRunnableSpec {
@@ -26,16 +26,17 @@ object EncoderSpec extends DefaultRunnableSpec {
           assert(Symbol("c").toJson)(equalTo("\"c\""))
         },
         test("numerics") {
+          val exampleBigIntStr     = "170141183460469231731687303715884105728"
+          val exampleBigDecimalStr = "170141183460469231731687303715884105728.4433"
           assert((1: Byte).toJson)(equalTo("1")) &&
           assert((1: Short).toJson)(equalTo("1")) &&
           assert((1: Int).toJson)(equalTo("1")) &&
-          assert((1L).toJson)(equalTo("1")) &&
-          assert((new java.math.BigInteger("1")).toJson)(equalTo("1")) &&
-          assert((new java.math.BigInteger("170141183460469231731687303715884105728")).toJson)(
-            equalTo("170141183460469231731687303715884105728")
-          ) &&
-          assert((1.0f).toJson)(equalTo("1.0")) &&
-          assert((1.0d).toJson)(equalTo("1.0"))
+          assert(1L.toJson)(equalTo("1")) &&
+          assert(new java.math.BigInteger("1").toJson)(equalTo("1")) &&
+          assert(new java.math.BigInteger(exampleBigIntStr).toJson)(equalTo(exampleBigIntStr)) &&
+          assert(BigDecimal(exampleBigDecimalStr).toJson)(equalTo(exampleBigDecimalStr)) &&
+          assert(1.0f.toJson)(equalTo("1.0")) &&
+          assert(1.0d.toJson)(equalTo("1.0"))
         } @@ jvmOnly,
         test("NaN / Infinity") {
           assert(Float.NaN.toJson)(equalTo("\"NaN\"")) &&

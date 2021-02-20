@@ -45,6 +45,7 @@ object Lexer {
         in.retract()
         true
     }
+
   def nextArrayElement(trace: List[JsonError], in: OneCharReader): Boolean =
     (in.nextNonWhitespace(): @switch) match {
       case ',' => true
@@ -90,6 +91,7 @@ object Lexer {
   private[this] val ull: Array[Char]  = "ull".toCharArray
   private[this] val alse: Array[Char] = "alse".toCharArray
   private[this] val rue: Array[Char]  = "rue".toCharArray
+
   def skipValue(trace: List[JsonError], in: RetractReader): Unit =
     (in.nextNonWhitespace(): @switch) match {
       case 'n' => readChars(trace, in, ull, "null")
@@ -391,6 +393,7 @@ final class StringMatrix(val xs: Array[String]) {
   val height: Int         = xs.map(_.length).max
   val lengths: Array[Int] = xs.map(_.length)
   val initial: Long       = (0 until width).foldLeft(0L)((bs, r) => bs | (1L << r))
+
   private val matrix: Array[Int] = {
     val m           = Array.fill[Int](width * height)(-1)
     var string: Int = 0
