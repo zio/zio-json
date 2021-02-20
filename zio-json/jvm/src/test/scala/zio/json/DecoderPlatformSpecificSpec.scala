@@ -2,13 +2,11 @@ package testzio.json
 
 import java.nio.charset.StandardCharsets
 import java.nio.file.Paths
-
 import io.circe
 import org.typelevel.jawn.{ ast => jawn }
 import testzio.json.TestUtils._
 import testzio.json.data.googlemaps._
 import testzio.json.data.twitter._
-
 import zio.blocking._
 import zio.duration._
 import zio.json._
@@ -16,12 +14,13 @@ import zio.json.ast._
 import zio.stream.ZStream
 import zio.test.Assertion._
 import zio.test.TestAspect._
-import zio.test.environment.Live
-import zio.test.{ DefaultRunnableSpec, _ }
-import zio.{ test => _, _ }
+import zio.test.environment.TestEnvironment
+import zio.test._
+import zio._
 
 object DecoderPlatformSpecificSpec extends DefaultRunnableSpec {
-  def spec: Spec[ZEnv with Live, TestFailure[Any], TestSuccess] =
+
+  def spec: Spec[TestEnvironment, TestFailure[Any], TestSuccess] =
     suite("Decoder")(
       testM("excessively nested structures") {
         // JVM specific: getResourceAsString not yet supported
@@ -340,14 +339,18 @@ object DecoderPlatformSpecificSpec extends DefaultRunnableSpec {
 
   object exampleproducts {
     case class Parameterless()
+
     object Parameterless {
+
       implicit val decoder: JsonDecoder[Parameterless] =
         DeriveJsonDecoder.gen[Parameterless]
     }
 
     @jsonNoExtraFields
     case class OnlyString(s: String)
+
     object OnlyString {
+
       implicit val decoder: JsonDecoder[OnlyString] =
         DeriveJsonDecoder.gen[OnlyString]
     }
@@ -355,6 +358,7 @@ object DecoderPlatformSpecificSpec extends DefaultRunnableSpec {
 
   object examplesum {
     sealed abstract class Parent
+
     object Parent {
       implicit val decoder: JsonDecoder[Parent] = DeriveJsonDecoder.gen[Parent]
     }
@@ -363,8 +367,10 @@ object DecoderPlatformSpecificSpec extends DefaultRunnableSpec {
   }
 
   object examplealtsum {
+
     @jsonDiscriminator("hint")
     sealed abstract class Parent
+
     object Parent {
       implicit val decoder: JsonDecoder[Parent] = DeriveJsonDecoder.gen[Parent]
     }

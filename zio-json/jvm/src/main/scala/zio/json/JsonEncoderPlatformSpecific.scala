@@ -1,7 +1,7 @@
 package zio.json
 
 import zio.blocking._
-import zio.json.internal.{ WriteWriter }
+import zio.json.internal.WriteWriter
 import zio.stream._
 import zio.{ Chunk, Ref, ZIO, ZManaged }
 
