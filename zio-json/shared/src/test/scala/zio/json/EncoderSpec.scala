@@ -7,6 +7,7 @@ import zio.test.{ DefaultRunnableSpec, assert, _ }
 
 // zioJsonJVM/testOnly testzio.json.EncoderSpec
 object EncoderSpec extends DefaultRunnableSpec {
+
   def spec: Spec[Annotations, TestFailure[Any], TestSuccess] =
     suite("Encoder")(
       suite("primitives")(
@@ -119,24 +120,32 @@ object EncoderSpec extends DefaultRunnableSpec {
 
   object exampleproducts {
     case class Parameterless()
+
     object Parameterless {
+
       implicit val encoder: JsonEncoder[Parameterless] =
         DeriveJsonEncoder.gen[Parameterless]
     }
 
     case class OnlyString(s: String)
+
     object OnlyString {
+
       implicit val encoder: JsonEncoder[OnlyString] =
         DeriveJsonEncoder.gen[OnlyString]
     }
 
     case class CoupleOfThings(@jsonField("j") i: Int, f: Option[Float], b: Boolean)
+
     object CoupleOfThings {
+
       implicit val encoder: JsonEncoder[CoupleOfThings] =
         DeriveJsonEncoder.gen[CoupleOfThings]
     }
     case class OptionalAndRequired(i: Option[Int], s: String)
+
     object OptionalAndRequired {
+
       implicit val encoder: JsonEncoder[OptionalAndRequired] =
         DeriveJsonEncoder.gen[OptionalAndRequired]
     }
@@ -145,22 +154,27 @@ object EncoderSpec extends DefaultRunnableSpec {
   object examplesum {
 
     sealed abstract class Parent
+
     object Parent {
       implicit val encoder: JsonEncoder[Parent] = DeriveJsonEncoder.gen[Parent]
     }
     case class Child1() extends Parent
+
     @jsonHint("Cain")
     case class Child2() extends Parent
   }
 
   object examplealtsum {
+
     @jsonDiscriminator("hint")
     sealed abstract class Parent
+
     object Parent {
       implicit val encoder: JsonEncoder[Parent] = DeriveJsonEncoder.gen[Parent]
     }
 
     case class Child1() extends Parent
+
     @jsonHint("Abel")
     case class Child2(s: Option[String]) extends Parent
   }
