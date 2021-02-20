@@ -5,8 +5,8 @@ import scala.collection.immutable
 import zio.json._
 import zio.test.Assertion._
 import zio.test.environment.Live
-import zio.test.{ DefaultRunnableSpec, _ }
-import zio.{ test => _, _ }
+import zio.test._
+import zio._
 
 object DecoderSpec extends DefaultRunnableSpec {
 

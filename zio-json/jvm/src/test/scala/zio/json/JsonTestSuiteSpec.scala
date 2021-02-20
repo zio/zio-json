@@ -11,6 +11,7 @@ import zio.test.TestAspect._
 import zio.test._
 
 object JsonTestSuiteSpec extends DefaultRunnableSpec {
+
   def spec: Spec[Blocking with Annotations, TestFailure[Any], TestSuccess] = suite("JsonTestSuite")(
     // Uses files from JSONTestSuite by Nicolas Seriot:
     //   https://github.com/nst/JSONTestSuite
