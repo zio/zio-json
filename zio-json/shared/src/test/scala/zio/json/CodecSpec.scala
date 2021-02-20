@@ -15,7 +15,6 @@ object CodecSpec extends DefaultRunnableSpec {
       suite("Decoding")(
         test("empty") {
           import exampleempty._
-          // this big integer consumes more than 128 bits
           assert("{}".fromJson[Empty])(
             isRight(equalTo(Empty(None)))
           )
