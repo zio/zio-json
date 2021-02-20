@@ -65,8 +65,8 @@ object JsonCodec {
 
           override def decoder: JsonDecoder[A] = decoder0
 
-//          override def unsafeDecodeMissing(trace: List[JsonError]): A =
-//            decoder0.unsafeDecodeMissing(trace)
+          override def unsafeDecodeMissing(trace: List[JsonError]): A =
+            decoder0.unsafeDecodeMissing(trace)
 
           override def unsafeDecode(trace: List[JsonError], in: RetractReader): A =
             decoder0.unsafeDecode(trace, in)
