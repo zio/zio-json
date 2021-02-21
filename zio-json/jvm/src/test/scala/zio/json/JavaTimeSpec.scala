@@ -7,7 +7,6 @@ import zio.blocking._
 import zio.json._
 import zio.test.Assertion._
 import zio.test._
-import zio._
 
 // zioJsonJVM/testOnly testzio.json.JavaTimeSpec
 object JavaTimeSpec extends DefaultRunnableSpec {

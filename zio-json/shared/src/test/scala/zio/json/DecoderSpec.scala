@@ -2,11 +2,11 @@ package testzio.json
 
 import scala.collection.immutable
 
+import zio._
 import zio.json._
 import zio.test.Assertion._
-import zio.test.environment.Live
 import zio.test._
-import zio._
+import zio.test.environment.Live
 
 object DecoderSpec extends DefaultRunnableSpec {
 

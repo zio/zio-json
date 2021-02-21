@@ -438,6 +438,12 @@ private[json] trait DecoderLowPriority1 extends DecoderLowPriority2 { this: Json
 private[json] trait DecoderLowPriority2 extends DecoderLowPriority3 {
   this: JsonDecoder.type =>
 
+  implicit def iterable[A: JsonDecoder]: JsonDecoder[Iterable[A]] = new JsonDecoder[Iterable[A]] {
+
+    def unsafeDecode(trace: List[JsonError], in: RetractReader): Iterable[A] =
+      builder(trace, in, immutable.Iterable.newBuilder[A])
+  }
+
   // not implicit because this overlaps with decoders for lists of tuples
   def keyValueChunk[K, A](implicit
     K: JsonFieldDecoder[K],

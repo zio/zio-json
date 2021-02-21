@@ -2,15 +2,15 @@ package testzio.json
 
 import scala.collection.immutable
 
+import zio._
 import zio.json._
 import zio.test.Assertion._
-import zio.test.environment.Live
-import zio.test.{ DefaultRunnableSpec, assert, _ }
-import zio.{ test => _, _ }
+import zio.test._
+import zio.test.environment.TestEnvironment
 
 object CodecSpec extends DefaultRunnableSpec {
 
-  def spec: Spec[ZEnv with Live, TestFailure[Any], TestSuccess] =
+  def spec: Spec[TestEnvironment, TestFailure[Any], TestSuccess] =
     suite("Codec")(
       suite("Decoding")(
         test("empty") {
@@ -164,7 +164,7 @@ object CodecSpec extends DefaultRunnableSpec {
   }
 
   object logEvent {
-    case class Event(at: Long, message: String)
+    case class Event(at: Long, message: String, a: Seq[String] = Nil)
     implicit val codec: JsonCodec[Event] = DeriveJsonCodec.gen[Event]
   }
 }
