@@ -6,8 +6,7 @@ import java.time.format.DateTimeFormatter
 import zio.blocking._
 import zio.json._
 import zio.test.Assertion._
-import zio.test.{ DefaultRunnableSpec, _ }
-import zio.{ test => _, _ }
+import zio.test._
 
 // zioJsonJVM/testOnly testzio.json.JavaTimeSpec
 object JavaTimeSpec extends DefaultRunnableSpec {
@@ -15,7 +14,7 @@ object JavaTimeSpec extends DefaultRunnableSpec {
 
   private def equalToStringified(expected: String) = equalTo(s""""$expected"""")
 
-  def spec: ZSpec[Has[Blocking.Service], Any] =
+  def spec: ZSpec[Blocking, Any] =
     suite("java.time")(
       suite("Encoder")(
         test("DayOfWeek") {

@@ -9,27 +9,19 @@ import testzio.json.data.geojson.generated._
 import testzio.json.data.googlemaps._
 import testzio.json.data.twitter._
 
+import zio.Chunk
 import zio.blocking.Blocking
-import zio.clock.Clock
 import zio.json._
 import zio.json.ast.Json
-import zio.random.Random
 import zio.stream.ZStream
 import zio.test.Assertion._
-import zio.test.environment.{ Live, TestClock, TestConsole, TestRandom, TestSystem }
+import zio.test.environment.TestEnvironment
 import zio.test.{ DefaultRunnableSpec, assert, _ }
-import zio.{ Chunk, Has }
 
 object EncoderPlatformSpecificSpec extends DefaultRunnableSpec {
   import testzio.json.DecoderSpec.logEvent._
 
-  def spec: Spec[Has[Annotations.Service] with Has[Live.Service] with Has[Sized.Service] with Has[
-    TestClock.Service
-  ] with Has[TestConfig.Service] with Has[TestConsole.Service] with Has[TestRandom.Service] with Has[
-    TestSystem.Service
-  ] with Has[Clock.Service] with Has[zio.console.Console.Service] with Has[zio.system.System.Service] with Has[
-    Random.Service
-  ] with Has[Blocking.Service], TestFailure[Any], TestSuccess] =
+  def spec: Spec[TestEnvironment, TestFailure[Any], TestSuccess] =
     suite("Encoder")(
       suite("roundtrip")(
         testRoundTrip[DistanceMatrix]("google_maps_api_response"),

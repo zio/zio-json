@@ -11,6 +11,7 @@ import zio.test.Assertion._
 import zio.test._
 
 object RoundTripSpec extends DefaultRunnableSpec {
+
   def spec: ZSpec[Environment, Failure] =
     suite("RoundTrip")(
       testM("booleans") {
@@ -78,9 +79,9 @@ object RoundTripSpec extends DefaultRunnableSpec {
           assertRoundtrips(Period.ofDays(1))
         },
         test("Year") {
-          assertRoundtrips(Year.of(1999))
-          assertRoundtrips(Year.of(10000))
-          assertRoundtrips(Year.MIN_VALUE)
+          assertRoundtrips(Year.of(1999)) &&
+          assertRoundtrips(Year.of(10000)) &&
+          assertRoundtrips(Year.MIN_VALUE) &&
           assertRoundtrips(Year.MAX_VALUE)
         },
         test("YearMonth") {

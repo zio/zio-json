@@ -2,15 +2,15 @@ package testzio.json
 
 import scala.collection.immutable
 
+import zio._
 import zio.json._
 import zio.test.Assertion._
-import zio.test.environment.Live
-import zio.test.{ DefaultRunnableSpec, assert, _ }
-import zio.{ test => _, _ }
+import zio.test._
+import zio.test.environment.TestEnvironment
 
 object CodecSpec extends DefaultRunnableSpec {
 
-  def spec: Spec[ZEnv with Live, TestFailure[Any], TestSuccess] =
+  def spec: Spec[TestEnvironment, TestFailure[Any], TestSuccess] =
     suite("Codec")(
       suite("Decoding")(
         test("empty") {
@@ -20,10 +20,11 @@ object CodecSpec extends DefaultRunnableSpec {
           )
         },
         test("primitives") {
+          val exampleBDString = "234234.234"
           // this big integer consumes more than 128 bits
           assert("170141183460469231731687303715884105728".fromJson[java.math.BigInteger])(
             isLeft(equalTo("(expected a 128 bit BigInteger)"))
-          )
+          ) && assert(exampleBDString.fromJson[BigDecimal])(isRight(equalTo(BigDecimal(exampleBDString))))
         },
         test("eithers") {
           val bernies = List("""{"a":1}""", """{"left":1}""", """{"Left":1}""")
@@ -163,7 +164,7 @@ object CodecSpec extends DefaultRunnableSpec {
   }
 
   object logEvent {
-    case class Event(at: Long, message: String)
+    case class Event(at: Long, message: String, a: Seq[String] = Nil)
     implicit val codec: JsonCodec[Event] = DeriveJsonCodec.gen[Event]
   }
 }

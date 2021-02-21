@@ -88,14 +88,14 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform)
           .mkString("\n        Lexer.char(trace, in, ',')\n        ")
         val returns = (1 to i).map(p => s"a$p").mkString(", ")
 
-        s"""implicit def tuple${i}[$tparams](implicit $implicits): JsonDecoder[Tuple${i}[$tparams]] =
-           |    new JsonDecoder[Tuple${i}[$tparams]] {
+        s"""implicit def tuple$i[$tparams](implicit $implicits): JsonDecoder[Tuple$i[$tparams]] =
+           |    new JsonDecoder[Tuple$i[$tparams]] {
            |      val traces: Array[JsonError] = (0 to $i).map(JsonError.ArrayAccess(_)).toArray
-           |      def unsafeDecode(trace: List[JsonError], in: RetractReader): Tuple${i}[$tparams] = {
+           |      def unsafeDecode(trace: List[JsonError], in: RetractReader): Tuple$i[$tparams] = {
            |        Lexer.char(trace, in, '[')
            |        $work
            |        Lexer.char(trace, in, ']')
-           |        Tuple${i}($returns)
+           |        Tuple$i($returns)
            |      }
            |    }""".stripMargin
       }
@@ -121,9 +121,9 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform)
           .map(p => s"A$p.unsafeEncode(t._$p, indent, out)")
           .mkString("\n        if (indent.isEmpty) out.write(',') else out.write(\", \")\n        ")
 
-        s"""implicit def tuple${i}[$tparams](implicit $implicits): JsonEncoder[Tuple${i}[$tparams]] =
-           |    new JsonEncoder[Tuple${i}[$tparams]] {
-           |      def unsafeEncode(t: Tuple${i}[$tparams], indent: Option[Int], out: internal.Write): Unit = {
+        s"""implicit def tuple$i[$tparams](implicit $implicits): JsonEncoder[Tuple$i[$tparams]] =
+           |    new JsonEncoder[Tuple$i[$tparams]] {
+           |      def unsafeEncode(t: Tuple$i[$tparams], indent: Option[Int], out: internal.Write): Unit = {
            |        out.write('[')
            |        $work
            |        out.write(']')
@@ -136,6 +136,26 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform)
            |
            |private[json] trait GeneratedTupleEncoders { this: JsonEncoder.type =>
            |  ${encoders.mkString("\n\n  ")}
+           |}""".stripMargin
+      )
+      Seq(file)
+    }.taskValue,
+    sourceGenerators in Compile += Def.task {
+      val dir  = (sourceManaged in Compile).value
+      val file = dir / "zio" / "json" / "GeneratedTupleCodecs.scala"
+      val codecs = (1 to 22).map { i =>
+        val tparams   = (1 to i).map(p => s"A$p").mkString(", ")
+        val implicits = (1 to i).map(p => s"A$p: JsonCodec[A$p]").mkString(", ")
+
+        s"""implicit def tuple$i[$tparams](implicit $implicits): JsonCodec[Tuple$i[$tparams]] =
+           |    JsonCodec(JsonEncoder.tuple$i, JsonDecoder.tuple$i)""".stripMargin
+      }
+      IO.write(
+        file,
+        s"""package zio.json
+           |
+           |private[json] trait GeneratedTupleCodecs { this: JsonCodec.type =>
+           |  ${codecs.mkString("\n\n  ")}
            |}""".stripMargin
       )
       Seq(file)
