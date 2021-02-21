@@ -32,9 +32,9 @@ Best in class **security** is achieved with an aggressive *early exit* strategy 
 ## Installation
 
 ```scala
-libraryDependencies += "dev.zio" %% "zio-json" % "0.0.1"
+libraryDependencies += "dev.zio" %% "zio-json" % "0.1.0"
 
-scalaVersion in ThisBuild := "2.13.3"
+scalaVersion in ThisBuild := "2.13.4"
 ```
 
 All of the following code snippets assume that the following imports have been declared
