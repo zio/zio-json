@@ -46,6 +46,12 @@ object DecoderSpec extends DefaultRunnableSpec {
         assert("""{"s":""}""".fromJson[OnlyString])(isRight(equalTo(OnlyString("")))) &&
         assert("""{"s":"","t":""}""".fromJson[OnlyString])(isLeft(equalTo("(invalid extra field)")))
       },
+      test("default field value") {
+        import exampleproducts._
+
+        assert("""{}""".fromJson[DefaultString])(isRight(equalTo(DefaultString("")))) &&
+        assert("""{"s": null}""".fromJson[DefaultString])(isRight(equalTo(DefaultString(""))))
+      },
       test("sum encoding") {
         import examplesum._
 
@@ -124,6 +130,14 @@ object DecoderSpec extends DefaultRunnableSpec {
 
       implicit val decoder: JsonDecoder[OnlyString] =
         DeriveJsonDecoder.gen[OnlyString]
+    }
+
+    case class DefaultString(s: String = "")
+
+    object DefaultString {
+
+      implicit val decoder: JsonDecoder[DefaultString] =
+        DeriveJsonDecoder.gen[DefaultString]
     }
   }
 
