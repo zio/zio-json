@@ -84,6 +84,8 @@ object DeriveJsonDecoder {
         val spans: Array[JsonError] = names.map(JsonError.ObjectAccess(_))
         lazy val tcs: Array[JsonDecoder[Any]] =
           ctx.parameters.map(_.typeclass).toArray.asInstanceOf[Array[JsonDecoder[Any]]]
+        lazy val defaults: Array[Option[Any]] =
+          ctx.parameters.map(_.default).toArray
 
         def unsafeDecode(trace: List[JsonError], in: RetractReader): A = {
           Lexer.char(trace, in, '{')
@@ -105,7 +107,11 @@ object DeriveJsonDecoder {
                 trace_ = spans(field) :: trace
                 if (ps(field) != null)
                   throw UnsafeJson(JsonError.Message("duplicate") :: trace)
-                ps(field) = tcs(field).unsafeDecode(trace_, in)
+                if (defaults(field).isDefined) {
+                  val opt = JsonDecoder.option(tcs(field)).unsafeDecode(trace_, in)
+                  ps(field) = opt.getOrElse(defaults(field).get)
+                } else
+                  ps(field) = tcs(field).unsafeDecode(trace_, in)
               } else if (no_extra) {
                 throw UnsafeJson(
                   JsonError.Message(s"invalid extra field") :: trace
@@ -116,8 +122,12 @@ object DeriveJsonDecoder {
 
           var i = 0
           while (i < len) {
-            if (ps(i) == null)
-              ps(i) = tcs(i).unsafeDecodeMissing(spans(i) :: trace)
+            if (ps(i) == null) {
+              if (defaults(i).isDefined)
+                ps(i) = defaults(i).get
+              else
+                ps(i) = tcs(i).unsafeDecodeMissing(spans(i) :: trace)
+            }
             i += 1
           }
 

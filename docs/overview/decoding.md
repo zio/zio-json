@@ -34,6 +34,21 @@ Now we can parse JSON into our object
 """{ "curvature": 0.5 }""".fromJson[Banana]
 ```
 
+### Automatic Derivation and case class default field values
+
+If a case class field is defined with a default value and the field is not present or `null`, the default value will be used.
+
+Say we have a Scala `case class`
+
+```scala mdoc
+case class Entity(id: Long, description: String = "", related: Seq[Entity] = Seq())
+```
+
+```scala mdoc
+"""{ "id": 42, "related": null }""".fromJson[Banana]
+Entity(42,,List())
+```
+
 ## ADTs
 
 Say we extend our data model to include more data types
