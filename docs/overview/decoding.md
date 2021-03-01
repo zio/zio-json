@@ -42,6 +42,9 @@ Say we have a Scala `case class`
 
 ```scala mdoc
 case class Entity(id: Long, description: String = "", related: Seq[Entity] = Seq())
+
+implicit val decoder: JsonDecoder[Entity] =
+  DeriveJsonDecoder.gen[Entity]
 ```
 
 ```scala mdoc
