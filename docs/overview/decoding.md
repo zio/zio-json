@@ -46,7 +46,6 @@ case class Entity(id: Long, description: String = "", related: Seq[Entity] = Seq
 
 ```scala mdoc
 """{ "id": 42, "related": null }""".fromJson[Banana]
-Entity(42,,List())
 ```
 
 ## ADTs
