@@ -1,5 +1,7 @@
 package testzio.json
 
+import java.util.UUID
+
 import scala.collection.immutable
 
 import zio._
@@ -111,6 +113,13 @@ object DecoderSpec extends DefaultRunnableSpec {
         val expected = Chunk("5XL", "2XL", "XL")
 
         assert(jsonStr.fromJson[Chunk[String]])(isRight(equalTo(expected)))
+      },
+      test("java.util.UUID") {
+        val ok  = """"64d7c38d-2afd-4004-9832-4e700fe400f8""""
+        val bad = """"""""
+
+        assert(ok.fromJson[UUID])(isRight(equalTo(UUID.fromString("64d7c38d-2afd-4004-9832-4e700fe400f8")))) &&
+        assert(bad.fromJson[UUID])(isLeft(containsString("Invalid UUID")))
       }
     )
 

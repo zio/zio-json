@@ -1,5 +1,7 @@
 package zio.json
 
+import java.util.UUID
+
 import scala.annotation._
 import scala.collection.{ immutable, mutable }
 import scala.util.control.NoStackTrace
@@ -510,6 +512,16 @@ private[json] trait DecoderLowPriority3 { this: JsonDecoder.type =>
       case dtpe: DateTimeParseException => Left(s"${s} is not a valid ISO-8601 format, ${dtpe.getMessage}")
       case dte: DateTimeException       => Left(s"${s} is not a valid ISO-8601 format, ${dte.getMessage}")
       case ex: Exception                => Left(ex.getMessage)
+    }
+
+  implicit val uuid: JsonDecoder[UUID] =
+    string.mapOrFail { str =>
+      try {
+        Right(UUID.fromString(str))
+      } catch {
+        case iae: IllegalArgumentException =>
+          Left(s"Invalid UUID: ${iae.getMessage}")
+      }
     }
 }
 

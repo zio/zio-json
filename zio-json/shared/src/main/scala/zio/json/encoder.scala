@@ -2,6 +2,7 @@ package zio.json
 
 import java.time.format.{ DateTimeFormatterBuilder, SignStyle }
 import java.time.temporal.ChronoField.YEAR
+import java.util.UUID
 
 import scala.annotation._
 import scala.collection.immutable
@@ -299,6 +300,8 @@ private[json] trait EncoderLowPriority3 { this: JsonEncoder.type =>
   )
   implicit val zoneId: JsonEncoder[ZoneId]         = stringify(_.toString)
   implicit val zoneOffset: JsonEncoder[ZoneOffset] = stringify(_.toString)
+
+  implicit val uuid: JsonEncoder[UUID] = stringify(_.toString)
 }
 
 /** When encoding a JSON Object, we only allow keys that implement this interface. */
