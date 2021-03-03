@@ -1,5 +1,7 @@
 package testzio.json
 
+import java.util.UUID
+
 import zio.json._
 import zio.test.Assertion._
 import zio.test.TestAspect._
@@ -72,6 +74,11 @@ object EncoderSpec extends DefaultRunnableSpec {
         assert(Map[String, String]().toJsonPretty)(equalTo("{}")) &&
         assert(Map("hello" -> "world").toJsonPretty)(equalTo("{\n  \"hello\" : \"world\"\n}")) &&
         assert(Map("hello" -> Some("world"), "goodbye" -> None).toJsonPretty)(equalTo("{\n  \"hello\" : \"world\"\n}"))
+      },
+      test("java.util.UUID") {
+        assert(UUID.fromString("e142f1aa-6e9e-4352-adfe-7e6eb9814ccd").toJson)(
+          equalTo(""""e142f1aa-6e9e-4352-adfe-7e6eb9814ccd"""")
+        )
       },
       test("parameterless products") {
         import exampleproducts._
