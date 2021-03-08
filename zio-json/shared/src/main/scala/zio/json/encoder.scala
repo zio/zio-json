@@ -130,8 +130,7 @@ object JsonEncoder extends GeneratedTupleEncoders with EncoderLowPriority0 {
     def unsafeEncode(a: A, indent: Option[Int], out: Write): Unit = out.write(s""""${f(a)}"""")
   }
 
-  implicit val boolean: JsonEncoder[Boolean] = explicit(_.toString)
-//  implicit val char: JsonEncoder[Char]                       = string.contramap(_.toString)
+  implicit val boolean: JsonEncoder[Boolean]                 = explicit(_.toString)
   implicit val symbol: JsonEncoder[Symbol]                   = string.contramap(_.name)
   implicit val byte: JsonEncoder[Byte]                       = explicit(_.toString)
   implicit val short: JsonEncoder[Short]                     = explicit(_.toString)
