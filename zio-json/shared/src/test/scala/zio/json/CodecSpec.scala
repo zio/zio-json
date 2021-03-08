@@ -111,7 +111,17 @@ object CodecSpec extends DefaultRunnableSpec {
 
           assert(jsonStr.fromJson[Chunk[String]])(isRight(equalTo(expected)))
         }
+      ),
+      suite("Encode -> Decode")(
+        test("char") {
+          assert(encodeDecode(JsonCodec.char, '\u0009'))(isRight(equalTo('\u0009')))
+        }
       )
+    )
+
+  private def encodeDecode[A](codec: JsonCodec[A], value: A): Either[String, A] =
+    codec.decodeJson(
+      codec.encodeJson(value, None)
     )
 
   object exampleproducts {
