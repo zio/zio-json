@@ -113,9 +113,29 @@ object CodecSpec extends DefaultRunnableSpec {
         }
       ),
       suite("Encode -> Decode")(
-        test("char") {
-          assert(encodeDecode(JsonCodec.char, '\u0009'))(isRight(equalTo('\u0009')))
-        }
+        suite("control chars")(
+          test("tab") {
+            assert(encodeDecode(JsonCodec.char, '\t'))(isRight(equalTo('\t')))
+          },
+          test("carriage return") {
+            assert(encodeDecode(JsonCodec.char, '\r'))(isRight(equalTo('\r')))
+          },
+          test("newline") {
+            assert(encodeDecode(JsonCodec.char, '\n'))(isRight(equalTo('\n')))
+          },
+          test("form feed") {
+            assert(encodeDecode(JsonCodec.char, '\f'))(isRight(equalTo('\f')))
+          },
+          test("backspace") {
+            assert(encodeDecode(JsonCodec.char, '\b'))(isRight(equalTo('\b')))
+          },
+          test("escape") {
+            assert(encodeDecode(JsonCodec.char, '\\'))(isRight(equalTo('\\')))
+          },
+          test("quote") {
+            assert(encodeDecode(JsonCodec.char, '"'))(isRight(equalTo('"')))
+          }
+        )
       )
     )
 
