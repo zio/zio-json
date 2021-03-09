@@ -106,6 +106,22 @@ object JsonEncoder extends GeneratedTupleEncoders with EncoderLowPriority0 {
 
   }
 
+  implicit val char: JsonEncoder[Char] = new JsonEncoder[Char] {
+
+    override def unsafeEncode(a: Char, indent: Option[Int], out: Write): Unit = {
+      out.write('"')
+      a match {
+        case '"'  => out.write("\\\"")
+        case '\\' => out.write("\\\\")
+        case c =>
+          if (c < ' ') out.write("\\u%04x".format(c.toInt))
+          else out.write(c.toString)
+      }
+      out.write('"')
+    }
+
+  }
+
   private[json] def explicit[A](f: A => String): JsonEncoder[A] = new JsonEncoder[A] {
     def unsafeEncode(a: A, indent: Option[Int], out: Write): Unit = out.write(f(a))
   }
@@ -115,7 +131,6 @@ object JsonEncoder extends GeneratedTupleEncoders with EncoderLowPriority0 {
   }
 
   implicit val boolean: JsonEncoder[Boolean]                 = explicit(_.toString)
-  implicit val char: JsonEncoder[Char]                       = string.contramap(_.toString)
   implicit val symbol: JsonEncoder[Symbol]                   = string.contramap(_.name)
   implicit val byte: JsonEncoder[Byte]                       = explicit(_.toString)
   implicit val short: JsonEncoder[Short]                     = explicit(_.toString)
