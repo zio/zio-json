@@ -196,8 +196,12 @@ private[zio] final class WithRecordingReader(in: OneCharReader, initial: Int)
 
   def rewind(): Unit = reading = 0
   def retract(): Unit =
-    if (reading == -1)
-      reading = writing - 1
+    if (reading == -1) {
+      in match {
+        case rr: RetractReader => rr.retract()
+        case _ => reading = writing - 1
+      }
+    }
     else
       reading -= 1
 
