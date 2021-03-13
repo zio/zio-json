@@ -105,7 +105,7 @@ trait JsonDecoder[A] extends JsonDecoderPlatformSpecific[A] { self =>
   /**
    * Returns a new codec whose decoded values will be mapped by the specified function.
    */
-  final def map[B](f: A => B): JsonDecoder[B] =
+  def map[B](f: A => B): JsonDecoder[B] =
     new JsonDecoder[B] {
 
       def unsafeDecode(trace: List[JsonError], in: RetractReader): B =
@@ -260,7 +260,7 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority0 {
   // If alternative behaviour is desired, e.g. pass null to the underlying, then
   // use a newtype wrapper.
   implicit def option[A](implicit A: JsonDecoder[A]): JsonDecoder[Option[A]] =
-    new JsonDecoder[Option[A]] {
+    new JsonDecoder[Option[A]] { self =>
       private[this] val ull: Array[Char] = "ull".toCharArray
 
       override def unsafeDecodeMissing(trace: List[JsonError]): Option[A] =
@@ -274,6 +274,17 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority0 {
           case _ =>
             in.retract()
             Some(A.unsafeDecode(trace, in))
+        }
+
+      // overridden here to pass `None` to the new Decoder instead of throwing
+      // when called from a derived decoder
+      override def map[B](f: Option[A] => B): JsonDecoder[B] =
+        new JsonDecoder[B] {
+          override def unsafeDecodeMissing(trace: List[JsonError]): B =
+            f(None)
+
+          def unsafeDecode(trace: List[JsonError], in: RetractReader): B =
+            f(self.unsafeDecode(trace, in))
         }
     }
 

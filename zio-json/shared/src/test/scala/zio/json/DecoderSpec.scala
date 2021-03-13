@@ -72,6 +72,30 @@ object DecoderSpec extends DefaultRunnableSpec {
       test("unicode") {
         assert(""""€🐵🥰"""".fromJson[String])(isRight(equalTo("€🐵🥰")))
       },
+      test("Option: .map on derived JsonDecoder with missing value") {
+        // More information about use case here https://github.com/zio/zio-json/issues/198
+        // User wants to derive an alternative encoding of optionality
+        sealed trait Assumed[+A]
+
+        object Assumed {
+          case object MissingAssumed       extends Assumed[Nothing]
+          case class FoundAssumed[A](v: A) extends Assumed[A]
+
+          implicit def decoder[A](implicit decoding: JsonDecoder[A]): JsonDecoder[Assumed[A]] =
+            JsonDecoder.option[A].map {
+              case None    => Assumed.MissingAssumed
+              case Some(v) => Assumed.FoundAssumed[A](v)
+            }
+        }
+
+        case class Example(a: Assumed[Boolean])
+        implicit val exampleDecoder: JsonDecoder[Example] = DeriveJsonDecoder.gen[Example]
+
+        assert("""{ "a": null }""".fromJson[Example])(isRight(equalTo(Example(Assumed.MissingAssumed)))) &&
+        assert("""{ "a": true }""".fromJson[Example])(isRight(equalTo(Example(Assumed.FoundAssumed(true))))) &&
+        assert("""{ "a": false }""".fromJson[Example])(isRight(equalTo(Example(Assumed.FoundAssumed(false))))) &&
+        assert("""{ }""".fromJson[Example])(isRight(equalTo(Example(Assumed.MissingAssumed))))
+      },
       test("Seq") {
         val jsonStr  = """["5XL","2XL","XL"]"""
         val expected = Seq("5XL", "2XL", "XL")
