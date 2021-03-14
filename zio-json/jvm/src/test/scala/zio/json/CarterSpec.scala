@@ -1,7 +1,7 @@
 package testzio.json
 
-import zio.json._
 import zio.blocking._
+import zio.json._
 import zio.test.Assertion._
 import zio.test._
 
@@ -61,7 +61,7 @@ object CarterSpec extends DefaultRunnableSpec {
       test("whitespace showing no retract call") {
         val expect: Either[String, Testing1] = Right(Testing1(Union(Right(0.1)), Union(Left("2025-01-01"))))
         assert(JsonDecoder[Testing1].decodeJson("{\"x\":0.1 ,\"y\":\"2025-01-01\"}"))(equalTo(expect))
-      },
+      }
     )
 
 }
