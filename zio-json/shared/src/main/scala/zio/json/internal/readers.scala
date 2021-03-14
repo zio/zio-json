@@ -205,8 +205,7 @@ private[zio] final class WithRecordingReader(in: OneCharReader, initial: Int)
         case _ =>
           reading = writing - 1
       }
-    }
-    else
+    } else
       reading -= 1
 
   def offset(): Int =
