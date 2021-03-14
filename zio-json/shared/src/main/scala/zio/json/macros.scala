@@ -2,11 +2,13 @@ package zio.json
 
 import scala.annotation._
 import scala.language.experimental.macros
-
 import magnolia._
-
+import zio.Chunk
 import zio.json.JsonDecoder.{ JsonError, UnsafeJson }
+import zio.json.ast.Json
 import zio.json.internal.{ Lexer, RetractReader, StringMatrix, Write }
+
+import scala.collection.mutable
 
 /**
  * If used on a case class field, determines the name of the JSON field.
@@ -71,6 +73,13 @@ object DeriveJsonDecoder {
           }
           ctx.rawConstruct(Nil)
         }
+
+        override final def fromJsonAST(json: Json): Either[String, A] =
+          json match {
+            case Json.Obj(_) => Right(ctx.rawConstruct(Nil))
+            case Json.Null   => Right(ctx.rawConstruct(Nil))
+            case _           => Left("Not an object")
+          }
       }
     else
       new JsonDecoder[A] {
@@ -86,6 +95,7 @@ object DeriveJsonDecoder {
           ctx.parameters.map(_.typeclass).toArray.asInstanceOf[Array[JsonDecoder[Any]]]
         lazy val defaults: Array[Option[Any]] =
           ctx.parameters.map(_.default).toArray
+        lazy val namesMap: Map[String, Int] = names.zipWithIndex.toMap
 
         def unsafeDecode(trace: List[JsonError], in: RetractReader): A = {
           Lexer.char(trace, in, '{')
@@ -133,6 +143,57 @@ object DeriveJsonDecoder {
 
           ctx.rawConstruct(new ArraySeq(ps))
         }
+
+        override final def fromJsonAST(json: Json): Either[String, A] =
+          json match {
+            case Json.Obj(fields) =>
+              val ps: Array[Any]           = Array.ofDim(len)
+              var hasInvalidExtra: Boolean = false
+              val failures                 = new mutable.LinkedHashSet[String]
+
+              for ((key, value) <- fields) {
+                namesMap.get(key) match {
+                  case Some(field) =>
+                    if (defaults(field).isDefined) {
+                      val opt = JsonDecoder.option(tcs(field)).fromJsonAST(value)
+                      ps(field) = opt.flatMap(_.toRight(Left(""))).getOrElse(defaults(field).get)
+                    } else {
+                      ps(field) = tcs(field).fromJsonAST(value) match {
+                        case Left(error)  => failures += error; null
+                        case Right(value) => value
+                      }
+                    }
+                  case None =>
+                    if (no_extra) {
+                      hasInvalidExtra = true
+                    }
+                }
+              }
+
+              var i       = 0
+              val missing = new mutable.LinkedHashSet[String]
+              while (i < len) {
+                if (ps(i) == null) {
+                  if (defaults(i).isDefined) {
+                    ps(i) = defaults(i).get
+                  } else {
+                    missing.add(names(i))
+                  }
+                }
+                i += 1
+              }
+
+              if (hasInvalidExtra)
+                Left("Invalid extra field")
+              else if (failures.nonEmpty)
+                Left(failures.mkString(", "))
+              else if (missing.nonEmpty)
+                Left(s"Missing fields: ${missing.mkString(", ")}")
+              else
+                Right(ctx.rawConstruct(new ArraySeq(ps)))
+
+            case _ => Left("Not an object")
+          }
       }
   }
 
@@ -145,6 +206,7 @@ object DeriveJsonDecoder {
     val matrix: StringMatrix = new StringMatrix(names)
     lazy val tcs: Array[JsonDecoder[Any]] =
       ctx.subtypes.map(_.typeclass).toArray.asInstanceOf[Array[JsonDecoder[Any]]]
+    lazy val namesMap: Map[String, Int] = names.zipWithIndex.toMap
 
     def discrim = ctx.annotations.collectFirst { case jsonDiscriminator(n) => n }
     if (discrim.isEmpty)
@@ -159,7 +221,7 @@ object DeriveJsonDecoder {
               val trace_ = spans(field) :: trace
               val a      = tcs(field).unsafeDecode(trace_, in).asInstanceOf[A]
               Lexer.char(trace, in, '}')
-              return a
+              a
             } else
               throw UnsafeJson(
                 JsonError.Message("invalid disambiguator") :: trace
@@ -169,6 +231,18 @@ object DeriveJsonDecoder {
               JsonError.Message("expected non-empty object") :: trace
             )
         }
+
+        override final def fromJsonAST(json: Json): Either[String, A] =
+          json match {
+            case Json.Obj(chunk) if chunk.size == 1 =>
+              val (key, inner) = chunk.head
+              namesMap.get(key) match {
+                case Some(idx) => tcs(idx).fromJsonAST(inner).map(_.asInstanceOf[A])
+                case None      => Left("Invalid disambiguator")
+              }
+            case Json.Obj(_) => Left("Not an object with a single field")
+            case _           => Left("Not an object")
+          }
       }
     else
       new JsonDecoder[A] {
@@ -198,6 +272,23 @@ object DeriveJsonDecoder {
             JsonError.Message(s"missing hint '$hintfield'") :: trace
           )
         }
+
+        override final def fromJsonAST(json: Json): Either[String, A] =
+          json match {
+            case Json.Obj(fields) =>
+              fields.find { case (k, _) => k == hintfield } match {
+                case Some((_, Json.Str(name))) =>
+                  namesMap.get(name) match {
+                    case Some(idx) => tcs(idx).fromJsonAST(json).map(_.asInstanceOf[A])
+                    case None      => Left("Invalid disambiguator")
+                  }
+                case Some(_) =>
+                  Left(s"Non-string hint '$hintfield'")
+                case None =>
+                  Left(s"Missing hint '$hintfield'")
+              }
+            case _ => Left("Not an object")
+          }
       }
   }
 
@@ -211,6 +302,9 @@ object DeriveJsonEncoder {
     if (ctx.parameters.isEmpty)
       new JsonEncoder[A] {
         def unsafeEncode(a: A, indent: Option[Int], out: Write): Unit = out.write("{}")
+
+        override final def toJsonAST(a: A): Either[String, Json] =
+          Right(Json.Obj(Chunk.empty))
       }
     else
       new JsonEncoder[A] {
@@ -252,6 +346,21 @@ object DeriveJsonEncoder {
           JsonEncoder.pad(indent, out)
           out.write("}")
         }
+
+        override final def toJsonAST(a: A): Either[String, Json] =
+          ctx.parameters
+            .foldLeft[Either[String, Chunk[(String, Json)]]](Right(Chunk.empty)) { case (c, param) =>
+              val name = param.annotations.collectFirst { case jsonField(name) =>
+                name
+              }.getOrElse(param.label)
+              c.flatMap { chunk =>
+                param.typeclass.toJsonAST(param.dereference(a)).map { value =>
+                  if (value == Json.Null) chunk
+                  else chunk :+ name -> value
+                }
+              }
+            }
+            .map(Json.Obj.apply)
       }
 
   def dispatch[A](ctx: SealedTrait[JsonEncoder, A]): JsonEncoder[A] = {
@@ -274,6 +383,17 @@ object DeriveJsonEncoder {
           JsonEncoder.pad(indent, out)
           out.write("}")
         }
+
+        override def toJsonAST(a: A): Either[String, Json] =
+          ctx.dispatch(a) { sub =>
+            sub.typeclass.toJsonAST(sub.cast(a)).map { inner =>
+              Json.Obj(
+                Chunk(
+                  names(sub.index) -> inner
+                )
+              )
+            }
+          }
       }
     else
       new JsonEncoder[A] {
@@ -291,6 +411,14 @@ object DeriveJsonEncoder {
           val intermediate = new NestedWriter(out, indent_)
           sub.typeclass.unsafeEncode(sub.cast(a), indent, intermediate)
         }
+
+        override def toJsonAST(a: A): Either[String, Json] =
+          ctx.dispatch(a) { sub =>
+            sub.typeclass.toJsonAST(sub.cast(a)).flatMap {
+              case Json.Obj(fields) => Right(Json.Obj(fields :+ hintfield -> Json.Str(names(sub.index))))
+              case _                => Left("Subtype is not encoded as an object")
+            }
+          }
       }
 
   }

@@ -3,14 +3,14 @@ package zio.json
 import java.time.format.{ DateTimeFormatterBuilder, SignStyle }
 import java.time.temporal.ChronoField.YEAR
 import java.util.UUID
-
 import scala.annotation._
 import scala.collection.immutable
-
 import zio.Chunk
+import zio.json.ast.Json
 import zio.json.internal.{ FastStringWrite, Write }
 
-trait JsonEncoder[A] extends JsonEncoderPlatformSpecific[A] { self =>
+trait JsonEncoder[A] extends JsonEncoderPlatformSpecific[A] {
+  self =>
 
   /**
    * Returns a new encoder that is capable of encoding a tuple containing the values of this
@@ -33,7 +33,11 @@ trait JsonEncoder[A] extends JsonEncoderPlatformSpecific[A] { self =>
 
     override def unsafeEncode(b: B, indent: Option[Int], out: Write): Unit =
       self.unsafeEncode(f(b), indent, out)
+
     override def isNothing(b: B): Boolean = self.isNothing(f(b))
+
+    override final def toJsonAST(b: B): Either[String, Json] =
+      self.toJsonAST(f(b))
   }
 
   /**
@@ -72,6 +76,16 @@ trait JsonEncoder[A] extends JsonEncoderPlatformSpecific[A] { self =>
   def unsafeEncode(a: A, indent: Option[Int], out: Write): Unit
 
   /**
+   * Converts a value to a Json AST
+   *
+   * The default implementation encodes the value to a Json byte stream and uses decode to parse that
+   * back to an AST.
+   * Override to provide a more performant implementation.
+   */
+  def toJsonAST(a: A): Either[String, Json] =
+    Json.decoder.decodeJson(encodeJson(a, None))
+
+  /**
    * Returns this encoder but narrowed to the its given sub-type
    */
   final def narrow[B <: A]: JsonEncoder[B] = self.asInstanceOf[JsonEncoder[B]]
@@ -104,6 +118,8 @@ object JsonEncoder extends GeneratedTupleEncoders with EncoderLowPriority0 {
       out.write('"')
     }
 
+    override final def toJsonAST(a: String): Either[String, Json] =
+      Right(Json.Str(a))
   }
 
   implicit val char: JsonEncoder[Char] = new JsonEncoder[Char] {
@@ -120,31 +136,42 @@ object JsonEncoder extends GeneratedTupleEncoders with EncoderLowPriority0 {
       out.write('"')
     }
 
+    override final def toJsonAST(a: Char): Either[String, Json] =
+      Right(Json.Str(a.toString))
   }
 
-  private[json] def explicit[A](f: A => String): JsonEncoder[A] = new JsonEncoder[A] {
+  private[json] def explicit[A](f: A => String, toAst: A => Json): JsonEncoder[A] = new JsonEncoder[A] {
     def unsafeEncode(a: A, indent: Option[Int], out: Write): Unit = out.write(f(a))
+
+    override final def toJsonAST(a: A): Either[String, Json] =
+      Right(toAst(a))
   }
 
   private[json] def stringify[A](f: A => String): JsonEncoder[A] = new JsonEncoder[A] {
     def unsafeEncode(a: A, indent: Option[Int], out: Write): Unit = out.write(s""""${f(a)}"""")
+
+    override final def toJsonAST(a: A): Either[String, Json] =
+      Right(Json.Str(f(a)))
   }
 
-  implicit val boolean: JsonEncoder[Boolean]                 = explicit(_.toString)
-  implicit val symbol: JsonEncoder[Symbol]                   = string.contramap(_.name)
-  implicit val byte: JsonEncoder[Byte]                       = explicit(_.toString)
-  implicit val short: JsonEncoder[Short]                     = explicit(_.toString)
-  implicit val int: JsonEncoder[Int]                         = explicit(_.toString)
-  implicit val long: JsonEncoder[Long]                       = explicit(_.toString)
-  implicit val bigInteger: JsonEncoder[java.math.BigInteger] = explicit(_.toString)
+  implicit val boolean: JsonEncoder[Boolean] = explicit(_.toString, Json.Bool.apply)
+  implicit val symbol: JsonEncoder[Symbol]   = string.contramap(_.name)
+  implicit val byte: JsonEncoder[Byte]       = explicit(_.toString, n => Json.Num(new java.math.BigDecimal(n)))
+  implicit val short: JsonEncoder[Short]     = explicit(_.toString, n => Json.Num(new java.math.BigDecimal(n)))
+  implicit val int: JsonEncoder[Int]         = explicit(_.toString, n => Json.Num(new java.math.BigDecimal(n)))
+  implicit val long: JsonEncoder[Long]       = explicit(_.toString, n => Json.Num(new java.math.BigDecimal(n)))
+  implicit val bigInteger: JsonEncoder[java.math.BigInteger] =
+    explicit(_.toString, n => Json.Num(new java.math.BigDecimal(n)))
 
-  implicit val double: JsonEncoder[Double] = explicit { n =>
-    if (n.isNaN || n.isInfinite) s""""$n""""
-    else n.toString
-  }
+  implicit val double: JsonEncoder[Double] = explicit(
+    n =>
+      if (n.isNaN || n.isInfinite) s""""$n""""
+      else n.toString,
+    n => Json.Num(new java.math.BigDecimal(n))
+  )
   implicit val float: JsonEncoder[Float]                     = double.contramap(_.toDouble)
-  implicit val bigDecimal: JsonEncoder[java.math.BigDecimal] = explicit(_.toString)
-  implicit val scalaBigDecimal: JsonEncoder[BigDecimal]      = explicit(_.toString)
+  implicit val bigDecimal: JsonEncoder[java.math.BigDecimal] = explicit(_.toString, Json.Num.apply)
+  implicit val scalaBigDecimal: JsonEncoder[BigDecimal]      = explicit(_.toString, n => Json.Num(n.bigDecimal))
 
   implicit def option[A](implicit A: JsonEncoder[A]): JsonEncoder[Option[A]] = new JsonEncoder[Option[A]] {
 
@@ -152,7 +179,14 @@ object JsonEncoder extends GeneratedTupleEncoders with EncoderLowPriority0 {
       case None    => out.write("null")
       case Some(a) => A.unsafeEncode(a, indent, out)
     }
+
     override def isNothing(a: Option[A]): Boolean = a.isEmpty
+
+    override final def toJsonAST(a: Option[A]): Either[String, Json] =
+      a match {
+        case Some(value) => A.toJsonAST(value)
+        case None        => Right(Json.Null)
+      }
   }
 
   def bump(indent: Option[Int]): Option[Int] = indent match {
@@ -185,10 +219,17 @@ object JsonEncoder extends GeneratedTupleEncoders with EncoderLowPriority0 {
         pad(indent, out)
         out.write('}')
       }
+
+      override final def toJsonAST(a: Either[A, B]): Either[String, Json] =
+        a match {
+          case Left(value)  => A.toJsonAST(value).map(v => Json.Obj(Chunk("Left" -> v)))
+          case Right(value) => B.toJsonAST(value).map(v => Json.Obj(Chunk("Right" -> v)))
+        }
     }
 }
 
-private[json] trait EncoderLowPriority0 extends EncoderLowPriority1 { this: JsonEncoder.type =>
+private[json] trait EncoderLowPriority0 extends EncoderLowPriority1 {
+  this: JsonEncoder.type =>
   implicit def chunk[A: JsonEncoder]: JsonEncoder[Chunk[A]] = seq[A].contramap(_.toSeq)
 
   implicit def hashSet[A: JsonEncoder]: JsonEncoder[immutable.HashSet[A]] =
@@ -198,11 +239,15 @@ private[json] trait EncoderLowPriority0 extends EncoderLowPriority1 { this: Json
     keyValueChunk[K, V].contramap(Chunk.fromIterable(_))
 }
 
-private[json] trait EncoderLowPriority1 extends EncoderLowPriority2 { this: JsonEncoder.type =>
-  implicit def seq[A: JsonEncoder]: JsonEncoder[Seq[A]]       = iterable[A, Seq]
-  implicit def list[A: JsonEncoder]: JsonEncoder[List[A]]     = iterable[A, List]
+private[json] trait EncoderLowPriority1 extends EncoderLowPriority2 {
+  this: JsonEncoder.type =>
+  implicit def seq[A: JsonEncoder]: JsonEncoder[Seq[A]] = iterable[A, Seq]
+
+  implicit def list[A: JsonEncoder]: JsonEncoder[List[A]] = iterable[A, List]
+
   implicit def vector[A: JsonEncoder]: JsonEncoder[Vector[A]] = iterable[A, Vector]
-  implicit def set[A: JsonEncoder]: JsonEncoder[Set[A]]       = iterable[A, Set]
+
+  implicit def set[A: JsonEncoder]: JsonEncoder[Set[A]] = iterable[A, Set]
 
   implicit def map[K: JsonFieldEncoder, V: JsonEncoder]: JsonEncoder[Map[K, V]] =
     keyValueIterable[K, V, Map]
@@ -214,7 +259,8 @@ private[json] trait EncoderLowPriority1 extends EncoderLowPriority2 { this: Json
     list[A].contramap(_.toList)
 }
 
-private[json] trait EncoderLowPriority2 extends EncoderLowPriority3 { this: JsonEncoder.type =>
+private[json] trait EncoderLowPriority2 extends EncoderLowPriority3 {
+  this: JsonEncoder.type =>
 
   implicit def iterable[A, T[X] <: Iterable[X]](implicit A: JsonEncoder[A]): JsonEncoder[T[A]] =
     new JsonEncoder[T[A]] {
@@ -230,6 +276,13 @@ private[json] trait EncoderLowPriority2 extends EncoderLowPriority3 { this: Json
         }
         out.write(']')
       }
+
+      override final def toJsonAST(a: T[A]): Either[String, Json] =
+        a.map(A.toJsonAST)
+          .foldLeft[Either[String, Chunk[Json]]](Right(Chunk.empty)) { (s, i) =>
+            s.flatMap(chunk => i.map(item => chunk :+ item))
+          }
+          .map(Json.Arr.apply)
     }
 
   // not implicit because this overlaps with encoders for lists of tuples
@@ -264,6 +317,15 @@ private[json] trait EncoderLowPriority2 extends EncoderLowPriority3 { this: Json
       pad(indent, out)
       out.write('}')
     }
+
+    override final def toJsonAST(a: T[K, A]): Either[String, Json] =
+      a.foldLeft[Either[String, Chunk[(String, Json)]]](Right(Chunk.empty)) { case (s, (k, v)) =>
+        for {
+          chunk <- s
+          key    = K.unsafeEncodeField(k)
+          value <- A.toJsonAST(v)
+        } yield if (value == Json.Null) chunk else chunk :+ (key -> value)
+      }.map(Json.Obj.apply)
   }
 
   // not implicit because this overlaps with encoders for lists of tuples
@@ -274,7 +336,9 @@ private[json] trait EncoderLowPriority2 extends EncoderLowPriority3 { this: Json
     keyValueIterable[K, A, ({ type lambda[X, Y] = Chunk[(X, Y)] })#lambda]
 }
 
-private[json] trait EncoderLowPriority3 { this: JsonEncoder.type =>
+private[json] trait EncoderLowPriority3 {
+  this: JsonEncoder.type =>
+
   import java.time._
   import java.time.format.DateTimeFormatter
 
@@ -320,7 +384,8 @@ private[json] trait EncoderLowPriority3 { this: JsonEncoder.type =>
 }
 
 /** When encoding a JSON Object, we only allow keys that implement this interface. */
-trait JsonFieldEncoder[-A] { self =>
+trait JsonFieldEncoder[-A] {
+  self =>
 
   final def contramap[B](f: B => A): JsonFieldEncoder[B] = new JsonFieldEncoder[B] {
     override def unsafeEncodeField(in: B): String = self.unsafeEncodeField(f(in))
