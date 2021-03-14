@@ -1,15 +1,16 @@
 package zio.json
 
+import java.lang.ArithmeticException
 import java.util.UUID
+
 import scala.annotation._
 import scala.collection.{ immutable, mutable }
 import scala.util.control.NoStackTrace
+
 import zio.Chunk
 import zio.json.JsonDecoder.JsonError
 import zio.json.ast.Json
 import zio.json.internal._
-
-import java.lang.ArithmeticException
 
 /**
  * A `JsonDecoder[A]` instance has the ability to decode JSON to values of type `A`, potentially

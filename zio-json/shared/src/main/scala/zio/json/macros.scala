@@ -1,14 +1,15 @@
 package zio.json
 
 import scala.annotation._
+import scala.collection.mutable
 import scala.language.experimental.macros
+
 import magnolia._
+
 import zio.Chunk
 import zio.json.JsonDecoder.{ JsonError, UnsafeJson }
 import zio.json.ast.Json
 import zio.json.internal.{ Lexer, RetractReader, StringMatrix, Write }
-
-import scala.collection.mutable
 
 /**
  * If used on a case class field, determines the name of the JSON field.

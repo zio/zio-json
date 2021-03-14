@@ -3,8 +3,10 @@ package zio.json
 import java.time.format.{ DateTimeFormatterBuilder, SignStyle }
 import java.time.temporal.ChronoField.YEAR
 import java.util.UUID
+
 import scala.annotation._
 import scala.collection.immutable
+
 import zio.Chunk
 import zio.json.ast.Json
 import zio.json.internal.{ FastStringWrite, Write }
@@ -156,8 +158,8 @@ object JsonEncoder extends GeneratedTupleEncoders with EncoderLowPriority0 {
 
   implicit val boolean: JsonEncoder[Boolean] = explicit(_.toString, Json.Bool.apply)
   implicit val symbol: JsonEncoder[Symbol]   = string.contramap(_.name)
-  implicit val byte: JsonEncoder[Byte]       = explicit(_.toString, n => Json.Num(new java.math.BigDecimal(n)))
-  implicit val short: JsonEncoder[Short]     = explicit(_.toString, n => Json.Num(new java.math.BigDecimal(n)))
+  implicit val byte: JsonEncoder[Byte]       = explicit(_.toString, n => Json.Num(new java.math.BigDecimal(n.toInt)))
+  implicit val short: JsonEncoder[Short]     = explicit(_.toString, n => Json.Num(new java.math.BigDecimal(n.toInt)))
   implicit val int: JsonEncoder[Int]         = explicit(_.toString, n => Json.Num(new java.math.BigDecimal(n)))
   implicit val long: JsonEncoder[Long]       = explicit(_.toString, n => Json.Num(new java.math.BigDecimal(n)))
   implicit val bigInteger: JsonEncoder[java.math.BigInteger] =

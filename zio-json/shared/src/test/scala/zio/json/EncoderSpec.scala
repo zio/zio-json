@@ -1,8 +1,8 @@
 package testzio.json
 
-import zio.Chunk
-
 import java.util.UUID
+
+import zio.Chunk
 import zio.json._
 import zio.json.ast.Json
 import zio.test.Assertion._

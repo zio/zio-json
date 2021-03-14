@@ -1,7 +1,9 @@
 package testzio.json
 
 import java.util.UUID
+
 import scala.collection.immutable
+
 import zio._
 import zio.json._
 import zio.json.ast.Json
