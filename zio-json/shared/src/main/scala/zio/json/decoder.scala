@@ -97,7 +97,10 @@ trait JsonDecoder[A] extends JsonDecoderPlatformSpecific[A] {
       }
 
       override final def fromJsonAST(json: Json): Either[String, A1] =
-        self.fromJsonAST(json) orElse that.fromJsonAST(json)
+        self.fromJsonAST(json) match {
+          case Left(_) => that.fromJsonAST(json)
+          case result @ Right(_) => result
+        }
     }
 
   /**
