@@ -334,8 +334,13 @@ private final class EscapedString(trace: List[JsonError], in: OneCharReader) ext
     if (escaped) {
       escaped = false
       (c: @switch) match {
-        case '"' | '\\' | '/' | 'b' | 'f' | 'n' | 'r' | 't' => c.toInt
-        case 'u'                                            => nextHex4()
+        case '"' | '\\' | '/' => c.toInt
+        case 'b'              => '\b'.toInt
+        case 'f'              => '\f'.toInt
+        case 'n'              => '\n'.toInt
+        case 'r'              => '\r'.toInt
+        case 't'              => '\t'.toInt
+        case 'u'              => nextHex4()
         case _ =>
           throw UnsafeJson(
             JsonError.Message(s"invalid '\\${c.toChar}' in string") :: trace
