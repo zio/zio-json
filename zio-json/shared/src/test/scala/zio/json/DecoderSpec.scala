@@ -134,7 +134,7 @@ object DecoderSpec extends DefaultRunnableSpec {
       },
       test("Map with unicode keys") {
         val expected = Map(new String(Array('\u0007', '\n')) -> "value")
-        val jsonStr = JsonEncoder[Map[String,String]].encodeJson(expected,None)
+        val jsonStr  = JsonEncoder[Map[String, String]].encodeJson(expected, None)
         assert(jsonStr.fromJson[Map[String, String]])(isRight(equalTo(expected)))
       },
       test("zio.Chunk") {
