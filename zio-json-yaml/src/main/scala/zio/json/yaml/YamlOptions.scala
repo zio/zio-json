@@ -1,6 +1,7 @@
 package zio.json.yaml
 
 import org.yaml.snakeyaml.DumperOptions.{ FlowStyle, LineBreak, NonPrintableStyle, ScalarStyle }
+
 import zio.json.ast.Json
 
 case class YamlOptions(

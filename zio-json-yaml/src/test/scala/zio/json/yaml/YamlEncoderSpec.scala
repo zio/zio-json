@@ -1,11 +1,12 @@
 package zio.json.yaml
 
 import org.yaml.snakeyaml.DumperOptions.{ LineBreak, NonPrintableStyle, ScalarStyle }
+
 import zio.json.ast.Json
 import zio.json.{ DeriveJsonCodec, JsonCodec }
-import zio.test.environment.TestEnvironment
-import zio.test._
 import zio.test.Assertion._
+import zio.test._
+import zio.test.environment.TestEnvironment
 
 object YamlEncoderSpec extends DefaultRunnableSpec {
   override def spec: ZSpec[TestEnvironment, Any] =
