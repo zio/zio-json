@@ -32,28 +32,48 @@ object Json {
   // TODO lens-like accessors for working with arbitrary json values
   final case class Obj(fields: Chunk[(String, Json)]) extends Json
   object Obj {
+    def apply(fields: (String, Json)*): Obj = Obj(Chunk(fields: _*))
+
     private lazy val objd = JsonDecoder.keyValueChunk[String, Json]
     implicit val decoder: JsonDecoder[Obj] = new JsonDecoder[Obj] {
       def unsafeDecode(trace: List[JsonError], in: RetractReader): Obj =
         Obj(objd.unsafeDecode(trace, in))
+
+      override final def fromJsonAST(json: Json): Either[String, Obj] =
+        json match {
+          case obj @ Obj(_) => Right(obj)
+          case _            => Left(s"Not an object")
+        }
     }
     private lazy val obje = JsonEncoder.keyValueChunk[String, Json]
     implicit val encoder: JsonEncoder[Obj] = new JsonEncoder[Obj] {
       def unsafeEncode(a: Obj, indent: Option[Int], out: Write): Unit =
         obje.unsafeEncode(a.fields, indent, out)
+
+      override final def toJsonAST(a: Obj): Either[String, Json] = Right(a)
     }
   }
   final case class Arr(elements: Chunk[Json]) extends Json
   object Arr {
+    def apply(elements: Json*): Arr = Arr(Chunk(elements: _*))
+
     private lazy val arrd = JsonDecoder.chunk[Json]
     implicit val decoder: JsonDecoder[Arr] = new JsonDecoder[Arr] {
       def unsafeDecode(trace: List[JsonError], in: RetractReader): Arr =
         Arr(arrd.unsafeDecode(trace, in))
+
+      override final def fromJsonAST(json: Json): Either[String, Arr] =
+        json match {
+          case arr @ Arr(_) => Right(arr)
+          case _            => Left(s"Not an array")
+        }
     }
     private lazy val arre = JsonEncoder.chunk[Json]
     implicit val encoder: JsonEncoder[Arr] = new JsonEncoder[Arr] {
       def unsafeEncode(a: Arr, indent: Option[Int], out: Write): Unit =
         arre.unsafeEncode(a.elements, indent, out)
+
+      override final def toJsonAST(a: Arr): Either[String, Json] = Right(a)
     }
   }
   final case class Bool(value: Boolean) extends Json
@@ -61,10 +81,18 @@ object Json {
     implicit val decoder: JsonDecoder[Bool] = new JsonDecoder[Bool] {
       def unsafeDecode(trace: List[JsonError], in: RetractReader): Bool =
         Bool(JsonDecoder.boolean.unsafeDecode(trace, in))
+
+      override final def fromJsonAST(json: Json): Either[String, Bool] =
+        json match {
+          case b @ Bool(_) => Right(b)
+          case _           => Left(s"Not a bool value")
+        }
     }
     implicit val encoder: JsonEncoder[Bool] = new JsonEncoder[Bool] {
       def unsafeEncode(a: Bool, indent: Option[Int], out: Write): Unit =
         JsonEncoder.boolean.unsafeEncode(a.value, indent, out)
+
+      override final def toJsonAST(a: Bool): Either[String, Json] = Right(a)
     }
   }
   final case class Str(value: String) extends Json
@@ -72,21 +100,45 @@ object Json {
     implicit val decoder: JsonDecoder[Str] = new JsonDecoder[Str] {
       def unsafeDecode(trace: List[JsonError], in: RetractReader): Str =
         Str(JsonDecoder.string.unsafeDecode(trace, in))
+
+      override final def fromJsonAST(json: Json): Either[String, Str] =
+        json match {
+          case s @ Str(_) => Right(s)
+          case _          => Left(s"Not a string value")
+        }
     }
     implicit val encoder: JsonEncoder[Str] = new JsonEncoder[Str] {
       def unsafeEncode(a: Str, indent: Option[Int], out: Write): Unit =
         JsonEncoder.string.unsafeEncode(a.value, indent, out)
+
+      override final def toJsonAST(a: Str): Either[String, Json] = Right(a)
     }
   }
   final case class Num(value: java.math.BigDecimal) extends Json
   object Num {
+    def apply(value: Byte): Num       = Num(BigDecimal(value.toInt).bigDecimal)
+    def apply(value: Short): Num      = Num(BigDecimal(value.toInt).bigDecimal)
+    def apply(value: Int): Num        = Num(BigDecimal(value).bigDecimal)
+    def apply(value: Long): Num       = Num(BigDecimal(value).bigDecimal)
+    def apply(value: BigDecimal): Num = Num(value.bigDecimal)
+    def apply(value: Float): Num      = Num(BigDecimal(value.toDouble).bigDecimal)
+    def apply(value: Double): Num     = Num(BigDecimal(value).bigDecimal)
+
     implicit val decoder: JsonDecoder[Num] = new JsonDecoder[Num] {
       def unsafeDecode(trace: List[JsonError], in: RetractReader): Num =
         Num(JsonDecoder.bigDecimal.unsafeDecode(trace, in))
+
+      override final def fromJsonAST(json: Json): Either[String, Num] =
+        json match {
+          case n @ Num(_) => Right(n)
+          case _          => Left(s"Not a number")
+        }
     }
     implicit val encoder: JsonEncoder[Num] = new JsonEncoder[Num] {
       def unsafeEncode(a: Num, indent: Option[Int], out: Write): Unit =
         JsonEncoder.bigDecimal.unsafeEncode(a.value, indent, out)
+
+      override final def toJsonAST(a: Num): Either[String, Num] = Right(a)
     }
   }
   case object Null extends Json {
@@ -96,10 +148,18 @@ object Json {
         Lexer.readChars(trace, in, nullChars, "null")
         Null
       }
+
+      override final def fromJsonAST(json: Json): Either[String, Null.type] =
+        json match {
+          case Null => Right(Null)
+          case _    => Left(s"Not null")
+        }
     }
     implicit val encoder: JsonEncoder[Null.type] = new JsonEncoder[Null.type] {
       def unsafeEncode(a: Null.type, indent: Option[Int], out: Write): Unit =
         out.write("null")
+
+      override final def toJsonAST(a: Null.type): Either[String, Json] = Right(a)
     }
   }
 
@@ -119,6 +179,9 @@ object Json {
           throw UnsafeJson(JsonError.Message(s"unexpected '$c'") :: trace)
       }
     }
+
+    override final def fromJsonAST(json: Json): Either[String, Json] =
+      Right(json)
   }
   implicit val encoder: JsonEncoder[Json] = new JsonEncoder[Json] {
     def unsafeEncode(a: Json, indent: Option[Int], out: Write): Unit =
@@ -130,5 +193,7 @@ object Json {
         case j: Num  => Num.encoder.unsafeEncode(j, indent, out)
         case Null    => Null.encoder.unsafeEncode(Null, indent, out)
       }
+
+    override final def toJsonAST(a: Json): Either[String, Json] = Right(a)
   }
 }

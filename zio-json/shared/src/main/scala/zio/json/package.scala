@@ -1,11 +1,15 @@
 package zio
 
+import zio.json.ast.Json
+
 package object json extends JsonPackagePlatformSpecific {
   implicit final class EncoderOps[A](private val a: A) extends AnyVal {
     def toJson(implicit A: JsonEncoder[A]): String = A.encodeJson(a, None).toString
 
     // Jon Pretty's better looking brother, but a bit slower
     def toJsonPretty(implicit A: JsonEncoder[A]): String = A.encodeJson(a, Some(0)).toString
+
+    def toJsonAST(implicit A: JsonEncoder[A]): Either[String, Json] = A.toJsonAST(a)
   }
 
   implicit final class DecoderOps(private val json: CharSequence) extends AnyVal {
@@ -22,5 +26,12 @@ package object json extends JsonPackagePlatformSpecific {
      * {{{jq '.rows[0].elements[0].distance' input.json}}}
      */
     def fromJson[A](implicit A: JsonDecoder[A]): Either[String, A] = A.decodeJson(json)
+  }
+
+  /**
+   * Attemps to decode an already parsed Json AST as an `A`
+   */
+  implicit final class JsonOps(private val json: Json) extends AnyVal {
+    def as[A](implicit A: JsonDecoder[A]): Either[String, A] = A.fromJsonAST(json)
   }
 }

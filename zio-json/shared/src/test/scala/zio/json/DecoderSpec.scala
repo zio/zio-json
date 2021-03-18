@@ -6,6 +6,7 @@ import scala.collection.immutable
 
 import zio._
 import zio.json._
+import zio.json.ast.Json
 import zio.test.Assertion._
 import zio.test._
 import zio.test.environment.Live
@@ -14,6 +15,7 @@ object DecoderSpec extends DefaultRunnableSpec {
 
   def spec: Spec[ZEnv with Live, TestFailure[Any], TestSuccess] =
     suite("Decoder")(
+      suite("fromJson")(
       test("BigDecimal") {
         assert("123".fromJson[BigDecimal])(isRight(equalTo(BigDecimal(123))))
       },
@@ -150,9 +152,112 @@ object DecoderSpec extends DefaultRunnableSpec {
         assert(ok.fromJson[UUID])(isRight(equalTo(UUID.fromString("64d7c38d-2afd-4004-9832-4e700fe400f8")))) &&
         assert(bad.fromJson[UUID])(isLeft(containsString("Invalid UUID")))
       }
+      ),
+      suite("fromJsonAST")(
+        test("BigDecimal") {
+          assert(Json.Num(123).as[BigDecimal])(isRight(equalTo(BigDecimal(123))))
+        },
+        test("eithers") {
+          val bernies =
+            List(Json.Obj("a" -> Json.Num(1)), Json.Obj("left" -> Json.Num(1)), Json.Obj("Left" -> Json.Num(1)))
+          val trumps =
+            List(Json.Obj("b" -> Json.Num(2)), Json.Obj("right" -> Json.Num(2)), Json.Obj("Right" -> Json.Num(2)))
+
+          assert(bernies.map(_.as[Either[Int, Int]]))(
+            forall(isRight(isLeft(equalTo(1))))
+          ) && assert(trumps.map(_.as[Either[Int, Int]]))(
+            forall(isRight(isRight(equalTo(2))))
+          )
+        },
+        test("parameterless products") {
+          import exampleproducts._
+          assert(Json.Obj().as[Parameterless])(isRight(equalTo(Parameterless()))) &&
+          assert(Json.Null.as[Parameterless])(isRight(equalTo(Parameterless()))) &&
+          assert(Json.Obj("field" -> Json.Str("value")).as[Parameterless])(isRight(equalTo(Parameterless())))
+        },
+        test("no extra fields") {
+          import exampleproducts._
+
+          assert(Json.Obj("s" -> Json.Str("")).as[OnlyString])(isRight(equalTo(OnlyString("")))) &&
+          assert(Json.Obj("s" -> Json.Str(""), "t" -> Json.Str("")).as[OnlyString])(
+            isLeft(equalTo("Invalid extra field"))
+          )
+        },
+        test("default field value") {
+          import exampleproducts._
+
+          assert(Json.Obj().as[DefaultString])(isRight(equalTo(DefaultString("")))) &&
+          assert(Json.Obj("s" -> Json.Null).as[DefaultString])(isRight(equalTo(DefaultString(""))))
+        },
+        test("sum encoding") {
+          import examplesum._
+
+          assert(Json.Obj("Child1" -> Json.Obj()).as[Parent])(isRight(equalTo(Child1()))) &&
+          assert(Json.Obj("Child2" -> Json.Obj()).as[Parent])(isRight(equalTo(Child2()))) &&
+          assert(Json.Obj("type" -> Json.Str("Child1")).as[Parent])(isLeft(equalTo("Invalid disambiguator")))
+        },
+        test("sum alternative encoding") {
+          import examplealtsum._
+
+          assert(Json.Obj("hint" -> Json.Str("Cain")).as[Parent])(isRight(equalTo(Child1()))) &&
+          assert(Json.Obj("hint" -> Json.Str("Abel")).as[Parent])(isRight(equalTo(Child2()))) &&
+          assert(Json.Obj("hint" -> Json.Str("Samson")).as[Parent])(isLeft(equalTo("Invalid disambiguator"))) &&
+          assert(Json.Obj("Cain" -> Json.Obj()).as[Parent])(isLeft(equalTo("Missing hint 'hint'")))
+        },
+        test("Seq") {
+          val json     = Json.Arr(Json.Str("5XL"), Json.Str("2XL"), Json.Str("XL"))
+          val expected = Seq("5XL", "2XL", "XL")
+
+          assert(json.as[Seq[String]])(isRight(equalTo(expected)))
+        },
+        test("Vector") {
+          val json     = Json.Arr(Json.Str("5XL"), Json.Str("2XL"), Json.Str("XL"))
+          val expected = Vector("5XL", "2XL", "XL")
+
+          assert(json.as[Vector[String]])(isRight(equalTo(expected)))
+        },
+        test("SortedSet") {
+          val json     = Json.Arr(Json.Str("5XL"), Json.Str("2XL"), Json.Str("XL"))
+          val expected = immutable.SortedSet("5XL", "2XL", "XL")
+
+          assert(json.as[immutable.SortedSet[String]])(isRight(equalTo(expected)))
+        },
+        test("HashSet") {
+          val json     = Json.Arr(Json.Str("5XL"), Json.Str("2XL"), Json.Str("XL"))
+          val expected = immutable.HashSet("5XL", "2XL", "XL")
+
+          assert(json.as[immutable.HashSet[String]])(isRight(equalTo(expected)))
+        },
+        test("Set") {
+          val json     = Json.Arr(Json.Str("5XL"), Json.Str("2XL"), Json.Str("XL"))
+          val expected = Set("5XL", "2XL", "XL")
+
+          assert(json.as[Set[String]])(isRight(equalTo(expected)))
+        },
+        test("Map") {
+          val json     = Json.Obj("5XL" -> Json.Num(3), "2XL" -> Json.Num(14), "XL" -> Json.Num(159))
+          val expected = Map("5XL" -> 3, "2XL" -> 14, "XL" -> 159)
+
+          assert(json.as[Map[String, Int]])(isRight(equalTo(expected)))
+        },
+        test("zio.Chunk") {
+          val json     = Json.Arr(Json.Str("5XL"), Json.Str("2XL"), Json.Str("XL"))
+          val expected = Chunk("5XL", "2XL", "XL")
+
+          assert(json.as[Chunk[String]])(isRight(equalTo(expected)))
+        },
+        test("java.util.UUID") {
+          val ok  = Json.Str("64d7c38d-2afd-4004-9832-4e700fe400f8")
+          val bad = Json.Str("")
+
+          assert(ok.as[UUID])(isRight(equalTo(UUID.fromString("64d7c38d-2afd-4004-9832-4e700fe400f8")))) &&
+          assert(bad.as[UUID])(isLeft(containsString("Invalid UUID")))
+        }
+      )
     )
 
   object exampleproducts {
+
     case class Parameterless()
 
     object Parameterless {
@@ -177,16 +282,21 @@ object DecoderSpec extends DefaultRunnableSpec {
       implicit val decoder: JsonDecoder[DefaultString] =
         DeriveJsonDecoder.gen[DefaultString]
     }
+
   }
 
   object examplesum {
+
     sealed abstract class Parent
 
     object Parent {
       implicit val decoder: JsonDecoder[Parent] = DeriveJsonDecoder.gen[Parent]
     }
+
     case class Child1() extends Parent
+
     case class Child2() extends Parent
+
   }
 
   object examplealtsum {
@@ -203,12 +313,15 @@ object DecoderSpec extends DefaultRunnableSpec {
 
     @jsonHint("Abel")
     case class Child2() extends Parent
+
   }
 
   object logEvent {
+
     case class Event(at: Long, message: String)
 
     implicit val eventDecoder: JsonDecoder[Event] = DeriveJsonDecoder.gen[Event]
     implicit val eventEncoder: JsonEncoder[Event] = DeriveJsonEncoder.gen[Event]
   }
+
 }
