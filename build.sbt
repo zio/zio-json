@@ -183,6 +183,13 @@ lazy val docs = project
   .dependsOn(zioJsonJVM)
   .settings(
     skip.in(publish) := true,
+    mdocVariables := Map(
+      "SNAPSHOT_VERSION" -> version.value,
+      "RELEASE_VERSION"  -> previousStableVersion.value.getOrElse("can't find release"),
+      "ORG"              -> organization.value,
+      "NAME"             -> (zioJsonJVM / name).value,
+      "CROSS_VERSIONS"   -> (zioJsonJVM / crossScalaVersions).value.mkString(", ")
+    ),
     moduleName := "zio-json-docs",
     scalacOptions -= "-Yno-imports",
     scalacOptions -= "-Xfatal-warnings",
