@@ -12,9 +12,9 @@ import scalafix.sbt.ScalafixPlugin.autoImport._
 object BuildHelper {
 
   private val Scala211 = "2.11.12"
-  private val Scala212 = "2.12.11"
-  private val Scala213 = "2.13.4"
-  val DottyVersion     = "0.23.0-RC1"
+  private val Scala212 = "2.12.12"
+  private val Scala213 = "2.13.5"
+  val DottyVersion     = "3.0.0-RC1"
 
   def buildInfoSettings(packageName: String) =
     Seq(
@@ -69,7 +69,7 @@ object BuildHelper {
 
   def extraOptions(scalaVersion: String, optimize: Boolean) =
     CrossVersion.partialVersion(scalaVersion) match {
-      case Some((0, _)) =>
+      case Some((3, _)) =>
         Seq(
           "-language:implicitConversions",
           "-Xignore-scala2-macros"
