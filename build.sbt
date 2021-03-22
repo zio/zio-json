@@ -29,7 +29,7 @@ addCommandAlias("fixCheck", "scalafixAll --check")
 addCommandAlias("fmt", "all scalafmtSbt scalafmtAll")
 addCommandAlias("fmtCheck", "all scalafmtSbtCheck scalafmtCheckAll")
 addCommandAlias("prepare", "fix; fmt")
-addCommandAlias("testJVM", "zioJsonJVM/test")
+addCommandAlias("testJVM", "zioJsonJVM/test; zioJsonYaml/test")
 addCommandAlias("testJS", "zioJsonJS/test")
 
 val zioVersion = "1.0.5"
@@ -42,7 +42,8 @@ lazy val root = project
   )
   .aggregate(
     zioJsonJVM,
-    zioJsonJS
+    zioJsonJS,
+    zioJsonYaml
   )
 
 val circeVersion = "0.13.0"
@@ -177,6 +178,22 @@ lazy val zioJsonJS = zioJson.js
   )
 
 lazy val zioJsonJVM = zioJson.jvm
+
+lazy val zioJsonYaml = project
+  .in(file("zio-json-yaml"))
+  .settings(stdSettings("zio-json-yaml"))
+  .settings(buildInfoSettings("zio.json.yaml"))
+  .enablePlugins(NeoJmhPlugin)
+  .settings(
+    libraryDependencies ++= Seq(
+      "org.yaml" % "snakeyaml"    % "1.28",
+      "dev.zio" %% "zio"          % zioVersion,
+      "dev.zio" %% "zio-test"     % zioVersion % "test",
+      "dev.zio" %% "zio-test-sbt" % zioVersion % "test"
+    ),
+    testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework")
+  )
+  .dependsOn(zioJsonJVM)
 
 lazy val docs = project
   .in(file("zio-json-docs"))
