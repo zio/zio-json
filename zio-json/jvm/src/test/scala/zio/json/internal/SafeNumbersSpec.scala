@@ -151,6 +151,10 @@ object SafeNumbersSpec extends DefaultRunnableSpec {
         testM("valid") {
           check(Gen.anyFloat.filterNot(_.isNaN))(d => assert(SafeNumbers.float(d.toString))(equalTo(FloatSome(d))))
         },
+        test("large mantissa") {
+          // https://github.com/zio/zio-json/issues/221
+          assert(SafeNumbers.float("1.199999988079071"))(equalTo(FloatSome(1.1999999f)))
+        },
         testM("valid (from Int)") {
           check(Gen.anyInt)(i => assert(SafeNumbers.float(i.toString))(equalTo(FloatSome(i.toFloat))))
         },
