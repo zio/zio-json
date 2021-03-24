@@ -111,7 +111,37 @@ object CodecSpec extends DefaultRunnableSpec {
 
           assert(jsonStr.fromJson[Chunk[String]])(isRight(equalTo(expected)))
         }
+      ),
+      suite("Encode -> Decode")(
+        suite("control chars")(
+          test("tab") {
+            assert(encodeDecode(JsonCodec.char, '\t'))(isRight(equalTo('\t')))
+          },
+          test("carriage return") {
+            assert(encodeDecode(JsonCodec.char, '\r'))(isRight(equalTo('\r')))
+          },
+          test("newline") {
+            assert(encodeDecode(JsonCodec.char, '\n'))(isRight(equalTo('\n')))
+          },
+          test("form feed") {
+            assert(encodeDecode(JsonCodec.char, '\f'))(isRight(equalTo('\f')))
+          },
+          test("backspace") {
+            assert(encodeDecode(JsonCodec.char, '\b'))(isRight(equalTo('\b')))
+          },
+          test("escape") {
+            assert(encodeDecode(JsonCodec.char, '\\'))(isRight(equalTo('\\')))
+          },
+          test("quote") {
+            assert(encodeDecode(JsonCodec.char, '"'))(isRight(equalTo('"')))
+          }
+        )
       )
+    )
+
+  private def encodeDecode[A](codec: JsonCodec[A], value: A): Either[String, A] =
+    codec.decodeJson(
+      codec.encodeJson(value, None)
     )
 
   object exampleproducts {

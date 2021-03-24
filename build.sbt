@@ -29,20 +29,21 @@ addCommandAlias("fixCheck", "scalafixAll --check")
 addCommandAlias("fmt", "all scalafmtSbt scalafmtAll")
 addCommandAlias("fmtCheck", "all scalafmtSbtCheck scalafmtCheckAll")
 addCommandAlias("prepare", "fix; fmt")
-addCommandAlias("testJVM", "zioJsonJVM/test")
+addCommandAlias("testJVM", "zioJsonJVM/test; zioJsonYaml/test")
 addCommandAlias("testJS", "zioJsonJS/test")
 
-val zioVersion = "1.0.4-2"
+val zioVersion = "1.0.5"
 
 lazy val root = project
   .in(file("."))
   .settings(
-    skip in publish := true,
+    publish / skip := true,
     unusedCompileDependenciesFilter -= moduleFilter("org.scala-js", "scalajs-library")
   )
   .aggregate(
     zioJsonJVM,
-    zioJsonJS
+    zioJsonJS,
+    zioJsonYaml
   )
 
 val circeVersion = "0.13.0"
@@ -78,7 +79,7 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform)
       "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-macros"   % "2.6.2"            % "test"
     ),
     sourceGenerators in Compile += Def.task {
-      val dir  = (sourceManaged in Compile).value
+      val dir  = (Compile / sourceManaged).value
       val file = dir / "zio" / "json" / "GeneratedTupleDecoders.scala"
       val decoders = (1 to 22).map { i =>
         val tparams   = (1 to i).map(p => s"A$p").mkString(", ")
@@ -112,7 +113,7 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform)
       Seq(file)
     }.taskValue,
     sourceGenerators in Compile += Def.task {
-      val dir  = (sourceManaged in Compile).value
+      val dir  = (Compile / sourceManaged).value
       val file = dir / "zio" / "json" / "GeneratedTupleEncoders.scala"
       val encoders = (1 to 22).map { i =>
         val tparams   = (1 to i).map(p => s"A$p").mkString(", ")
@@ -140,8 +141,8 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform)
       )
       Seq(file)
     }.taskValue,
-    sourceGenerators in Compile += Def.task {
-      val dir  = (sourceManaged in Compile).value
+    Compile / sourceGenerators += Def.task {
+      val dir  = (Compile / sourceManaged).value
       val file = dir / "zio" / "json" / "GeneratedTupleCodecs.scala"
       val codecs = (1 to 22).map { i =>
         val tparams   = (1 to i).map(p => s"A$p").mkString(", ")
@@ -178,11 +179,34 @@ lazy val zioJsonJS = zioJson.js
 
 lazy val zioJsonJVM = zioJson.jvm
 
+lazy val zioJsonYaml = project
+  .in(file("zio-json-yaml"))
+  .settings(stdSettings("zio-json-yaml"))
+  .settings(buildInfoSettings("zio.json.yaml"))
+  .enablePlugins(NeoJmhPlugin)
+  .settings(
+    libraryDependencies ++= Seq(
+      "org.yaml" % "snakeyaml"    % "1.28",
+      "dev.zio" %% "zio"          % zioVersion,
+      "dev.zio" %% "zio-test"     % zioVersion % "test",
+      "dev.zio" %% "zio-test-sbt" % zioVersion % "test"
+    ),
+    testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework")
+  )
+  .dependsOn(zioJsonJVM)
+
 lazy val docs = project
   .in(file("zio-json-docs"))
   .dependsOn(zioJsonJVM)
   .settings(
     skip.in(publish) := true,
+    mdocVariables := Map(
+      "SNAPSHOT_VERSION" -> version.value,
+      "RELEASE_VERSION"  -> previousStableVersion.value.getOrElse("can't find release"),
+      "ORG"              -> organization.value,
+      "NAME"             -> (zioJsonJVM / name).value,
+      "CROSS_VERSIONS"   -> (zioJsonJVM / crossScalaVersions).value.mkString(", ")
+    ),
     moduleName := "zio-json-docs",
     scalacOptions -= "-Yno-imports",
     scalacOptions -= "-Xfatal-warnings",
@@ -190,11 +214,11 @@ lazy val docs = project
       "dev.zio"    %% "zio"     % zioVersion,
       "eu.timepit" %% "refined" % "0.9.21"
     ),
-    unidocProjectFilter in (ScalaUnidoc, unidoc) := inProjects(root),
-    target in (ScalaUnidoc, unidoc) := (baseDirectory in LocalRootProject).value / "website" / "static" / "api",
-    cleanFiles += (target in (ScalaUnidoc, unidoc)).value,
-    docusaurusCreateSite := docusaurusCreateSite.dependsOn(unidoc in Compile).value,
-    docusaurusPublishGhpages := docusaurusPublishGhpages.dependsOn(unidoc in Compile).value
+    ScalaUnidoc / unidoc / unidocProjectFilter := inProjects(root),
+    ScalaUnidoc / unidoc / target := (LocalRootProject / baseDirectory).value / "website" / "static" / "api",
+    cleanFiles += (ScalaUnidoc / unidoc / target).value,
+    docusaurusCreateSite := docusaurusCreateSite.dependsOn(Compile / unidoc).value,
+    docusaurusPublishGhpages := docusaurusPublishGhpages.dependsOn(Compile / unidoc).value
   )
   .dependsOn(root)
   .enablePlugins(MdocPlugin, DocusaurusPlugin, ScalaUnidocPlugin)

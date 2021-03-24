@@ -263,11 +263,58 @@ object UnsafeNumbers {
 
   def float(num: String, max_bits: Int): Float =
     float_(new FastStringReader(num), true, max_bits)
-  def float_(in: Reader, consume: Boolean, max_bits: Int): Float =
-    double_(in, consume, max_bits).toFloat
+
+  def float_(in: Reader, consume: Boolean, max_bits: Int): Float = {
+    var current: Int = in.read()
+    var negative     = false
+
+    def readAll(s: String): Unit = {
+      var i   = 0
+      val len = s.length
+
+      while (i < len) {
+        current = in.read()
+        if (current != s(i)) throw UnsafeNumber
+        i += 1
+      }
+
+      current = in.read() // to be consistent read the terminator
+
+      if (consume && current != -1)
+        throw UnsafeNumber
+    }
+
+    if (current == 'N') {
+      readAll("aN")
+      return Float.NaN
+    }
+
+    if (current == '-') {
+      negative = true
+      current = in.read()
+    } else if (current == '+') {
+      current = in.read()
+    }
+
+    if (current == 'I') {
+      readAll("nfinity")
+
+      if (negative) return Float.NegativeInfinity
+      else return Float.PositiveInfinity
+    }
+
+    if (current == -1)
+      throw UnsafeNumber
+
+    val res = bigDecimal__(in, consume, negative = negative, initial = current, int_only = false, max_bits = max_bits)
+
+    if (negative && res.unscaledValue == java.math.BigInteger.ZERO) -0.0f
+    else res.floatValue
+  }
 
   def double(num: String, max_bits: Int): Double =
     double_(new FastStringReader(num), true, max_bits)
+
   def double_(in: Reader, consume: Boolean, max_bits: Int): Double = {
     var current: Int = in.read()
     var negative     = false

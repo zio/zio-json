@@ -404,6 +404,7 @@ project/plugins/project/
 .lib/
 *.class
 *.log
+.bsp
 
 .metals/
 project/metals.sbt
