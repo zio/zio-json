@@ -78,7 +78,7 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform)
       "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-core"     % "2.6.2"            % "test",
       "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-macros"   % "2.6.2"            % "test"
     ),
-    sourceGenerators in Compile += Def.task {
+    Compile / sourceGenerators += Def.task {
       val dir  = (Compile / sourceManaged).value
       val file = dir / "zio" / "json" / "GeneratedTupleDecoders.scala"
       val decoders = (1 to 22).map { i =>
@@ -112,7 +112,7 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform)
       )
       Seq(file)
     }.taskValue,
-    sourceGenerators in Compile += Def.task {
+    Compile / sourceGenerators += Def.task {
       val dir  = (Compile / sourceManaged).value
       val file = dir / "zio" / "json" / "GeneratedTupleEncoders.scala"
       val encoders = (1 to 22).map { i =>
