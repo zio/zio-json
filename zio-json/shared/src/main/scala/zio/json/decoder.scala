@@ -2,15 +2,15 @@ package zio.json
 
 import java.lang.ArithmeticException
 import java.util.UUID
+
 import scala.annotation._
-import scala.collection.{immutable, mutable}
+import scala.collection.{ immutable, mutable }
 import scala.util.control.NoStackTrace
+
 import zio.Chunk
 import zio.json.JsonDecoder.JsonError
 import zio.json.ast.Json
 import zio.json.internal._
-
-import scala.collection.immutable.LinearSeq
 
 /**
  * A `JsonDecoder[A]` instance has the ability to decode JSON to values of type `A`, potentially
@@ -491,17 +491,19 @@ private[json] trait DecoderLowPriority1 extends DecoderLowPriority2 {
       builder(trace, in, immutable.Seq.newBuilder[A])
   }
 
-  implicit def indexedSeq[A: JsonDecoder]: JsonDecoder[immutable.IndexedSeq[A]] = new JsonDecoder[immutable.IndexedSeq[A]] {
+  implicit def indexedSeq[A: JsonDecoder]: JsonDecoder[immutable.IndexedSeq[A]] =
+    new JsonDecoder[immutable.IndexedSeq[A]] {
 
-    def unsafeDecode(trace: List[JsonError], in: RetractReader) =
-      builder(trace, in, immutable.IndexedSeq.newBuilder[A])
-  }
+      def unsafeDecode(trace: List[JsonError], in: RetractReader) =
+        builder(trace, in, immutable.IndexedSeq.newBuilder[A])
+    }
 
-  implicit def linearSeq[A: JsonDecoder]: JsonDecoder[immutable.LinearSeq[A]] = new JsonDecoder[immutable.LinearSeq[A]] {
+  implicit def linearSeq[A: JsonDecoder]: JsonDecoder[immutable.LinearSeq[A]] =
+    new JsonDecoder[immutable.LinearSeq[A]] {
 
-    def unsafeDecode(trace: List[JsonError], in: RetractReader) =
-      builder(trace, in, immutable.LinearSeq.newBuilder[A])
-  }
+      def unsafeDecode(trace: List[JsonError], in: RetractReader) =
+        builder(trace, in, immutable.LinearSeq.newBuilder[A])
+    }
 
   implicit def listSet[A: JsonDecoder]: JsonDecoder[immutable.ListSet[A]] = new JsonDecoder[immutable.ListSet[A]] {
 
@@ -509,11 +511,12 @@ private[json] trait DecoderLowPriority1 extends DecoderLowPriority2 {
       builder(trace, in, immutable.ListSet.newBuilder[A])
   }
 
-  implicit def treeSet[A: JsonDecoder: Ordering]: JsonDecoder[immutable.TreeSet[A]] = new JsonDecoder[immutable.TreeSet[A]] {
+  implicit def treeSet[A: JsonDecoder: Ordering]: JsonDecoder[immutable.TreeSet[A]] =
+    new JsonDecoder[immutable.TreeSet[A]] {
 
-    def unsafeDecode(trace: List[JsonError], in: RetractReader) =
-      builder(trace, in, immutable.TreeSet.newBuilder[A])
-  }
+      def unsafeDecode(trace: List[JsonError], in: RetractReader) =
+        builder(trace, in, immutable.TreeSet.newBuilder[A])
+    }
 
   implicit def list[A: JsonDecoder]: JsonDecoder[List[A]] = new JsonDecoder[List[A]] {
 

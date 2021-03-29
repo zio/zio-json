@@ -5,8 +5,7 @@ import java.time.temporal.ChronoField.YEAR
 import java.util.UUID
 
 import scala.annotation._
-import scala.collection.immutable
-import scala.collection.mutable
+import scala.collection.{ immutable, mutable }
 
 import zio.Chunk
 import zio.json.ast.Json

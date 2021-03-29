@@ -11,7 +11,6 @@ import testzio.json.data.twitter._
 
 import zio.Chunk
 import zio.blocking.Blocking
-import zio.json._
 import zio.json.ast.Json
 import zio.stream.ZStream
 import zio.test.Assertion._

@@ -2,8 +2,7 @@ package testzio.json
 
 import java.util.UUID
 
-import scala.collection.immutable
-import scala.collection.mutable
+import scala.collection.{ immutable, mutable }
 
 import zio._
 import zio.json._
