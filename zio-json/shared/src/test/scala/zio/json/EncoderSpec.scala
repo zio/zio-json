@@ -1,6 +1,7 @@
 package testzio.json
 
 import java.util.UUID
+import scala.collection.mutable
 
 import zio.Chunk
 import zio.json._
@@ -67,8 +68,10 @@ object EncoderSpec extends DefaultRunnableSpec {
           assert(List(1, 2, 3).toJson)(equalTo("[1,2,3]")) &&
           assert(Vector[Int]().toJson)(equalTo("[]")) &&
           assert(Vector(1, 2, 3).toJson)(equalTo("[1,2,3]")) &&
+          assert(Array(1, 2, 3).toJson)(equalTo("[1,2,3]")) &&
           assert(Map[String, String]().toJson)(equalTo("{}")) &&
           assert(Map("hello" -> "world").toJson)(equalTo("""{"hello":"world"}""")) &&
+          assert(mutable.Map("hello" -> "world").toJson)(equalTo("""{"hello":"world"}""")) &&
           assert(Map("hello" -> Some("world"), "goodbye" -> None).toJson)(equalTo("""{"hello":"world"}""")) &&
           assert(List[Int]().toJsonPretty)(equalTo("[]")) &&
           assert(List(1, 2, 3).toJsonPretty)(equalTo("[1, 2, 3]")) &&

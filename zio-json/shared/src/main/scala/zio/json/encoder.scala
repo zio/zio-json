@@ -6,6 +6,7 @@ import java.util.UUID
 
 import scala.annotation._
 import scala.collection.immutable
+import scala.collection.mutable
 
 import zio.Chunk
 import zio.json.ast.Json
@@ -232,7 +233,11 @@ object JsonEncoder extends GeneratedTupleEncoders with EncoderLowPriority0 {
 
 private[json] trait EncoderLowPriority0 extends EncoderLowPriority1 {
   this: JsonEncoder.type =>
-  implicit def chunk[A: JsonEncoder]: JsonEncoder[Chunk[A]] = seq[A].contramap(_.toSeq)
+  implicit def chunk[A: JsonEncoder]: JsonEncoder[Chunk[A]] =
+    seq[A].contramap(_.toSeq)
+
+  implicit def array[A: JsonEncoder: reflect.ClassTag]: JsonEncoder[Array[A]] =
+    seq[A].contramap(_.toArray[A])
 
   implicit def hashSet[A: JsonEncoder]: JsonEncoder[immutable.HashSet[A]] =
     list[A].contramap(_.toList)
@@ -243,6 +248,7 @@ private[json] trait EncoderLowPriority0 extends EncoderLowPriority1 {
 
 private[json] trait EncoderLowPriority1 extends EncoderLowPriority2 {
   this: JsonEncoder.type =>
+
   implicit def seq[A: JsonEncoder]: JsonEncoder[Seq[A]] = iterable[A, Seq]
 
   implicit def list[A: JsonEncoder]: JsonEncoder[List[A]] = iterable[A, List]
@@ -253,6 +259,9 @@ private[json] trait EncoderLowPriority1 extends EncoderLowPriority2 {
 
   implicit def map[K: JsonFieldEncoder, V: JsonEncoder]: JsonEncoder[Map[K, V]] =
     keyValueIterable[K, V, Map]
+
+  implicit def mutableMap[K: JsonFieldEncoder, V: JsonEncoder]: JsonEncoder[mutable.Map[K, V]] =
+    keyValueIterable[K, V, mutable.Map]
 
   implicit def sortedMap[K: JsonFieldEncoder, V: JsonEncoder]: JsonEncoder[collection.SortedMap[K, V]] =
     keyValueIterable[K, V, collection.SortedMap]
