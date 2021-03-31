@@ -142,6 +142,6 @@ private[json] trait CodecLowPriority3 { this: JsonCodec.type =>
   implicit val zonedDateTime: JsonCodec[ZonedDateTime] = JsonCodec(JsonEncoder.zonedDateTime, JsonDecoder.zonedDateTime)
   implicit val zoneId: JsonCodec[ZoneId]               = JsonCodec(JsonEncoder.zoneId, JsonDecoder.zoneId)
   implicit val zoneOffset: JsonCodec[ZoneOffset]       = JsonCodec(JsonEncoder.zoneOffset, JsonDecoder.zoneOffset)
-  
-  implicit val uuid: JsonCodec[java.util.UUID]         = JsonCodec(JsonEncoder.uuid, JsonDecoder.uuid)
+
+  implicit val uuid: JsonCodec[java.util.UUID] = JsonCodec(JsonEncoder.uuid, JsonDecoder.uuid)
 }
