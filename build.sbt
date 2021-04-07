@@ -29,7 +29,7 @@ addCommandAlias("fixCheck", "scalafixAll --check")
 addCommandAlias("fmt", "all scalafmtSbt scalafmtAll")
 addCommandAlias("fmtCheck", "all scalafmtSbtCheck scalafmtCheckAll")
 addCommandAlias("prepare", "fix; fmt")
-addCommandAlias("testJVM", "zioJsonJVM/test; zioJsonYaml/test")
+addCommandAlias("testJVM", "zioJsonJVM/test; zioJsonYaml/test; zioJsonInteropHttp4s/test")
 addCommandAlias("testJS", "zioJsonJS/test")
 
 val zioVersion = "1.0.5"
@@ -43,7 +43,8 @@ lazy val root = project
   .aggregate(
     zioJsonJVM,
     zioJsonJS,
-    zioJsonYaml
+    zioJsonYaml,
+    zioJsonInteropHttp4s
   )
 
 val circeVersion = "0.13.0"
@@ -190,6 +191,24 @@ lazy val zioJsonYaml = project
       "dev.zio" %% "zio"          % zioVersion,
       "dev.zio" %% "zio-test"     % zioVersion % "test",
       "dev.zio" %% "zio-test-sbt" % zioVersion % "test"
+    ),
+    testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework")
+  )
+  .dependsOn(zioJsonJVM)
+
+lazy val zioJsonInteropHttp4s = project
+  .in(file("zio-json-interop-http4s"))
+  .settings(stdSettings("zio-json-interop-http4s"))
+  .settings(buildInfoSettings("zio.json.interop.http4s"))
+  .enablePlugins(NeoJmhPlugin)
+  .settings(
+    libraryDependencies ++= Seq(
+      "org.http4s"    %% "http4s-dsl"       % "0.21.21",
+      "dev.zio"       %% "zio"              % zioVersion,
+      "org.typelevel" %% "cats-effect"      % "2.4.0",
+      "dev.zio"       %% "zio-interop-cats" % "2.4.0.0"  % "test",
+      "dev.zio"       %% "zio-test"         % zioVersion % "test",
+      "dev.zio"       %% "zio-test-sbt"     % zioVersion % "test"
     ),
     testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework")
   )
