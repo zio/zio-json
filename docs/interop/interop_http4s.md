@@ -33,4 +33,4 @@ object Greeting {
 
 ## Example project
 
-A fully working example project [can be found here](https://github.com/zio/zio-json/examples/interop-http4s)
+A fully working example project [can be found here](https://github.com/zio/zio-json/tree/develop/examples/interop-http4s)
