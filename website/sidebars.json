@@ -6,6 +6,14 @@
       "overview/overview_encoding"
     ]
   },
+
+  "interop-sidebar": {
+    "Interop": [
+      "interop/interop_index",
+      "interop/interop_http4s"
+    ]
+  },
+
   "about-sidebar": {
       "About": [
           "about/about_index",
