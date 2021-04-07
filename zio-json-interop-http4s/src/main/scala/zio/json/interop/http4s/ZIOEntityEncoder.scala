@@ -1,4 +1,4 @@
-package zio.json.http4s
+package zio.json.interop.http4s
 
 import org.http4s.EntityEncoder
 

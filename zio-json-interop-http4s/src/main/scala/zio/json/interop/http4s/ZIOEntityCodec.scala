@@ -1,3 +1,3 @@
-package zio.json.http4s
+package zio.json.interop.http4s
 
 object ZIOEntityCodec extends ZIOEntityEncoder with ZIOEntityDecoder

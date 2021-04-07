@@ -1,4 +1,4 @@
-package zio.json.http4s
+package zio.json.interop.http4s
 
 import java.nio.charset.StandardCharsets
 

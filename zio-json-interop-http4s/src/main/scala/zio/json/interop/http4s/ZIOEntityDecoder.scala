@@ -1,4 +1,4 @@
-package zio.json.http4s
+package zio.json.interop.http4s
 
 import cats.effect.Concurrent
 import org.http4s.EntityDecoder
