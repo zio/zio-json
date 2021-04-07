@@ -405,9 +405,12 @@ project/plugins/project/
 *.class
 *.log
 .bsp
+.vscode
+.hydra
 
 .metals/
 project/metals.sbt
+project/project
 .bloop/
 project/secret
 
@@ -416,3 +419,4 @@ website/node_modules
 website/build
 website/i18n/en.json
 website/static/api
+website/yarn.lock
