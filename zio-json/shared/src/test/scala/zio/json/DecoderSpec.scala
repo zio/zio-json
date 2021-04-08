@@ -2,7 +2,7 @@ package testzio.json
 
 import java.util.UUID
 
-import scala.collection.immutable
+import scala.collection.{ immutable, mutable }
 
 import zio._
 import zio.json._
@@ -24,6 +24,17 @@ object DecoderSpec extends DefaultRunnableSpec {
           assert("170141183460469231731687303715884105728".fromJson[java.math.BigInteger])(
             isLeft(equalTo("(expected a 128 bit BigInteger)"))
           )
+        },
+        test("collections") {
+          val arr = """[1, 2, 3]"""
+          val obj = """{ "a": 1 }"""
+
+          assert(arr.fromJson[Array[Int]])(isRight(equalTo(Array(1, 2, 3)))) &&
+          assert(arr.fromJson[immutable.IndexedSeq[Int]])(isRight(equalTo(immutable.IndexedSeq(1, 2, 3)))) &&
+          assert(arr.fromJson[immutable.LinearSeq[Int]])(isRight(equalTo(immutable.LinearSeq(1, 2, 3)))) &&
+          assert(arr.fromJson[immutable.ListSet[Int]])(isRight(equalTo(immutable.ListSet(1, 2, 3)))) &&
+          assert(arr.fromJson[immutable.TreeSet[Int]])(isRight(equalTo(immutable.TreeSet(1, 2, 3)))) &&
+          assert(obj.fromJson[mutable.Map[String, Int]])(isRight(equalTo(mutable.Map("a" -> 1))))
         },
         test("eithers") {
           val bernies = List("""{"a":1}""", """{"left":1}""", """{"Left":1}""")

@@ -7,7 +7,6 @@ import scala.annotation.tailrec
 import zio._
 import zio.blocking._
 import zio.json.JsonDecoder.JsonError
-import zio.json.internal
 import zio.json.internal._
 import zio.stream.{ Take, ZStream, ZTransducer }
 
@@ -114,7 +113,7 @@ trait JsonDecoderPlatformSpecific[A] { self: JsonDecoder[A] =>
                         loop(true)
                       }
                       .catchAll {
-                        case t: internal.UnexpectedEnd =>
+                        case t: zio.json.internal.UnexpectedEnd =>
                           // swallow if stream ended
                           ZIO.unlessM(ended.get) {
                             outQueue.offer(Take.fail(t))
