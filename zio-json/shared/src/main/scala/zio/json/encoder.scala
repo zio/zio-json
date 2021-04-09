@@ -405,6 +405,7 @@ trait JsonFieldEncoder[-A] {
 }
 
 object JsonFieldEncoder {
+  def apply[A](implicit a: JsonFieldEncoder[A]): JsonFieldEncoder[A] = a
 
   implicit val string: JsonFieldEncoder[String] = new JsonFieldEncoder[String] {
     def unsafeEncodeField(in: String): String = in
