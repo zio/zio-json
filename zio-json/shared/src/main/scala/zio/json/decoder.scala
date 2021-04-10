@@ -692,6 +692,7 @@ trait JsonFieldDecoder[+A] {
 }
 
 object JsonFieldDecoder {
+  def apply[A](implicit a: JsonFieldDecoder[A]): JsonFieldDecoder[A] = a
 
   implicit val string: JsonFieldDecoder[String] = new JsonFieldDecoder[String] {
     def unsafeDecodeField(trace: List[JsonError], in: String): String = in
