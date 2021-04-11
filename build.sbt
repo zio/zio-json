@@ -203,7 +203,9 @@ lazy val zioJsonMacros = crossProject(JSPlatform, JVMPlatform)
   .settings(stdSettings("zio-json-macros"))
   .settings(crossProjectSettings)
   .enablePlugins(NeoJmhPlugin)
+  .settings(macroExpansionSettings)
   .settings(
+    scalacOptions -= "-Xfatal-warnings", // not quite ready.
     libraryDependencies ++= Seq(
       "org.scala-lang" % "scala-reflect" % scalaVersion.value % Provided,
       "dev.zio"      %%% "zio-test"      % zioVersion         % "test",
