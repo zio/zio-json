@@ -29,7 +29,7 @@ addCommandAlias("fixCheck", "scalafixAll --check")
 addCommandAlias("fmt", "all scalafmtSbt scalafmtAll")
 addCommandAlias("fmtCheck", "all scalafmtSbtCheck scalafmtCheckAll")
 addCommandAlias("prepare", "fix; fmt")
-addCommandAlias("testJVM", "zioJsonJVM/test; zioJsonYaml/test; zioJsonInteropHttp4s/test")
+addCommandAlias("testJVM", "zioJsonJVM/test; zioJsonYaml/test; zioJsonMacrosJVM/test; zioJsonInteropHttp4s/test")
 addCommandAlias("testJS", "zioJsonJS/test")
 
 val zioVersion = "1.0.5"
@@ -205,9 +205,9 @@ lazy val zioJsonMacros = crossProject(JSPlatform, JVMPlatform)
   .enablePlugins(NeoJmhPlugin)
   .settings(
     libraryDependencies ++= Seq(
-      "org.scala-lang"                          % "scala-reflect"           % scalaVersion.value % Provided,
-      "dev.zio"       %%% "zio-test"         % zioVersion % "test",
-      "dev.zio"       %%% "zio-test-sbt"     % zioVersion % "test"
+      "org.scala-lang" % "scala-reflect" % scalaVersion.value % Provided,
+      "dev.zio"      %%% "zio-test"      % zioVersion         % "test",
+      "dev.zio"      %%% "zio-test-sbt"  % zioVersion         % "test"
     ),
     testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework")
   )
