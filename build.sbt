@@ -32,7 +32,7 @@ addCommandAlias("prepare", "fix; fmt")
 addCommandAlias("testJVM", "zioJsonJVM/test; zioJsonYaml/test; zioJsonInteropHttp4s/test")
 addCommandAlias("testJS", "zioJsonJS/test")
 
-val zioVersion = "1.0.5"
+val zioVersion = "1.0.6"
 
 lazy val root = project
   .in(file("."))
