@@ -76,7 +76,8 @@ object BuildHelper {
         )
       case Some((2, 13)) =>
         Seq(
-          "-Ywarn-unused:params,-implicits"
+          "-Ywarn-unused:params,-implicits",
+          "-Ymacro-annotations"
         ) ++ std2xOptions ++ optimizerOptions(optimize) ++ warningOptions
       case Some((2, 12)) =>
         Seq(
@@ -272,7 +273,7 @@ object BuildHelper {
     scalacOptions ++= {
       CrossVersion.partialVersion(scalaVersion.value) match {
         case Some((2, 13)) => Seq("-Ymacro-annotations")
-        case _             => Seq.empty
+        case _             => Seq("-language:experimental.macros")
       }
     },
     libraryDependencies ++= {

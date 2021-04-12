@@ -65,7 +65,7 @@ object JsonCodec extends GeneratedTupleCodecs with CodecLowPriority0 {
         // protects against cycles in implicit resolution, unfortunately the
         // instantiation of decoder0 could have been wasteful.
         e
-      case other =>
+      case _ =>
         new JsonCodec[A] {
           override def encoder: JsonEncoder[A] = encoder0
 
