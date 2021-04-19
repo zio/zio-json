@@ -240,7 +240,7 @@ lazy val docs = project
   .in(file("zio-json-docs"))
   .dependsOn(zioJsonJVM)
   .settings(
-    skip.in(publish) := true,
+    publish / skip:= true,
     mdocVariables := Map(
       "SNAPSHOT_VERSION" -> version.value,
       "RELEASE_VERSION"  -> previousStableVersion.value.getOrElse("can't find release"),
