@@ -167,6 +167,11 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform)
     inConfig(Jmh)(org.scalafmt.sbt.ScalafmtPlugin.scalafmtConfigSettings)
   )
   .settings(testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework"))
+  .jsSettings(
+    libraryDependencies ++= Seq(
+      "io.github.cquiroz" %%% "scala-java-time" % "2.2.0"
+    )
+  )
   .jvmSettings(
     libraryDependencies ++= Seq(
       "ai.x"          %% "play-json-extensions" % "0.42.0" % "test",
