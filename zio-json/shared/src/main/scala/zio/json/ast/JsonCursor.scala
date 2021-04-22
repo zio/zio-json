@@ -4,7 +4,7 @@ import scala.annotation.implicitNotFound
 
 // TODO: Add another type parameter (From) to JsonCursor
 // TODO: Rename to JsonPath[From, To]???
-sealed trait JsonCursor[A] { self =>
+sealed trait JsonCursor[A <: Json] { self =>
   // TODO: Rename to >>>
   def ++[B <: Json](that: JsonCursor[B])(implicit drillDown: JsonCursor.DrillDown[A, B]): JsonCursor[B] = ???
 
@@ -52,8 +52,8 @@ object JsonCursor {
 
   val isString: JsonCursor[Json.Str] = filter(JsonType.Str)
 
-  case object Identity                                                                         extends JsonCursor[Json]
-  final case class DownField(parent: JsonCursor[Json.Obj], name: String)                       extends JsonCursor[Json]
-  final case class DownElement(parent: JsonCursor[Json.Arr], index: Int)                       extends JsonCursor[Json]
-  final case class FilterType[A](parent: JsonCursor[_], jsonType: JsonType[A]) extends JsonCursor[A]
+  case object Identity                                                         extends JsonCursor[Json]
+  final case class DownField(parent: JsonCursor[Json.Obj], name: String)       extends JsonCursor[Json]
+  final case class DownElement(parent: JsonCursor[Json.Arr], index: Int)       extends JsonCursor[Json]
+  final case class FilterType[A <: Json](parent: JsonCursor[_ <: Json], jsonType: JsonType[A]) extends JsonCursor[A]
 }

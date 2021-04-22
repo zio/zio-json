@@ -56,7 +56,7 @@ sealed abstract class Json { self =>
 
   final def foldUpSome[A](initial: A)(pf: PartialFunction[(A, Json), A]): A = ???
 
-  final def get[A](cursor: JsonCursor[A]): Either[String, A] =
+  final def get[A <: Json](cursor: JsonCursor[A]): Either[String, A] =
     cursor match {
       case JsonCursor.Identity => Right(self)
 
@@ -73,10 +73,10 @@ sealed abstract class Json { self =>
           elements.lift(index).map(Right(_)).getOrElse(Left(s"The array does not have index ${index}"))
         }
 
-      case JsonCursor.FilterType(parent, jsonType) =>
-        // TODO: Can't prove that `A' returned from self.get with parent of JsonCursor[_ = _$1] == A
-        //       which is the argument required for asJson
-        self.get(parent).flatMap(x => jsonType.get(jsonType.asJson(x.asInstanceOf[A])))
+      case JsonCursor.FilterType(parent, t @ jsonType) =>
+        // TODO: When using 'asJson' on jsonType we can't prove that `A' returned from self.get with
+        //       parent of JsonCursor[_$1] == A
+        self.get(parent).flatMap(x => jsonType.get(x))
     }
 
   // FIXME
