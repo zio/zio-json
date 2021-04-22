@@ -85,6 +85,9 @@ object EncoderSpec extends DefaultRunnableSpec {
             equalTo("{\n  \"hello\" : \"world\"\n}")
           )
         },
+        test("Map, custom keys") {
+          assert(Map(1 -> "a").toJson)(equalTo("""{"1":"a"}"""))
+        },
         test("java.util.UUID") {
           assert(UUID.fromString("e142f1aa-6e9e-4352-adfe-7e6eb9814ccd").toJson)(
             equalTo(""""e142f1aa-6e9e-4352-adfe-7e6eb9814ccd"""")
