@@ -37,39 +37,39 @@ sealed abstract class Json { self =>
 
   final def foldDown[A](initial: A)(f: (A, Json) => A): A = {
     val a = f(initial, self)
-    
+
     self match {
-      case Obj(fields) => fields.map(_._2).foldLeft(a)((a, json) => json.foldDown(a)(f))
+      case Obj(fields)   => fields.map(_._2).foldLeft(a)((a, json) => json.foldDown(a)(f))
       case Arr(elements) => elements.foldLeft(a)((a, json) => json.foldDown(a)(f))
-      case _ => a
+      case _             => a
     }
   }
-  
+
   final def foldDownSome[A](initial: A)(pf: PartialFunction[(A, Json), A]): A = {
-    val lifted = pf.lift 
+    val lifted = pf.lift
     val total  = (a: A, json: Json) => lifted((a, json)).getOrElse(a)
 
     foldDown(initial)(total)
   }
 
   final def foldUp[A](initial: A)(f: (A, Json) => A): A = ???
-  
+
   final def foldUpSome[A](initial: A)(pf: PartialFunction[(A, Json), A]): A = ???
 
-  final def get[A <: Json](cursor: JsonCursor[A]): Either[String, A] = 
+  final def get[A <: Json](cursor: JsonCursor[A]): Either[String, A] =
     cursor match {
       case JsonCursor.Identity => Right(self)
 
-      case JsonCursor.DownField(parent, field) => 
-        self.get(parent).flatMap {
-          case Obj(fields) => Right(fields.find(_._1 == field).map(_._2).getOrElse(Json.Null))
+      case JsonCursor.DownField(parent, field) =>
+        self.get(parent).flatMap { case Obj(fields) =>
+          Right(fields.find(_._1 == field).map(_._2).getOrElse(Json.Null))
         }
-      case JsonCursor.DownElement(parent, index) => 
-        self.get(parent).flatMap {
-          case Arr(elements) => elements.lift(index).map(Right(_)).getOrElse(Left(s"The array does not have index ${index}"))
+      case JsonCursor.DownElement(parent, index) =>
+        self.get(parent).flatMap { case Arr(elements) =>
+          elements.lift(index).map(Right(_)).getOrElse(Left(s"The array does not have index ${index}"))
         }
 
-      case JsonCursor.FilterType(parent, jsonType) => 
+      case JsonCursor.FilterType(parent, jsonType) =>
         self.get(parent).flatMap(jsonType.get(_))
     }
 
@@ -80,40 +80,42 @@ sealed abstract class Json { self =>
   final def intersect(that: Json): Either[String, Json] = ???
 
   // TODO: Return Either[String, Json]
-  final def merge(that: Json): Json = 
+  final def merge(that: Json): Json =
     (self, that) match {
-      case (Obj(fields1), Obj(fields2)) => 
-        val leftMap = fields1.toMap 
-        val rightMap = fields2.toMap 
+      case (Obj(fields1), Obj(fields2)) =>
+        val leftMap  = fields1.toMap
+        val rightMap = fields2.toMap
 
-        val lookup = 
-          (fields1 ++ fields2).foldLeft(Map.empty[String, Int] -> 0) {
-            case ((map, nextIndex), (name, _)) => 
+        val lookup =
+          (fields1 ++ fields2)
+            .foldLeft(Map.empty[String, Int] -> 0) { case ((map, nextIndex), (name, _)) =>
               map.get(name) match {
-                case None => map.updated(name, nextIndex) -> (nextIndex + 1)
-                case Some(_) => map -> nextIndex
+                case None    => map.updated(name, nextIndex) -> (nextIndex + 1)
+                case Some(_) => map                          -> nextIndex
               }
-          }._1
+            }
+            ._1
 
         val array = Array.ofDim[Json](lookup.size)
 
         lookup.foreach { case (key, index) =>
-          array(index) = 
-            (leftMap.get(key), rightMap.get(key)) match {
-              case (Some(l), Some(r)) => l.merge(r)
-              case (None, Some(r))    => r 
-              case (Some(l), None)    => l
-              case (None, None)       => Json.Null 
-            }
+          array(index) = (leftMap.get(key), rightMap.get(key)) match {
+            case (Some(l), Some(r)) => l.merge(r)
+            case (None, Some(r))    => r
+            case (Some(l), None)    => l
+            case (None, None)       => Json.Null
+          }
         }
 
         Obj(Chunk.fromIterable(lookup.map { case (key, value) => key -> array(value) }))
-        
-      case (Arr(elements1), Arr(elements2)) => 
-        val leftover = if (elements1.length > elements2.length) elements1.drop(elements2.length) else elements2.drop(elements1.length)
 
-        Arr(elements1.zip(elements2).map { 
-          case (left, right) => left.merge(right)
+      case (Arr(elements1), Arr(elements2)) =>
+        val leftover =
+          if (elements1.length > elements2.length) elements1.drop(elements2.length)
+          else elements2.drop(elements1.length)
+
+        Arr(elements1.zip(elements2).map { case (left, right) =>
+          left.merge(right)
         } ++ leftover)
 
       case (l, r) => ???
@@ -127,7 +129,7 @@ sealed abstract class Json { self =>
 
   // TODO: Add cursor to all transform / fold methods
   final def transformDown(f: Json => Json): Json = {
-    def loop(json: Json): Json = 
+    def loop(json: Json): Json =
       f(json) match {
         case Obj(fields)   => Obj(fields.map { case (name, value) => (name, loop(value)) })
         case Arr(elements) => Arr(elements.map(loop(_)))
@@ -138,14 +140,14 @@ sealed abstract class Json { self =>
   }
 
   final def transformDownSome(pf: PartialFunction[Json, Json]): Json = {
-    val lifted = pf.lift 
+    val lifted = pf.lift
     val total  = (json: Json) => lifted(json).getOrElse(json)
 
     self.transformDown(total)
   }
 
   final def transformUp(f: Json => Json): Json = {
-    def loop(json: Json): Json = 
+    def loop(json: Json): Json =
       json match {
         case Obj(fields)   => f(Obj(fields.map { case (name, value) => (name, loop(value)) }))
         case Arr(elements) => f(Arr(elements.map(loop(_))))
@@ -156,7 +158,7 @@ sealed abstract class Json { self =>
   }
 
   final def transformUpSome(pf: PartialFunction[Json, Json]): Json = {
-    val lifted = pf.lift 
+    val lifted = pf.lift
     val total  = (json: Json) => lifted(json).getOrElse(json)
 
     self.transformUp(total)
@@ -344,4 +346,3 @@ object Json {
     override final def toJsonAST(a: Json): Either[String, Json] = Right(a)
   }
 }
-
