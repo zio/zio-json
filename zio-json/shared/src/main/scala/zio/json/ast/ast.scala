@@ -56,21 +56,27 @@ sealed abstract class Json { self =>
 
   final def foldUpSome[A](initial: A)(pf: PartialFunction[(A, Json), A]): A = ???
 
-  final def get[A <: Json](cursor: JsonCursor[A]): Either[String, A] =
+  final def get[A](cursor: JsonCursor[A]): Either[String, A] =
     cursor match {
       case JsonCursor.Identity => Right(self)
 
       case JsonCursor.DownField(parent, field) =>
         self.get(parent).flatMap { case Obj(fields) =>
-          Right(fields.find(_._1 == field).map(_._2).getOrElse(Json.Null))
+          fields.find(_._1 == field).map(_._2) match {
+            case Some(x) => Right(x)
+            case None    => Left(s"No such field: '$field'")
+          }
         }
+
       case JsonCursor.DownElement(parent, index) =>
         self.get(parent).flatMap { case Arr(elements) =>
           elements.lift(index).map(Right(_)).getOrElse(Left(s"The array does not have index ${index}"))
         }
 
       case JsonCursor.FilterType(parent, jsonType) =>
-        self.get(parent).flatMap(jsonType.get(_))
+        // TODO: Can't prove that `A' returned from self.get with parent of JsonCursor[_ = _$1] == A
+        //       which is the argument required for asJson
+        self.get(parent).flatMap(x => jsonType.get(jsonType.asJson(x.asInstanceOf[A])))
     }
 
   // FIXME
