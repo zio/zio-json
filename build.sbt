@@ -66,7 +66,7 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform)
     libraryDependencies ++= Seq(
       "com.propensive"                        %%% "magnolia"                % "0.17.0",
       "org.scalaz"                            %%% "scalaz-core"             % "7.3.3" intransitive (),
-      "eu.timepit"                            %%% "refined"                 % "0.9.23" intransitive (),
+      "eu.timepit"                            %%% "refined"                 % "0.9.24" intransitive (),
       "org.scala-lang"                          % "scala-reflect"           % scalaVersion.value % Provided,
       "dev.zio"                               %%% "zio"                     % zioVersion,
       "dev.zio"                               %%% "zio-streams"             % zioVersion,
@@ -253,7 +253,7 @@ lazy val docs = project
     scalacOptions -= "-Xfatal-warnings",
     libraryDependencies ++= Seq(
       "dev.zio"    %% "zio"     % zioVersion,
-      "eu.timepit" %% "refined" % "0.9.23"
+      "eu.timepit" %% "refined" % "0.9.24"
     ),
     ScalaUnidoc / unidoc / unidocProjectFilter := inProjects(root),
     ScalaUnidoc / unidoc / target := (LocalRootProject / baseDirectory).value / "website" / "static" / "api",
