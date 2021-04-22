@@ -5,8 +5,8 @@ import scala.annotation._
 import zio.Chunk
 import zio.json.JsonDecoder.{ JsonError, UnsafeJson }
 import zio.json._
-import zio.json.internal._
 import zio.json.ast.Json._
+import zio.json.internal._
 
 /**
  * This AST of JSON is made available so that arbitrary JSON may be included as
@@ -28,11 +28,12 @@ sealed abstract class Json { self =>
 
   final def diff(that: Json): JsonDiff = JsonDiff(self, that)
 
-  override final def equals(that: Any): Boolean = 
-    that match {
-      case that : Json => ???
-      case _ => false
-    }
+  // FIXME
+  // override final def equals(that: Any): Boolean =
+  //   that match {
+  //     case that : Json => ???
+  //     case _ => false
+  //   }
 
   final def foldDown[A](initial: A)(f: (A, Json) => A): A = {
     val a = f(initial, self)
@@ -72,7 +73,9 @@ sealed abstract class Json { self =>
         self.get(parent).flatMap(jsonType.get(_))
     }
 
-  override final def hashCode: Int = ??? 
+  // FIXME
+  // override final def hashCode: Int =
+  //   ???
 
   final def intersect(that: Json): Either[String, Json] = ???
 
@@ -168,7 +171,10 @@ sealed abstract class Json { self =>
 }
 
 object Json {
-  implicit val orderingJson: Ordering[Json] = ???
+  implicit val orderingJson: Ordering[Json] =
+    new Ordering[Json] {
+      def compare(x: Json, y: Json): Int = ???
+    }
 
   final case class Obj(fields: Chunk[(String, Json)]) extends Json
   object Obj {
