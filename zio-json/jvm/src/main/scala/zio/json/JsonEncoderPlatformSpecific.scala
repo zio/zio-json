@@ -21,7 +21,7 @@ trait JsonEncoderPlatformSpecific[A] { self: JsonEncoder[A] =>
     ZTransducer {
       for {
         runtime     <- ZIO.runtime[Any].toManaged_
-        chunkBuffer <- Ref.makeManaged(Chunk.fromIterable(startWith.toIterable))
+        chunkBuffer <- Ref.makeManaged(Chunk.fromIterable(startWith.fold(List.empty[Char])(_ :: Nil)))
         writer <- ZManaged.fromAutoCloseable {
                     ZIO.effectTotal {
                       new java.io.BufferedWriter(
