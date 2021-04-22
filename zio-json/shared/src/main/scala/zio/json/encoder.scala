@@ -164,6 +164,8 @@ object JsonEncoder extends GeneratedTupleEncoders with EncoderLowPriority0 {
   implicit val long: JsonEncoder[Long]       = explicit(_.toString, n => Json.Num(new java.math.BigDecimal(n)))
   implicit val bigInteger: JsonEncoder[java.math.BigInteger] =
     explicit(_.toString, n => Json.Num(new java.math.BigDecimal(n)))
+  implicit val scalaBigInt: JsonEncoder[BigInt] =
+    explicit(_.toString(), n => Json.Num(new java.math.BigDecimal(n.bigInteger)))
 
   implicit val double: JsonEncoder[Double] = explicit(
     n =>

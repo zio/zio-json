@@ -43,6 +43,7 @@ object JsonCodec extends GeneratedTupleCodecs with CodecLowPriority0 {
   implicit val short: JsonCodec[Short]                     = JsonCodec(JsonEncoder.short, JsonDecoder.short)
   implicit val int: JsonCodec[Int]                         = JsonCodec(JsonEncoder.int, JsonDecoder.int)
   implicit val bigInteger: JsonCodec[java.math.BigInteger] = JsonCodec(JsonEncoder.bigInteger, JsonDecoder.bigInteger)
+  implicit val scalaBigInt: JsonCodec[BigInt]              = JsonCodec(JsonEncoder.scalaBigInt, JsonDecoder.scalaBigInt)
   implicit val double: JsonCodec[Double]                   = JsonCodec(JsonEncoder.double, JsonDecoder.double)
   implicit val float: JsonCodec[Float]                     = JsonCodec(JsonEncoder.float, JsonDecoder.float)
   implicit val bigDecimal: JsonCodec[java.math.BigDecimal] = JsonCodec(JsonEncoder.bigDecimal, JsonDecoder.bigDecimal)

@@ -41,6 +41,7 @@ object EncoderSpec extends DefaultRunnableSpec {
             assert(1L.toJson)(equalTo("1")) &&
             assert(new java.math.BigInteger("1").toJson)(equalTo("1")) &&
             assert(new java.math.BigInteger(exampleBigIntStr).toJson)(equalTo(exampleBigIntStr)) &&
+            assert(BigInt(exampleBigIntStr).toJson)(equalTo(exampleBigIntStr)) &&
             assert(BigDecimal(exampleBigDecimalStr).toJson)(equalTo(exampleBigDecimalStr)) &&
             assert(1.0f.toJson)(equalTo("1.0")) &&
             assert(1.0d.toJson)(equalTo("1.0"))
