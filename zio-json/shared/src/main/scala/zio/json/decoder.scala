@@ -698,4 +698,22 @@ object JsonFieldDecoder {
   implicit val string: JsonFieldDecoder[String] = new JsonFieldDecoder[String] {
     def unsafeDecodeField(trace: List[JsonError], in: String): String = in
   }
+
+  implicit val int: JsonFieldDecoder[Int] =
+    JsonFieldDecoder[String].mapOrFail { str =>
+      try {
+        Right(str.toInt)
+      } catch {
+        case n: NumberFormatException => Left(s"Invalid Int: '$str': $n")
+      }
+    }
+
+  implicit val long: JsonFieldDecoder[Long] =
+    JsonFieldDecoder[String].mapOrFail { str =>
+      try {
+        Right(str.toLong)
+      } catch {
+        case n: NumberFormatException => Left(s"Invalid Long: '$str': $n")
+      }
+    }
 }
