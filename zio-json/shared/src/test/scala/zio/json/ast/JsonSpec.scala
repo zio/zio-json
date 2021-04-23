@@ -4,7 +4,7 @@ import zio.test.Assertion._
 import zio.test._
 
 object JsonSpec extends DefaultRunnableSpec {
-  val spec: ZSpec[Environment,Failure] =
+  val spec: ZSpec[Environment, Failure] =
     suite("Json")(
       suite("get")(
         test("downField") {
