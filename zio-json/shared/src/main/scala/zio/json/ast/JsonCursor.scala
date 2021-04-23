@@ -22,11 +22,11 @@ sealed trait JsonCursor[From, To <: Json] { self =>
 
 object JsonCursor {
   implicit class JsonCursorObjOps[From](cursor: JsonCursor[From, Json.Obj]) {
-    def field(field: String) = JsonCursor.DownField(cursor, field)
+    def field(field: String): DownField = JsonCursor.DownField(cursor, field)
   }
 
   implicit class JsonCursorArrOps[From](cursor: JsonCursor[From, Json.Arr]) {
-    def element(element: Int) = JsonCursor.DownElement(cursor, element)
+    def element(element: Int): DownElement = JsonCursor.DownElement(cursor, element)
   }
 
   def element(index: Int): JsonCursor[Json.Arr, Json] = DownElement(Identity.isArray, index)
@@ -50,8 +50,9 @@ object JsonCursor {
 
   val isString: JsonCursor[Json, Json.Str] = filter(JsonType.Str)
 
-  case object Identity                                                      extends JsonCursor[Json, Json]
-  final case class AndThen[I <: Json, O <: Json](parent: JsonCursor[_, I], next: JsonCursor[I, O]) extends JsonCursor[I, O]
+  case object Identity extends JsonCursor[Json, Json]
+  final case class AndThen[I <: Json, O <: Json](parent: JsonCursor[_, I], next: JsonCursor[I, O])
+      extends JsonCursor[I, O]
   final case class DownField(parent: JsonCursor[_, Json.Obj], name: String) extends JsonCursor[Json.Obj, Json]
   final case class DownElement(parent: JsonCursor[_, Json.Arr], index: Int) extends JsonCursor[Json.Arr, Json]
   final case class FilterType[A <: Json](parent: JsonCursor[_, _ <: Json], jsonType: JsonType[A])
