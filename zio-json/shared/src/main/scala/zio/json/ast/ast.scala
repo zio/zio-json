@@ -28,12 +28,36 @@ sealed abstract class Json { self =>
 
   final def diff(that: Json): JsonDiff = JsonDiff(self, that)
 
-  // FIXME
-  // override final def equals(that: Any): Boolean =
-  //   that match {
-  //     case that : Json => ???
-  //     case _ => false
-  //   }
+  override final def equals(that: Any): Boolean = {
+    @scala.annotation.tailrec
+    def objEqual(left: Map[String, Json], right: Chunk[(String, Json)]): Boolean =
+      if (right.isEmpty) true
+      else {
+        val (key, r) = right.head
+        left.get(key) match {
+          case Some(l) if l == r => objEqual(left, right.tail)
+          case _                 => false
+        }
+      }
+
+    that match {
+      case that: Json =>
+        (self, that) match {
+          case (Obj(l), Obj(r)) =>
+            // order does not matter for JSON Objects
+            if (l.length == r.length) objEqual(l.toMap, r)
+            else false
+          case (Arr(l), Arr(r))   => l == r
+          case (Bool(l), Bool(r)) => l == r
+          case (Str(l), Str(r))   => l == r
+          case (Num(l), Num(r))   => l == r
+          case (_: Null, _: Null) => true
+          case _                  => false
+        }
+
+      case _ => false
+    }
+  }
 
   final def foldDown[A](initial: A)(f: (A, Json) => A): A = {
     val a = f(initial, self)
