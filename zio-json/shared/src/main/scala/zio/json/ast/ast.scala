@@ -24,7 +24,7 @@ import zio.json.internal._
  * JsonValue / Json / JValue
  */
 sealed abstract class Json { self =>
-  final def delete(cursor: JsonCursor[_]): Either[String, Json] = ???
+  final def delete(cursor: JsonCursor[_, _]): Either[String, Json] = ???
 
   final def diff(that: Json): JsonDiff = JsonDiff(self, that)
 
@@ -56,7 +56,7 @@ sealed abstract class Json { self =>
 
   final def foldUpSome[A](initial: A)(pf: PartialFunction[(A, Json), A]): A = ???
 
-  final def get[A <: Json](cursor: JsonCursor[A]): Either[String, A] =
+  final def get[A <: Json](cursor: JsonCursor[_, A]): Either[String, A] =
     cursor match {
       case JsonCursor.Identity => Right(self)
 
@@ -77,6 +77,9 @@ sealed abstract class Json { self =>
         // TODO: When using 'asJson' on jsonType we can't prove that `A' returned from self.get with
         //       parent of JsonCursor[_$1] == A
         self.get(parent).flatMap(x => jsonType.get(x))
+
+      case JsonCursor.AndThen(parent, next) =>
+        self.get(parent).flatMap(x => x.get(next))
     }
 
   // FIXME
@@ -128,10 +131,10 @@ sealed abstract class Json { self =>
     }
 
   // TODO: Return Either[String, Json]
-  final def relocate(from: JsonCursor[_], to: JsonCursor[_]): Either[String, Json] = ???
+  final def relocate(from: JsonCursor[_, _], to: JsonCursor[_, _]): Either[String, Json] = ???
 
   // TODO: Return Either[String, Json]
-  final def transformAt[A <: Json](cursor: JsonCursor[A])(f: A => Json): Either[String, Json] = ???
+  final def transformAt[A <: Json](cursor: JsonCursor[_, A])(f: A => Json): Either[String, Json] = ???
 
   // TODO: Add cursor to all transform / fold methods
   final def transformDown(f: Json => Json): Json = {
