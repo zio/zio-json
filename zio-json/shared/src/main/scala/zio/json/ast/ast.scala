@@ -96,18 +96,20 @@ sealed abstract class Json { self =>
             }
             ._1
 
-        val array = Array.ofDim[Json](lookup.size)
+        val array = Array.ofDim[(String, Json)](lookup.size)
 
         lookup.foreach { case (key, index) =>
-          array(index) = (leftMap.get(key), rightMap.get(key)) match {
-            case (Some(l), Some(r)) => l.merge(r)
-            case (None, Some(r))    => r
-            case (Some(l), None)    => l
-            case (None, None)       => Json.Null
+          array(index) = key -> {
+            (leftMap.get(key), rightMap.get(key)) match {
+              case (Some(l), Some(r)) => l.merge(r)
+              case (None, Some(r))    => r
+              case (Some(l), None)    => l
+              case (None, None)       => Json.Null
+            }
           }
         }
 
-        Obj(Chunk.fromIterable(lookup.map { case (key, value) => key -> array(value) }))
+        Obj(Chunk.fromArray(array))
 
       case (Arr(elements1), Arr(elements2)) =>
         val leftover =
