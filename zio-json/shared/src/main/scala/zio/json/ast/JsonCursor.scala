@@ -4,9 +4,6 @@ sealed trait JsonCursor[From, To <: Json] { self =>
   final def >>>[Next <: Json](that: JsonCursor[To, Next]) =
     JsonCursor.AndThen(self, that)
 
-  def field(name: String)(implicit ev: To <:< Json.Obj) =
-    JsonCursor.DownField(self.asInstanceOf[JsonCursor[From, Json.Obj]], name)
-
   def isArray: JsonCursor[Json, Json.Arr] = filterType(JsonType.Arr)
 
   def isBool: JsonCursor[Json, Json.Bool] = filterType(JsonType.Bool)
@@ -24,6 +21,14 @@ sealed trait JsonCursor[From, To <: Json] { self =>
 }
 
 object JsonCursor {
+  implicit class JsonCursorObjOps[From](cursor: JsonCursor[From, Json.Obj]) {
+    def field(field: String) = JsonCursor.DownField(cursor, field)
+  }
+
+  implicit class JsonCursorArrOps[From](cursor: JsonCursor[From, Json.Arr]) {
+    def element(element: Int) = JsonCursor.DownElement(cursor, element)
+  }
+
   def element(index: Int): JsonCursor[Json.Arr, Json] = DownElement(Identity.isArray, index)
 
   def field(name: String): JsonCursor[Json.Obj, Json] = DownField(Identity.isObject, name)
