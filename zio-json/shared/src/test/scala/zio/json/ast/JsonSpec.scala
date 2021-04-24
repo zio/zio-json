@@ -6,6 +6,45 @@ import zio.test._
 object JsonSpec extends DefaultRunnableSpec {
   val spec: ZSpec[Environment, Failure] =
     suite("Json")(
+      suite("equals")(
+        test("mismatched Json subtypes") {
+          val nul: Json  = Json.Null
+          val num: Json  = Json.Num(1)
+          val str: Json  = Json.Str("hello")
+          val bool: Json = Json.Bool(true)
+          val arr: Json  = Json.Arr(nul, num, str)
+          val obj: Json = Json.Obj(
+            "nul"  -> nul,
+            "num"  -> num,
+            "str"  -> str,
+            "bool" -> bool,
+            "arr"  -> arr,
+            "obj"  -> Json.Obj("more" -> str, "andMore" -> bool)
+          )
+
+          assert(
+            List(nul, num, str, bool, arr, obj).combinations(2).forall {
+              case fst :: snd :: Nil => fst != snd
+              case _                 => false
+            }
+          )(equalTo(true))
+        },
+        test("object order does not matter for equality") {
+          val obj1 = Json.Obj(
+            "foo" -> Json.Str("1"),
+            "bar" -> Json.Str("2"),
+            "baz" -> Json.Arr(Json.Bool(true), Json.Num(2))
+          )
+
+          val obj2 = Json.Obj(
+            "baz" -> Json.Arr(Json.Bool(true), Json.Num(2)),
+            "bar" -> Json.Str("2"),
+            "foo" -> Json.Str("1")
+          )
+
+          assert(obj1)(equalTo(obj2))
+        }
+      ),
       suite("get")(
         test("downField") {
           val obj = Json.Obj("a" -> Json.Num(1), "b" -> Json.Num(2), "c" -> Json.Null)
