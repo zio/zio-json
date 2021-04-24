@@ -24,16 +24,40 @@ import zio.json.internal._
  * JsonValue / Json / JValue
  */
 sealed abstract class Json { self =>
-  final def delete(cursor: JsonCursor[_]): Either[String, Json] = ???
+  final def delete(cursor: JsonCursor[_, _]): Either[String, Json] = ???
 
   final def diff(that: Json): JsonDiff = JsonDiff(self, that)
 
-  // FIXME
-  // override final def equals(that: Any): Boolean =
-  //   that match {
-  //     case that : Json => ???
-  //     case _ => false
-  //   }
+  override final def equals(that: Any): Boolean = {
+    @scala.annotation.tailrec
+    def objEqual(left: Map[String, Json], right: Chunk[(String, Json)]): Boolean =
+      if (right.isEmpty) true
+      else {
+        val (key, r) = right.head
+        left.get(key) match {
+          case Some(l) if l == r => objEqual(left, right.tail)
+          case _                 => false
+        }
+      }
+
+    that match {
+      case that: Json =>
+        (self, that) match {
+          case (Obj(l), Obj(r)) =>
+            // order does not matter for JSON Objects
+            if (l.length == r.length) objEqual(l.toMap, r)
+            else false
+          case (Arr(l), Arr(r))   => l == r
+          case (Bool(l), Bool(r)) => l == r
+          case (Str(l), Str(r))   => l == r
+          case (Num(l), Num(r))   => l == r
+          case (_: Null, _: Null) => true
+          case _                  => false
+        }
+
+      case _ => false
+    }
+  }
 
   final def foldDown[A](initial: A)(f: (A, Json) => A): A = {
     val a = f(initial, self)
@@ -56,21 +80,30 @@ sealed abstract class Json { self =>
 
   final def foldUpSome[A](initial: A)(pf: PartialFunction[(A, Json), A]): A = ???
 
-  final def get[A <: Json](cursor: JsonCursor[A]): Either[String, A] =
+  final def get[A <: Json](cursor: JsonCursor[_, A]): Either[String, A] =
     cursor match {
       case JsonCursor.Identity => Right(self)
 
       case JsonCursor.DownField(parent, field) =>
         self.get(parent).flatMap { case Obj(fields) =>
-          Right(fields.find(_._1 == field).map(_._2).getOrElse(Json.Null))
+          fields.find(_._1 == field).map(_._2) match {
+            case Some(x) => Right(x)
+            case None    => Left(s"No such field: '$field'")
+          }
         }
+
       case JsonCursor.DownElement(parent, index) =>
         self.get(parent).flatMap { case Arr(elements) =>
           elements.lift(index).map(Right(_)).getOrElse(Left(s"The array does not have index ${index}"))
         }
 
-      case JsonCursor.FilterType(parent, jsonType) =>
-        self.get(parent).flatMap(jsonType.get(_))
+      case JsonCursor.FilterType(parent, t @ jsonType) =>
+        // TODO: When using 'asJson' on jsonType we can't prove that `A' returned from self.get with
+        //       parent of JsonCursor[_$1] == A
+        self.get(parent).flatMap(x => jsonType.get(x))
+
+      case JsonCursor.AndThen(parent, next) =>
+        self.get(parent).flatMap(x => x.get(next))
     }
 
   // FIXME
@@ -124,10 +157,10 @@ sealed abstract class Json { self =>
     }
 
   // TODO: Return Either[String, Json]
-  final def relocate(from: JsonCursor[_], to: JsonCursor[_]): Either[String, Json] = ???
+  final def relocate(from: JsonCursor[_, _], to: JsonCursor[_, _]): Either[String, Json] = ???
 
   // TODO: Return Either[String, Json]
-  final def transformAt[A <: Json](cursor: JsonCursor[A])(f: A => Json): Either[String, Json] = ???
+  final def transformAt[A <: Json](cursor: JsonCursor[_, A])(f: A => Json): Either[String, Json] = ???
 
   // TODO: Add cursor to all transform / fold methods
   final def transformDown(f: Json => Json): Json = {
