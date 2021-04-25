@@ -412,4 +412,10 @@ object JsonFieldEncoder {
   implicit val string: JsonFieldEncoder[String] = new JsonFieldEncoder[String] {
     def unsafeEncodeField(in: String): String = in
   }
+
+  implicit val int: JsonFieldEncoder[Int] =
+    JsonFieldEncoder[String].contramap(_.toString)
+
+  implicit val long: JsonFieldEncoder[Long] =
+    JsonFieldEncoder[String].contramap(_.toString)
 }
