@@ -56,6 +56,9 @@ final case class jsonHint(name: String) extends Annotation
  */
 final class jsonNoExtraFields extends Annotation
 
+/**
+ * If used on a case class, will exclude fields from the resulting JSON.
+ */
 final case class jsonExcludeFields(fields: List[String]) extends Annotation
 
 object DeriveJsonDecoder {
