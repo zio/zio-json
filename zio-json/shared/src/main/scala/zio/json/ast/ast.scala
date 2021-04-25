@@ -29,16 +29,15 @@ sealed abstract class Json { self =>
   final def diff(that: Json): JsonDiff = JsonDiff(self, that)
 
   override final def equals(that: Any): Boolean = {
-    @scala.annotation.tailrec
     def objEqual(left: Map[String, Json], right: Chunk[(String, Json)]): Boolean =
       if (right.isEmpty) true
-      else {
-        val (key, r) = right.head
-        left.get(key) match {
-          case Some(l) if l == r => objEqual(left, right.tail)
-          case _                 => false
-        }
-      }
+      else
+        right.find { case (key, r) =>
+          left.get(key) match {
+            case Some(l) if l != r => true
+            case _                 => false
+          }
+        }.isEmpty
 
     that match {
       case that: Json =>
