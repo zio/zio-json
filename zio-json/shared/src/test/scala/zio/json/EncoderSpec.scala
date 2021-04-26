@@ -137,6 +137,10 @@ object EncoderSpec extends DefaultRunnableSpec {
             equalTo("{\n  \"hint\" : \"Abel\",\n  \"s\" : \"hello\"\n}")
           )
         },
+        test("exclude field") {
+          import exampleexcludefield._
+          assert(Person("Peter", 20).toJson)(equalTo("""{"name":"Peter"}"""))
+        },
         test("exclude fields") {
           import exampleexcludefields._
           assert(Person("Peter", 20).toJson)(equalTo("""{"name":"Peter"}"""))
@@ -266,6 +270,16 @@ object EncoderSpec extends DefaultRunnableSpec {
   }
 
   object exampleexcludefields {
+
+    case class Person(name: String, @jsonExclude age: Int)
+
+    object Person {
+      implicit val encoder: JsonEncoder[Person] = DeriveJsonEncoder.gen[Person]
+    }
+
+  }
+
+  object exampleexcludefield {
 
     @jsonExcludeFields(List("age"))
     case class Person(name: String, age: Int)
