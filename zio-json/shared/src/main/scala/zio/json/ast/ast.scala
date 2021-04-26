@@ -105,9 +105,27 @@ sealed abstract class Json { self =>
         self.get(parent).flatMap(x => x.get(next))
     }
 
-  // FIXME
-  // override final def hashCode: Int =
-  //   ???
+  override final def hashCode: Int =
+    31 * {
+      self match {
+        case Obj(fields) =>
+          var result = 0
+          fields.foreach(tuple => result = result ^ tuple.hashCode)
+          result
+        case Arr(elements) =>
+          var result = 0
+          var index  = 0
+          elements.foreach { json =>
+            result = result ^ (index, json).hashCode
+            index += 1
+          }
+          result
+        case Bool(value) => value.hashCode
+        case Str(value)  => value.hashCode
+        case Num(value)  => value.hashCode
+        case Json.Null   => 1
+      }
+    }
 
   final def intersect(that: Json): Either[String, Json] = ???
 
