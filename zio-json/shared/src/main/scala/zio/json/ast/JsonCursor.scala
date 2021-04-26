@@ -1,7 +1,7 @@
 package zio.json.ast
 
-sealed trait JsonCursor[From, To <: Json] { self =>
-  final def >>>[Next <: Json](that: JsonCursor[To, Next]) =
+sealed trait JsonCursor[-From, +To <: Json] { self =>
+  final def >>>[To0 >: To <: Json, Next <: Json](that: JsonCursor[To0, Next]): JsonCursor[To0, Next] =
     JsonCursor.AndThen(self, that)
 
   def isArray: JsonCursor[Json, Json.Arr] = filterType(JsonType.Arr)
@@ -51,10 +51,14 @@ object JsonCursor {
   val isString: JsonCursor[Json, Json.Str] = filter(JsonType.Str)
 
   case object Identity extends JsonCursor[Json, Json]
+
   final case class AndThen[I <: Json, O <: Json](parent: JsonCursor[_, I], next: JsonCursor[I, O])
       extends JsonCursor[I, O]
+
   final case class DownField(parent: JsonCursor[_, Json.Obj], name: String) extends JsonCursor[Json.Obj, Json]
+
   final case class DownElement(parent: JsonCursor[_, Json.Arr], index: Int) extends JsonCursor[Json.Arr, Json]
+
   final case class FilterType[A <: Json](parent: JsonCursor[_, _ <: Json], jsonType: JsonType[A])
       extends JsonCursor[Json, A]
 }
