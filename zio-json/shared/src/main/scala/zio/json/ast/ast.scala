@@ -114,8 +114,6 @@ sealed abstract class Json { self =>
         }
 
       case JsonCursor.FilterType(parent, t @ jsonType) =>
-        // TODO: When using 'asJson' on jsonType we can't prove that `A' returned from self.get with
-        //       parent of JsonCursor[_$1] == A
         self.get(parent).flatMap(x => jsonType.get(x))
 
       case JsonCursor.AndThen(parent, next) =>
