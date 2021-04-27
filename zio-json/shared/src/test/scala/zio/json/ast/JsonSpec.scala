@@ -45,6 +45,33 @@ object JsonSpec extends DefaultRunnableSpec {
           assert(obj1)(equalTo(obj2))
         }
       ),
+      suite("hashCode")(
+        test("objects with the same elements regardless of order have the same hashCode") {
+          val obj1 = Json.Obj(
+            "foo" -> Json.Str("1"),
+            "bar" -> Json.Str("2"),
+            "baz" -> Json.Arr(Json.Bool(true), Json.Num(2))
+          )
+
+          val obj2 = Json.Obj(
+            "baz" -> Json.Arr(Json.Bool(true), Json.Num(2)),
+            "bar" -> Json.Str("2"),
+            "foo" -> Json.Str("1")
+          )
+
+          assert(obj1.hashCode)(equalTo(obj2.hashCode))
+        }
+      ),
+      test("arrays with the same elements in a different order will not have the same hashCode") {
+        val arr1 = Json.Arr(Json.Str("one"), Json.Obj("two" -> Json.Num(2)), Json.Num(3))
+        val arr2 = Json.Arr(Json.Num(3), Json.Str("one"), Json.Obj("two" -> Json.Num(2)))
+        assert(arr1.hashCode)(not(equalTo(arr2.hashCode)))
+      },
+      test("arrays with the same elements in the same order will have the same hashCode") {
+        val arr1 = Json.Arr(Json.Str("one"), Json.Obj("two" -> Json.Num(2)), Json.Num(3))
+        val arr2 = Json.Arr(Json.Str("one"), Json.Obj("two" -> Json.Num(2)), Json.Num(3))
+        assert(arr1.hashCode)(equalTo(arr2.hashCode))
+      },
       suite("get")(
         test("downField") {
           val obj = Json.Obj("a" -> Json.Num(1), "b" -> Json.Num(2), "c" -> Json.Null)
