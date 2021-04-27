@@ -251,6 +251,12 @@ object DecoderSpec extends DefaultRunnableSpec {
 
           assert(json.as[Map[String, Int]])(isRight(equalTo(expected)))
         },
+        test("Map, custom keys") {
+          val json     = Json.Obj("1" -> Json.Str("a"), "2" -> Json.Str("b"))
+          val expected = Map(1 -> "a", 2 -> "b")
+
+          assert(json.as[Map[Int, String]])(isRight(equalTo(expected)))
+        },
         test("zio.Chunk") {
           val json     = Json.Arr(Json.Str("5XL"), Json.Str("2XL"), Json.Str("XL"))
           val expected = Chunk("5XL", "2XL", "XL")
