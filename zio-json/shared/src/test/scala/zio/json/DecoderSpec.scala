@@ -167,7 +167,8 @@ object DecoderSpec extends DefaultRunnableSpec {
         test("java.time.Duration") {
           // We simulate a failure scenario if we used Duration.parse directly (https://bugs.java.com/bugdatabase/view_bug.do?bug_id=8054978)
           // But our workaround fixes this and we have the correct duration
-          assert(""""PT-0.5S"""".fromJson[JDuration].map(_.toString))(isRight(equalTo("PT-0.5S")))
+          assert(""""PT-0.5S"""".fromJson[JDuration].map(_.toString))(isRight(equalTo("PT-0.5S"))) &&
+          assert(""""INVALID"""".fromJson[JDuration])(isLeft(containsString("text cannot be parsed to a Duration")))
         }
       ),
       suite("fromJsonAST")(

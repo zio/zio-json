@@ -1,8 +1,6 @@
 package zio.json
 
-import java.time.{ Duration => JDuration }
 import java.util.UUID
-import java.util.regex.Pattern
 
 import scala.annotation._
 import scala.collection.{ immutable, mutable }
@@ -12,6 +10,8 @@ import zio.Chunk
 import zio.json.JsonDecoder.JsonError
 import zio.json.ast.Json
 import zio.json.internal._
+import zio.json.javatime.DurationParser
+import zio.json.javatime.DurationParser.DurationParseException
 
 /**
  * A `JsonDecoder[A]` instance has the ability to decode JSON to values of type `A`, potentially
@@ -622,7 +622,7 @@ private[json] trait DecoderLowPriority3 {
   import java.time.zone.ZoneRulesException
 
   implicit val dayOfWeek: JsonDecoder[DayOfWeek] = mapStringOrFail(s => parseJavaTime(DayOfWeek.valueOf, s.toUpperCase))
-  implicit val duration: JsonDecoder[Duration]   = mapStringOrFail(JavaTimeWorkaround.duration)
+  implicit val duration: JsonDecoder[Duration]   = mapStringOrFail(parseJavaTime(DurationParser.unsafeParse, _))
   implicit val instant: JsonDecoder[Instant]     = mapStringOrFail(parseJavaTime(Instant.parse, _))
 
   implicit val localDate: JsonDecoder[LocalDate] =
@@ -659,9 +659,10 @@ private[json] trait DecoderLowPriority3 {
     try {
       Right(f(s))
     } catch {
-      case zre: ZoneRulesException      => Left(s"${s} is not a valid ISO-8601 format, ${zre.getMessage}")
-      case dtpe: DateTimeParseException => Left(s"${s} is not a valid ISO-8601 format, ${dtpe.getMessage}")
-      case dte: DateTimeException       => Left(s"${s} is not a valid ISO-8601 format, ${dte.getMessage}")
+      case zre: ZoneRulesException      => Left(s"$s is not a valid ISO-8601 format, ${zre.getMessage}")
+      case dtpe: DateTimeParseException => Left(s"$s is not a valid ISO-8601 format, ${dtpe.getMessage}")
+      case dte: DateTimeException       => Left(s"$s is not a valid ISO-8601 format, ${dte.getMessage}")
+      case dpe: DurationParseException  => Left(s"$s is not a valid ISO-8601 format, ${dpe.message}")
       case ex: Exception                => Left(ex.getMessage)
     }
 
@@ -674,128 +675,6 @@ private[json] trait DecoderLowPriority3 {
           Left(s"Invalid UUID: ${iae.getMessage}")
       }
     }
-}
-
-// The code in JavaTimeWorkaround is a more Scala-friendly port of the Duration.parse method from JDK 16 to cope with
-// a bug resulting in incorrect durations in JDK 8 (see https://bugs.java.com/bugdatabase/view_bug.do?bug_id=8054978)
-private[json] object JavaTimeWorkaround {
-  private val DurationPattern: Pattern =
-    "([-+]?)P(?:([-+]?[0-9]+)D)?(T(?:([-+]?[0-9]+)H)?(?:([-+]?[0-9]+)M)?(?:([-+]?[0-9]+)(?:[.,]([0-9]{0,9}))?S)?)?".r.pattern
-
-  private val HOURS_PER_DAY      = 24
-  private val MINUTES_PER_HOUR   = 60
-  private val SECONDS_PER_MINUTE = 60
-  private val SECONDS_PER_HOUR   = SECONDS_PER_MINUTE * MINUTES_PER_HOUR
-  private val SECONDS_PER_DAY    = SECONDS_PER_HOUR * HOURS_PER_DAY
-  private val NANOS_PER_SECOND   = 1000000000L
-
-  def duration(text: CharSequence): Either[String, JDuration] =
-    if (text == null) Left("input is null")
-    else {
-      val matcher = DurationPattern.matcher(text)
-      if (matcher.matches()) {
-        val negate = charMatch(text, matcher.start(1), matcher.end(1), '-')
-
-        val dayStart = matcher.start(2)
-        val dayEnd   = matcher.end(2)
-
-        val hourStart = matcher.start(4)
-        val hourEnd   = matcher.end(4)
-
-        val minuteStart = matcher.start(5)
-        val minuteEnd   = matcher.end(5)
-
-        val secondStart = matcher.start(6)
-        val secondEnd   = matcher.end(6)
-
-        val fractionStart = matcher.start(7)
-        val fractionEnd   = matcher.end(7)
-
-        if (dayStart >= 0 || hourStart >= 0 || minuteStart >= 0 || secondStart >= 0) {
-          val daysAsSecs   = parseNumber(text, dayStart, dayEnd, SECONDS_PER_DAY, "days")
-          val hoursAsSecs  = parseNumber(text, hourStart, hourEnd, SECONDS_PER_HOUR, "hours")
-          val minsAsSecs   = parseNumber(text, minuteStart, minuteEnd, SECONDS_PER_MINUTE, "minutes")
-          val seconds      = parseNumber(text, secondStart, secondEnd, 1, "seconds")
-          val negativeSecs = secondStart >= 0 && text.charAt(secondStart) == '-'
-          val nanos        = parseFraction(text, fractionStart, fractionEnd, if (negativeSecs) -1 else 1)
-
-          for {
-            daysAsSecs  <- daysAsSecs
-            hoursAsSecs <- hoursAsSecs
-            minsAsSecs  <- minsAsSecs
-            seconds     <- seconds
-            nanos       <- nanos
-            duration    <- createDuration(negate, daysAsSecs, hoursAsSecs, minsAsSecs, seconds, nanos)
-          } yield duration
-        } else Left("input matched pattern for Duration but day/hour/minute/second fraction was less than 0")
-      } else Left("input cannot be parsed to a Duration")
-    }
-
-  private def charMatch(text: CharSequence, start: Int, end: Int, c: Char): Boolean =
-    start >= 0 && end == start + 1 && text.charAt(start) == c
-
-  private def parseNumber(
-    text: CharSequence,
-    start: Int,
-    end: Int,
-    multiplier: Int,
-    errorText: String
-  ): Either[String, Long] =
-    // regex limits to [-+]?[0-9]+
-    if (start < 0 || end < 0) Right(0L)
-    else
-      try {
-        val long = java.lang.Long.parseLong(text.subSequence(start, end).toString, 10)
-        Right(Math.multiplyExact(long, multiplier))
-      } catch {
-        case _: NumberFormatException =>
-          Left(s"input cannot be parsed to a number whilst trying to parse Duration: $errorText")
-
-        case _: ArithmeticException =>
-          Left(s"input cannot be parsed to a number whilst trying to parse Duration: $errorText")
-      }
-
-  private def parseFraction(text: CharSequence, start: Int, end: Int, negate: Int): Either[String, Int] =
-    // regex limits to [0-9]{0,9}
-    if (start < 0 || end < 0 || end - start == 0) Right(0)
-    else
-      try {
-        var fraction = text.subSequence(start, end).toString.toInt
-        // for number strings smaller than 9 digits, interpret as if there were trailing zeros
-        (end - start).until(9).foreach(_ => fraction *= 10)
-        Right(fraction * negate)
-      } catch {
-        case _: NumberFormatException =>
-          Left("input cannot be parsed to a fraction whilst trying to parse Duration")
-
-        case _: ArithmeticException =>
-          Left("input cannot be parsed to a fraction whilst trying to parse Duration")
-      }
-
-  private def createDuration(
-    negate: Boolean,
-    daysAsSecs: Long,
-    hoursAsSecs: Long,
-    minsAsSecs: Long,
-    secs: Long,
-    nanos: Long
-  ): Either[String, JDuration] =
-    try {
-      val seconds  = Math.addExact(daysAsSecs, Math.addExact(hoursAsSecs, Math.addExact(minsAsSecs, secs)))
-      val duration = ofSecondsAndNanos(seconds, nanos)
-      if (negate) Right(duration.negated())
-      else Right(duration)
-    } catch {
-      case e: ArithmeticException =>
-        Left(s"failed to create a Duration: ${e.getMessage}")
-    }
-
-  private def ofSecondsAndNanos(seconds: Long, nanoAdjustment: Long): JDuration = {
-    val secs = Math.addExact(seconds, Math.floorDiv(nanoAdjustment, NANOS_PER_SECOND))
-    val nos  = Math.floorMod(nanoAdjustment, NANOS_PER_SECOND).toInt
-    if ((secs | nos) == 0) JDuration.ZERO
-    else JDuration.ofSeconds(seconds, nanoAdjustment)
-  }
 }
 
 /** When decoding a JSON Object, we only allow the keys that implement this interface. */
