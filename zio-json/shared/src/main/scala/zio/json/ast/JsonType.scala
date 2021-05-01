@@ -2,9 +2,6 @@ package zio.json.ast
 
 sealed trait JsonType[A] {
   def get(json: Json): Either[String, A]
-
-  // TODO: Eliminate type bound as use asJson
-  def asJson: A => Json
 }
 
 object JsonType {
@@ -14,8 +11,6 @@ object JsonType {
         case Json.Null => Right(Json.Null)
         case _         => Left("Expected null but found " + json)
       }
-
-    def asJson = identity
   }
 
   case object Bool extends JsonType[Json.Bool] {
@@ -24,8 +19,6 @@ object JsonType {
         case x @ Json.Bool(_) => Right(x)
         case _                => Left("Expected boolean but found " + json)
       }
-
-    def asJson = identity
   }
 
   case object Obj extends JsonType[Json.Obj] {
@@ -34,8 +27,6 @@ object JsonType {
         case x @ Json.Obj(_) => Right(x)
         case _               => Left("Expected object but found " + json)
       }
-
-    def asJson = identity
   }
 
   case object Arr extends JsonType[Json.Arr] {
@@ -44,8 +35,6 @@ object JsonType {
         case x @ Json.Arr(_) => Right(x)
         case _               => Left("Expected array but found " + json)
       }
-
-    def asJson = identity
   }
 
   case object Str extends JsonType[Json.Str] {
@@ -54,8 +43,6 @@ object JsonType {
         case x @ Json.Str(_) => Right(x)
         case _               => Left("Expected string but found " + json)
       }
-
-    def asJson = identity
   }
 
   case object Num extends JsonType[Json.Num] {
@@ -64,7 +51,5 @@ object JsonType {
         case x @ Json.Num(_) => Right(x)
         case _               => Left("Expected number but found " + json)
       }
-
-    def asJson = identity
   }
 }

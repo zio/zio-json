@@ -1,23 +1,23 @@
 package zio.json.ast
 
-sealed trait JsonCursor[From, To <: Json] { self =>
-  final def >>>[Next <: Json](that: JsonCursor[To, Next]) =
+sealed trait JsonCursor[-From, +To <: Json] { self =>
+  final def >>>[To0 >: To <: Json, Next <: Json](that: JsonCursor[To0, Next]): JsonCursor[To0, Next] =
     JsonCursor.AndThen(self, that)
 
-  def isArray: JsonCursor[Json, Json.Arr] = filterType(JsonType.Arr)
+  final def isArray: JsonCursor[Json, Json.Arr] = filterType(JsonType.Arr)
 
-  def isBool: JsonCursor[Json, Json.Bool] = filterType(JsonType.Bool)
+  final def isBool: JsonCursor[Json, Json.Bool] = filterType(JsonType.Bool)
 
-  def filterType[B <: Json](jsonType: JsonType[B]): JsonCursor[Json, B] =
+  final def filterType[B <: Json](jsonType: JsonType[B]): JsonCursor[Json, B] =
     JsonCursor.FilterType(self, jsonType)
 
-  def isNull: JsonCursor[Json, Json.Null] = filterType(JsonType.Null)
+  final def isNull: JsonCursor[Json, Json.Null] = filterType(JsonType.Null)
 
-  def isNumber: JsonCursor[Json, Json.Num] = filterType(JsonType.Num)
+  final def isNumber: JsonCursor[Json, Json.Num] = filterType(JsonType.Num)
 
-  def isObject: JsonCursor[Json, Json.Obj] = filterType(JsonType.Obj)
+  final def isObject: JsonCursor[Json, Json.Obj] = filterType(JsonType.Obj)
 
-  def isString: JsonCursor[Json, Json.Str] = filterType(JsonType.Str)
+  final def isString: JsonCursor[Json, Json.Str] = filterType(JsonType.Str)
 }
 
 object JsonCursor {
@@ -51,10 +51,14 @@ object JsonCursor {
   val isString: JsonCursor[Json, Json.Str] = filter(JsonType.Str)
 
   case object Identity extends JsonCursor[Json, Json]
+
   final case class AndThen[I <: Json, O <: Json](parent: JsonCursor[_, I], next: JsonCursor[I, O])
       extends JsonCursor[I, O]
+
   final case class DownField(parent: JsonCursor[_, Json.Obj], name: String) extends JsonCursor[Json.Obj, Json]
+
   final case class DownElement(parent: JsonCursor[_, Json.Arr], index: Int) extends JsonCursor[Json.Arr, Json]
+
   final case class FilterType[A <: Json](parent: JsonCursor[_, _ <: Json], jsonType: JsonType[A])
       extends JsonCursor[Json, A]
 }
