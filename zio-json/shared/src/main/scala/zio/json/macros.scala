@@ -57,11 +57,6 @@ final case class jsonHint(name: String) extends Annotation
 final class jsonNoExtraFields extends Annotation
 
 /**
- * If used on a case class, will exclude fields from the resulting JSON.
- */
-final case class jsonExcludeFields(fields: List[String]) extends Annotation
-
-/**
  * If used on a case class field, will exclude it from the resulting JSON.
  */
 final class jsonExclude extends Annotation
@@ -319,16 +314,11 @@ object DeriveJsonEncoder {
       }
     else
       new JsonEncoder[A] {
-        val excluded = ctx.annotations.collectFirst { case x: jsonExcludeFields =>
-          x.fields
-        }
-        val params = ctx.parameters.filter(p =>
-          (!excluded.isDefined|| !excluded.get.contains(p.label)) &&
-          p.annotations.collectFirst { case _: jsonExclude => () }.isDefined == false).toArray
+        val params = ctx.parameters
+          .filter(p => p.annotations.collectFirst { case _: jsonExclude => () }.isDefined == false)
+          .toArray
 
-        val names: Array[String] = params
-          .filter { p=> p.annotations.collectFirst { case _: jsonExclude => () }.isDefined == false }
-          .map { p =>
+        val names: Array[String] = params.map { p =>
           p.annotations.collectFirst { case jsonField(name) =>
             name
           }.getOrElse(p.label)
