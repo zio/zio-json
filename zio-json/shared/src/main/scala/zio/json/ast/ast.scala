@@ -75,9 +75,26 @@ sealed abstract class Json { self =>
     foldDown(initial)(total)
   }
 
-  final def foldUp[A](initial: A)(f: (A, Json) => A): A = ???
+  final def foldUp[A](initial: A)(f: (A, Json) => A): A = {
+    // bottom (leaves) up
+    val a = self match {
+      case Obj(fields) =>
+        fields.map(_._2).foldLeft(initial)((acc, next) => next.foldUp(acc)(f))
 
-  final def foldUpSome[A](initial: A)(pf: PartialFunction[(A, Json), A]): A = ???
+      case Arr(elements) =>
+        elements.foldLeft(initial)((acc, next) => next.foldUp(acc)(f))
+
+      case _ =>
+        initial
+    }
+    f(a, self)
+  }
+
+  final def foldUpSome[A](initial: A)(pf: PartialFunction[(A, Json), A]): A = {
+    val lifted = pf.lift
+    val total  = (a: A, json: Json) => lifted((a, json)).getOrElse(a)
+    foldUp(initial)(total)
+  }
 
   final def get[A <: Json](cursor: JsonCursor[_, A]): Either[String, A] =
     cursor match {

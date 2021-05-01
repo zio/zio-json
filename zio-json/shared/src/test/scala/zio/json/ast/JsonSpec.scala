@@ -62,6 +62,44 @@ object JsonSpec extends DefaultRunnableSpec {
           assert(obj1.hashCode)(equalTo(obj2.hashCode))
         }
       ),
+      suite("foldUp")(
+        test("folds the structure bottom-up (starting at the leaves)") {
+          val obj =
+            Json.Obj(
+              "one" -> Json.Obj(
+                "three" -> Json.Obj(
+                  "five" -> Json.Obj(
+                    "seven" -> Json.Arr(Json.Str("eight")),
+                    "six"   -> Json.Num(6)
+                  ),
+                  "four" -> Json.Null
+                ),
+                "two" -> Json.Bool(true)
+              )
+            )
+          val result = obj.foldUp(Vector.empty[String])(collectObjKeysAndArrElements)
+          assert(result)(equalTo(Vector("eight", "seven", "six", "five", "four", "three", "two", "one")))
+        }
+      ),
+      suite("foldDown")(
+        test("folds the structure top-down (starting at the root)") {
+          val obj =
+            Json.Obj(
+              "one" -> Json.Obj(
+                "two" -> Json.Bool(true),
+                "three" -> Json.Obj(
+                  "four" -> Json.Null,
+                  "five" -> Json.Obj(
+                    "six"   -> Json.Num(6),
+                    "seven" -> Json.Arr(Json.Str("eight"))
+                  )
+                )
+              )
+            )
+          val result = obj.foldDown(Vector.empty[String])(collectObjKeysAndArrElements)
+          assert(result)(equalTo(Vector("one", "two", "three", "four", "five", "six", "seven", "eight")))
+        }
+      ),
       test("arrays with the same elements in a different order will not have the same hashCode") {
         val arr1 = Json.Arr(Json.Str("one"), Json.Obj("two" -> Json.Num(2)), Json.Num(3))
         val arr2 = Json.Arr(Json.Num(3), Json.Str("one"), Json.Obj("two" -> Json.Num(2)))
@@ -127,4 +165,14 @@ object JsonSpec extends DefaultRunnableSpec {
         )
       )
     )
+
+  def collectObjKeysAndArrElements(acc: Vector[String], next: Json): Vector[String] =
+    next match {
+      case Json.Obj(fields)   => acc ++ fields.map(_._1)
+      case Json.Arr(elements) => acc ++ elements.collect { case Json.Str(s) => s }.toVector
+      case Json.Bool(_)       => acc
+      case Json.Str(_)        => acc
+      case Json.Num(_)        => acc
+      case Json.Null          => acc
+    }
 }
