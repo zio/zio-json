@@ -41,6 +41,7 @@ object EncoderSpec extends DefaultRunnableSpec {
             assert(1L.toJson)(equalTo("1")) &&
             assert(new java.math.BigInteger("1").toJson)(equalTo("1")) &&
             assert(new java.math.BigInteger(exampleBigIntStr).toJson)(equalTo(exampleBigIntStr)) &&
+            assert(BigInt(exampleBigIntStr).toJson)(equalTo(exampleBigIntStr)) &&
             assert(BigDecimal(exampleBigDecimalStr).toJson)(equalTo(exampleBigDecimalStr)) &&
             assert(1.0f.toJson)(equalTo("1.0")) &&
             assert(1.0d.toJson)(equalTo("1.0"))
@@ -83,6 +84,9 @@ object EncoderSpec extends DefaultRunnableSpec {
           assert(Map("hello" -> Some("world"), "goodbye" -> None).toJsonPretty)(
             equalTo("{\n  \"hello\" : \"world\"\n}")
           )
+        },
+        test("Map, custom keys") {
+          assert(Map(1 -> "a").toJson)(equalTo("""{"1":"a"}"""))
         },
         test("java.util.UUID") {
           assert(UUID.fromString("e142f1aa-6e9e-4352-adfe-7e6eb9814ccd").toJson)(

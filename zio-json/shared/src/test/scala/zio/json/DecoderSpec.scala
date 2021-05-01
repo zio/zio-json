@@ -1,5 +1,6 @@
 package testzio.json
 
+import java.time.{ Duration => JDuration }
 import java.util.UUID
 
 import scala.collection.{ immutable, mutable }
@@ -162,6 +163,11 @@ object DecoderSpec extends DefaultRunnableSpec {
 
           assert(ok.fromJson[UUID])(isRight(equalTo(UUID.fromString("64d7c38d-2afd-4004-9832-4e700fe400f8")))) &&
           assert(bad.fromJson[UUID])(isLeft(containsString("Invalid UUID")))
+        },
+        test("java.time.Duration") {
+          // We simulate a failure scenario if we used Duration.parse directly (https://bugs.java.com/bugdatabase/view_bug.do?bug_id=8054978)
+          // But our workaround fixes this and we have the correct duration
+          assert(""""PT-0.5S"""".fromJson[JDuration].map(_.toString))(isRight(equalTo("PT-0.5S")))
         }
       ),
       suite("fromJsonAST")(
@@ -250,6 +256,12 @@ object DecoderSpec extends DefaultRunnableSpec {
           val expected = Map("5XL" -> 3, "2XL" -> 14, "XL" -> 159)
 
           assert(json.as[Map[String, Int]])(isRight(equalTo(expected)))
+        },
+        test("Map, custom keys") {
+          val json     = Json.Obj("1" -> Json.Str("a"), "2" -> Json.Str("b"))
+          val expected = Map(1 -> "a", 2 -> "b")
+
+          assert(json.as[Map[Int, String]])(isRight(equalTo(expected)))
         },
         test("zio.Chunk") {
           val json     = Json.Arr(Json.Str("5XL"), Json.Str("2XL"), Json.Str("XL"))

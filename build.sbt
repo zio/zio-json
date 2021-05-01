@@ -32,7 +32,7 @@ addCommandAlias("prepare", "fix; fmt")
 addCommandAlias("testJVM", "zioJsonJVM/test; zioJsonYaml/test; zioJsonMacrosJVM/test; zioJsonInteropHttp4s/test")
 addCommandAlias("testJS", "zioJsonJS/test")
 
-val zioVersion = "1.0.6"
+val zioVersion = "1.0.7"
 
 lazy val root = project
   .in(file("."))
@@ -66,7 +66,7 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform)
     libraryDependencies ++= Seq(
       "com.propensive"                        %%% "magnolia"                % "0.17.0",
       "org.scalaz"                            %%% "scalaz-core"             % "7.3.3" intransitive (),
-      "eu.timepit"                            %%% "refined"                 % "0.9.23" intransitive (),
+      "eu.timepit"                            %%% "refined"                 % "0.9.24" intransitive (),
       "org.scala-lang"                          % "scala-reflect"           % scalaVersion.value % Provided,
       "dev.zio"                               %%% "zio"                     % zioVersion,
       "dev.zio"                               %%% "zio-streams"             % zioVersion,
@@ -167,6 +167,12 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform)
     inConfig(Jmh)(org.scalafmt.sbt.ScalafmtPlugin.scalafmtConfigSettings)
   )
   .settings(testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework"))
+  .jsSettings(
+    libraryDependencies ++= Seq(
+      "io.github.cquiroz" %%% "scala-java-time"      % "2.2.1",
+      "io.github.cquiroz" %%% "scala-java-time-tzdb" % "2.2.1"
+    )
+  )
   .jvmSettings(
     libraryDependencies ++= Seq(
       "ai.x"          %% "play-json-extensions" % "0.42.0" % "test",
@@ -227,8 +233,8 @@ lazy val zioJsonInteropHttp4s = project
     libraryDependencies ++= Seq(
       "org.http4s"    %% "http4s-dsl"       % "0.21.22",
       "dev.zio"       %% "zio"              % zioVersion,
-      "org.typelevel" %% "cats-effect"      % "2.4.1",
-      "dev.zio"       %% "zio-interop-cats" % "2.4.1.0"  % "test",
+      "org.typelevel" %% "cats-effect"      % "2.5.0",
+      "dev.zio"       %% "zio-interop-cats" % "2.4.0.0"  % "test",
       "dev.zio"       %% "zio-test"         % zioVersion % "test",
       "dev.zio"       %% "zio-test-sbt"     % zioVersion % "test"
     ),
@@ -253,7 +259,7 @@ lazy val docs = project
     scalacOptions -= "-Xfatal-warnings",
     libraryDependencies ++= Seq(
       "dev.zio"    %% "zio"     % zioVersion,
-      "eu.timepit" %% "refined" % "0.9.23"
+      "eu.timepit" %% "refined" % "0.9.24"
     ),
     ScalaUnidoc / unidoc / unidocProjectFilter := inProjects(root),
     ScalaUnidoc / unidoc / target := (LocalRootProject / baseDirectory).value / "website" / "static" / "api",
