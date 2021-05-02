@@ -8,7 +8,7 @@ import java.util.regex.Pattern
 private[json] object DurationParser {
   // We are not allowed to instantiate java.time.format Exceptions as we cross-compile for JavaScript
   final case class DurationParseException(message: String, parsed: CharSequence, errorIndex: Int)
-      extends RuntimeException
+      extends RuntimeException(message)
 
   private val DurationPattern: Pattern =
     "([-+]?)P(?:([-+]?[0-9]+)D)?(T(?:([-+]?[0-9]+)H)?(?:([-+]?[0-9]+)M)?(?:([-+]?[0-9]+)(?:[.,]([0-9]{0,9}))?S)?)?".r.pattern

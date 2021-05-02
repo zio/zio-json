@@ -32,7 +32,8 @@ object JavaTimeSpec extends DefaultRunnableSpec {
           assert(Duration.ofMinutes(1440).toJson)(equalToStringified("PT24H")) &&
           assert(Duration.ofSeconds(Long.MaxValue, 999999999L).toJson)(
             equalToStringified("PT2562047788015215H30M7.999999999S")
-          )
+          ) &&
+          assert(""""PT-0.5S"""".fromJson[Duration].map(_.toString))(isRight(equalTo("PT-0.5S")))
         },
         test("Instant") {
           val n = Instant.now()
@@ -229,15 +230,75 @@ object JavaTimeSpec extends DefaultRunnableSpec {
           assert(stringify("1999-01").fromJson[YearMonth])(isRight(equalTo(YearMonth.of(1999, 1))))
         },
         test("ZonedDateTime") {
+          def zdtAssert(actual: String, expected: ZonedDateTime): TestResult =
+            assert(stringify(actual).fromJson[ZonedDateTime].map(_.toString))(isRight(equalTo(expected.toString)))
+
           val n   = ZonedDateTime.now()
           val ld  = LocalDateTime.of(2020, 1, 1, 12, 36, 0)
           val est = ZonedDateTime.of(ld, ZoneId.of("America/New_York"))
           val utc = ZonedDateTime.of(ld, ZoneId.of("Etc/UTC"))
-          assert(stringify(n).fromJson[ZonedDateTime])(isRight(equalTo(n))) &&
-          assert(stringify("2020-01-01T12:36-05:00[America/New_York]").fromJson[ZonedDateTime])(
-            isRight(equalTo(est))
+
+          zdtAssert(n.toString, n) &&
+          zdtAssert("2020-01-01T12:36-05:00[America/New_York]", est) &&
+          zdtAssert("2020-01-01T12:36Z[Etc/UTC]", utc) &&
+          zdtAssert(
+            "2018-02-01T00:00Z",
+            ZonedDateTime.of(LocalDateTime.of(2018, 2, 1, 0, 0, 0), ZoneOffset.UTC)
           ) &&
-          assert(stringify("2020-01-01T12:36Z[Etc/UTC]").fromJson[ZonedDateTime])(isRight(equalTo(utc)))
+          zdtAssert(
+            "2018-03-01T00:00:00Z",
+            ZonedDateTime.of(LocalDateTime.of(2018, 3, 1, 0, 0, 0), ZoneOffset.UTC)
+          ) &&
+          zdtAssert(
+            "2018-04-01T00:00:00.000Z",
+            ZonedDateTime.of(LocalDateTime.of(2018, 4, 1, 0, 0, 0), ZoneOffset.UTC)
+          ) &&
+          zdtAssert(
+            "+999999999-12-31T23:59:59.999999999+18:00",
+            ZonedDateTime.of(LocalDateTime.MAX, ZoneOffset.MAX)
+          ) &&
+          zdtAssert(
+            "+999999999-12-31T23:59:59.999999999-18:00",
+            ZonedDateTime.of(LocalDateTime.MAX, ZoneOffset.MIN)
+          ) &&
+          zdtAssert("-999999999-01-01T00:00:00+18:00", ZonedDateTime.of(LocalDateTime.MIN, ZoneOffset.MAX)) &&
+          zdtAssert("-999999999-01-01T00:00:00-18:00", ZonedDateTime.of(LocalDateTime.MIN, ZoneOffset.MIN)) &&
+          zdtAssert(
+            "2012-10-28T02:00:00+01:00[Europe/Berlin]",
+            OffsetDateTime.parse("2012-10-28T02:00:00+01:00").atZoneSameInstant(ZoneId.of("Europe/Berlin"))
+          ) &&
+          zdtAssert(
+            "2018-03-25T02:30+01:00[Europe/Warsaw]",
+            ZonedDateTime.parse("2018-03-25T02:30+01:00[Europe/Warsaw]")
+          ) &&
+          zdtAssert(
+            "2018-03-25T02:30+00:00[Europe/Warsaw]",
+            OffsetDateTime.parse("2018-03-25T02:30+00:00").atZoneSameInstant(ZoneId.of("Europe/Warsaw"))
+          ) &&
+          zdtAssert(
+            "2018-03-25T02:30+02:00[Europe/Warsaw]",
+            OffsetDateTime.parse("2018-03-25T02:30+02:00").atZoneSameInstant(ZoneId.of("Europe/Warsaw"))
+          ) &&
+          zdtAssert(
+            "2018-03-25T02:30+03:00[Europe/Warsaw]",
+            OffsetDateTime.parse("2018-03-25T02:30+03:00").atZoneSameInstant(ZoneId.of("Europe/Warsaw"))
+          ) &&
+          zdtAssert(
+            "2018-10-28T02:30+00:00[Europe/Warsaw]",
+            OffsetDateTime.parse("2018-10-28T02:30+00:00").atZoneSameInstant(ZoneId.of("Europe/Warsaw"))
+          ) &&
+          zdtAssert(
+            "2018-10-28T02:30+01:00[Europe/Warsaw]",
+            OffsetDateTime.parse("2018-10-28T02:30+01:00").atZoneSameInstant(ZoneId.of("Europe/Warsaw"))
+          ) &&
+          zdtAssert(
+            "2018-10-28T02:30+02:00[Europe/Warsaw]",
+            OffsetDateTime.parse("2018-10-28T02:30+02:00").atZoneSameInstant(ZoneId.of("Europe/Warsaw"))
+          ) &&
+          zdtAssert(
+            "2018-10-28T02:30+03:00[Europe/Warsaw]",
+            OffsetDateTime.parse("2018-10-28T02:30+03:00").atZoneSameInstant(ZoneId.of("Europe/Warsaw"))
+          )
         },
         test("ZoneId") {
           assert(stringify("America/New_York").fromJson[ZoneId])(
@@ -271,6 +332,9 @@ object JavaTimeSpec extends DefaultRunnableSpec {
           assert(stringify("foody").fromJson[DayOfWeek])(
             isLeft(equalTo("(No enum constant java.time.DayOfWeek.FOODY)"))
           )
+        },
+        test("Duration") {
+          assert(""""INVALID"""".fromJson[Duration])(isLeft(containsString("text cannot be parsed to a Duration")))
         },
         test("LocalDate") {
           assert(stringify("01/01/2020").fromJson[LocalDate])(

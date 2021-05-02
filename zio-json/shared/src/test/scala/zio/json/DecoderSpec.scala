@@ -1,6 +1,5 @@
 package testzio.json
 
-import java.time.{ Duration => JDuration }
 import java.util.UUID
 
 import scala.collection.{ immutable, mutable }
@@ -163,12 +162,6 @@ object DecoderSpec extends DefaultRunnableSpec {
 
           assert(ok.fromJson[UUID])(isRight(equalTo(UUID.fromString("64d7c38d-2afd-4004-9832-4e700fe400f8")))) &&
           assert(bad.fromJson[UUID])(isLeft(containsString("Invalid UUID")))
-        },
-        test("java.time.Duration") {
-          // We simulate a failure scenario if we used Duration.parse directly (https://bugs.java.com/bugdatabase/view_bug.do?bug_id=8054978)
-          // But our workaround fixes this and we have the correct duration
-          assert(""""PT-0.5S"""".fromJson[JDuration].map(_.toString))(isRight(equalTo("PT-0.5S"))) &&
-          assert(""""INVALID"""".fromJson[JDuration])(isLeft(containsString("text cannot be parsed to a Duration")))
         }
       ),
       suite("fromJsonAST")(

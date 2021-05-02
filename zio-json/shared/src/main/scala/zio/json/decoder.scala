@@ -10,8 +10,8 @@ import zio.Chunk
 import zio.json.JsonDecoder.JsonError
 import zio.json.ast.Json
 import zio.json.internal._
-import zio.json.javatime.DurationParser
 import zio.json.javatime.DurationParser.DurationParseException
+import zio.json.javatime.{ DurationParser, ZonedDateTimeParser }
 
 /**
  * A `JsonDecoder[A]` instance has the ability to decode JSON to values of type `A`, potentially
@@ -648,7 +648,8 @@ private[json] trait DecoderLowPriority3 {
     mapStringOrFail(parseJavaTime(YearMonth.parse, _))
 
   implicit val zonedDateTime: JsonDecoder[ZonedDateTime] =
-    mapStringOrFail(parseJavaTime(ZonedDateTime.parse(_, DateTimeFormatter.ISO_ZONED_DATE_TIME), _))
+    mapStringOrFail(parseJavaTime(ZonedDateTimeParser.unsafeParse, _))
+
   implicit val zoneId: JsonDecoder[ZoneId] = mapStringOrFail(parseJavaTime(ZoneId.of, _))
 
   implicit val zoneOffset: JsonDecoder[ZoneOffset] =
@@ -662,7 +663,7 @@ private[json] trait DecoderLowPriority3 {
       case zre: ZoneRulesException      => Left(s"$s is not a valid ISO-8601 format, ${zre.getMessage}")
       case dtpe: DateTimeParseException => Left(s"$s is not a valid ISO-8601 format, ${dtpe.getMessage}")
       case dte: DateTimeException       => Left(s"$s is not a valid ISO-8601 format, ${dte.getMessage}")
-      case dpe: DurationParseException  => Left(s"$s is not a valid ISO-8601 format, ${dpe.message}")
+      case dpe: DurationParseException  => Left(s"$s is not a valid ISO-8601 format, ${dpe.getMessage}")
       case ex: Exception                => Left(ex.getMessage)
     }
 
