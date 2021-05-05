@@ -45,7 +45,7 @@ object NeoJmhPlugin extends AutoPlugin {
   override def projectConfigurations = Seq(Jmh, JmhInternal)
 
   override def buildSettings = Seq(
-    jmhVersion := "1.27",
+    jmhVersion := "1.30",
     jmhExtrasVersion := "0.3.7"
   )
 
