@@ -115,9 +115,6 @@ sealed abstract class Json { self =>
 
       case JsonCursor.FilterType(parent, t @ jsonType) =>
         self.get(parent).flatMap(x => jsonType.get(x))
-
-      case JsonCursor.AndThen(parent, next) =>
-        self.get(parent).flatMap(x => x.get(next))
     }
 
   override final def hashCode: Int =

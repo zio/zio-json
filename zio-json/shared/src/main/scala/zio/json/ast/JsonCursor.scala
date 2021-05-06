@@ -1,8 +1,20 @@
 package zio.json.ast
 
 sealed trait JsonCursor[-From, +To <: Json] { self =>
-  final def >>>[To0 >: To <: Json, Next <: Json](that: JsonCursor[To0, Next]): JsonCursor[To0, Next] =
-    JsonCursor.AndThen(self, that)
+  final def >>>[Next <: Json](that: JsonCursor[To, Next]): JsonCursor[From, Next] =
+    (that.asInstanceOf[JsonCursor[_ <: Json, _ <: Json]] match {
+      case JsonCursor.Identity =>
+        that
+
+      case JsonCursor.DownField(oldParent @ _, name) =>
+        JsonCursor.DownField(self.asInstanceOf[JsonCursor[Json, Json.Obj]], name)
+
+      case JsonCursor.DownElement(oldParent @ _, index) =>
+        JsonCursor.DownElement(self.asInstanceOf[JsonCursor[Json, Json.Arr]], index)
+
+      case JsonCursor.FilterType(oldParent @ _, tpe) =>
+        JsonCursor.FilterType(self.asInstanceOf[JsonCursor[Json, Json]], tpe)
+    }).asInstanceOf[JsonCursor[From, Next]]
 
   final def isArray: JsonCursor[Json, Json.Arr] = filterType(JsonType.Arr)
 
@@ -18,17 +30,18 @@ sealed trait JsonCursor[-From, +To <: Json] { self =>
   final def isObject: JsonCursor[Json, Json.Obj] = filterType(JsonType.Obj)
 
   final def isString: JsonCursor[Json, Json.Str] = filterType(JsonType.Str)
+
+  final def field(field: String)(implicit ev: To <:< Json.Obj): JsonCursor.DownField =
+    JsonCursor.DownField(self.widenTo[Json.Obj], field)
+
+  final def element(index: Int)(implicit ev: To <:< Json.Arr): JsonCursor.DownElement =
+    JsonCursor.DownElement(self.widenTo[Json.Arr], index)
+
+  final private def widenTo[To1 <: Json](implicit ev: To <:< To1): JsonCursor[From, To1] =
+    self.asInstanceOf[JsonCursor[From, To1]]
 }
 
 object JsonCursor {
-  implicit class JsonCursorObjOps[From](cursor: JsonCursor[From, Json.Obj]) {
-    def field(field: String): DownField = JsonCursor.DownField(cursor, field)
-  }
-
-  implicit class JsonCursorArrOps[From](cursor: JsonCursor[From, Json.Arr]) {
-    def element(element: Int): DownElement = JsonCursor.DownElement(cursor, element)
-  }
-
   def element(index: Int): JsonCursor[Json.Arr, Json] = DownElement(Identity.isArray, index)
 
   def field(name: String): JsonCursor[Json.Obj, Json] = DownField(Identity.isObject, name)
@@ -51,9 +64,6 @@ object JsonCursor {
   val isString: JsonCursor[Json, Json.Str] = filter(JsonType.Str)
 
   case object Identity extends JsonCursor[Json, Json]
-
-  final case class AndThen[I <: Json, O <: Json](parent: JsonCursor[_, I], next: JsonCursor[I, O])
-      extends JsonCursor[I, O]
 
   final case class DownField(parent: JsonCursor[_, Json.Obj], name: String) extends JsonCursor[Json.Obj, Json]
 
