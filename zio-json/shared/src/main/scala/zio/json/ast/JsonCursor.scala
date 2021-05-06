@@ -18,17 +18,18 @@ sealed trait JsonCursor[-From, +To <: Json] { self =>
   final def isObject: JsonCursor[Json, Json.Obj] = filterType(JsonType.Obj)
 
   final def isString: JsonCursor[Json, Json.Str] = filterType(JsonType.Str)
+
+  final def field(field: String)(implicit ev: To <:< Json.Obj): JsonCursor.DownField =
+    JsonCursor.DownField(self.widenTo[Json.Obj], field)
+
+  final def element(index: Int)(implicit ev: To <:< Json.Arr): JsonCursor.DownElement =
+    JsonCursor.DownElement(self.widenTo[Json.Arr], index)
+
+  final private def widenTo[To1 <: Json](implicit ev: To <:< To1): JsonCursor[From, To1] =
+    self.asInstanceOf[JsonCursor[From, To1]]
 }
 
 object JsonCursor {
-  implicit class JsonCursorObjOps[From](cursor: JsonCursor[From, Json.Obj]) {
-    def field(field: String): DownField = JsonCursor.DownField(cursor, field)
-  }
-
-  implicit class JsonCursorArrOps[From](cursor: JsonCursor[From, Json.Arr]) {
-    def element(element: Int): DownElement = JsonCursor.DownElement(cursor, element)
-  }
-
   def element(index: Int): JsonCursor[Json.Arr, Json] = DownElement(Identity.isArray, index)
 
   def field(name: String): JsonCursor[Json.Obj, Json] = DownField(Identity.isObject, name)
