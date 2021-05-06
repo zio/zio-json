@@ -139,13 +139,24 @@ object JsonSpec extends DefaultRunnableSpec {
           assert(Json.Str("test").get(filterBool))(isLeft) &&
           assert(Json.Str("test").get(filterNum))(isLeft)
         },
-        test(">>>") {
+        test(">>>, object") {
           val downUser       = JsonCursor.field("user")
           val downId         = JsonCursor.field("id")
           val downUserDownId = downUser.isObject >>> downId
 
           assert(tweet.get(downUserDownId))(
             isRight(equalTo(Json.Num(6200)))
+          )
+        },
+        test(">>>, array, filterType") {
+          val downHashtags = JsonCursor.field("entities").isObject.field("hashtags")
+          val asArray      = JsonCursor.filter(JsonType.Arr)
+          val downFirst    = JsonCursor.element(0)
+
+          val combined = downHashtags >>> asArray >>> downFirst
+
+          assert(tweet.get(combined))(
+            isRight(equalTo(Json.Str("twitter")))
           )
         }
       )
