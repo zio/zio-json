@@ -112,7 +112,7 @@ object Lexer {
         }
       case '"' =>
         skipString(trace, in)
-      case '-' | '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' =>
+      case '-' | '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | 'N' | 'I' =>
         skipNumber(in)
       case c => throw UnsafeJson(JsonError.Message(s"unexpected '$c'") :: trace)
     }
@@ -270,7 +270,7 @@ object Lexer {
   // really just a way to consume the whitespace
   private def checkNumber(trace: List[JsonError], in: RetractReader): Unit = {
     (in.nextNonWhitespace(): @switch) match {
-      case '-' | '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' => ()
+      case '-' | '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | 'N' | 'I' => ()
       case c =>
         throw UnsafeJson(
           JsonError.Message(s"expected a number, got $c") :: trace
@@ -299,7 +299,7 @@ object Lexer {
   // non-positional for performance
   @inline private[this] def isNumber(c: Char): Boolean =
     (c: @switch) match {
-      case '+' | '-' | '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | '.' | 'e' | 'E' =>
+      case '+' | '-' | '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | '.' | 'e' | 'E' | 'N' | 'a' | 'I' | 'n' | 'f' | 'i' | 't' | 'y' =>
         true
       case _ => false
     }
