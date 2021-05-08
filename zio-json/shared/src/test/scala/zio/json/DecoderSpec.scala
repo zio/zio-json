@@ -26,13 +26,16 @@ object DecoderSpec extends DefaultRunnableSpec {
           )
         },
         test("Infinity") {
-          assert("Infinity".fromJson[Double])(isRight(Assertion.assertion("isPositiveInfinity")()(_.isPosInfinity)))
+          assert("\"Infinity\"".fromJson[Double])(isRight(Assertion.assertion("isPositiveInfinity")()(_.isPosInfinity)))
         },
         test("-Infinity") {
-          assert("-Infinity".fromJson[Double])(isRight(Assertion.assertion("isNegativeInfinity")()(_.isNegInfinity)))
+          assert("\"-Infinity\"".fromJson[Double])(isRight(Assertion.assertion("isNegativeInfinity")()(_.isNegInfinity)))
         },
         test("NaN") {
-          assert("NaN".fromJson[Double])(isRight(Assertion.assertion("isNaN")()(_.isNaN)))
+          assert("\"NaN\"".fromJson[Double])(isRight(Assertion.assertion("isNaN")()(_.isNaN)))
+        },
+        test("-Infinity symbol") {
+          assert("-Infinity".fromJson[Double])(isLeft(equalTo("expected a number, got -")))
         },
         test("collections") {
           val arr = """[1, 2, 3]"""

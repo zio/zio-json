@@ -112,7 +112,7 @@ object Lexer {
         }
       case '"' =>
         skipString(trace, in)
-      case '-' | '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | 'N' | 'I' =>
+      case '-' | '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' =>
         skipNumber(in)
       case c => throw UnsafeJson(JsonError.Message(s"unexpected '$c'") :: trace)
     }
@@ -229,7 +229,7 @@ object Lexer {
   }
 
   def float(trace: List[JsonError], in: RetractReader): Float = {
-    checkNumber(trace, in)
+    checkFloatingPointNumber(trace, in)
     try {
       val i = UnsafeNumbers.float_(in, false, NumberMaxBits)
       in.retract()
@@ -241,7 +241,7 @@ object Lexer {
   }
 
   def double(trace: List[JsonError], in: RetractReader): Double = {
-    checkNumber(trace, in)
+    checkFloatingPointNumber(trace, in)
     try {
       val i = UnsafeNumbers.double_(in, false, NumberMaxBits)
       in.retract()
@@ -270,13 +270,24 @@ object Lexer {
   // really just a way to consume the whitespace
   private def checkNumber(trace: List[JsonError], in: RetractReader): Unit = {
     (in.nextNonWhitespace(): @switch) match {
-      case '-' | '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | 'N' | 'I' => ()
+      case '-' | '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' => ()
       case c =>
         throw UnsafeJson(
           JsonError.Message(s"expected a number, got $c") :: trace
         )
     }
     in.retract()
+  }
+
+  private def checkFloatingPointNumber(trace: List[JsonError], in: RetractReader): Unit = {
+    (in.nextNonWhitespace(): @switch) match {
+      case '-' | '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' => in.retract()
+      case '"' => ()
+      case c =>
+        throw UnsafeJson(
+          JsonError.Message(s"expected a number, got $c") :: trace
+        )
+    }
   }
 
   // optional whitespace and then an expected character
@@ -299,7 +310,7 @@ object Lexer {
   // non-positional for performance
   @inline private[this] def isNumber(c: Char): Boolean =
     (c: @switch) match {
-      case '+' | '-' | '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | '.' | 'e' | 'E' | 'N' | 'a' | 'I' | 'n' | 'f' | 'i' | 't' | 'y' =>
+      case '+' | '-' | '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | '.' | 'e' | 'E' =>
         true
       case _ => false
     }

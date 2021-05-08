@@ -290,6 +290,7 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority0 {
       def unsafeDecode(trace: List[JsonError], in: RetractReader): A =
         (in.nextNonWhitespace(): @switch) match {
           case '"' =>
+            in.retract()
             val i = f(trace, in)
             Lexer.charOnly(trace, in, '"')
             i
