@@ -141,7 +141,14 @@ sealed abstract class Json { self =>
 
   final def intersect(that: Json): Either[String, Json] = ???
 
-  // TODO: Return Either[String, Json]
+  /**
+   * - merging objects results in a new objects with all pairs of both sides, with the right hand
+   *   side being used on key conflicts
+   *
+   * - merging arrays results in all of the individual elements being merged
+   *
+   * - scalar values will be replaced by the right hand side
+   */
   final def merge(that: Json): Json =
     (self, that) match {
       case (Obj(fields1), Obj(fields2)) =>
@@ -166,7 +173,7 @@ sealed abstract class Json { self =>
               case (Some(l), Some(r)) => l.merge(r)
               case (None, Some(r))    => r
               case (Some(l), None)    => l
-              case (None, None)       => Json.Null
+              case (None, None)       => Json.Null // can’t happen
             }
           }
         }
@@ -182,7 +189,8 @@ sealed abstract class Json { self =>
           left.merge(right)
         } ++ leftover)
 
-      case (l, r) => ???
+      case (_, r) =>
+        r
     }
 
   // TODO: Return Either[String, Json]
@@ -289,7 +297,11 @@ object Json {
     }
   }
   final case class Bool(value: Boolean) extends Json
+
   object Bool {
+    val False: Bool = Bool(false)
+    val True: Bool  = Bool(true)
+
     implicit val decoder: JsonDecoder[Bool] = new JsonDecoder[Bool] {
       def unsafeDecode(trace: List[JsonError], in: RetractReader): Bool =
         Bool(JsonDecoder.boolean.unsafeDecode(trace, in))
