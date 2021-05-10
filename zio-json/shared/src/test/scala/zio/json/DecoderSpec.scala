@@ -34,9 +34,6 @@ object DecoderSpec extends DefaultRunnableSpec {
         test("NaN") {
           assert("\"NaN\"".fromJson[Double])(isRight(Assertion.assertion("isNaN")()(_.isNaN)))
         },
-        test("-Infinity symbol") {
-          assert("-Infinity".fromJson[Double])(isLeft(equalTo("expected a number, got -")))
-        },
         test("collections") {
           val arr = """[1, 2, 3]"""
           val obj = """{ "a": 1 }"""
