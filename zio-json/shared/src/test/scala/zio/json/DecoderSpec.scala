@@ -29,7 +29,9 @@ object DecoderSpec extends DefaultRunnableSpec {
           assert("\"Infinity\"".fromJson[Double])(isRight(Assertion.assertion("isPositiveInfinity")()(_.isPosInfinity)))
         },
         test("-Infinity") {
-          assert("\"-Infinity\"".fromJson[Double])(isRight(Assertion.assertion("isNegativeInfinity")()(_.isNegInfinity)))
+          assert("\"-Infinity\"".fromJson[Double])(
+            isRight(Assertion.assertion("isNegativeInfinity")()(_.isNegInfinity))
+          )
         },
         test("NaN") {
           assert("\"NaN\"".fromJson[Double])(isRight(Assertion.assertion("isNaN")()(_.isNaN)))
