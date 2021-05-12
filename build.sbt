@@ -14,17 +14,12 @@ inThisBuild(
         "john@degoes.net",
         url("http://degoes.net")
       )
-    ),
-    pgpPassphrase := sys.env.get("PGP_PASSWORD").map(_.toArray),
-    pgpPublicRing := file("/tmp/public.asc"),
-    pgpSecretRing := file("/tmp/secret.asc"),
-    scmInfo := Some(
-      ScmInfo(url("https://github.com/zio/zio-json/"), "scm:git:git@github.com:zio/zio-json.git")
     )
   )
 )
 
-addCommandAlias("fix", "scalafixAll")
+addCommandAlias("fix", "; all compile:scalafix test:scalafix; all scalafmtSbt scalafmtAll")
+addCommandAlias("check", "; scalafmtSbtCheck; scalafmtCheckAll; compile:scalafix --check; test:scalafix --check")
 addCommandAlias("fixCheck", "scalafixAll --check")
 addCommandAlias("fmt", "all scalafmtSbt scalafmtAll")
 addCommandAlias("fmtCheck", "all scalafmtSbtCheck scalafmtCheckAll")
@@ -65,8 +60,8 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform)
     scalacOptions -= "-opt-inline-from:zio.internal.**",
     libraryDependencies ++= Seq(
       "com.propensive"                        %%% "magnolia"                % "0.17.0",
-      "org.scalaz"                            %%% "scalaz-core"             % "7.3.3" intransitive (),
-      "eu.timepit"                            %%% "refined"                 % "0.9.24" intransitive (),
+      "org.scalaz"                            %%% "scalaz-core"             % "7.3.3"            % Provided,
+      "eu.timepit"                            %%% "refined"                 % "0.9.24"           % Provided,
       "org.scala-lang"                          % "scala-reflect"           % scalaVersion.value % Provided,
       "dev.zio"                               %%% "zio"                     % zioVersion,
       "dev.zio"                               %%% "zio-streams"             % zioVersion,
@@ -179,6 +174,7 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform)
       "org.typelevel" %% "jawn-ast"             % "1.1.1"  % "test"
     )
   )
+  .enablePlugins(BuildInfoPlugin)
 
 lazy val zioJsonJS = zioJson.js
   .settings(
@@ -203,6 +199,7 @@ lazy val zioJsonYaml = project
     testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework")
   )
   .dependsOn(zioJsonJVM)
+  .enablePlugins(BuildInfoPlugin)
 
 lazy val zioJsonMacros = crossProject(JSPlatform, JVMPlatform)
   .in(file("zio-json-macros"))
@@ -241,12 +238,13 @@ lazy val zioJsonInteropHttp4s = project
     testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework")
   )
   .dependsOn(zioJsonJVM)
+  .enablePlugins(BuildInfoPlugin)
 
 lazy val docs = project
   .in(file("zio-json-docs"))
   .dependsOn(zioJsonJVM)
   .settings(
-    skip.in(publish) := true,
+    publish / skip := true,
     mdocVariables := Map(
       "SNAPSHOT_VERSION" -> version.value,
       "RELEASE_VERSION"  -> previousStableVersion.value.getOrElse("can't find release"),
