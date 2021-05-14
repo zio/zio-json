@@ -70,7 +70,7 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform)
       "org.scala-lang"                          % "scala-reflect"           % scalaVersion.value % Provided,
       "dev.zio"                               %%% "zio"                     % zioVersion,
       "dev.zio"                               %%% "zio-streams"             % zioVersion,
-      "org.scala-lang.modules"                %%% "scala-collection-compat" % "2.4.3",
+      "org.scala-lang.modules"                %%% "scala-collection-compat" % "2.4.4",
       "dev.zio"                               %%% "zio-test"                % zioVersion         % "test",
       "dev.zio"                               %%% "zio-test-sbt"            % zioVersion         % "test",
       "io.circe"                              %%% "circe-core"              % circeVersion       % "test",
