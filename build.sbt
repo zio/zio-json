@@ -176,7 +176,7 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform)
   .jvmSettings(
     libraryDependencies ++= Seq(
       "ai.x"          %% "play-json-extensions" % "0.42.0" % "test",
-      "org.typelevel" %% "jawn-ast"             % "1.1.1"  % "test"
+      "org.typelevel" %% "jawn-ast"             % "1.1.2"  % "test"
     )
   )
 
