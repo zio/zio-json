@@ -136,6 +136,10 @@ object EncoderSpec extends DefaultRunnableSpec {
           assert((Child2(Some("hello")): Parent).toJsonPretty)(
             equalTo("{\n  \"hint\" : \"Abel\",\n  \"s\" : \"hello\"\n}")
           )
+        },
+        test("exclude fields") {
+          import exampleexcludefield._
+          assert(Person("Peter", 20).toJson)(equalTo("""{"name":"Peter"}"""))
         }
       ),
       suite("toJsonAST")(
@@ -257,6 +261,16 @@ object EncoderSpec extends DefaultRunnableSpec {
 
       implicit val encoder: JsonEncoder[OptionalAndRequired] =
         DeriveJsonEncoder.gen[OptionalAndRequired]
+    }
+
+  }
+
+  object exampleexcludefield {
+
+    case class Person(name: String, @jsonExclude age: Int)
+
+    object Person {
+      implicit val encoder: JsonEncoder[Person] = DeriveJsonEncoder.gen[Person]
     }
 
   }
