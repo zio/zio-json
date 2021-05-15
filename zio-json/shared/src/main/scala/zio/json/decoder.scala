@@ -1,6 +1,5 @@
 package zio.json
 
-import java.lang.ArithmeticException
 import java.util.UUID
 
 import scala.annotation._
@@ -11,6 +10,8 @@ import zio.Chunk
 import zio.json.JsonDecoder.JsonError
 import zio.json.ast.Json
 import zio.json.internal._
+import zio.json.javatime.DurationParser.DurationParseException
+import zio.json.javatime.{ DurationParser, ZonedDateTimeParser }
 
 /**
  * A `JsonDecoder[A]` instance has the ability to decode JSON to values of type `A`, potentially
@@ -616,13 +617,12 @@ private[json] trait DecoderLowPriority2 extends DecoderLowPriority3 {
 private[json] trait DecoderLowPriority3 {
   this: JsonDecoder.type =>
 
-  import java.time._
-  import java.time.DateTimeException
+  import java.time.{ DateTimeException, _ }
   import java.time.format.{ DateTimeFormatter, DateTimeParseException }
   import java.time.zone.ZoneRulesException
 
   implicit val dayOfWeek: JsonDecoder[DayOfWeek] = mapStringOrFail(s => parseJavaTime(DayOfWeek.valueOf, s.toUpperCase))
-  implicit val duration: JsonDecoder[Duration]   = mapStringOrFail(parseJavaTime(Duration.parse, _))
+  implicit val duration: JsonDecoder[Duration]   = mapStringOrFail(parseJavaTime(DurationParser.unsafeParse, _))
   implicit val instant: JsonDecoder[Instant]     = mapStringOrFail(parseJavaTime(Instant.parse, _))
 
   implicit val localDate: JsonDecoder[LocalDate] =
@@ -648,7 +648,8 @@ private[json] trait DecoderLowPriority3 {
     mapStringOrFail(parseJavaTime(YearMonth.parse, _))
 
   implicit val zonedDateTime: JsonDecoder[ZonedDateTime] =
-    mapStringOrFail(parseJavaTime(ZonedDateTime.parse(_, DateTimeFormatter.ISO_ZONED_DATE_TIME), _))
+    mapStringOrFail(parseJavaTime(ZonedDateTimeParser.unsafeParse, _))
+
   implicit val zoneId: JsonDecoder[ZoneId] = mapStringOrFail(parseJavaTime(ZoneId.of, _))
 
   implicit val zoneOffset: JsonDecoder[ZoneOffset] =
@@ -659,9 +660,10 @@ private[json] trait DecoderLowPriority3 {
     try {
       Right(f(s))
     } catch {
-      case zre: ZoneRulesException      => Left(s"${s} is not a valid ISO-8601 format, ${zre.getMessage}")
-      case dtpe: DateTimeParseException => Left(s"${s} is not a valid ISO-8601 format, ${dtpe.getMessage}")
-      case dte: DateTimeException       => Left(s"${s} is not a valid ISO-8601 format, ${dte.getMessage}")
+      case zre: ZoneRulesException      => Left(s"$s is not a valid ISO-8601 format, ${zre.getMessage}")
+      case dtpe: DateTimeParseException => Left(s"$s is not a valid ISO-8601 format, ${dtpe.getMessage}")
+      case dte: DateTimeException       => Left(s"$s is not a valid ISO-8601 format, ${dte.getMessage}")
+      case dpe: DurationParseException  => Left(s"$s is not a valid ISO-8601 format, ${dpe.getMessage}")
       case ex: Exception                => Left(ex.getMessage)
     }
 
