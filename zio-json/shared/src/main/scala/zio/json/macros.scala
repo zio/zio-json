@@ -77,11 +77,9 @@ object DeriveJsonDecoder {
             if (value == ctx.typeName.short) {
               ctx.rawConstruct(Nil)
             } else {
-              throw UnsafeJson(
-                JsonError.Message(s"expected ${ctx.typeName.short} got '$value'") :: trace)
+              throw UnsafeJson(JsonError.Message(s"expected ${ctx.typeName.short} got '$value'") :: trace)
             }
-          }
-          else if (no_extra) {
+          } else if (no_extra) {
             Lexer.char(trace, in, '{')
             Lexer.char(trace, in, '}')
           } else {
@@ -231,8 +229,8 @@ object DeriveJsonDecoder {
         val value = Lexer.string(trace, in).toString
         ctx.subtypes
           .foldLeft(None.asInstanceOf[Option[A]]) {
-            case (v@Some(_), _) => v
-            case (_, s) => s.typeclass.decodeJson(s""""$value"""").toOption
+            case (v @ Some(_), _) => v
+            case (_, s)           => s.typeclass.decodeJson(s""""$value"""").toOption
           }
       }.getOrElse(None)
     }
@@ -241,7 +239,7 @@ object DeriveJsonDecoder {
     if (discrim.isEmpty)
       new JsonDecoder[A] {
         val spans: Array[JsonError] = names.map(JsonError.ObjectAccess(_))
-        def unsafeDecode(trace: List[JsonError], in: RetractReader): A = {
+        def unsafeDecode(trace: List[JsonError], in: RetractReader): A =
           try {
             Lexer.char(trace, in, '{')
             // we're not allowing extra fields in this encoding
@@ -249,7 +247,7 @@ object DeriveJsonDecoder {
               val field = Lexer.field(trace, in, matrix)
               if (field != -1) {
                 val trace_ = spans(field) :: trace
-                val a = tcs(field).unsafeDecode(trace_, in).asInstanceOf[A]
+                val a      = tcs(field).unsafeDecode(trace_, in).asInstanceOf[A]
                 Lexer.char(trace, in, '}')
                 a
               } else
@@ -266,7 +264,6 @@ object DeriveJsonDecoder {
               in.retract()
               findEnumMatches(trace, in).getOrElse(throw e)
           }
-        }
 
         override final def fromJsonAST(json: Json): Either[String, A] =
           json match {
@@ -334,7 +331,7 @@ object DeriveJsonDecoder {
 object DeriveJsonEncoder {
   type Typeclass[A] = JsonEncoder[A]
 
-  def combine[A](ctx: CaseClass[JsonEncoder, A]): JsonEncoder[A] = {
+  def combine[A](ctx: CaseClass[JsonEncoder, A]): JsonEncoder[A] =
     // encode a case object simply with his name as a string
     if (ctx.isObject) {
       new JsonEncoder[A] {
@@ -344,8 +341,7 @@ object DeriveJsonEncoder {
         override final def toJsonAST(a: A): Either[String, Json] =
           Right(Json.Obj(Chunk.empty))
       }
-    }
-    else if (ctx.parameters.isEmpty)
+    } else if (ctx.parameters.isEmpty)
       new JsonEncoder[A] {
         def unsafeEncode(a: A, indent: Option[Int], out: Write): Unit = out.write("{}")
 
@@ -411,15 +407,13 @@ object DeriveJsonEncoder {
             }
             .map(Json.Obj.apply)
       }
-  }
 
   def dispatch[A](ctx: SealedTrait[JsonEncoder, A]): JsonEncoder[A] = {
     // check if `x` is a case object (enum)
-    def isCaseObject(x: Any): Boolean = {
+    def isCaseObject(x: Any): Boolean =
       // scala js does not supports getFields
       // x.getClass.getFields.map(_.getName) contains "MODULE$"
       x.getClass.getName.endsWith("$")
-    }
 
     val names: Array[String] = ctx.subtypes.map { p =>
       p.annotations.collectFirst { case jsonHint(name) =>

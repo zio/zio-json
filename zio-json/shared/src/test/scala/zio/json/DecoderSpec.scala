@@ -363,7 +363,7 @@ object DecoderSpec extends DefaultRunnableSpec {
   object exampleenums {
 
     sealed trait Color
-    case object Green extends Color
+    case object Green  extends Color
     case object Yellow extends Color
 
     case class Style(name: String, color: Color)
