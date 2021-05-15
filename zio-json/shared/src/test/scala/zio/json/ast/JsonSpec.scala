@@ -159,10 +159,90 @@ object JsonSpec extends DefaultRunnableSpec {
             isRight(equalTo(Json.Str("twitter")))
           )
         }
+      ),
+      suite("merge")(
+        test("object + object") {
+          val left = Json.Obj(
+            "a" -> Json.Num(1),
+            "b" -> Json.Num(2)
+          )
+
+          val right = Json.Obj(
+            "b" -> Json.Num(3),
+            "c" -> Json.Num(4)
+          )
+
+          assert(left.merge(right))(
+            equalTo(
+              Json.Obj(
+                "a" -> Json.Num(1),
+                "b" -> Json.Num(3),
+                "c" -> Json.Num(4)
+              )
+            )
+          )
+        },
+        test("object, deep") {
+          val merged = tweet.merge(
+            Json.Obj(
+              "user" -> Json.Obj(
+                "private" -> Json.Bool.False
+              )
+            )
+          )
+
+          assert(merged)(
+            equalTo(
+              Json.Obj(
+                "id" -> Json.Num(8500),
+                "user" -> Json.Obj(
+                  "id"      -> Json.Num(6200),
+                  "name"    -> Json.Str("Twitter API"),
+                  "private" -> Json.Bool.False
+                ),
+                "entities" -> Json.Obj(
+                  "hashtags" -> Json.Arr(
+                    Json.Str("twitter"),
+                    Json.Str("developer")
+                  )
+                )
+              )
+            )
+          )
+        },
+        test("array") {
+          val left = Json.Arr(
+            Json.Obj("id" -> Json.Num(1))
+          )
+
+          val right = Json.Arr(
+            Json.Obj("authenticated" -> Json.Bool(true))
+          )
+
+          val merged = left.merge(right)
+
+          assert(merged)(
+            equalTo(
+              Json.Arr(
+                Json.Obj(
+                  "id"            -> Json.Num(1),
+                  "authenticated" -> Json.Bool.True
+                )
+              )
+            )
+          )
+        },
+        test("scalar") {
+          assert(Json.Null.merge(Json.Bool.True))(
+            equalTo(
+              Json.Bool.True
+            )
+          )
+        }
       )
     )
 
-  val tweet: Json.Obj =
+  lazy val tweet: Json.Obj =
     Json.Obj(
       "id" -> Json.Num(8500),
       "user" -> Json.Obj(
