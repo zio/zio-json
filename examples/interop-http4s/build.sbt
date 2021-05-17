@@ -5,7 +5,7 @@ lazy val zioJsonHttp4sExample = (project in file("."))
   .settings(
     name         := "zio-json-http4s-example",
     version      := "1.0",
-    scalaVersion := "2.13.5",
+    scalaVersion := "2.13.6",
 
     scalacOptions ++= Seq("-Xlint:_"),
 
