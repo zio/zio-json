@@ -71,22 +71,26 @@ object Watermelon {
 """{ "pips": 32, "color": "yellow" }""".fromJson[Watermelon]
 ```
 
-## jsonDerive
+## @jsonDerive
 
 **Requires zio-json-macros**
 
-The jsonDerive allows to reduce that needs to be written using an annotation macro to generate JsonDecoder/JsonEncoder at build-time.
+`@jsonDerive` allows to reduce that needs to be written using an annotation macro to generate JsonDecoder/JsonEncoder at build-time.
 
 For generating both Encoder and Decoder, simply use jsonDerive
 
 For example: 
 
-```scala mdoc
+```scala
+import zio.json._
+
 @jsonDerive case class Watermelon(pips: Int)
 ```
 It is equivalent to:
 
-```scala mdoc
+```scala
+import zio.json._
+
 case class Watermelon(pips: Int)
 
 object Watermelon {
@@ -99,12 +103,16 @@ To generate only an encoder, we can set it as config parameter:
 
 For example:
 
-```scala mdoc
+```scala
+import zio.json._
+
 @jsonDerive(JsonDeriveConfig.Encoder) case class Watermelon(pips: Int)
 ```
 It is equivalent to:
 
-```scala mdoc
+```scala
+import zio.json._
+
 case class Watermelon(pips: Int)
 
 object Watermelon {
@@ -117,12 +125,16 @@ To generate only a decoder, we can set it as config parameter:
 
 For example:
 
-```scala mdoc
+```scala
+import zio.json._
+
 @jsonDerive(JsonDeriveConfig.Decoder) case class Watermelon(pips: Int)
 ```
 It is equivalent to:
 
-```scala mdoc
+```scala
+import zio.json._
+
 case class Watermelon(pips: Int)
 
 object Watermelon {
