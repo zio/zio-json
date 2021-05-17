@@ -1,7 +1,6 @@
 package zio.json.interop.http4s
 
 import org.http4s.EntityEncoder
-
 import zio.json.JsonEncoder
 
 trait ZIOEntityEncoder {

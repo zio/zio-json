@@ -1,13 +1,13 @@
 package testzio.json
 
-import java.io.{ File, IOException }
-import java.math.BigInteger
-
 import zio._
 import zio.blocking._
 import zio.random.Random
 import zio.stream._
 import zio.test.{ Gen, Sized }
+
+import java.io.{ File, IOException }
+import java.math.BigInteger
 
 object TestUtils {
   val genBigInteger: Gen[Random, BigInteger] =

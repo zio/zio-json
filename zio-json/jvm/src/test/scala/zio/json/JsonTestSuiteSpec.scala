@@ -1,7 +1,6 @@
 package testzio.json
 
 import testzio.json.TestUtils._
-
 import zio._
 import zio.blocking.Blocking
 import zio.json._

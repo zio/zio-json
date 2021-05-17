@@ -1,13 +1,13 @@
 package zio
 
+import zio.blocking.Blocking
+import zio.json.{ JsonDecoder, JsonEncoder, JsonStreamDelimiter, ast }
+import zio.stream._
+
 import java.io.{ File, IOException }
 import java.net.URL
 import java.nio.charset.StandardCharsets
 import java.nio.file.{ Path, Paths }
-
-import zio.blocking.Blocking
-import zio.json.{ JsonDecoder, JsonEncoder, JsonStreamDelimiter, ast }
-import zio.stream._
 
 trait JsonPackagePlatformSpecific {
   def readJsonAs(file: File): ZStream[Blocking, Throwable, ast.Json] =

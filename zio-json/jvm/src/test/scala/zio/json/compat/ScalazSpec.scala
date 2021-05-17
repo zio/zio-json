@@ -1,7 +1,6 @@
 package testzio.json.compat
 
 import _root_.scalaz._
-
 import zio.json._
 import zio.json.compat.scalaz._
 import zio.test.Assertion._

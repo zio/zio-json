@@ -56,7 +56,7 @@ private[json] object DurationParser {
           val seconds      = parseNumber(text, secondStart, secondEnd, 1, "seconds")
           val negativeSecs = secondStart >= 0 && text.charAt(secondStart) == '-'
           val nanos        = parseFraction(text, fractionStart, fractionEnd, if (negativeSecs) -1 else 1)
-          createDuration(negate, daysAsSecs, hoursAsSecs, minsAsSecs, seconds, nanos)
+          createDuration(negate, daysAsSecs, hoursAsSecs, minsAsSecs, seconds, nanos.toLong)
         } else
           throw DurationParseException(
             "text matched pattern for Duration but day/hour/minute/second fraction was less than 0",

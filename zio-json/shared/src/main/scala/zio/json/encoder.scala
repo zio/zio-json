@@ -1,15 +1,14 @@
 package zio.json
 
-import java.time.format.{ DateTimeFormatterBuilder, SignStyle }
-import java.time.temporal.ChronoField.YEAR
-import java.util.UUID
-
-import scala.annotation._
-import scala.collection.{ immutable, mutable }
-
 import zio.Chunk
 import zio.json.ast.Json
 import zio.json.internal.{ FastStringWrite, Write }
+
+import java.time.format.{ DateTimeFormatterBuilder, SignStyle }
+import java.time.temporal.ChronoField.YEAR
+import java.util.UUID
+import scala.annotation._
+import scala.collection.{ immutable, mutable }
 
 trait JsonEncoder[A] extends JsonEncoderPlatformSpecific[A] {
   self =>
@@ -238,7 +237,7 @@ private[json] trait EncoderLowPriority0 extends EncoderLowPriority1 {
     seq[A].contramap(_.toSeq)
 
   implicit def array[A: JsonEncoder: reflect.ClassTag]: JsonEncoder[Array[A]] =
-    seq[A].contramap(_.toArray[A])
+    seq[A].contramap(_.toIndexedSeq.toArray[A])
 
   implicit def hashSet[A: JsonEncoder]: JsonEncoder[immutable.HashSet[A]] =
     list[A].contramap(_.toList)

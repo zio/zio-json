@@ -3,7 +3,6 @@ package testzio.json.compat
 import eu.timepit.refined.api.Refined
 import eu.timepit.refined.auto._
 import eu.timepit.refined.collection.NonEmpty
-
 import zio.json._
 import zio.json.compat.refined._
 import zio.test.Assertion._

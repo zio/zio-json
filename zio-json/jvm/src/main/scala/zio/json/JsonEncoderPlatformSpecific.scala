@@ -1,5 +1,6 @@
 package zio.json
 
+import com.github.ghik.silencer.silent
 import zio.blocking._
 import zio.json.internal.WriteWriter
 import zio.stream._
@@ -10,6 +11,7 @@ trait JsonEncoderPlatformSpecific[A] { self: JsonEncoder[A] =>
   /**
    * Encodes the specified value into a character stream.
    */
+  @silent("never used")
   final def encodeJsonStream(a: A, indent: Option[Int]): ZStream[Blocking, Throwable, Char] =
     ZStream(a).transduce(encodeJsonDelimitedTransducer(None, None, None))
 

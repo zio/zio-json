@@ -4,7 +4,6 @@ import ai.x.play.json.Encoders.encoder
 import ai.x.play.json.{ Jsonx => Playx }
 import io.circe
 import play.api.libs.{ json => Play }
-
 import zio.json._
 
 case class Urls(

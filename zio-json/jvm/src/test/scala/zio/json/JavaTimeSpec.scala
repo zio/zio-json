@@ -1,12 +1,12 @@
 package testzio.json
 
-import java.time._
-import java.time.format.DateTimeFormatter
-
 import zio.blocking._
 import zio.json._
 import zio.test.Assertion._
 import zio.test._
+
+import java.time._
+import java.time.format.DateTimeFormatter
 
 // zioJsonJVM/testOnly testzio.json.JavaTimeSpec
 object JavaTimeSpec extends DefaultRunnableSpec {

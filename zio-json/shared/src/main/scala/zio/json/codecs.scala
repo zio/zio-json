@@ -1,10 +1,10 @@
 package zio.json
 
-import scala.collection.immutable
-
 import zio.Chunk
 import zio.json.JsonDecoder.JsonError
 import zio.json.internal._
+
+import scala.collection.immutable
 
 /**
  * A `JsonCodec[A]` instance has the ability to encode values of type `A` into JSON, together with
