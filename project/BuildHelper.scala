@@ -10,7 +10,6 @@ import scalafix.sbt.ScalafixPlugin.autoImport._
 object BuildHelper {
   private val versions: Map[String, String] = {
     import org.snakeyaml.engine.v2.api.{ Load, LoadSettings }
-
     import java.util.{ List => JList, Map => JMap }
     import scala.jdk.CollectionConverters._
 
