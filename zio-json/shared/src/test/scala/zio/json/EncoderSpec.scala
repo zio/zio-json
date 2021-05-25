@@ -76,9 +76,11 @@ object EncoderSpec extends DefaultRunnableSpec {
           assert(mutable.Map("hello" -> "world").toJson)(equalTo("""{"hello":"world"}""")) &&
           assert(Map("hello" -> Some("world"), "goodbye" -> None).toJson)(equalTo("""{"hello":"world"}""")) &&
           assert(List[Int]().toJsonPretty)(equalTo("[]")) &&
-          assert(List(1, 2, 3).toJsonPretty)(equalTo("[1, 2, 3]")) &&
+          assert(List(1, 2, 3).toJsonPretty)(equalTo("[\n  1,\n  2,\n  3\n]")) &&
           assert(Vector[Int]().toJsonPretty)(equalTo("[]")) &&
-          assert(Vector(1, 2, 3).toJsonPretty)(equalTo("[1, 2, 3]")) &&
+          assert(Vector(1, 2, 3).toJsonPretty)(equalTo("[\n  1,\n  2,\n  3\n]")) &&
+          assert(Seq[String]().toJsonPretty)(equalTo("[]")) &&
+          assert(Seq("foo", "bar").toJsonPretty)(equalTo("[\n  \"foo\",\n  \"bar\"\n]")) &&
           assert(Map[String, String]().toJsonPretty)(equalTo("{}")) &&
           assert(Map("hello" -> "world").toJsonPretty)(equalTo("{\n  \"hello\" : \"world\"\n}")) &&
           assert(Map("hello" -> Some("world"), "goodbye" -> None).toJsonPretty)(
