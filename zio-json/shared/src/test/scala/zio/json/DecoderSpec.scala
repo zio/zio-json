@@ -2,7 +2,7 @@ package testzio.json
 
 import java.util.UUID
 
-import scala.collection.{ immutable, mutable }
+import scala.collection.{ SortedMap, immutable, mutable }
 
 import zio._
 import zio.json._
@@ -30,7 +30,7 @@ object DecoderSpec extends DefaultRunnableSpec {
           val obj = """{ "a": 1 }"""
 
           assert(arr.fromJson[Array[Int]])(isRight(equalTo(Array(1, 2, 3)))) &&
-          assert(arr.fromJson[immutable.IndexedSeq[Int]])(isRight(equalTo(immutable.IndexedSeq(1, 2, 3)))) &&
+          assert(arr.fromJson[IndexedSeq[Int]])(isRight(equalTo(IndexedSeq(1, 2, 3)))) &&
           assert(arr.fromJson[immutable.LinearSeq[Int]])(isRight(equalTo(immutable.LinearSeq(1, 2, 3)))) &&
           assert(arr.fromJson[immutable.ListSet[Int]])(isRight(equalTo(immutable.ListSet(1, 2, 3)))) &&
           assert(arr.fromJson[immutable.TreeSet[Int]])(isRight(equalTo(immutable.TreeSet(1, 2, 3)))) &&
@@ -221,6 +221,30 @@ object DecoderSpec extends DefaultRunnableSpec {
 
           assert(json.as[Seq[String]])(isRight(equalTo(expected)))
         },
+        test("IndexedSeq") {
+          val json     = Json.Arr(Json.Str("5XL"), Json.Str("2XL"), Json.Str("XL"))
+          val expected = IndexedSeq("5XL", "2XL", "XL")
+
+          assert(json.as[IndexedSeq[String]])(isRight(equalTo(expected)))
+        },
+        test("LinearSeq") {
+          val json     = Json.Arr(Json.Str("5XL"), Json.Str("2XL"), Json.Str("XL"))
+          val expected = immutable.LinearSeq("5XL", "2XL", "XL")
+
+          assert(json.as[immutable.LinearSeq[String]])(isRight(equalTo(expected)))
+        },
+        test("ListSet") {
+          val json     = Json.Arr(Json.Str("5XL"), Json.Str("2XL"), Json.Str("XL"))
+          val expected = immutable.ListSet("5XL", "2XL", "XL")
+
+          assert(json.as[immutable.ListSet[String]])(isRight(equalTo(expected)))
+        },
+        test("TreeSet") {
+          val json     = Json.Arr(Json.Str("5XL"), Json.Str("2XL"), Json.Str("XL"))
+          val expected = immutable.TreeSet("5XL", "2XL", "XL")
+
+          assert(json.as[immutable.TreeSet[String]])(isRight(equalTo(expected)))
+        },
         test("Vector") {
           val json     = Json.Arr(Json.Str("5XL"), Json.Str("2XL"), Json.Str("XL"))
           val expected = Vector("5XL", "2XL", "XL")
@@ -250,6 +274,12 @@ object DecoderSpec extends DefaultRunnableSpec {
           val expected = Map("5XL" -> 3, "2XL" -> 14, "XL" -> 159)
 
           assert(json.as[Map[String, Int]])(isRight(equalTo(expected)))
+        },
+        test("SortedMap") {
+          val json     = Json.Obj("5XL" -> Json.Num(3), "2XL" -> Json.Num(14), "XL" -> Json.Num(159))
+          val expected = SortedMap("5XL" -> 3, "2XL" -> 14, "XL" -> 159)
+
+          assert(json.as[SortedMap[String, Int]])(isRight(equalTo(expected)))
         },
         test("Map, custom keys") {
           val json     = Json.Obj("1" -> Json.Str("a"), "2" -> Json.Str("b"))
