@@ -49,7 +49,7 @@ lazy val root = project
     zioJsonInteropHttp4s
   )
 
-val circeVersion = "0.13.0"
+val circeVersion = "0.14.1"
 
 lazy val zioJson = crossProject(JSPlatform, JVMPlatform)
   .in(file("zio-json"))
