@@ -31,7 +31,7 @@ addCommandAlias("fmtCheck", "all scalafmtSbtCheck scalafmtCheckAll")
 addCommandAlias("prepare", "fix; fmt")
 addCommandAlias(
   "testJVM",
-  "zioJsonJVM/test; zioJsonYaml/test; zioJsonMacrosJVM/test; zioJsonInteropHttp4s/test; zioJsonInteropScalaz7xJVM/test; zioJsonInteropScalaz7xJS/test"
+  "zioJsonJVM/test; zioJsonYaml/test; zioJsonMacrosJVM/test; zioJsonInteropHttp4s/test; zioJsonInteropScalaz7xJVM/test; zioJsonInteropScalaz7xJS/test; zioJsonInteropRefinedJVM/test; zioJsonInteropRefinedJS/test"
 )
 
 addCommandAlias("testJS", "zioJsonJS/test")
@@ -52,7 +52,9 @@ lazy val root = project
     zioJsonMacrosJS,
     zioJsonInteropHttp4s,
     zioJsonInteropScalaz7x.jvm,
-    zioJsonInteropScalaz7x.js
+    zioJsonInteropScalaz7x.js,
+    zioJsonInteropRefined.jvm,
+    zioJsonInteropRefined.js
   )
 
 val circeVersion = "0.13.0"
@@ -71,7 +73,6 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform)
     scalacOptions -= "-opt-inline-from:zio.internal.**",
     libraryDependencies ++= Seq(
       "com.propensive"                        %%% "magnolia"                % "0.17.0",
-      "eu.timepit"                            %%% "refined"                 % "0.9.25" intransitive (),
       "org.scala-lang"                          % "scala-reflect"           % scalaVersion.value % Provided,
       "dev.zio"                               %%% "zio"                     % zioVersion,
       "dev.zio"                               %%% "zio-streams"             % zioVersion,
@@ -262,11 +263,27 @@ lazy val zioJsonInteropScalaz7x = crossProject(JSPlatform, JVMPlatform)
     testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework")
   )
 
+lazy val zioJsonInteropRefined = crossProject(JSPlatform, JVMPlatform)
+  .in(file("zio-json-interop-refined"))
+  .jvmConfigure(_.dependsOn(zioJsonJVM))
+  .jsConfigure(_.dependsOn(zioJsonJS))
+  .settings(stdSettings("zio-json-interop-refined"))
+  .settings(buildInfoSettings("zio.json.interop.refined"))
+  .settings(
+    libraryDependencies ++= Seq(
+      "eu.timepit" %%% "refined"      % "0.9.25",
+      "dev.zio"    %%% "zio-test"     % zioVersion % "test",
+      "dev.zio"    %%% "zio-test-sbt" % zioVersion % "test"
+    ),
+    testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework")
+  )
+
 lazy val docs = project
   .in(file("zio-json-docs"))
   .dependsOn(
     zioJsonJVM,
-    zioJsonInteropScalaz7x.jvm
+    zioJsonInteropScalaz7x.jvm,
+    zioJsonInteropRefined.jvm
   )
   .settings(
     skip.in(publish) := true,
@@ -281,8 +298,7 @@ lazy val docs = project
     scalacOptions -= "-Yno-imports",
     scalacOptions -= "-Xfatal-warnings",
     libraryDependencies ++= Seq(
-      "dev.zio"    %% "zio"     % zioVersion,
-      "eu.timepit" %% "refined" % "0.9.25"
+      "dev.zio" %% "zio" % zioVersion
     ),
     ScalaUnidoc / unidoc / unidocProjectFilter := inProjects(root),
     ScalaUnidoc / unidoc / target := (LocalRootProject / baseDirectory).value / "website" / "static" / "api",

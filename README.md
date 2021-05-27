@@ -255,6 +255,9 @@ We can use `.mapOrFail` to take the result of another `JsonDecoder` and try to c
 Say we are using the [`refined`](https://github.com/fthomas/refined) library to ensure that a `Person` data type only holds a non-empty string in its `name` field
 
 ```scala
+import zio.json._
+import zio.json.interop.refined._
+
 import eu.timepit.refined.api.Refined
 import eu.timepit.refined.collection.NonEmpty
 
@@ -288,10 +291,6 @@ Integrations are provided several popular libraries, which are published as sepa
 - Scalaz 7
 
 [Complete list of interop modules](https://zio.github.io/zio-json/docs/interop/interop_index)
-
-- [refined 0.9.x](https://github.com/fthomas/refined) with `import zio.json.compat.refined._`
-
-Alternative (binary incompatible) versions are not supported; if you require support for a different version of any of these libraries, just copy the source code into your project and change the package name (and address any API changes).
 
 # Performance
 
