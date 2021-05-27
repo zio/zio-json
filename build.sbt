@@ -54,7 +54,7 @@ lazy val root = project
     zioJsonInteropRefined.js,
     zioJsonInteropRefined.jvm,
     zioJsonInteropScalaz7x.js,
-    zioJsonInteropScalaz7x.jvm,
+    zioJsonInteropScalaz7x.jvm
   )
 
 val circeVersion = "0.13.0"
