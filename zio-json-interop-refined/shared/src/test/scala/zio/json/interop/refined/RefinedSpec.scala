@@ -5,7 +5,6 @@ import eu.timepit.refined.auto._
 import eu.timepit.refined.collection.NonEmpty
 
 import zio.json._
-import zio.json.interop.refined._
 import zio.test.Assertion._
 import zio.test._
 
