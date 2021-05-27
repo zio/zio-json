@@ -29,7 +29,11 @@ addCommandAlias("fixCheck", "scalafixAll --check")
 addCommandAlias("fmt", "all scalafmtSbt scalafmtAll")
 addCommandAlias("fmtCheck", "all scalafmtSbtCheck scalafmtCheckAll")
 addCommandAlias("prepare", "fix; fmt")
-addCommandAlias("testJVM", "zioJsonJVM/test; zioJsonYaml/test; zioJsonMacrosJVM/test; zioJsonInteropHttp4s/test")
+addCommandAlias(
+  "testJVM",
+  "zioJsonJVM/test; zioJsonYaml/test; zioJsonMacrosJVM/test; zioJsonInteropHttp4s/test; zioJsonInteropScalaz7xJVM/test; zioJsonInteropScalaz7xJS/test"
+)
+
 addCommandAlias("testJS", "zioJsonJS/test")
 
 val zioVersion = "1.0.8"
@@ -46,7 +50,9 @@ lazy val root = project
     zioJsonYaml,
     zioJsonMacrosJVM,
     zioJsonMacrosJS,
-    zioJsonInteropHttp4s
+    zioJsonInteropHttp4s,
+    zioJsonInteropScalaz7x.jvm,
+    zioJsonInteropScalaz7x.js
   )
 
 val circeVersion = "0.13.0"
@@ -65,7 +71,6 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform)
     scalacOptions -= "-opt-inline-from:zio.internal.**",
     libraryDependencies ++= Seq(
       "com.propensive"                        %%% "magnolia"                % "0.17.0",
-      "org.scalaz"                            %%% "scalaz-core"             % "7.3.3" intransitive (),
       "eu.timepit"                            %%% "refined"                 % "0.9.25" intransitive (),
       "org.scala-lang"                          % "scala-reflect"           % scalaVersion.value % Provided,
       "dev.zio"                               %%% "zio"                     % zioVersion,
@@ -242,9 +247,27 @@ lazy val zioJsonInteropHttp4s = project
   )
   .dependsOn(zioJsonJVM)
 
+lazy val zioJsonInteropScalaz7x = crossProject(JSPlatform, JVMPlatform)
+  .in(file("zio-json-interop-scalaz7x"))
+  .jvmConfigure(_.dependsOn(zioJsonJVM))
+  .jsConfigure(_.dependsOn(zioJsonJS))
+  .settings(stdSettings("zio-json-interop-scalaz7x"))
+  .settings(buildInfoSettings("zio.json.interop.scalaz7x"))
+  .settings(
+    libraryDependencies ++= Seq(
+      "org.scalaz" %%% "scalaz-core"  % "7.3.3",
+      "dev.zio"    %%% "zio-test"     % zioVersion % "test",
+      "dev.zio"    %%% "zio-test-sbt" % zioVersion % "test"
+    ),
+    testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework")
+  )
+
 lazy val docs = project
   .in(file("zio-json-docs"))
-  .dependsOn(zioJsonJVM)
+  .dependsOn(
+    zioJsonJVM,
+    zioJsonInteropScalaz7x.jvm
+  )
   .settings(
     skip.in(publish) := true,
     mdocVariables := Map(

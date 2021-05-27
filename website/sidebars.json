@@ -11,7 +11,8 @@
     "Interop": [
       "interop/interop_index",
       "interop/interop_akka_http",
-      "interop/interop_http4s"
+      "interop/interop_http4s",
+      "interop/interop_scalaz_7x"
     ]
   },
 

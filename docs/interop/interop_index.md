@@ -7,3 +7,4 @@ title: "Interop modules"
 
 * [Akka Http](interop_akka_http)
 * [HTTP4s](interop_http4s)
+* [Scalaz 7.x](interop_scalaz_7x)

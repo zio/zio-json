@@ -280,9 +280,15 @@ In fact, we do not need to provide `decodeName` for each `Refined` data type; `z
 
 ## Integrations
 
-Integrations are provided for the following external libraries which must be depended upon separately:
+Integrations are provided several popular libraries, which are published as separate artifacts:
 
-- [Scalaz 7.x](https://github.com/scalaz/scalaz) with `import zio.json.compat.scalaz._`
+- Akka Http
+- HTTP4s
+- Refined
+- Scalaz 7
+
+[Complete list of interop modules](https://zio.github.io/zio-json/docs/interop/interop_index)
+
 - [refined 0.9.x](https://github.com/fthomas/refined) with `import zio.json.compat.refined._`
 
 Alternative (binary incompatible) versions are not supported; if you require support for a different version of any of these libraries, just copy the source code into your project and change the package name (and address any API changes).
