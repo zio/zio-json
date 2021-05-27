@@ -1,14 +1,13 @@
-package zio.json.compat
+package zio.json.interop
 
-import _root_.scalaz._
+import scalaz._
 
 import zio.json._
 
-object scalaz {
-
+package object scalaz7x {
   implicit def ilistEncoder[A: JsonEncoder]: JsonEncoder[IList[A]] =
     JsonEncoder.list[A].contramap(_.toList)
+
   implicit def ilistJsonDecoder[A: JsonDecoder]: JsonDecoder[IList[A]] =
     JsonDecoder.list[A].map(IList.fromList(_))
-
 }

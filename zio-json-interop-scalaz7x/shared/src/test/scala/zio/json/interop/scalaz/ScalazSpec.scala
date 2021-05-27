@@ -1,16 +1,16 @@
-package testzio.json.compat
+package zio.json.interop.scalaz
 
-import _root_.scalaz._
+import scalaz._
 
 import zio.json._
-import zio.json.compat.scalaz._
+import zio.json.interop.scalaz7x._
 import zio.test.Assertion._
 import zio.test._
 
 object ScalazSpec extends DefaultRunnableSpec {
-  def spec: ZSpec[Environment, Failure] =
+  val spec: ZSpec[Environment, Failure] =
     suite("Scalaz")(
-      test("Scalaz") {
+      test("scalaz.IList[A]") {
         assert(IList[Int]().toJson)(equalTo("[]")) &&
         assert(IList(1, 2, 3).toJson)(equalTo("[1,2,3]")) &&
         assert(IList[Int]().toJsonPretty)(equalTo("[]")) &&

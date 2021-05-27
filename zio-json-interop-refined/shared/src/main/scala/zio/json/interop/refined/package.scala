@@ -1,11 +1,11 @@
-package zio.json.compat
+package zio.json.interop
 
 import eu.timepit.refined.api.{ Refined, Validate }
 import eu.timepit.refined.{ refineV }
 
 import zio.json._
 
-object refined {
+package object refined {
   implicit def encodeRefined[A: JsonEncoder, B]: JsonEncoder[A Refined B] =
     JsonEncoder[A].contramap(_.value)
 
