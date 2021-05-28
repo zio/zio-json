@@ -503,11 +503,11 @@ private[json] trait DecoderLowPriority1 extends DecoderLowPriority2 {
       builder(trace, in, immutable.Seq.newBuilder[A])
   }
 
-  implicit def indexedSeq[A: JsonDecoder]: JsonDecoder[immutable.IndexedSeq[A]] =
-    new JsonDecoder[immutable.IndexedSeq[A]] {
+  implicit def indexedSeq[A: JsonDecoder]: JsonDecoder[IndexedSeq[A]] =
+    new JsonDecoder[IndexedSeq[A]] {
 
       def unsafeDecode(trace: List[JsonError], in: RetractReader) =
-        builder(trace, in, immutable.IndexedSeq.newBuilder[A])
+        builder(trace, in, IndexedSeq.newBuilder[A])
     }
 
   implicit def linearSeq[A: JsonDecoder]: JsonDecoder[immutable.LinearSeq[A]] =
