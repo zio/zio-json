@@ -29,7 +29,11 @@ addCommandAlias("fixCheck", "scalafixAll --check")
 addCommandAlias("fmt", "all scalafmtSbt scalafmtAll")
 addCommandAlias("fmtCheck", "all scalafmtSbtCheck scalafmtCheckAll")
 addCommandAlias("prepare", "fix; fmt")
-addCommandAlias("testJVM", "zioJsonJVM/test; zioJsonYaml/test; zioJsonMacrosJVM/test; zioJsonInteropHttp4s/test")
+addCommandAlias(
+  "testJVM",
+  "zioJsonJVM/test; zioJsonYaml/test; zioJsonMacrosJVM/test; zioJsonInteropHttp4s/test; zioJsonInteropScalaz7xJVM/test; zioJsonInteropScalaz7xJS/test; zioJsonInteropRefinedJVM/test; zioJsonInteropRefinedJS/test"
+)
+
 addCommandAlias("testJS", "zioJsonJS/test")
 
 val zioVersion = "1.0.8"
@@ -46,7 +50,11 @@ lazy val root = project
     zioJsonYaml,
     zioJsonMacrosJVM,
     zioJsonMacrosJS,
-    zioJsonInteropHttp4s
+    zioJsonInteropHttp4s,
+    zioJsonInteropRefined.js,
+    zioJsonInteropRefined.jvm,
+    zioJsonInteropScalaz7x.js,
+    zioJsonInteropScalaz7x.jvm
   )
 
 val circeVersion = "0.13.0"
@@ -65,8 +73,6 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform)
     scalacOptions -= "-opt-inline-from:zio.internal.**",
     libraryDependencies ++= Seq(
       "com.propensive"                        %%% "magnolia"                % "0.17.0",
-      "org.scalaz"                            %%% "scalaz-core"             % "7.3.3" intransitive (),
-      "eu.timepit"                            %%% "refined"                 % "0.9.26" intransitive (),
       "org.scala-lang"                          % "scala-reflect"           % scalaVersion.value % Provided,
       "dev.zio"                               %%% "zio"                     % zioVersion,
       "dev.zio"                               %%% "zio-streams"             % zioVersion,
@@ -231,7 +237,7 @@ lazy val zioJsonInteropHttp4s = project
   .enablePlugins(NeoJmhPlugin)
   .settings(
     libraryDependencies ++= Seq(
-      "org.http4s"    %% "http4s-dsl"       % "0.21.22",
+      "org.http4s"    %% "http4s-dsl"       % "0.21.24",
       "dev.zio"       %% "zio"              % zioVersion,
       "org.typelevel" %% "cats-effect"      % "2.5.1",
       "dev.zio"       %% "zio-interop-cats" % "2.4.0.0"  % "test",
@@ -242,9 +248,43 @@ lazy val zioJsonInteropHttp4s = project
   )
   .dependsOn(zioJsonJVM)
 
+lazy val zioJsonInteropRefined = crossProject(JSPlatform, JVMPlatform)
+  .in(file("zio-json-interop-refined"))
+  .jvmConfigure(_.dependsOn(zioJsonJVM))
+  .jsConfigure(_.dependsOn(zioJsonJS))
+  .settings(stdSettings("zio-json-interop-refined"))
+  .settings(buildInfoSettings("zio.json.interop.refined"))
+  .settings(
+    libraryDependencies ++= Seq(
+      "eu.timepit" %%% "refined"      % "0.9.25",
+      "dev.zio"    %%% "zio-test"     % zioVersion % "test",
+      "dev.zio"    %%% "zio-test-sbt" % zioVersion % "test"
+    ),
+    testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework")
+  )
+
+lazy val zioJsonInteropScalaz7x = crossProject(JSPlatform, JVMPlatform)
+  .in(file("zio-json-interop-scalaz7x"))
+  .jvmConfigure(_.dependsOn(zioJsonJVM))
+  .jsConfigure(_.dependsOn(zioJsonJS))
+  .settings(stdSettings("zio-json-interop-scalaz7x"))
+  .settings(buildInfoSettings("zio.json.interop.scalaz7x"))
+  .settings(
+    libraryDependencies ++= Seq(
+      "org.scalaz" %%% "scalaz-core"  % "7.3.3",
+      "dev.zio"    %%% "zio-test"     % zioVersion % "test",
+      "dev.zio"    %%% "zio-test-sbt" % zioVersion % "test"
+    ),
+    testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework")
+  )
+
 lazy val docs = project
   .in(file("zio-json-docs"))
-  .dependsOn(zioJsonJVM)
+  .dependsOn(
+    zioJsonJVM,
+    zioJsonInteropScalaz7x.jvm,
+    zioJsonInteropRefined.jvm
+  )
   .settings(
     skip.in(publish) := true,
     mdocVariables := Map(
@@ -258,8 +298,7 @@ lazy val docs = project
     scalacOptions -= "-Yno-imports",
     scalacOptions -= "-Xfatal-warnings",
     libraryDependencies ++= Seq(
-      "dev.zio"    %% "zio"     % zioVersion,
-      "eu.timepit" %% "refined" % "0.9.26"
+      "dev.zio" %% "zio" % zioVersion
     ),
     ScalaUnidoc / unidoc / unidocProjectFilter := inProjects(root),
     ScalaUnidoc / unidoc / target := (LocalRootProject / baseDirectory).value / "website" / "static" / "api",
