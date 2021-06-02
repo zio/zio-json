@@ -7,11 +7,36 @@ import scala.collection.{ immutable, mutable }
 import scala.util.control.NoStackTrace
 
 import zio.Chunk
-import zio.json.JsonDecoder.JsonError
 import zio.json.ast.Json
 import zio.json.internal._
 import zio.json.javatime.DurationParser.DurationParseException
 import zio.json.javatime.{ DurationParser, ZonedDateTimeParser }
+
+/**
+   * A `JsonError` value describes the ways in which decoding could fail. This structure is used
+   * to facilitate human-readable error messages during decoding failures.
+   */
+  sealed abstract class JsonError
+
+  object JsonError {
+
+    def render(trace: List[JsonError]): String =
+      trace.reverse.map {
+        case Message(txt)        => s"($txt)"
+        case ArrayAccess(i)      => s"[$i]"
+        case ObjectAccess(field) => s".$field"
+        case SumType(cons)       => s"{$cons}"
+      }.mkString
+
+    final case class Message(txt: String) extends JsonError
+
+    final case class ArrayAccess(i: Int) extends JsonError
+
+    final case class ObjectAccess(field: String) extends JsonError
+
+    final case class SumType(cons: String) extends JsonError
+
+  }
 
 /**
  * A `JsonDecoder[A]` instance has the ability to decode JSON to values of type `A`, potentially
@@ -188,6 +213,9 @@ trait JsonDecoder[A] extends JsonDecoderPlatformSpecific[A] {
 }
 
 object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority0 {
+  type JsonError = zio.json.JsonError
+  val JsonError = zio.json.JsonError
+
   def apply[A](implicit a: JsonDecoder[A]): JsonDecoder[A] = a
 
   /**
@@ -200,31 +228,7 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority0 {
       extends Exception("If you see this, a developer made a mistake using JsonDecoder")
       with NoStackTrace
 
-  /**
-   * A `JsonError` value describes the ways in which decoding could fail. This structure is used
-   * to facilitate human-readable error messages during decoding failures.
-   */
-  sealed abstract class JsonError
 
-  object JsonError {
-
-    def render(trace: List[JsonError]): String =
-      trace.reverse.map {
-        case Message(txt)        => s"($txt)"
-        case ArrayAccess(i)      => s"[$i]"
-        case ObjectAccess(field) => s".$field"
-        case SumType(cons)       => s"{$cons}"
-      }.mkString
-
-    final case class Message(txt: String) extends JsonError
-
-    final case class ArrayAccess(i: Int) extends JsonError
-
-    final case class ObjectAccess(field: String) extends JsonError
-
-    final case class SumType(cons: String) extends JsonError
-
-  }
 
   def peekChar[A](partialFunction: PartialFunction[Char, JsonDecoder[A]]): JsonDecoder[A] = new JsonDecoder[A] {
 
