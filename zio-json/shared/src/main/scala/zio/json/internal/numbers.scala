@@ -235,17 +235,19 @@ object UnsafeNumbers {
       throw UnsafeNumber
 
     var accum: Long = 0L
-    while ({ {
-      val c = current - '0'
-      if (accum <= longunderflow)
-        if (accum < longunderflow)
-          throw UnsafeNumber
-        else if (accum == longunderflow && c == 9)
-          throw UnsafeNumber
-      // count down, not up, because it is larger
-      accum = accum * 10 - c // should never underflow
-      current = in.read()
-    } ; current != -1 && isDigit(current)}) ()
+    while ({
+      {
+        val c = current - '0'
+        if (accum <= longunderflow)
+          if (accum < longunderflow)
+            throw UnsafeNumber
+          else if (accum == longunderflow && c == 9)
+            throw UnsafeNumber
+        // count down, not up, because it is larger
+        accum = accum * 10 - c // should never underflow
+        current = in.read()
+      }; current != -1 && isDigit(current)
+    }) ()
 
     if (consume && current != -1) throw UnsafeNumber
 
