@@ -235,7 +235,7 @@ object UnsafeNumbers {
       throw UnsafeNumber
 
     var accum: Long = 0L
-    do {
+    while ({ {
       val c = current - '0'
       if (accum <= longunderflow)
         if (accum < longunderflow)
@@ -245,7 +245,7 @@ object UnsafeNumbers {
       // count down, not up, because it is larger
       accum = accum * 10 - c // should never underflow
       current = in.read()
-    } while (current != -1 && isDigit(current))
+    } ; current != -1 && isDigit(current)}) ()
 
     if (consume && current != -1) throw UnsafeNumber
 

@@ -99,16 +99,16 @@ object Lexer {
       case 't' => readChars(trace, in, rue, "true")
       case '{' =>
         if (firstField(trace, in)) {
-          do {
+          while ({ {
             char(trace, in, '"')
             skipString(trace, in)
             char(trace, in, ':')
             skipValue(trace, in)
-          } while (nextField(trace, in))
+          } ; nextField(trace, in)}) ()
         }
       case '[' =>
         if (firstArrayElement(in)) {
-          do skipValue(trace, in) while (nextArrayElement(trace, in))
+          while ({ skipValue(trace, in) ; nextArrayElement(trace, in)}) ()
         }
       case '"' =>
         skipString(trace, in)
@@ -125,7 +125,7 @@ object Lexer {
   def skipString(trace: List[JsonError], in: OneCharReader): Unit = {
     val stream = new EscapedString(trace, in)
     var i: Int = 0
-    do i = stream.read() while (i != -1)
+    while ({ i = stream.read() ; i != -1}) ()
   }
 
   // useful for embedded documents, e.g. CSV contained inside JSON

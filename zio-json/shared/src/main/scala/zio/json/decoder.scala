@@ -384,7 +384,7 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority0 {
         val values: Array[Any] = Array.ofDim(2)
 
         if (Lexer.firstField(trace, in))
-          do {
+          while ({ {
             val field = Lexer.field(trace, in, matrix)
             if (field == -1) Lexer.skipValue(trace, in)
             else {
@@ -399,7 +399,7 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority0 {
                 values(1) = B.unsafeDecode(trace_, in)
               }
             }
-          } while (Lexer.nextField(trace, in))
+          } ; Lexer.nextField(trace, in)}) ()
 
         if (values(0) == null && values(1) == null)
           throw UnsafeJson(JsonError.Message("missing fields") :: trace)
@@ -420,11 +420,11 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority0 {
   )(implicit A: JsonDecoder[A]): T[A] = {
     Lexer.char(trace, in, '[')
     var i: Int = 0
-    if (Lexer.firstArrayElement(in)) do {
+    if (Lexer.firstArrayElement(in)) while ({ {
       val trace_ = JsonError.ArrayAccess(i) :: trace
       builder += A.unsafeDecode(trace_, in)
       i += 1
-    } while (Lexer.nextArrayElement(trace, in))
+    } ; Lexer.nextArrayElement(trace, in)}) ()
     builder.result()
   }
 
@@ -435,13 +435,13 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority0 {
   )(implicit K: JsonFieldDecoder[K], V: JsonDecoder[V]): T[K, V] = {
     Lexer.char(trace, in, '{')
     if (Lexer.firstField(trace, in))
-      do {
+      while ({ {
         val field  = Lexer.string(trace, in).toString
         val trace_ = JsonError.ObjectAccess(field) :: trace
         Lexer.char(trace_, in, ':')
         val value = V.unsafeDecode(trace_, in)
         builder += ((K.unsafeDecodeField(trace_, field), value))
-      } while (Lexer.nextField(trace, in))
+      } ; Lexer.nextField(trace, in)}) ()
     builder.result()
   }
 
