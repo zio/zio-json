@@ -3,7 +3,8 @@ package zio.json.uuid
 import scala.annotation.nowarn
 
 // A port of https://github.com/openjdk/jdk/commit/ebadfaeb2e1cc7b5ce5f101cd8a539bc5478cf5b with optimizations applied
-object UUIDParser {
+private[json] object UUIDParser {
+  // Converts characters to their numeric representation (for example 'E' or 'e' becomes 0XE)
   private val CharToNumeric: Array[Byte] = {
     // by filling in -1's we prevent parseLong from trying to parse invalid characters
     val ns = Array.fill[Byte](256)(-1)
@@ -35,6 +36,11 @@ object UUIDParser {
 
     ns
   }
+
+  // Used to detect the presence of extra bits
+  private val mask8Z  = 0xfffffff00000000L
+  private val mask4Z  = 0xfffffffffff0000L
+  private val mask12Z = 0xfff000000000000L
 
   def unsafeParse(input: String): java.util.UUID =
     if (input.length == 36) {
@@ -88,15 +94,22 @@ object UUIDParser {
     // - if dash1 is positive but dash2 is -1, dash4 will be -1
     // - if dash1 and dash2 is positive, dash3 will be -1, dash4 will be positive, but so will dash5
     if (dash4 < 0 || dash5 >= 0) throw new IllegalArgumentException("Invalid UUID string: " + name)
-    var mostSigBits = parseSection(name, 0, dash1) & 0xffffffffL
-    mostSigBits <<= 16
-    mostSigBits |= parseSection(name, dash1 + 1, dash2) & 0xffffL
-    mostSigBits <<= 16
-    mostSigBits |= parseSection(name, dash2 + 1, dash3) & 0xffffL
 
-    var leastSigBits = parseSection(name, dash3 + 1, dash4) & 0xffffL
+    val section1 = checkExtraBits(section = parseSection(name, 0, dash1), zeroMask = mask8Z)
+    val section2 = checkExtraBits(section = parseSection(name, dash1 + 1, dash2), zeroMask = mask4Z)
+    val section3 = checkExtraBits(section = parseSection(name, dash2 + 1, dash3), zeroMask = mask4Z)
+    val section4 = checkExtraBits(section = parseSection(name, dash3 + 1, dash4), zeroMask = mask4Z)
+    val section5 = checkExtraBits(section = parseSection(name, dash4 + 1, len), zeroMask = mask12Z)
+
+    var mostSigBits = section1
+    mostSigBits <<= 16
+    mostSigBits |= section2
+    mostSigBits <<= 16
+    mostSigBits |= section3
+
+    var leastSigBits = section4
     leastSigBits <<= 48
-    leastSigBits |= parseSection(name, dash4 + 1, len) & 0xffffffffffffL
+    leastSigBits |= section5
 
     new java.util.UUID(mostSigBits, leastSigBits)
   }
@@ -104,7 +117,7 @@ object UUIDParser {
   // Adapted from java.lang.Long.parseLong with multiple optimizations from @plokhotnyuk
   @nowarn("msg=implicit numeric widening")
   private def parseSection(s: CharSequence, beginIndex: Int, endIndex: Int): Long = {
-    if ((endIndex - beginIndex) > 15) throw new NumberFormatException("UUID group exceeds 16 characters")
+    if ((endIndex - beginIndex) > 15) throw new NumberFormatException("UUID group exceeds acceptable length")
 
     var i     = beginIndex
     val limit = -Long.MaxValue
@@ -123,7 +136,14 @@ object UUIDParser {
     } else throw new NumberFormatException("Invalid start and end indices when parsing UUID group")
   }
 
-  def charSequenceError(
+  // Checks whether the user has tried to supply more Hex digits than what the UUID section expects
+  // Use with maskXZ variants
+  private def checkExtraBits(section: Long, zeroMask: Long): Long =
+    if ((section & zeroMask) > 0)
+      throw new NumberFormatException(s"Extra bits detected in section: 0x${section.toHexString}")
+    else section
+
+  private def charSequenceError(
     s: CharSequence,
     beginIndex: Int,
     endIndex: Int,
