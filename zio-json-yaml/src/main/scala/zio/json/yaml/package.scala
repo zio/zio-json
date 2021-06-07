@@ -1,13 +1,5 @@
 package zio.json
 
-import java.io.{ StringReader, StringWriter }
-import java.nio.charset.StandardCharsets
-import java.util.Base64
-
-import scala.jdk.CollectionConverters._
-import scala.util.Try
-import scala.util.matching.Regex
-
 import org.yaml.snakeyaml.DumperOptions.{ NonPrintableStyle, ScalarStyle }
 import org.yaml.snakeyaml.emitter.Emitter
 import org.yaml.snakeyaml.error.YAMLException
@@ -16,10 +8,16 @@ import org.yaml.snakeyaml.reader.StreamReader
 import org.yaml.snakeyaml.resolver.Resolver
 import org.yaml.snakeyaml.serializer._
 import org.yaml.snakeyaml.{ DumperOptions, Yaml }
-
 import zio.Chunk
 import zio.json.ast.Json
 import zio.json.yaml.internal.YamlValueConstruction
+
+import java.io.{ StringReader, StringWriter }
+import java.nio.charset.StandardCharsets
+import java.util.Base64
+import scala.jdk.CollectionConverters._
+import scala.util.Try
+import scala.util.matching.Regex
 
 package object yaml {
 

@@ -1,15 +1,14 @@
 package testzio.json
 
-import java.util.UUID
-
-import scala.collection.{ SortedMap, immutable, mutable }
-
 import zio._
 import zio.json._
 import zio.json.ast.Json
 import zio.test.Assertion._
 import zio.test._
 import zio.test.environment.Live
+
+import java.util.UUID
+import scala.collection.{ SortedMap, immutable, mutable }
 
 object DecoderSpec extends DefaultRunnableSpec {
 

@@ -1,14 +1,13 @@
 package testzio.json
 
-import java.time._
-
 import testzio.json.TestUtils._
-
 import zio.json._
 import zio.json.ast.Json
 import zio.random.Random
 import zio.test.Assertion._
 import zio.test._
+
+import java.time._
 
 object RoundTripSpec extends DefaultRunnableSpec {
 

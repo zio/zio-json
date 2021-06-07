@@ -417,6 +417,6 @@ project/secret
 # mdoc
 website/node_modules
 website/build
-website/i18n/en.json
+website/i18n
 website/static/api
 website/yarn.lock

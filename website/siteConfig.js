@@ -33,7 +33,7 @@ const siteConfig = {
   headerLinks: [
     {doc: 'overview/overview_index', label: 'Overview'},
     {doc: 'interop/interop_index',   label: 'Interop modules'},
-    // {href:    'api/index.html',          label: 'API'}, -- currently broken.
+    {href: 'api',                    label: 'API'},
     {doc:  'about/about_index',      label: 'About'}
   ],
 

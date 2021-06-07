@@ -1,15 +1,14 @@
 package testzio.json
 
-import java.util.UUID
-
-import scala.collection.{ immutable, mutable }
-
 import zio.Chunk
 import zio.json._
 import zio.json.ast.Json
 import zio.test.Assertion._
 import zio.test.TestAspect._
 import zio.test._
+
+import java.util.UUID
+import scala.collection.{ immutable, mutable }
 
 // zioJsonJVM/testOnly testzio.json.EncoderSpec
 object EncoderSpec extends DefaultRunnableSpec {

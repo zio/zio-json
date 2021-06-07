@@ -14,17 +14,12 @@ inThisBuild(
         "john@degoes.net",
         url("http://degoes.net")
       )
-    ),
-    pgpPassphrase := sys.env.get("PGP_PASSWORD").map(_.toArray),
-    pgpPublicRing := file("/tmp/public.asc"),
-    pgpSecretRing := file("/tmp/secret.asc"),
-    scmInfo := Some(
-      ScmInfo(url("https://github.com/zio/zio-json/"), "scm:git:git@github.com:zio/zio-json.git")
     )
   )
 )
 
-addCommandAlias("fix", "scalafixAll")
+addCommandAlias("fix", "; all compile:scalafix test:scalafix; all scalafmtSbt scalafmtAll")
+addCommandAlias("check", "; scalafmtSbtCheck; scalafmtCheckAll; compile:scalafix --check; test:scalafix --check")
 addCommandAlias("fixCheck", "scalafixAll --check")
 addCommandAlias("fmt", "all scalafmtSbt scalafmtAll")
 addCommandAlias("fmtCheck", "all scalafmtSbtCheck scalafmtCheckAll")
@@ -185,6 +180,7 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform)
       "org.typelevel" %% "jawn-ast"             % "1.1.2"  % "test"
     )
   )
+  .enablePlugins(BuildInfoPlugin)
 
 lazy val zioJsonJS = zioJson.js
   .settings(
@@ -209,6 +205,7 @@ lazy val zioJsonYaml = project
     testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework")
   )
   .dependsOn(zioJsonJVM)
+  .enablePlugins(BuildInfoPlugin)
 
 lazy val zioJsonMacros = crossProject(JSPlatform, JVMPlatform)
   .in(file("zio-json-macros"))
@@ -247,6 +244,7 @@ lazy val zioJsonInteropHttp4s = project
     testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework")
   )
   .dependsOn(zioJsonJVM)
+  .enablePlugins(BuildInfoPlugin)
 
 lazy val zioJsonInteropRefined = crossProject(JSPlatform, JVMPlatform)
   .in(file("zio-json-interop-refined"))
@@ -262,6 +260,7 @@ lazy val zioJsonInteropRefined = crossProject(JSPlatform, JVMPlatform)
     ),
     testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework")
   )
+  .enablePlugins(BuildInfoPlugin)
 
 lazy val zioJsonInteropScalaz7x = crossProject(JSPlatform, JVMPlatform)
   .in(file("zio-json-interop-scalaz7x"))
@@ -277,6 +276,7 @@ lazy val zioJsonInteropScalaz7x = crossProject(JSPlatform, JVMPlatform)
     ),
     testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework")
   )
+  .enablePlugins(BuildInfoPlugin)
 
 lazy val docs = project
   .in(file("zio-json-docs"))
@@ -286,7 +286,7 @@ lazy val docs = project
     zioJsonInteropRefined.jvm
   )
   .settings(
-    skip.in(publish) := true,
+    publish / skip := true,
     mdocVariables := Map(
       "SNAPSHOT_VERSION" -> version.value,
       "RELEASE_VERSION"  -> previousStableVersion.value.getOrElse("can't find release"),

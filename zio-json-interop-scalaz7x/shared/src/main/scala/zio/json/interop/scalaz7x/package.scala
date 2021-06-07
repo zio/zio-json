@@ -1,7 +1,6 @@
 package zio.json.interop
 
 import scalaz._
-
 import zio.json._
 
 package object scalaz7x {

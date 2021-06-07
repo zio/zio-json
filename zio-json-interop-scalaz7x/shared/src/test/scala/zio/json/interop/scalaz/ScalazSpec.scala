@@ -1,7 +1,6 @@
 package zio.json.interop.scalaz
 
 import scalaz._
-
 import zio.json._
 import zio.json.interop.scalaz7x._
 import zio.test.Assertion._
