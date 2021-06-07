@@ -5,6 +5,7 @@ import zio.json.ast.Json
 import zio.json.internal._
 import zio.json.javatime.DurationParser.DurationParseException
 import zio.json.javatime.{ DurationParser, ZonedDateTimeParser }
+import zio.json.uuid.UUIDParser
 
 import java.util.UUID
 import scala.annotation._
@@ -677,7 +678,7 @@ private[json] trait DecoderLowPriority3 {
   implicit val uuid: JsonDecoder[UUID] =
     mapStringOrFail { str =>
       try {
-        Right(UUID.fromString(str))
+        Right(UUIDParser.unsafeParse(str))
       } catch {
         case iae: IllegalArgumentException =>
           Left(s"Invalid UUID: ${iae.getMessage}")
