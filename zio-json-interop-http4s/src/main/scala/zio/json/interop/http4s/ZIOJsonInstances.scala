@@ -1,12 +1,11 @@
 package zio.json.interop.http4s
 
-import java.nio.charset.StandardCharsets
-
 import cats.effect.Concurrent
 import org.http4s.headers.`Content-Type`
 import org.http4s.{ EntityDecoder, EntityEncoder, MalformedMessageBodyFailure, MediaType }
-
 import zio.json._
+
+import java.nio.charset.StandardCharsets
 
 trait ZIOJsonInstances {
   def jsonOf[F[_]: Concurrent, A: JsonDecoder]: EntityDecoder[F, A] =

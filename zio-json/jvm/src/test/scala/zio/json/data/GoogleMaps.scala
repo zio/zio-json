@@ -1,9 +1,9 @@
 package testzio.json.data.googlemaps
 
+import com.github.ghik.silencer.silent
 import com.github.plokhotnyuk.jsoniter_scala.macros.named
 import io.circe
 import play.api.libs.{ json => Play }
-
 import zio.json._
 
 final case class Value(
@@ -23,6 +23,7 @@ final case class DistanceMatrix(
   status: String
 )
 
+@silent("Block result was adapted via implicit conversion")
 object Value {
   implicit val zioJsonJsonDecoder: JsonDecoder[Value] = DeriveJsonDecoder.gen[Value]
   implicit val zioJsonEncoder: JsonEncoder[Value]     = DeriveJsonEncoder.gen[Value]
@@ -55,6 +56,7 @@ object Value {
   }
 
 }
+@silent("Block result was adapted via implicit conversion")
 object Elements {
   implicit val zioJsonJsonDecoder: JsonDecoder[Elements] = DeriveJsonDecoder.gen[Elements]
   implicit val zioJsonEncoder: JsonEncoder[Elements]     = DeriveJsonEncoder.gen[Elements]
@@ -70,6 +72,7 @@ object Elements {
   implicit val playEncoder: Play.Writes[Elements]    = Play.Json.writes[Elements]
 
 }
+@silent("Block result was adapted via implicit conversion")
 object Rows {
   implicit val zioJsonJsonDecoder: JsonDecoder[Rows] = DeriveJsonDecoder.gen[Rows]
   implicit val zioJsonEncoder: JsonEncoder[Rows]     = DeriveJsonEncoder.gen[Rows]
@@ -85,6 +88,7 @@ object Rows {
   implicit val playEncoder: Play.Writes[Rows]    = Play.Json.writes[Rows]
 
 }
+@silent("Block result was adapted via implicit conversion")
 object DistanceMatrix {
   implicit val zioJsonJsonDecoder: JsonDecoder[DistanceMatrix] =
     DeriveJsonDecoder.gen[DistanceMatrix]

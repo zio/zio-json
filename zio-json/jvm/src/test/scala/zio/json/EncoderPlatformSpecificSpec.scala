@@ -1,14 +1,10 @@
 package zio.json
 
-import java.io.IOException
-import java.nio.file.Files
-
 import io.circe
 import testzio.json.TestUtils._
 import testzio.json.data.geojson.generated._
 import testzio.json.data.googlemaps._
 import testzio.json.data.twitter._
-
 import zio.Chunk
 import zio.blocking.Blocking
 import zio.json.ast.Json
@@ -16,6 +12,9 @@ import zio.stream.ZStream
 import zio.test.Assertion._
 import zio.test.environment.TestEnvironment
 import zio.test.{ DefaultRunnableSpec, assert, _ }
+
+import java.io.IOException
+import java.nio.file.Files
 
 object EncoderPlatformSpecificSpec extends DefaultRunnableSpec {
   import testzio.json.DecoderSpec.logEvent._
@@ -33,7 +32,7 @@ object EncoderPlatformSpecificSpec extends DefaultRunnableSpec {
           val value      = 1234
 
           for {
-            chars <- intEncoder.encodeJsonStream(value, indent = None).runCollect
+            chars <- intEncoder.encodeJsonStream(value).runCollect
           } yield {
             assert(chars.mkString)(equalTo("1234"))
           }
@@ -42,7 +41,7 @@ object EncoderPlatformSpecificSpec extends DefaultRunnableSpec {
           val longString = List.fill(ZStream.DefaultChunkSize * 2)('x').mkString
 
           for {
-            chars <- JsonEncoder[String].encodeJsonStream(longString, indent = None).runCollect
+            chars <- JsonEncoder[String].encodeJsonStream(longString).runCollect
           } yield {
             assert(chars)(hasSize(equalTo(ZStream.DefaultChunkSize * 2 + 2))) &&
             assert(chars.mkString(""))(equalTo("\"" ++ longString ++ "\""))

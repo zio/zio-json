@@ -4,7 +4,6 @@ package zio.json.internal
 
 import java.nio.CharBuffer
 import java.util.Arrays
-
 import scala.annotation.tailrec
 
 // a minimal subset of java.io.Writer that can be optimised

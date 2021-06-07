@@ -2,7 +2,6 @@ package zio.json.interop
 
 import eu.timepit.refined.api.{ Refined, Validate }
 import eu.timepit.refined.{ refineV }
-
 import zio.json._
 
 package object refined {

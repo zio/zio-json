@@ -1,14 +1,13 @@
 package zio.json
 
-import java.nio.charset.{ Charset, StandardCharsets }
-
-import scala.annotation.tailrec
-
 import zio._
 import zio.blocking._
 import zio.json.JsonDecoder.JsonError
 import zio.json.internal._
 import zio.stream.{ Take, ZStream, ZTransducer }
+
+import java.nio.charset.{ Charset, StandardCharsets }
+import scala.annotation.tailrec
 
 trait JsonDecoderPlatformSpecific[A] { self: JsonDecoder[A] =>
 

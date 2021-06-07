@@ -1,16 +1,15 @@
 package zio.json
 
-import java.util.UUID
-
-import scala.annotation._
-import scala.collection.{ immutable, mutable }
-import scala.util.control.NoStackTrace
-
 import zio.Chunk
 import zio.json.ast.Json
 import zio.json.internal._
 import zio.json.javatime.DurationParser.DurationParseException
 import zio.json.javatime.{ DurationParser, ZonedDateTimeParser }
+
+import java.util.UUID
+import scala.annotation._
+import scala.collection.{ immutable, mutable }
+import scala.util.control.NoStackTrace
 
 /**
  * A `JsonError` value describes the ways in which decoding could fail. This structure is used

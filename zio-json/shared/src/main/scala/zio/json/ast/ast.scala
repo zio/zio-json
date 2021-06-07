@@ -1,11 +1,12 @@
 package zio.json.ast
 
-import scala.annotation._
-
 import zio.Chunk
 import zio.json.JsonDecoder.{ JsonError, UnsafeJson }
 import zio.json._
+import zio.json.ast.Json._
 import zio.json.internal._
+
+import scala.annotation._
 
 /**
  * This AST of JSON is made available so that arbitrary JSON may be included as
@@ -22,14 +23,212 @@ import zio.json.internal._
  * excessive amount of heap memory).
  * JsonValue / Json / JValue
  */
-sealed abstract class Json {
-  def widen: Json = this
+sealed abstract class Json { self =>
+  override final def equals(that: Any): Boolean = {
+    def objEqual(left: Map[String, Json], right: Chunk[(String, Json)]): Boolean =
+      if (right.isEmpty) true
+      else
+        right.find { case (key, r) =>
+          left.get(key) match {
+            case Some(l) if l != r => true
+            case _                 => false
+          }
+        }.isEmpty
+
+    that match {
+      case that: Json =>
+        (self, that) match {
+          case (Obj(l), Obj(r)) =>
+            // order does not matter for JSON Objects
+            if (l.length == r.length) objEqual(l.toMap, r)
+            else false
+          case (Arr(l), Arr(r))   => l == r
+          case (Bool(l), Bool(r)) => l == r
+          case (Str(l), Str(r))   => l == r
+          case (Num(l), Num(r))   => l == r
+          case (_: Null, _: Null) => true
+          case _                  => false
+        }
+
+      case _ => false
+    }
+  }
+
+  final def foldDown[A](initial: A)(f: (A, Json) => A): A = {
+    val a = f(initial, self)
+
+    self match {
+      case Obj(fields)   => fields.map(_._2).foldLeft(a)((a, json) => json.foldDown(a)(f))
+      case Arr(elements) => elements.foldLeft(a)((a, json) => json.foldDown(a)(f))
+      case _             => a
+    }
+  }
+
+  final def foldDownSome[A](initial: A)(pf: PartialFunction[(A, Json), A]): A = {
+    val lifted = pf.lift
+    val total  = (a: A, json: Json) => lifted((a, json)).getOrElse(a)
+
+    foldDown(initial)(total)
+  }
+
+  final def foldUp[A](initial: A)(f: (A, Json) => A): A = {
+    // bottom (leaves) up
+    val a = self match {
+      case Obj(fields) =>
+        fields.map(_._2).foldLeft(initial)((acc, next) => next.foldUp(acc)(f))
+
+      case Arr(elements) =>
+        elements.foldLeft(initial)((acc, next) => next.foldUp(acc)(f))
+
+      case _ =>
+        initial
+    }
+    f(a, self)
+  }
+
+  final def foldUpSome[A](initial: A)(pf: PartialFunction[(A, Json), A]): A = {
+    val lifted = pf.lift
+    val total  = (a: A, json: Json) => lifted((a, json)).getOrElse(a)
+    foldUp(initial)(total)
+  }
+
+  final def get[A <: Json](cursor: JsonCursor[_, A]): Either[String, A] =
+    cursor match {
+      case JsonCursor.Identity => Right(self)
+
+      case JsonCursor.DownField(parent, field) =>
+        self.get(parent).flatMap { case Obj(fields) =>
+          fields.find(_._1 == field).map(_._2) match {
+            case Some(x) => Right(x)
+            case None    => Left(s"No such field: '$field'")
+          }
+        }
+
+      case JsonCursor.DownElement(parent, index) =>
+        self.get(parent).flatMap { case Arr(elements) =>
+          elements.lift(index).map(Right(_)).getOrElse(Left(s"The array does not have index ${index}"))
+        }
+
+      case JsonCursor.FilterType(parent, t @ jsonType) =>
+        self.get(parent).flatMap(x => jsonType.get(x))
+    }
+
+  override final def hashCode: Int =
+    31 * {
+      self match {
+        case Obj(fields) =>
+          var result = 0
+          fields.foreach(tuple => result = result ^ tuple.hashCode)
+          result
+        case Arr(elements) =>
+          var result = 0
+          var index  = 0
+          elements.foreach { json =>
+            result = result ^ (index, json).hashCode
+            index += 1
+          }
+          result
+        case Bool(value) => value.hashCode
+        case Str(value)  => value.hashCode
+        case Num(value)  => value.hashCode
+        case Json.Null   => 1
+      }
+    }
+
+  /**
+   * - merging objects results in a new objects with all pairs of both sides, with the right hand
+   *   side being used on key conflicts
+   *
+   * - merging arrays results in all of the individual elements being merged
+   *
+   * - scalar values will be replaced by the right hand side
+   */
+  final def merge(that: Json): Json =
+    (self, that) match {
+      case (Obj(fields1), Obj(fields2)) =>
+        val leftMap  = fields1.toMap
+        val rightMap = fields2.toMap
+
+        val lookup =
+          (fields1 ++ fields2)
+            .foldLeft(Map.empty[String, Int] -> 0) { case ((map, nextIndex), (name, _)) =>
+              map.get(name) match {
+                case None    => map.updated(name, nextIndex) -> (nextIndex + 1)
+                case Some(_) => map                          -> nextIndex
+              }
+            }
+            ._1
+
+        val array = Array.ofDim[(String, Json)](lookup.size)
+
+        lookup.foreach { case (key, index) =>
+          array(index) = key -> {
+            (leftMap.get(key), rightMap.get(key)) match {
+              case (Some(l), Some(r)) => l.merge(r)
+              case (None, Some(r))    => r
+              case (Some(l), None)    => l
+              case (None, None)       => Json.Null // can’t happen
+            }
+          }
+        }
+
+        Obj(Chunk.fromArray(array))
+
+      case (Arr(elements1), Arr(elements2)) =>
+        val leftover =
+          if (elements1.length > elements2.length) elements1.drop(elements2.length)
+          else elements2.drop(elements1.length)
+
+        Arr(elements1.zip(elements2).map { case (left, right) =>
+          left.merge(right)
+        } ++ leftover)
+
+      case (_, r) =>
+        r
+    }
+
+  final def transformDown(f: Json => Json): Json = {
+    def loop(json: Json): Json =
+      f(json) match {
+        case Obj(fields)   => Obj(fields.map { case (name, value) => (name, loop(value)) })
+        case Arr(elements) => Arr(elements.map(loop(_)))
+        case json          => json
+      }
+
+    loop(self)
+  }
+
+  final def transformDownSome(pf: PartialFunction[Json, Json]): Json = {
+    val lifted = pf.lift
+    val total  = (json: Json) => lifted(json).getOrElse(json)
+
+    self.transformDown(total)
+  }
+
+  final def transformUp(f: Json => Json): Json = {
+    def loop(json: Json): Json =
+      json match {
+        case Obj(fields)   => f(Obj(fields.map { case (name, value) => (name, loop(value)) }))
+        case Arr(elements) => f(Arr(elements.map(loop(_))))
+        case json          => f(json)
+      }
+
+    loop(self)
+  }
+
+  final def transformUpSome(pf: PartialFunction[Json, Json]): Json = {
+    val lifted = pf.lift
+    val total  = (json: Json) => lifted(json).getOrElse(json)
+
+    self.transformUp(total)
+  }
+
+  final def widen: Json = this
 
   override def toString(): String = Json.encoder.encodeJson(this, None).toString
 }
 
 object Json {
-  // TODO lens-like accessors for working with arbitrary json values
   final case class Obj(fields: Chunk[(String, Json)]) extends Json
   object Obj {
     def apply(fields: (String, Json)*): Obj = Obj(Chunk(fields: _*))
@@ -77,7 +276,11 @@ object Json {
     }
   }
   final case class Bool(value: Boolean) extends Json
+
   object Bool {
+    val False: Bool = Bool(false)
+    val True: Bool  = Bool(true)
+
     implicit val decoder: JsonDecoder[Bool] = new JsonDecoder[Bool] {
       def unsafeDecode(trace: List[JsonError], in: RetractReader): Bool =
         Bool(JsonDecoder.boolean.unsafeDecode(trace, in))
@@ -141,6 +344,7 @@ object Json {
       override final def toJsonAST(a: Num): Either[String, Num] = Right(a)
     }
   }
+  type Null = Null.type
   case object Null extends Json {
     private[this] val nullChars: Array[Char] = "null".toCharArray
     implicit val decoder: JsonDecoder[Null.type] = new JsonDecoder[Null.type] {

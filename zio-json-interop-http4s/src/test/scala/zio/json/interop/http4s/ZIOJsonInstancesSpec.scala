@@ -1,14 +1,13 @@
 package zio.json.interop.http4s
 
-import java.nio.charset.StandardCharsets
-
 import org.http4s._
-
 import zio.Task
 import zio.interop.catz._
 import zio.json._
 import zio.test.Assertion._
 import zio.test.{ DefaultRunnableSpec, _ }
+
+import java.nio.charset.StandardCharsets
 
 object ZIOJsonInstancesSpec extends DefaultRunnableSpec {
   final case class Test(string: String, int: Int)
