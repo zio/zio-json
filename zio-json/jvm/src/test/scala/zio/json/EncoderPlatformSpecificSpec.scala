@@ -32,7 +32,7 @@ object EncoderPlatformSpecificSpec extends DefaultRunnableSpec {
           val value      = 1234
 
           for {
-            chars <- intEncoder.encodeJsonStream(value, indent = None).runCollect
+            chars <- intEncoder.encodeJsonStream(value).runCollect
           } yield {
             assert(chars.mkString)(equalTo("1234"))
           }
@@ -41,7 +41,7 @@ object EncoderPlatformSpecificSpec extends DefaultRunnableSpec {
           val longString = List.fill(ZStream.DefaultChunkSize * 2)('x').mkString
 
           for {
-            chars <- JsonEncoder[String].encodeJsonStream(longString, indent = None).runCollect
+            chars <- JsonEncoder[String].encodeJsonStream(longString).runCollect
           } yield {
             assert(chars)(hasSize(equalTo(ZStream.DefaultChunkSize * 2 + 2))) &&
             assert(chars.mkString(""))(equalTo("\"" ++ longString ++ "\""))

@@ -11,8 +11,7 @@ trait JsonEncoderPlatformSpecific[A] { self: JsonEncoder[A] =>
   /**
    * Encodes the specified value into a character stream.
    */
-  @silent("never used")
-  final def encodeJsonStream(a: A, indent: Option[Int]): ZStream[Blocking, Throwable, Char] =
+  final def encodeJsonStream(a: A): ZStream[Blocking, Throwable, Char] =
     ZStream(a).transduce(encodeJsonDelimitedTransducer(None, None, None))
 
   final private def encodeJsonDelimitedTransducer(
