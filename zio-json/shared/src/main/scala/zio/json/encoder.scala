@@ -251,6 +251,14 @@ private[json] trait EncoderLowPriority1 extends EncoderLowPriority2 {
 
   implicit def seq[A: JsonEncoder]: JsonEncoder[Seq[A]] = iterable[A, Seq]
 
+  implicit def indexedSeq[A: JsonEncoder]: JsonEncoder[IndexedSeq[A]] = iterable[A, IndexedSeq]
+
+  implicit def linearSeq[A: JsonEncoder]: JsonEncoder[immutable.LinearSeq[A]] = iterable[A, immutable.LinearSeq]
+
+  implicit def listSet[A: JsonEncoder]: JsonEncoder[immutable.ListSet[A]] = iterable[A, immutable.ListSet]
+
+  implicit def treeSet[A: JsonEncoder]: JsonEncoder[immutable.TreeSet[A]] = iterable[A, immutable.TreeSet]
+
   implicit def list[A: JsonEncoder]: JsonEncoder[List[A]] = iterable[A, List]
 
   implicit def vector[A: JsonEncoder]: JsonEncoder[Vector[A]] = iterable[A, Vector]
@@ -277,14 +285,23 @@ private[json] trait EncoderLowPriority2 extends EncoderLowPriority3 {
     new JsonEncoder[T[A]] {
 
       def unsafeEncode(as: T[A], indent: Option[Int], out: Write): Unit = {
+        if (as.isEmpty) return out.write("[]")
+
         out.write('[')
+        val indent_ = bump(indent)
+        pad(indent_, out)
         var first = true
         as.foreach { a =>
-          if (first) first = false
-          else if (indent.isEmpty) out.write(',')
-          else out.write(", ")
-          A.unsafeEncode(a, indent, out)
+          if (first)
+            first = false
+          else {
+            out.write(',')
+            if (!indent.isEmpty)
+              pad(indent_, out)
+          }
+          A.unsafeEncode(a, indent_, out)
         }
+        pad(indent, out)
         out.write(']')
       }
 
