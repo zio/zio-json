@@ -2,6 +2,7 @@ package testzio.json.data.twitter
 
 import ai.x.play.json.Encoders.encoder
 import ai.x.play.json.{ Jsonx => Playx }
+import com.github.ghik.silencer.silent
 import io.circe
 import play.api.libs.{ json => Play }
 import zio.json._
@@ -12,6 +13,7 @@ case class Urls(
   display_url: String,
   indices: List[Int]
 )
+@silent("Block result was adapted via implicit conversion")
 object Urls {
   implicit val jJsonDecoder: JsonDecoder[Urls] = DeriveJsonDecoder.gen[Urls]
   implicit val jEncoder: JsonEncoder[Urls]     = DeriveJsonEncoder.gen[Urls]
@@ -24,6 +26,7 @@ object Urls {
   implicit val playFormatter: Play.Format[Urls] = Play.Json.format[Urls]
 }
 case class Url(urls: List[Urls])
+@silent("Block result was adapted via implicit conversion")
 object Url {
   implicit val jJsonDecoder: JsonDecoder[Url] = DeriveJsonDecoder.gen[Url]
   implicit val jEncoder: JsonEncoder[Url]     = DeriveJsonEncoder.gen[Url]
@@ -37,6 +40,7 @@ object Url {
 }
 
 case class UserEntities(url: Url, description: Url)
+@silent("Block result was adapted via implicit conversion")
 object UserEntities {
   implicit val jJsonDecoder: JsonDecoder[UserEntities] = DeriveJsonDecoder.gen[UserEntities]
   implicit val jEncoder: JsonEncoder[UserEntities]     = DeriveJsonEncoder.gen[UserEntities]
@@ -57,6 +61,7 @@ case class UserMentions(
   id_str: String,
   indices: List[Int]
 )
+@silent("Block result was adapted via implicit conversion")
 object UserMentions {
   implicit val jJsonDecoder: JsonDecoder[UserMentions] = DeriveJsonDecoder.gen[UserMentions]
   implicit val jEncoder: JsonEncoder[UserMentions]     = DeriveJsonEncoder.gen[UserMentions]
@@ -114,6 +119,7 @@ case class User(
   notifications: Boolean,
   translator_type: String
 )
+@silent("Block result was adapted via implicit conversion")
 object User {
   implicit val jJsonDecoder: JsonDecoder[User] = DeriveJsonDecoder.gen[User]
   implicit val jEncoder: JsonEncoder[User]     = DeriveJsonEncoder.gen[User]
@@ -132,6 +138,7 @@ case class Entities(
   user_mentions: List[UserMentions],
   urls: List[Urls]
 )
+@silent("Block result was adapted via implicit conversion")
 object Entities {
   implicit val jJsonDecoder: JsonDecoder[Entities] = DeriveJsonDecoder.gen[Entities]
   implicit val jEncoder: JsonEncoder[Entities]     = DeriveJsonEncoder.gen[Entities]
@@ -170,6 +177,7 @@ case class RetweetedStatus(
   possibly_sensitive: Boolean,
   lang: String
 )
+@silent("Block result was adapted via implicit conversion")
 object RetweetedStatus {
   implicit val jJsonDecoder: JsonDecoder[RetweetedStatus] =
     DeriveJsonDecoder.gen[RetweetedStatus]
@@ -213,6 +221,7 @@ case class Tweet(
   lang: String
 )
 
+@silent("Block result was adapted via implicit conversion")
 object Tweet {
   implicit val zioJsonJsonDecoder: JsonDecoder[Tweet] = DeriveJsonDecoder.gen[Tweet]
   implicit val zioJsonEncoder: JsonEncoder[Tweet]     = DeriveJsonEncoder.gen[Tweet]

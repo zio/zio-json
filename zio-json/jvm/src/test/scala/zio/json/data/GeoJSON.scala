@@ -12,6 +12,8 @@ import playtuples._
 
 package generated {
 
+  import com.github.ghik.silencer.silent
+
   @jsonDiscriminator("type")
   sealed abstract class Geometry
   final case class Point(coordinates: (Double, Double))                          extends Geometry
@@ -31,6 +33,7 @@ package generated {
     features: List[GeoJSON] // NOTE: recursive
   ) extends GeoJSON
 
+  @silent("Block result was adapted via implicit conversion")
   object Geometry {
     implicit lazy val zioJsonJsonDecoder: JsonDecoder[Geometry] =
       DeriveJsonDecoder.gen[Geometry]
@@ -56,6 +59,7 @@ package generated {
     implicit val playFormatter: Play.Format[Geometry]                         = Playx.formatSealed[Geometry]
 
   }
+  @silent("Block result was adapted via implicit conversion")
   object GeoJSON {
     implicit lazy val zioJsonJsonDecoder: JsonDecoder[GeoJSON] =
       DeriveJsonDecoder.gen[GeoJSON]
@@ -78,6 +82,9 @@ package generated {
 }
 
 package handrolled {
+
+  import com.github.ghik.silencer.silent
+
   sealed abstract class Geometry
   final case class Point(coordinates: (Double, Double))                          extends Geometry
   final case class MultiPoint(coordinates: List[(Double, Double)])               extends Geometry
@@ -95,6 +102,7 @@ package handrolled {
     features: List[GeoJSON] // NOTE: recursive
   ) extends GeoJSON
 
+  @silent("Block result was adapted via implicit conversion")
   object Geometry {
     // this is an example of a handrolled decoder that avoids using the
     // backtracking algorithm that is normally used for sealed traits with a
@@ -250,6 +258,7 @@ package handrolled {
     implicit val playFormatter: Play.Format[Geometry]                         = Playx.formatSealed[Geometry]
 
   }
+  @silent("Block result was adapted via implicit conversion")
   object GeoJSON {
     // This uses a hand rolled decoder that guesses the type based on the field
     // names to protect against attack vectors that put the hint at the end of

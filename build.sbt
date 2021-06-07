@@ -260,6 +260,7 @@ lazy val zioJsonInteropRefined = crossProject(JSPlatform, JVMPlatform)
     ),
     testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework")
   )
+  .enablePlugins(BuildInfoPlugin)
 
 lazy val zioJsonInteropScalaz7x = crossProject(JSPlatform, JVMPlatform)
   .in(file("zio-json-interop-scalaz7x"))
@@ -275,6 +276,7 @@ lazy val zioJsonInteropScalaz7x = crossProject(JSPlatform, JVMPlatform)
     ),
     testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework")
   )
+  .enablePlugins(BuildInfoPlugin)
 
 lazy val docs = project
   .in(file("zio-json-docs"))

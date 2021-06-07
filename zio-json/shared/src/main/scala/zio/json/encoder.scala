@@ -237,7 +237,7 @@ private[json] trait EncoderLowPriority0 extends EncoderLowPriority1 {
     seq[A].contramap(_.toSeq)
 
   implicit def array[A: JsonEncoder: reflect.ClassTag]: JsonEncoder[Array[A]] =
-    seq[A].contramap(_.toIndexedSeq.toArray[A])
+    seq[A].contramap(_.toSeq)
 
   implicit def hashSet[A: JsonEncoder]: JsonEncoder[immutable.HashSet[A]] =
     list[A].contramap(_.toList)
