@@ -24,10 +24,6 @@ import scala.annotation._
  * JsonValue / Json / JValue
  */
 sealed abstract class Json { self =>
-  final def delete(cursor: JsonCursor[_, _]): Either[String, Json] = ???
-
-  final def diff(that: Json): JsonDiff = JsonDiff(self, that)
-
   override final def equals(that: Any): Boolean = {
     def objEqual(left: Map[String, Json], right: Chunk[(String, Json)]): Boolean =
       if (right.isEmpty) true
@@ -139,8 +135,6 @@ sealed abstract class Json { self =>
       }
     }
 
-  final def intersect(that: Json): Either[String, Json] = ???
-
   /**
    * - merging objects results in a new objects with all pairs of both sides, with the right hand
    *   side being used on key conflicts
@@ -193,13 +187,6 @@ sealed abstract class Json { self =>
         r
     }
 
-  // TODO: Return Either[String, Json]
-  final def relocate(from: JsonCursor[_, _], to: JsonCursor[_, _]): Either[String, Json] = ???
-
-  // TODO: Return Either[String, Json]
-  final def transformAt[A <: Json](cursor: JsonCursor[_, A])(f: A => Json): Either[String, Json] = ???
-
-  // TODO: Add cursor to all transform / fold methods
   final def transformDown(f: Json => Json): Json = {
     def loop(json: Json): Json =
       f(json) match {
@@ -236,20 +223,12 @@ sealed abstract class Json { self =>
     self.transformUp(total)
   }
 
-  // TODO: Add stateful transformations
-  //       Stateful & errorful transformations???
-
   final def widen: Json = this
 
   override def toString(): String = Json.encoder.encodeJson(this, None).toString
 }
 
 object Json {
-  implicit val orderingJson: Ordering[Json] =
-    new Ordering[Json] {
-      def compare(x: Json, y: Json): Int = ???
-    }
-
   final case class Obj(fields: Chunk[(String, Json)]) extends Json
   object Obj {
     def apply(fields: (String, Json)*): Obj = Obj(Chunk(fields: _*))
