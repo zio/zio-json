@@ -1,5 +1,6 @@
 package zio.json
 
+import com.github.ghik.silencer.silent
 import zio.blocking._
 import zio.json.internal.WriteWriter
 import zio.stream._
@@ -21,7 +22,7 @@ trait JsonEncoderPlatformSpecific[A] { self: JsonEncoder[A] =>
     ZTransducer {
       for {
         runtime     <- ZIO.runtime[Any].toManaged_
-        chunkBuffer <- Ref.makeManaged(Chunk.fromIterable(startWith.fold(List.empty[Char])(_ :: Nil)))
+        chunkBuffer <- Ref.makeManaged(Chunk.fromIterable(startWith.toList))
         writer <- ZManaged.fromAutoCloseable {
                     ZIO.effectTotal {
                       new java.io.BufferedWriter(

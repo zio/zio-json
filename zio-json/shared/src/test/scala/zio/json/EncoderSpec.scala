@@ -1,15 +1,14 @@
 package testzio.json
 
-import java.util.UUID
-
-import scala.collection.mutable
-
 import zio.Chunk
 import zio.json._
 import zio.json.ast.Json
 import zio.test.Assertion._
 import zio.test.TestAspect._
 import zio.test._
+
+import java.util.UUID
+import scala.collection.{ immutable, mutable }
 
 // zioJsonJVM/testOnly testzio.json.EncoderSpec
 object EncoderSpec extends DefaultRunnableSpec {
@@ -70,15 +69,38 @@ object EncoderSpec extends DefaultRunnableSpec {
           assert(List(1, 2, 3).toJson)(equalTo("[1,2,3]")) &&
           assert(Vector[Int]().toJson)(equalTo("[]")) &&
           assert(Vector(1, 2, 3).toJson)(equalTo("[1,2,3]")) &&
+          assert(Seq[Int]().toJson)(equalTo("[]")) &&
+          assert(Seq(1, 2, 3).toJson)(equalTo("[1,2,3]")) &&
+          assert(IndexedSeq[Int]().toJson)(equalTo("[]")) &&
+          assert(IndexedSeq(1, 2, 3).toJson)(equalTo("[1,2,3]")) &&
+          assert(immutable.LinearSeq[Int]().toJson)(equalTo("[]")) &&
+          assert(immutable.LinearSeq(1, 2, 3).toJson)(equalTo("[1,2,3]")) &&
+          assert(immutable.ListSet[Int]().toJson)(equalTo("[]")) &&
+          assert(immutable.ListSet(1, 2, 3).toJson)(equalTo("[1,2,3]")) &&
+          assert(immutable.TreeSet[Int]().toJson)(equalTo("[]")) &&
+          assert(immutable.TreeSet(1, 2, 3).toJson)(equalTo("[1,2,3]")) &&
+          assert(Array[Int]().toJson)(equalTo("[]")) &&
           assert(Array(1, 2, 3).toJson)(equalTo("[1,2,3]")) &&
           assert(Map[String, String]().toJson)(equalTo("{}")) &&
           assert(Map("hello" -> "world").toJson)(equalTo("""{"hello":"world"}""")) &&
           assert(mutable.Map("hello" -> "world").toJson)(equalTo("""{"hello":"world"}""")) &&
           assert(Map("hello" -> Some("world"), "goodbye" -> None).toJson)(equalTo("""{"hello":"world"}""")) &&
           assert(List[Int]().toJsonPretty)(equalTo("[]")) &&
-          assert(List(1, 2, 3).toJsonPretty)(equalTo("[1, 2, 3]")) &&
+          assert(List(1, 2, 3).toJsonPretty)(equalTo("[\n  1,\n  2,\n  3\n]")) &&
           assert(Vector[Int]().toJsonPretty)(equalTo("[]")) &&
-          assert(Vector(1, 2, 3).toJsonPretty)(equalTo("[1, 2, 3]")) &&
+          assert(Vector(1, 2, 3).toJsonPretty)(equalTo("[\n  1,\n  2,\n  3\n]")) &&
+          assert(Seq[String]().toJsonPretty)(equalTo("[]")) &&
+          assert(Seq("foo", "bar").toJsonPretty)(equalTo("[\n  \"foo\",\n  \"bar\"\n]")) &&
+          assert(IndexedSeq[String]().toJsonPretty)(equalTo("[]")) &&
+          assert(IndexedSeq("foo", "bar").toJsonPretty)(equalTo("[\n  \"foo\",\n  \"bar\"\n]")) &&
+          assert(immutable.LinearSeq[String]().toJsonPretty)(equalTo("[]")) &&
+          assert(immutable.LinearSeq("foo", "bar").toJsonPretty)(equalTo("[\n  \"foo\",\n  \"bar\"\n]")) &&
+          assert(immutable.ListSet[String]().toJsonPretty)(equalTo("[]")) &&
+          assert(immutable.ListSet("foo", "bar").toJsonPretty)(equalTo("[\n  \"foo\",\n  \"bar\"\n]")) &&
+          assert(immutable.TreeSet[String]().toJsonPretty)(equalTo("[]")) &&
+          assert(immutable.TreeSet("bar", "foo").toJsonPretty)(equalTo("[\n  \"bar\",\n  \"foo\"\n]")) &&
+          assert(Array[Int]().toJsonPretty)(equalTo("[]")) &&
+          assert(Array(1, 2, 3).toJsonPretty)(equalTo("[\n  1,\n  2,\n  3\n]")) &&
           assert(Map[String, String]().toJsonPretty)(equalTo("{}")) &&
           assert(Map("hello" -> "world").toJsonPretty)(equalTo("{\n  \"hello\" : \"world\"\n}")) &&
           assert(Map("hello" -> Some("world"), "goodbye" -> None).toJsonPretty)(

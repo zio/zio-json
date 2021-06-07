@@ -1,14 +1,10 @@
 package testzio.json
 
-import java.nio.charset.StandardCharsets
-import java.nio.file.Paths
-
 import io.circe
 import org.typelevel.jawn.{ ast => jawn }
 import testzio.json.TestUtils._
 import testzio.json.data.googlemaps._
 import testzio.json.data.twitter._
-
 import zio._
 import zio.blocking._
 import zio.duration._
@@ -19,6 +15,9 @@ import zio.test.Assertion._
 import zio.test.TestAspect._
 import zio.test._
 import zio.test.environment.TestEnvironment
+
+import java.nio.charset.StandardCharsets
+import java.nio.file.Paths
 
 object DecoderPlatformSpecificSpec extends DefaultRunnableSpec {
 

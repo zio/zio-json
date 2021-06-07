@@ -1,17 +1,16 @@
 package zio.json
 
-import java.util.UUID
-
-import scala.annotation._
-import scala.collection.{ immutable, mutable }
-import scala.util.control.NoStackTrace
-
 import zio.Chunk
 import zio.json.JsonDecoder.JsonError
 import zio.json.ast.Json
 import zio.json.internal._
 import zio.json.javatime.DurationParser.DurationParseException
 import zio.json.javatime.{ DurationParser, ZonedDateTimeParser }
+
+import java.util.UUID
+import scala.annotation._
+import scala.collection.{ immutable, mutable }
+import scala.util.control.NoStackTrace
 
 /**
  * A `JsonDecoder[A]` instance has the ability to decode JSON to values of type `A`, potentially
@@ -503,11 +502,11 @@ private[json] trait DecoderLowPriority1 extends DecoderLowPriority2 {
       builder(trace, in, immutable.Seq.newBuilder[A])
   }
 
-  implicit def indexedSeq[A: JsonDecoder]: JsonDecoder[immutable.IndexedSeq[A]] =
-    new JsonDecoder[immutable.IndexedSeq[A]] {
+  implicit def indexedSeq[A: JsonDecoder]: JsonDecoder[IndexedSeq[A]] =
+    new JsonDecoder[IndexedSeq[A]] {
 
       def unsafeDecode(trace: List[JsonError], in: RetractReader) =
-        builder(trace, in, immutable.IndexedSeq.newBuilder[A])
+        builder(trace, in, IndexedSeq.newBuilder[A])
     }
 
   implicit def linearSeq[A: JsonDecoder]: JsonDecoder[immutable.LinearSeq[A]] =

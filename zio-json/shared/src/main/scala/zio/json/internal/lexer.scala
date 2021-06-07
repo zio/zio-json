@@ -1,8 +1,8 @@
 package zio.json.internal
 
-import scala.annotation._
-
 import zio.json.JsonDecoder.{ JsonError, UnsafeJson }
+
+import scala.annotation._
 
 // tries to stick to the spec, but maybe a bit loose in places (e.g. numbers)
 //

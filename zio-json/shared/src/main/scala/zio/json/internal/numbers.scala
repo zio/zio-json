@@ -1,7 +1,6 @@
 package zio.json.internal
 
 import java.io._
-
 import scala.util.control.NoStackTrace
 
 /**

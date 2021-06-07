@@ -5,7 +5,6 @@
 package zio.json.internal
 
 import java.util.Arrays
-
 import scala.annotation._
 import scala.util.control.NoStackTrace
 

@@ -1,15 +1,14 @@
 package zio.json
 
-import java.time.format.{ DateTimeFormatterBuilder, SignStyle }
-import java.time.temporal.ChronoField.YEAR
-import java.util.UUID
-
-import scala.annotation._
-import scala.collection.{ immutable, mutable }
-
 import zio.Chunk
 import zio.json.ast.Json
 import zio.json.internal.{ FastStringWrite, Write }
+
+import java.time.format.{ DateTimeFormatterBuilder, SignStyle }
+import java.time.temporal.ChronoField.YEAR
+import java.util.UUID
+import scala.annotation._
+import scala.collection.{ immutable, mutable }
 
 trait JsonEncoder[A] extends JsonEncoderPlatformSpecific[A] {
   self =>
@@ -238,7 +237,7 @@ private[json] trait EncoderLowPriority0 extends EncoderLowPriority1 {
     seq[A].contramap(_.toSeq)
 
   implicit def array[A: JsonEncoder: reflect.ClassTag]: JsonEncoder[Array[A]] =
-    seq[A].contramap(_.toArray[A])
+    seq[A].contramap(_.toSeq)
 
   implicit def hashSet[A: JsonEncoder]: JsonEncoder[immutable.HashSet[A]] =
     list[A].contramap(_.toList)
@@ -251,6 +250,14 @@ private[json] trait EncoderLowPriority1 extends EncoderLowPriority2 {
   this: JsonEncoder.type =>
 
   implicit def seq[A: JsonEncoder]: JsonEncoder[Seq[A]] = iterable[A, Seq]
+
+  implicit def indexedSeq[A: JsonEncoder]: JsonEncoder[IndexedSeq[A]] = iterable[A, IndexedSeq]
+
+  implicit def linearSeq[A: JsonEncoder]: JsonEncoder[immutable.LinearSeq[A]] = iterable[A, immutable.LinearSeq]
+
+  implicit def listSet[A: JsonEncoder]: JsonEncoder[immutable.ListSet[A]] = iterable[A, immutable.ListSet]
+
+  implicit def treeSet[A: JsonEncoder]: JsonEncoder[immutable.TreeSet[A]] = iterable[A, immutable.TreeSet]
 
   implicit def list[A: JsonEncoder]: JsonEncoder[List[A]] = iterable[A, List]
 
@@ -278,14 +285,23 @@ private[json] trait EncoderLowPriority2 extends EncoderLowPriority3 {
     new JsonEncoder[T[A]] {
 
       def unsafeEncode(as: T[A], indent: Option[Int], out: Write): Unit = {
+        if (as.isEmpty) return out.write("[]")
+
         out.write('[')
+        val indent_ = bump(indent)
+        pad(indent_, out)
         var first = true
         as.foreach { a =>
-          if (first) first = false
-          else if (indent.isEmpty) out.write(',')
-          else out.write(", ")
-          A.unsafeEncode(a, indent, out)
+          if (first)
+            first = false
+          else {
+            out.write(',')
+            if (!indent.isEmpty)
+              pad(indent_, out)
+          }
+          A.unsafeEncode(a, indent_, out)
         }
+        pad(indent, out)
         out.write(']')
       }
 
