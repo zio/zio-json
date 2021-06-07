@@ -40,6 +40,7 @@ lazy val root = project
     unusedCompileDependenciesFilter -= moduleFilter("org.scala-js", "scalajs-library")
   )
   .aggregate(
+    docs,
     zioJsonJVM,
     zioJsonJS,
     zioJsonYaml,
@@ -282,8 +283,11 @@ lazy val docs = project
   .in(file("zio-json-docs"))
   .dependsOn(
     zioJsonJVM,
-    zioJsonInteropScalaz7x.jvm,
-    zioJsonInteropRefined.jvm
+    zioJsonYaml,
+    zioJsonMacrosJVM,
+    zioJsonInteropHttp4s,
+    zioJsonInteropRefined.jvm,
+    zioJsonInteropScalaz7x.jvm
   )
   .settings(
     publish / skip := true,
@@ -300,11 +304,17 @@ lazy val docs = project
     libraryDependencies ++= Seq(
       "dev.zio" %% "zio" % zioVersion
     ),
-    ScalaUnidoc / unidoc / unidocProjectFilter := inProjects(root),
+    ScalaUnidoc / unidoc / unidocProjectFilter := inProjects(
+      zioJsonJVM,
+      zioJsonYaml,
+      zioJsonMacrosJVM,
+      zioJsonInteropHttp4s,
+      zioJsonInteropRefined.jvm,
+      zioJsonInteropScalaz7x.jvm
+    ),
     ScalaUnidoc / unidoc / target := (LocalRootProject / baseDirectory).value / "website" / "static" / "api",
     cleanFiles += (ScalaUnidoc / unidoc / target).value,
     docusaurusCreateSite := docusaurusCreateSite.dependsOn(Compile / unidoc).value,
     docusaurusPublishGhpages := docusaurusPublishGhpages.dependsOn(Compile / unidoc).value
   )
-  .dependsOn(root)
   .enablePlugins(MdocPlugin, DocusaurusPlugin, ScalaUnidocPlugin)
