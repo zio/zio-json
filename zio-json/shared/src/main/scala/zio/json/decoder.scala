@@ -1,7 +1,6 @@
 package zio.json
 
 import zio.Chunk
-import zio.json.JsonDecoder.JsonError
 import zio.json.ast.Json
 import zio.json.internal._
 import zio.json.javatime.DurationParser.DurationParseException
@@ -11,6 +10,32 @@ import java.util.UUID
 import scala.annotation._
 import scala.collection.{ immutable, mutable }
 import scala.util.control.NoStackTrace
+
+/**
+ * A `JsonError` value describes the ways in which decoding could fail. This structure is used
+ * to facilitate human-readable error messages during decoding failures.
+ */
+sealed abstract class JsonError
+
+object JsonError {
+
+  def render(trace: List[JsonError]): String =
+    trace.reverse.map {
+      case Message(txt)        => s"($txt)"
+      case ArrayAccess(i)      => s"[$i]"
+      case ObjectAccess(field) => s".$field"
+      case SumType(cons)       => s"{$cons}"
+    }.mkString
+
+  final case class Message(txt: String) extends JsonError
+
+  final case class ArrayAccess(i: Int) extends JsonError
+
+  final case class ObjectAccess(field: String) extends JsonError
+
+  final case class SumType(cons: String) extends JsonError
+
+}
 
 /**
  * A `JsonDecoder[A]` instance has the ability to decode JSON to values of type `A`, potentially
@@ -187,6 +212,9 @@ trait JsonDecoder[A] extends JsonDecoderPlatformSpecific[A] {
 }
 
 object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority0 {
+  type JsonError = zio.json.JsonError
+  val JsonError = zio.json.JsonError
+
   def apply[A](implicit a: JsonDecoder[A]): JsonDecoder[A] = a
 
   /**
@@ -198,32 +226,6 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority0 {
   final case class UnsafeJson(trace: List[JsonError])
       extends Exception("If you see this, a developer made a mistake using JsonDecoder")
       with NoStackTrace
-
-  /**
-   * A `JsonError` value describes the ways in which decoding could fail. This structure is used
-   * to facilitate human-readable error messages during decoding failures.
-   */
-  sealed abstract class JsonError
-
-  object JsonError {
-
-    def render(trace: List[JsonError]): String =
-      trace.reverse.map {
-        case Message(txt)        => s"($txt)"
-        case ArrayAccess(i)      => s"[$i]"
-        case ObjectAccess(field) => s".$field"
-        case SumType(cons)       => s"{$cons}"
-      }.mkString
-
-    final case class Message(txt: String) extends JsonError
-
-    final case class ArrayAccess(i: Int) extends JsonError
-
-    final case class ObjectAccess(field: String) extends JsonError
-
-    final case class SumType(cons: String) extends JsonError
-
-  }
 
   def peekChar[A](partialFunction: PartialFunction[Char, JsonDecoder[A]]): JsonDecoder[A] = new JsonDecoder[A] {
 
@@ -383,22 +385,24 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority0 {
         val values: Array[Any] = Array.ofDim(2)
 
         if (Lexer.firstField(trace, in))
-          do {
-            val field = Lexer.field(trace, in, matrix)
-            if (field == -1) Lexer.skipValue(trace, in)
-            else {
-              val trace_ = spans(field) :: trace
-              if (field < 3) {
-                if (values(0) != null)
-                  throw UnsafeJson(JsonError.Message("duplicate") :: trace_)
-                values(0) = A.unsafeDecode(trace_, in)
-              } else {
-                if (values(1) != null)
-                  throw UnsafeJson(JsonError.Message("duplicate") :: trace_)
-                values(1) = B.unsafeDecode(trace_, in)
+          while ({
+            {
+              val field = Lexer.field(trace, in, matrix)
+              if (field == -1) Lexer.skipValue(trace, in)
+              else {
+                val trace_ = spans(field) :: trace
+                if (field < 3) {
+                  if (values(0) != null)
+                    throw UnsafeJson(JsonError.Message("duplicate") :: trace_)
+                  values(0) = A.unsafeDecode(trace_, in)
+                } else {
+                  if (values(1) != null)
+                    throw UnsafeJson(JsonError.Message("duplicate") :: trace_)
+                  values(1) = B.unsafeDecode(trace_, in)
+                }
               }
-            }
-          } while (Lexer.nextField(trace, in))
+            }; Lexer.nextField(trace, in)
+          }) ()
 
         if (values(0) == null && values(1) == null)
           throw UnsafeJson(JsonError.Message("missing fields") :: trace)
@@ -419,11 +423,13 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority0 {
   )(implicit A: JsonDecoder[A]): T[A] = {
     Lexer.char(trace, in, '[')
     var i: Int = 0
-    if (Lexer.firstArrayElement(in)) do {
-      val trace_ = JsonError.ArrayAccess(i) :: trace
-      builder += A.unsafeDecode(trace_, in)
-      i += 1
-    } while (Lexer.nextArrayElement(trace, in))
+    if (Lexer.firstArrayElement(in)) while ({
+      {
+        val trace_ = JsonError.ArrayAccess(i) :: trace
+        builder += A.unsafeDecode(trace_, in)
+        i += 1
+      }; Lexer.nextArrayElement(trace, in)
+    }) ()
     builder.result()
   }
 
@@ -434,13 +440,15 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority0 {
   )(implicit K: JsonFieldDecoder[K], V: JsonDecoder[V]): T[K, V] = {
     Lexer.char(trace, in, '{')
     if (Lexer.firstField(trace, in))
-      do {
-        val field  = Lexer.string(trace, in).toString
-        val trace_ = JsonError.ObjectAccess(field) :: trace
-        Lexer.char(trace_, in, ':')
-        val value = V.unsafeDecode(trace_, in)
-        builder += ((K.unsafeDecodeField(trace_, field), value))
-      } while (Lexer.nextField(trace, in))
+      while ({
+        {
+          val field  = Lexer.string(trace, in).toString
+          val trace_ = JsonError.ObjectAccess(field) :: trace
+          Lexer.char(trace_, in, ':')
+          val value = V.unsafeDecode(trace_, in)
+          builder += ((K.unsafeDecodeField(trace_, field), value))
+        }; Lexer.nextField(trace, in)
+      }) ()
     builder.result()
   }
 

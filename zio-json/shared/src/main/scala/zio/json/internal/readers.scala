@@ -28,7 +28,7 @@ private[zio] trait OneCharReader extends java.io.Reader {
 
   def nextNonWhitespace(): Char = {
     var c: Char = 0
-    do c = readChar() while (isWhitespace(c))
+    while ({ c = readChar(); isWhitespace(c) }) ()
     c
   }
 
@@ -89,10 +89,12 @@ private[zio] final class FastStringReader(s: CharSequence) extends RetractReader
     else history(i - 1)
   }
   override def nextNonWhitespace(): Char = {
-    do {
-      i += 1
-      if (i > len) throw new UnexpectedEnd
-    } while (isWhitespace(history(i - 1)))
+    while ({
+      {
+        i += 1
+        if (i > len) throw new UnexpectedEnd
+      }; isWhitespace(history(i - 1))
+    }) ()
     history(i - 1)
   }
 
