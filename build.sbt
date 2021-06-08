@@ -198,7 +198,7 @@ lazy val zioJsonYaml = project
   .enablePlugins(NeoJmhPlugin)
   .settings(
     libraryDependencies ++= Seq(
-      "org.yaml" % "snakeyaml"    % "1.28",
+      "org.yaml" % "snakeyaml"    % "1.29",
       "dev.zio" %% "zio"          % zioVersion,
       "dev.zio" %% "zio-test"     % zioVersion % "test",
       "dev.zio" %% "zio-test-sbt" % zioVersion % "test"
