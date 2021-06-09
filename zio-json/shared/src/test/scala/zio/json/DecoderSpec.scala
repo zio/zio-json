@@ -156,11 +156,27 @@ object DecoderSpec extends DefaultRunnableSpec {
           assert(jsonStr.fromJson[Chunk[String]])(isRight(equalTo(expected)))
         },
         test("java.util.UUID") {
-          val ok  = """"64d7c38d-2afd-4004-9832-4e700fe400f8""""
-          val bad = """"""""
+          val ok1  = """"64d7c38d-2afd-4514-9832-4e70afe4b0f8""""
+          val ok2  = """"0000000064D7C38D-FD-14-32-70AFE4B0f8""""
+          val ok3  = """"0-0-0-0-0""""
+          val bad1 = """"""""
+          val bad2 = """"64d7c38d-2afd-4514-9832-4e70afe4b0f80""""
+          val bad3 = """"64d7c38d-2afd-4514-983-4e70afe4b0f80""""
+          val bad4 = """"64d7c38d-2afd--9832-4e70afe4b0f8""""
+          val bad5 = """"64d7c38d-2afd-XXXX-9832-4e70afe4b0f8""""
+          val bad6 = """"64d7c38d-2afd-X-9832-4e70afe4b0f8""""
+          val bad7 = """"0-0-0-0-00000000000000000""""
 
-          assert(ok.fromJson[UUID])(isRight(equalTo(UUID.fromString("64d7c38d-2afd-4004-9832-4e700fe400f8")))) &&
-          assert(bad.fromJson[UUID])(isLeft(containsString("Invalid UUID")))
+          assert(ok1.fromJson[UUID])(isRight(equalTo(UUID.fromString("64d7c38d-2afd-4514-9832-4e70afe4b0f8")))) &&
+          assert(ok2.fromJson[UUID])(isRight(equalTo(UUID.fromString("64D7C38D-00FD-0014-0032-0070AfE4B0f8")))) &&
+          assert(ok3.fromJson[UUID])(isRight(equalTo(UUID.fromString("00000000-0000-0000-0000-000000000000")))) &&
+          assert(bad1.fromJson[UUID])(isLeft(containsString("Invalid UUID: "))) &&
+          assert(bad2.fromJson[UUID])(isLeft(containsString("Invalid UUID: UUID string too large"))) &&
+          assert(bad3.fromJson[UUID])(isLeft(containsString("Invalid UUID: 64d7c38d-2afd-4514-983-4e70afe4b0f80"))) &&
+          assert(bad4.fromJson[UUID])(isLeft(containsString("Invalid UUID: 64d7c38d-2afd--9832-4e70afe4b0f8"))) &&
+          assert(bad5.fromJson[UUID])(isLeft(containsString("Invalid UUID: 64d7c38d-2afd-XXXX-9832-4e70afe4b0f8"))) &&
+          assert(bad6.fromJson[UUID])(isLeft(containsString("Invalid UUID: 64d7c38d-2afd-X-9832-4e70afe4b0f8"))) &&
+          assert(bad7.fromJson[UUID])(isLeft(containsString("Invalid UUID: 0-0-0-0-00000000000000000")))
         }
       ),
       suite("fromJsonAST")(
@@ -293,11 +309,27 @@ object DecoderSpec extends DefaultRunnableSpec {
           assert(json.as[Chunk[String]])(isRight(equalTo(expected)))
         },
         test("java.util.UUID") {
-          val ok  = Json.Str("64d7c38d-2afd-4004-9832-4e700fe400f8")
-          val bad = Json.Str("")
+          val ok1  = Json.Str("64d7c38d-2afd-4514-9832-4e70afe4b0f8")
+          val ok2  = Json.Str("0000000064D7C38D-FD-14-32-70AFE4B0f8")
+          val ok3  = Json.Str("0-0-0-0-0")
+          val bad1 = Json.Str("")
+          val bad2 = Json.Str("64d7c38d-2afd-4514-9832-4e70afe4b0f80")
+          val bad3 = Json.Str("64d7c38d-2afd-4514-983-4e70afe4b0f80")
+          val bad4 = Json.Str("64d7c38d-2afd--9832-4e70afe4b0f8")
+          val bad5 = Json.Str("64d7c38d-2afd-XXXX-9832-4e70afe4b0f8")
+          val bad6 = Json.Str("64d7c38d-2afd-X-9832-4e70afe4b0f8")
+          val bad7 = Json.Str("0-0-0-0-00000000000000000")
 
-          assert(ok.as[UUID])(isRight(equalTo(UUID.fromString("64d7c38d-2afd-4004-9832-4e700fe400f8")))) &&
-          assert(bad.as[UUID])(isLeft(containsString("Invalid UUID")))
+          assert(ok1.as[UUID])(isRight(equalTo(UUID.fromString("64d7c38d-2afd-4514-9832-4e70afe4b0f8")))) &&
+          assert(ok2.as[UUID])(isRight(equalTo(UUID.fromString("64D7C38D-00FD-0014-0032-0070AFE4B0f8")))) &&
+          assert(ok3.as[UUID])(isRight(equalTo(UUID.fromString("00000000-0000-0000-0000-000000000000")))) &&
+          assert(bad1.as[UUID])(isLeft(containsString("Invalid UUID: "))) &&
+          assert(bad2.as[UUID])(isLeft(containsString("Invalid UUID: UUID string too large"))) &&
+          assert(bad3.as[UUID])(isLeft(containsString("Invalid UUID: 64d7c38d-2afd-4514-983-4e70afe4b0f80"))) &&
+          assert(bad4.as[UUID])(isLeft(containsString("Invalid UUID: 64d7c38d-2afd--9832-4e70afe4b0f8"))) &&
+          assert(bad5.as[UUID])(isLeft(containsString("Invalid UUID: 64d7c38d-2afd-XXXX-9832-4e70afe4b0f8"))) &&
+          assert(bad6.as[UUID])(isLeft(containsString("Invalid UUID: 64d7c38d-2afd-X-9832-4e70afe4b0f8"))) &&
+          assert(bad7.as[UUID])(isLeft(containsString("Invalid UUID: 0-0-0-0-00000000000000000")))
         }
       )
     )
