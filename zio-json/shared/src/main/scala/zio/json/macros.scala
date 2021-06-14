@@ -70,7 +70,15 @@ object DeriveJsonDecoder {
     if (ctx.parameters.isEmpty)
       new JsonDecoder[A] {
         def unsafeDecode(trace: List[JsonError], in: RetractReader): A = {
-          if (no_extra) {
+          // if we expect a case object we check string with his name
+          if (ctx.isObject) {
+            val value = Lexer.string(trace, in).toString
+            if (value == ctx.typeName.short) {
+              ctx.rawConstruct(Nil)
+            } else {
+              throw UnsafeJson(JsonError.Message(s"expected ${ctx.typeName.short} got '$value'") :: trace)
+            }
+          } else if (no_extra) {
             Lexer.char(trace, in, '{')
             Lexer.char(trace, in, '}')
           } else {
@@ -213,29 +221,48 @@ object DeriveJsonDecoder {
       ctx.subtypes.map(_.typeclass).toArray.asInstanceOf[Array[JsonDecoder[Any]]]
     lazy val namesMap: Map[String, Int] = names.zipWithIndex.toMap
 
+    // we search over the subtypes and tries to the current string with each one
+    def findEnumMatches(trace: List[JsonError], in: RetractReader): Option[A] = {
+      import scala.util.Try
+      Try {
+        val value = Lexer.string(trace, in).toString
+        ctx.subtypes
+          .foldLeft(None.asInstanceOf[Option[A]]) {
+            case (v @ Some(_), _) => v
+            case (_, s)           => s.typeclass.decodeJson(s""""$value"""").toOption
+          }
+      }.getOrElse(None)
+    }
+
     def discrim = ctx.annotations.collectFirst { case jsonDiscriminator(n) => n }
     if (discrim.isEmpty)
       new JsonDecoder[A] {
         val spans: Array[JsonError] = names.map(JsonError.ObjectAccess(_))
-        def unsafeDecode(trace: List[JsonError], in: RetractReader): A = {
-          Lexer.char(trace, in, '{')
-          // we're not allowing extra fields in this encoding
-          if (Lexer.firstField(trace, in)) {
-            val field = Lexer.field(trace, in, matrix)
-            if (field != -1) {
-              val trace_ = spans(field) :: trace
-              val a      = tcs(field).unsafeDecode(trace_, in).asInstanceOf[A]
-              Lexer.char(trace, in, '}')
-              a
+        def unsafeDecode(trace: List[JsonError], in: RetractReader): A =
+          try {
+            Lexer.char(trace, in, '{')
+            // we're not allowing extra fields in this encoding
+            if (Lexer.firstField(trace, in)) {
+              val field = Lexer.field(trace, in, matrix)
+              if (field != -1) {
+                val trace_ = spans(field) :: trace
+                val a      = tcs(field).unsafeDecode(trace_, in).asInstanceOf[A]
+                Lexer.char(trace, in, '}')
+                a
+              } else
+                throw UnsafeJson(
+                  JsonError.Message("invalid disambiguator") :: trace
+                )
             } else
               throw UnsafeJson(
-                JsonError.Message("invalid disambiguator") :: trace
+                JsonError.Message("expected non-empty object") :: trace
               )
-          } else
-            throw UnsafeJson(
-              JsonError.Message("expected non-empty object") :: trace
-            )
-        }
+          } catch {
+            case e: UnsafeJson =>
+              // try to match a enum case object
+              in.retract()
+              findEnumMatches(trace, in).getOrElse(throw e)
+          }
 
         override final def fromJsonAST(json: Json): Either[String, A] =
           json match {
@@ -304,7 +331,16 @@ object DeriveJsonEncoder {
   type Typeclass[A] = JsonEncoder[A]
 
   def combine[A](ctx: CaseClass[JsonEncoder, A]): JsonEncoder[A] =
-    if (ctx.parameters.isEmpty)
+    // encode a case object simply with his name as a string
+    if (ctx.isObject) {
+      new JsonEncoder[A] {
+        def unsafeEncode(a: A, indent: Option[Int], out: Write): Unit =
+          out.write(s""""${ctx.typeName.short}"""")
+
+        override final def toJsonAST(a: A): Either[String, Json] =
+          Right(Json.Obj(Chunk.empty))
+      }
+    } else if (ctx.parameters.isEmpty)
       new JsonEncoder[A] {
         def unsafeEncode(a: A, indent: Option[Int], out: Write): Unit = out.write("{}")
 
@@ -372,6 +408,12 @@ object DeriveJsonEncoder {
       }
 
   def dispatch[A](ctx: SealedTrait[JsonEncoder, A]): JsonEncoder[A] = {
+    // check if `x` is a case object (enum)
+    def isCaseObject(x: Any): Boolean =
+      // scala js does not supports getFields
+      // x.getClass.getFields.map(_.getName) contains "MODULE$"
+      x.getClass.getName.endsWith("$")
+
     val names: Array[String] = ctx.subtypes.map { p =>
       p.annotations.collectFirst { case jsonHint(name) =>
         name
@@ -381,15 +423,19 @@ object DeriveJsonEncoder {
     if (discrim.isEmpty)
       new JsonEncoder[A] {
         def unsafeEncode(a: A, indent: Option[Int], out: Write): Unit = ctx.dispatch(a) { sub =>
-          out.write("{")
-          val indent_ = JsonEncoder.bump(indent)
-          JsonEncoder.pad(indent_, out)
-          JsonEncoder.string.unsafeEncode(names(sub.index), indent_, out)
-          if (indent.isEmpty) out.write(":")
-          else out.write(" : ")
-          sub.typeclass.unsafeEncode(sub.cast(a), indent_, out)
-          JsonEncoder.pad(indent, out)
-          out.write("}")
+          if (isCaseObject(a)) {
+            sub.typeclass.unsafeEncode(sub.cast(a), indent, out)
+          } else {
+            out.write("{")
+            val indent_ = JsonEncoder.bump(indent)
+            JsonEncoder.pad(indent_, out)
+            JsonEncoder.string.unsafeEncode(names(sub.index), indent_, out)
+            if (indent.isEmpty) out.write(":")
+            else out.write(" : ")
+            sub.typeclass.unsafeEncode(sub.cast(a), indent_, out)
+            JsonEncoder.pad(indent, out)
+            out.write("}")
+          }
         }
 
         override def toJsonAST(a: A): Either[String, Json] =

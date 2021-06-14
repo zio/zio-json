@@ -331,6 +331,25 @@ object DecoderSpec extends DefaultRunnableSpec {
           assert(bad6.as[UUID])(isLeft(containsString("Invalid UUID: 64d7c38d-2afd-X-9832-4e70afe4b0f8"))) &&
           assert(bad7.as[UUID])(isLeft(containsString("Invalid UUID: 0-0-0-0-00000000000000000")))
         }
+      ),
+      suite("decode enums")(
+        test("simple enum") {
+          import exampleenums._
+
+          val jsonStr  = """"Yellow""""
+          val expected = Yellow
+
+          assert(jsonStr.fromJson[Color])(isRight(equalTo(expected)))
+        },
+        test("case class with enum") {
+
+          import exampleenums._
+
+          val jsonStr  = """{"color": "Yellow", "name": "yellowStyle"}"""
+          val expected = Style(name = "yellowStyle", color = Yellow)
+
+          assert(jsonStr.fromJson[Style])(isRight(equalTo(expected)))
+        }
       )
     )
 
@@ -402,4 +421,20 @@ object DecoderSpec extends DefaultRunnableSpec {
     implicit val eventEncoder: JsonEncoder[Event] = DeriveJsonEncoder.gen[Event]
   }
 
+  object exampleenums {
+
+    sealed trait Color
+    case object Green  extends Color
+    case object Yellow extends Color
+
+    case class Style(name: String, color: Color)
+
+    object Style {
+      implicit val decoder: JsonDecoder[Style] = DeriveJsonDecoder.gen[Style]
+    }
+    object Color {
+      implicit val decoder: JsonDecoder[Color] = DeriveJsonDecoder.gen[Color]
+    }
+
+  }
 }

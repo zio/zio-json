@@ -162,7 +162,23 @@ object EncoderSpec extends DefaultRunnableSpec {
         test("exclude fields") {
           import exampleexcludefield._
           assert(Person("Peter", 20).toJson)(equalTo("""{"name":"Peter"}"""))
-        }
+        },
+        suite("enums")(
+          test("encode enum object") {
+            import exampleenums._
+
+            val value: Color = Yellow
+
+            assert(value.toJson)(equalTo(""""Yellow""""))
+          },
+          test("encode product with enum") {
+            import exampleenums._
+
+            val value: Style = Style(name = "yellow", color = Yellow)
+
+            assert(value.toJson)(equalTo("""{"name":"yellow","color":"Yellow"}"""))
+          }
+        )
       ),
       suite("toJsonAST")(
         suite("primitives")(
@@ -328,4 +344,20 @@ object EncoderSpec extends DefaultRunnableSpec {
 
   }
 
+  object exampleenums {
+
+    sealed trait Color
+    case object Green  extends Color
+    case object Yellow extends Color
+
+    case class Style(name: String, color: Color)
+
+    object Style {
+      implicit val encoder: JsonEncoder[Style] = DeriveJsonEncoder.gen[Style]
+    }
+    object Color {
+      implicit val encoder: JsonEncoder[Color] = DeriveJsonEncoder.gen[Color]
+    }
+
+  }
 }
