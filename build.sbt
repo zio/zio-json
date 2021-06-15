@@ -68,21 +68,34 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform)
     scalacOptions -= "-opt:l:inline",
     scalacOptions -= "-opt-inline-from:zio.internal.**",
     libraryDependencies ++= Seq(
-      "com.propensive"                        %%% "magnolia"                % "0.17.0",
-      "org.scala-lang"                          % "scala-reflect"           % scalaVersion.value % Provided,
-      "dev.zio"                               %%% "zio"                     % zioVersion,
-      "dev.zio"                               %%% "zio-streams"             % zioVersion,
-      "org.scala-lang.modules"                %%% "scala-collection-compat" % "2.4.4",
-      "dev.zio"                               %%% "zio-test"                % zioVersion         % "test",
-      "dev.zio"                               %%% "zio-test-sbt"            % zioVersion         % "test",
-      "io.circe"                              %%% "circe-core"              % circeVersion       % "test",
-      "io.circe"                              %%% "circe-generic"           % circeVersion       % "test",
-      "io.circe"                              %%% "circe-parser"            % circeVersion       % "test",
-      "io.circe"                              %%% "circe-generic-extras"    % circeVersion       % "test",
-      "com.typesafe.play"                     %%% "play-json"               % "2.9.2"            % "test",
-      "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-core"     % "2.8.2"            % "test",
-      "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-macros"   % "2.8.2"            % "test"
+      "dev.zio"                %%% "zio"                     % zioVersion,
+      "dev.zio"                %%% "zio-streams"             % zioVersion,
+      "org.scala-lang.modules" %%% "scala-collection-compat" % "2.4.4",
+      "dev.zio"                %%% "zio-test"                % zioVersion   % "test",
+      "dev.zio"                %%% "zio-test-sbt"            % zioVersion   % "test",
+      "io.circe"               %%% "circe-core"              % circeVersion % "test",
+      "io.circe"               %%% "circe-generic"           % circeVersion % "test",
+      "io.circe"               %%% "circe-parser"            % circeVersion % "test"
     ),
+    // scala version specific depenendies
+    libraryDependencies ++= {
+      CrossVersion.partialVersion(scalaVersion.value) match {
+        case Some((3, _)) =>
+          Vector(
+            "com.softwaremill.magnolia" %% "magnolia-core" % "2.0.0-M8"
+          )
+
+        case _ =>
+          Vector(
+            "org.scala-lang"                          % "scala-reflect"         % scalaVersion.value % Provided,
+            "com.propensive"                        %%% "magnolia"              % "0.17.0",
+            "io.circe"                              %%% "circe-generic-extras"  % circeVersion       % "test",
+            "com.typesafe.play"                     %%% "play-json"             % "2.9.2"            % "test",
+            "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-core"   % "2.8.2"            % "test",
+            "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-macros" % "2.8.2"            % "test"
+          )
+      }
+    },
     Compile / sourceGenerators += Def.task {
       val dir  = (Compile / sourceManaged).value
       val file = dir / "zio" / "json" / "GeneratedTupleDecoders.scala"
@@ -176,10 +189,20 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform)
     )
   )
   .jvmSettings(
-    libraryDependencies ++= Seq(
-      "ai.x"          %% "play-json-extensions" % "0.42.0" % "test",
-      "org.typelevel" %% "jawn-ast"             % "1.1.2"  % "test"
-    )
+    libraryDependencies ++= {
+      CrossVersion.partialVersion(scalaVersion.value) match {
+        case Some((3, _)) =>
+          Vector(
+            "org.typelevel" %% "jawn-ast" % "1.1.2" % "test"
+          )
+
+        case _ =>
+          Seq(
+            "ai.x"          %% "play-json-extensions" % "0.42.0" % "test",
+            "org.typelevel" %% "jawn-ast"             % "1.1.2"  % "test"
+          )
+      }
+    }
   )
   .enablePlugins(BuildInfoPlugin)
 
