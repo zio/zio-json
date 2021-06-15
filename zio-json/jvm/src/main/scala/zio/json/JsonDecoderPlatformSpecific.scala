@@ -123,7 +123,7 @@ trait JsonDecoderPlatformSpecific[A] { self: JsonDecoder[A] =>
                       }
                       .interruptible
                       .forkManaged
-        push = { is: Option[Chunk[Char]] =>
+        push = { (is: Option[Chunk[Char]]) =>
           val pollElements: IO[Throwable, Chunk[A]] =
             outQueue
               .takeUpTo(ZStream.DefaultChunkSize)

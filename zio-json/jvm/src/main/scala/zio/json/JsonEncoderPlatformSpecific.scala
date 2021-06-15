@@ -43,7 +43,7 @@ trait JsonEncoderPlatformSpecific[A] { self: JsonEncoder[A] =>
                     }
                   }
         writeWriter <- ZManaged.succeed(new WriteWriter(writer))
-        push = { is: Option[Chunk[A]] =>
+        push = { (is: Option[Chunk[A]]) =>
           val pushChars = chunkBuffer.getAndUpdate(c => if (c.isEmpty) c else Chunk())
 
           is match {
