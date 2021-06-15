@@ -80,7 +80,7 @@ trait JsonDecoder[A] extends JsonDecoderPlatformSpecific[A] {
     try Right(unsafeDecode(Nil, new FastStringReader(str)))
     catch {
       case JsonDecoder.UnsafeJson(trace) => Left(JsonError.render(trace))
-      case _: internal.UnexpectedEnd     => Left("Unexpected end of input")
+      case _: UnexpectedEnd              => Left("Unexpected end of input")
       case _: StackOverflowError         => Left("Unexpected structure")
     }
 
@@ -117,7 +117,7 @@ trait JsonDecoder[A] extends JsonDecoderPlatformSpecific[A] {
             in2.rewind()
             that.unsafeDecode(trace, in2)
 
-          case _: internal.UnexpectedEnd =>
+          case _: UnexpectedEnd =>
             in2.rewind()
             that.unsafeDecode(trace, in2)
         }
@@ -313,7 +313,7 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority0 {
               try Right(f(List.empty, reader))
               catch {
                 case JsonDecoder.UnsafeJson(trace) => Left(JsonError.render(trace))
-                case _: internal.UnexpectedEnd     => Left("Unexpected end of input")
+                case _: UnexpectedEnd              => Left("Unexpected end of input")
                 case _: StackOverflowError         => Left("Unexpected structure")
               } finally reader.close()
             result
