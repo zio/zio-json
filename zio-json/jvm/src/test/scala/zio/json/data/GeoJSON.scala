@@ -195,7 +195,7 @@ package handrolled {
                   case 0 =>
                     if (subtype != -1)
                       throw UnsafeJson(JsonError.Message("duplicate") :: trace_)
-                    subtype = Lexer.enum(trace_, in, subtypes)
+                    subtype = Lexer.enumeration(trace_, in, subtypes)
                   case 1 =>
                     if (coordinates != null)
                       throw UnsafeJson(JsonError.Message("duplicate") :: trace_)
@@ -302,7 +302,7 @@ package handrolled {
                     if (subtype != -1)
                       throw UnsafeJson(JsonError.Message("duplicate") :: trace_)
 
-                    subtype = Lexer.enum(trace_, in, subtypes)
+                    subtype = Lexer.enumeration(trace_, in, subtypes)
                   case 1 =>
                     if (properties != null)
                       throw UnsafeJson(JsonError.Message("duplicate") :: trace_)

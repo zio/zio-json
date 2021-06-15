@@ -261,7 +261,7 @@ object DeriveJsonDecoder {
           if (Lexer.firstField(trace, in_))
             do {
               if (Lexer.field(trace, in_, hintmatrix) != -1) {
-                val field = Lexer.enum(trace, in_, matrix)
+                val field = Lexer.enumeration(trace, in_, matrix)
                 if (field == -1)
                   throw UnsafeJson(
                     JsonError.Message(s"invalid disambiguator") :: trace
