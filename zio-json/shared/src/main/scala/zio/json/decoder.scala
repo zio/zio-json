@@ -284,7 +284,7 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority0 {
 
   // numbers decode from numbers or strings for maximum compatibility
   private[this] def number[A](
-    f: (List[JsonError], RetractReader) => A,
+    f: (List[JsonError], RetractReader, Boolean) => A,
     fromBigDecimal: java.math.BigDecimal => A
   ): JsonDecoder[A] =
     new JsonDecoder[A] {
@@ -292,12 +292,12 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority0 {
       def unsafeDecode(trace: List[JsonError], in: RetractReader): A =
         (in.nextNonWhitespace(): @switch) match {
           case '"' =>
-            val i = f(trace, in)
+            val i = f(trace, in, false)
             Lexer.charOnly(trace, in, '"')
             i
           case _ =>
             in.retract()
-            f(trace, in)
+            f(trace, in, true)
         }
 
       override final def fromJsonAST(json: Json): Either[String, A] =
@@ -310,7 +310,7 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority0 {
           case Json.Str(value) =>
             val reader = new FastStringReader(value)
             val result =
-              try Right(f(List.empty, reader))
+              try Right(f(List.empty, reader, true))
               catch {
                 case JsonDecoder.UnsafeJson(trace) => Left(JsonError.render(trace))
                 case _: UnexpectedEnd              => Left("Unexpected end of input")
