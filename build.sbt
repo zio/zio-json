@@ -239,6 +239,7 @@ lazy val zioJsonMacros = crossProject(JSPlatform, JVMPlatform)
   .enablePlugins(NeoJmhPlugin)
   .settings(macroExpansionSettings)
   .settings(
+    crossScalaVersions --= Vector("3.0.0"),
     scalacOptions -= "-Xfatal-warnings", // not quite ready.
     libraryDependencies ++= Seq(
       "org.scala-lang" % "scala-reflect" % scalaVersion.value % Provided,
@@ -258,6 +259,7 @@ lazy val zioJsonInteropHttp4s = project
   .settings(buildInfoSettings("zio.json.interop.http4s"))
   .enablePlugins(NeoJmhPlugin)
   .settings(
+    crossScalaVersions --= Vector("3.0.0"),
     libraryDependencies ++= Seq(
       "org.http4s"    %% "http4s-dsl"       % "0.21.24",
       "dev.zio"       %% "zio"              % zioVersion,
@@ -278,6 +280,8 @@ lazy val zioJsonInteropRefined = crossProject(JSPlatform, JVMPlatform)
   .settings(stdSettings("zio-json-interop-refined"))
   .settings(buildInfoSettings("zio.json.interop.refined"))
   .settings(
+    crossScalaVersions --= Vector("3.0.0"),
+
     libraryDependencies ++= Seq(
       "eu.timepit" %%% "refined"      % "0.9.26",
       "dev.zio"    %%% "zio-test"     % zioVersion % "test",
@@ -294,6 +298,8 @@ lazy val zioJsonInteropScalaz7x = crossProject(JSPlatform, JVMPlatform)
   .settings(stdSettings("zio-json-interop-scalaz7x"))
   .settings(buildInfoSettings("zio.json.interop.scalaz7x"))
   .settings(
+    crossScalaVersions --= Vector("3.0.0"),
+
     libraryDependencies ++= Seq(
       "org.scalaz" %%% "scalaz-core"  % "7.3.3",
       "dev.zio"    %%% "zio-test"     % zioVersion % "test",
