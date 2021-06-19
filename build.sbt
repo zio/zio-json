@@ -227,6 +227,7 @@ lazy val zioJsonYaml = project
   .settings(buildInfoSettings("zio.json.yaml"))
   .enablePlugins(NeoJmhPlugin)
   .settings(
+    crossScalaVersions --= Vector("3.0.0"),
     libraryDependencies ++= Seq(
       "org.yaml" % "snakeyaml"    % "1.29",
       "dev.zio" %% "zio"          % zioVersion,
