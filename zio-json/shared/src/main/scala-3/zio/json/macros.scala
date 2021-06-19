@@ -556,3 +556,21 @@ object DeriveJsonEncoder extends Derivation[JsonEncoder] { self =>
       } else out.write(s)
     }
 }
+
+object DeriveJsonCodec extends Derivation[JsonCodec] { self =>
+  def join[A](ctx: CaseClass[Typeclass, A]): JsonCodec[A] = {
+    val encoder = DeriveJsonEncoder.join(ctx.asInstanceOf[CaseClass[JsonEncoder, A]])
+    val decoder = DeriveJsonDecoder.join(ctx.asInstanceOf[CaseClass[JsonDecoder, A]])
+
+    JsonCodec(encoder, decoder)
+  }
+
+  def split[A](ctx: SealedTrait[JsonCodec, A]): JsonCodec[A] = {
+    val encoder = DeriveJsonEncoder.split(ctx.asInstanceOf[SealedTrait[JsonEncoder, A]])
+    val decoder = DeriveJsonDecoder.split(ctx.asInstanceOf[SealedTrait[JsonDecoder, A]])
+
+    JsonCodec(encoder, decoder)
+  }
+
+  inline def gen[A](using mirror: Mirror.Of[A]) = self.derived[A]
+}
