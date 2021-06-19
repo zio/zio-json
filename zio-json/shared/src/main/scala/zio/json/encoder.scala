@@ -5,7 +5,7 @@ import zio.json.ast.Json
 import zio.json.internal.{ FastStringWrite, Write }
 
 import java.time.format.{ DateTimeFormatterBuilder, SignStyle }
-import java.time.temporal.ChronoField.YEAR
+import java.time.temporal.ChronoField.{ MONTH_OF_YEAR, YEAR }
 import java.util.UUID
 import scala.annotation._
 import scala.collection.{ immutable, mutable }
@@ -399,8 +399,13 @@ private[json] trait EncoderLowPriority3 {
 
   private val yearFormatter =
     new DateTimeFormatterBuilder().appendValue(YEAR, 4, 10, SignStyle.EXCEEDS_PAD).toFormatter
-  implicit val year: JsonEncoder[Year]           = stringify(_.format(yearFormatter))
-  implicit val yearMonth: JsonEncoder[YearMonth] = stringify(_.toString)
+  implicit val year: JsonEncoder[Year] = stringify(_.format(yearFormatter))
+  private[this] val yearMonthFormatter = new DateTimeFormatterBuilder()
+    .appendValue(YEAR, 4, 10, SignStyle.EXCEEDS_PAD)
+    .appendLiteral('-')
+    .appendValue(MONTH_OF_YEAR, 2, 2, SignStyle.NEVER)
+    .toFormatter
+  implicit val yearMonth: JsonEncoder[YearMonth] = stringify(_.format(yearMonthFormatter))
 
   implicit val zonedDateTime: JsonEncoder[ZonedDateTime] = stringify(
     _.format(DateTimeFormatter.ISO_ZONED_DATE_TIME)
