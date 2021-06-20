@@ -4,15 +4,14 @@ import zio._
 import zio.json._
 import zio.json.ast.Json
 import zio.test.Assertion._
-import zio.test.TestAspect
-import zio.test._
 import zio.test.environment.Live
+import zio.test.{ TestAspect, _ }
 
 import java.util.UUID
 import scala.collection.{ SortedMap, immutable, mutable }
 
 object DecoderSpec extends DefaultRunnableSpec {
-  def spec =
+  def spec: Spec[Annotations, TestFailure[Any], TestSuccess] =
     suite("Decoder")(
       suite("fromJson")(
         test("BigDecimal") {
