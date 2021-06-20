@@ -26,7 +26,7 @@ jobs:
       - name: Cache scala dependencies
         uses: coursier/cache-action@v6
       - name: Lint code
-        run: sbt check
+        run: sbt ++2.13.6 check
 
   benchmarks:
     runs-on: ubuntu-20.04
