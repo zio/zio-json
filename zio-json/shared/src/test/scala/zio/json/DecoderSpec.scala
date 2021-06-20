@@ -7,6 +7,7 @@ import zio.test.Assertion._
 import zio.test._
 import zio.test.environment.Live
 
+import java.time.{ Duration, OffsetDateTime, ZonedDateTime }
 import java.util.UUID
 import scala.collection.{ SortedMap, immutable, mutable }
 
@@ -177,6 +178,35 @@ object DecoderSpec extends DefaultRunnableSpec {
           assert(bad5.fromJson[UUID])(isLeft(containsString("Invalid UUID: 64d7c38d-2afd-XXXX-9832-4e70afe4b0f8"))) &&
           assert(bad6.fromJson[UUID])(isLeft(containsString("Invalid UUID: 64d7c38d-2afd-X-9832-4e70afe4b0f8"))) &&
           assert(bad7.fromJson[UUID])(isLeft(containsString("Invalid UUID: 0-0-0-0-00000000000000000")))
+        },
+        test("java.time.Duration") {
+          val ok1  = """"PT1H2M3S""""
+          val ok2  = """"PT-0.5S"""" // see https://bugs.java.com/bugdatabase/view_bug.do?bug_id=8054978
+          val bad1 = """"PT-H""""
+
+          assert(ok1.fromJson[Duration])(isRight(equalTo(Duration.parse("PT1H2M3S")))) &&
+          assert(ok2.fromJson[Duration])(isRight(equalTo(Duration.ofNanos(-500000000)))) &&
+          assert(bad1.fromJson[Duration])(
+            isLeft(containsString("PT-H is not a valid ISO-8601 format, expected digit at index 4"))
+          )
+        },
+        test("java.time.ZonedDateTime") {
+          val ok1 = """"2021-06-20T20:03:51.533418+02:00[Europe/Warsaw]""""
+          val ok2 =
+            """"2018-10-28T02:30+00:00[Europe/Warsaw]"""" // see https://bugs.openjdk.java.net/browse/JDK-8066982
+          val bad1 = """"2018-10-28T02:30""""
+
+          assert(ok1.fromJson[ZonedDateTime])(
+            isRight(equalTo(ZonedDateTime.parse("2021-06-20T20:03:51.533418+02:00[Europe/Warsaw]")))
+          ) &&
+          assert(ok2.fromJson[ZonedDateTime].map(_.toOffsetDateTime))(
+            isRight(equalTo(OffsetDateTime.parse("2018-10-28T03:30+01:00")))
+          ) &&
+          assert(bad1.fromJson[ZonedDateTime])(
+            isLeft(
+              containsString("2018-10-28T02:30 is not a valid ISO-8601 format, illegal zoned date time at index 16")
+            )
+          )
         }
       ),
       suite("fromJsonAST")(

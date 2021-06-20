@@ -86,10 +86,10 @@ object RoundTripSpec extends DefaultRunnableSpec {
           check(genZonedDateTime)(assertRoundtrips)
         },
         testM("ZoneId") {
-          check(genZoneId)(assertRoundtrips)
+          check(genZoneId)(assertRoundtrips[ZoneId])
         },
         testM("ZoneOffset") {
-          check(genZoneOffset)(assertRoundtrips)
+          check(genZoneOffset)(assertRoundtrips[ZoneOffset])
         }
       )
     )

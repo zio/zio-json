@@ -334,12 +334,14 @@ object JavaTimeSpec extends DefaultRunnableSpec {
           )
         },
         test("Duration") {
-          assert(""""INVALID"""".fromJson[Duration])(isLeft(containsString("text cannot be parsed to a Duration")))
+          assert(""""INVALID"""".fromJson[Duration])(
+            isLeft(containsString("INVALID is not a valid ISO-8601 format, expected 'P' or '-' at index 1"))
+          )
         },
         test("LocalDate") {
           assert(stringify("01/01/2020").fromJson[LocalDate])(
             isLeft(
-              equalTo("(01/01/2020 is not a valid ISO-8601 format, Text '01/01/2020' could not be parsed at index 0)")
+              equalTo("(01/01/2020 is not a valid ISO-8601 format, expected digit at index 2)")
             )
           )
         },
@@ -347,7 +349,7 @@ object JavaTimeSpec extends DefaultRunnableSpec {
           assert(stringify("01-01-2020T12:36").fromJson[LocalDateTime])(
             isLeft(
               equalTo(
-                "(01-01-2020T12:36 is not a valid ISO-8601 format, Text '01-01-2020T12:36' could not be parsed at index 0)"
+                "(01-01-2020T12:36 is not a valid ISO-8601 format, expected digit at index 2)"
               )
             )
           )
@@ -356,7 +358,7 @@ object JavaTimeSpec extends DefaultRunnableSpec {
           assert(stringify("12:36.000").fromJson[LocalTime])(
             isLeft(
               equalTo(
-                "(12:36.000 is not a valid ISO-8601 format, Text '12:36.000' could not be parsed, unparsed text found at index 5)"
+                "(12:36.000 is not a valid ISO-8601 format, illegal local time at index 5)"
               )
             )
           )
@@ -368,14 +370,14 @@ object JavaTimeSpec extends DefaultRunnableSpec {
         },
         test("MonthDay") {
           assert(stringify("01-01").fromJson[MonthDay])(
-            isLeft(equalTo("(01-01 is not a valid ISO-8601 format, Text '01-01' could not be parsed at index 0)"))
+            isLeft(equalTo("(01-01 is not a valid ISO-8601 format, illegal month day at index 0)"))
           )
         },
         test("OffsetDateTime") {
           assert(stringify("01-01-2020T12:36:12Z").fromJson[OffsetDateTime])(
             isLeft(
               equalTo(
-                "(01-01-2020T12:36:12Z is not a valid ISO-8601 format, Text '01-01-2020T12:36:12Z' could not be parsed at index 0)"
+                "(01-01-2020T12:36:12Z is not a valid ISO-8601 format, expected digit at index 2)"
               )
             )
           )
@@ -384,7 +386,7 @@ object JavaTimeSpec extends DefaultRunnableSpec {
           assert(stringify("12:36:12.000").fromJson[OffsetTime])(
             isLeft(
               equalTo(
-                "(12:36:12.000 is not a valid ISO-8601 format, Text '12:36:12.000' could not be parsed at index 12)"
+                "(12:36:12.000 is not a valid ISO-8601 format, illegal offset date time at index 12)"
               )
             )
           )
@@ -408,43 +410,39 @@ object JavaTimeSpec extends DefaultRunnableSpec {
         },
         test("Year") {
           assert(stringify("1999-").fromJson[Year])(
-            isLeft(
-              equalTo(
-                "(1999- is not a valid ISO-8601 format, Text '1999-' could not be parsed, unparsed text found at index 4)"
-              )
-            )
+            isLeft(equalTo("(1999- is not a valid ISO-8601 format, illegal year at index 4)"))
           )
         },
         test("YearMonth") {
           assert(stringify("12-1999").fromJson[YearMonth])(
-            isLeft(equalTo("(12-1999 is not a valid ISO-8601 format, Text '12-1999' could not be parsed at index 0)"))
+            isLeft(equalTo("(12-1999 is not a valid ISO-8601 format, expected digit at index 2)"))
           ) &&
           assert(stringify("01-1999").fromJson[YearMonth])(
-            isLeft(equalTo("(01-1999 is not a valid ISO-8601 format, Text '01-1999' could not be parsed at index 0)"))
+            isLeft(equalTo("(01-1999 is not a valid ISO-8601 format, expected digit at index 2)"))
           ) &&
           assert(stringify("1999-1").fromJson[YearMonth])(
-            isLeft(equalTo("(1999-1 is not a valid ISO-8601 format, Text '1999-1' could not be parsed at index 5)"))
+            isLeft(equalTo("(1999-1 is not a valid ISO-8601 format, illegal year month at index 5)"))
           )
         },
         test("ZonedDateTime") {
           assert(stringify("01/01-2020T12:36-05:00[America/New_York]").fromJson[ZonedDateTime])(
             isLeft(
               equalTo(
-                "(01/01-2020T12:36-05:00[America/New_York] is not a valid ISO-8601 format, Text '01/01-2020T12:36-05:00[America/New_York]' could not be parsed at index 0)"
+                "(01/01-2020T12:36-05:00[America/New_York] is not a valid ISO-8601 format, expected digit at index 2)"
               )
             )
           ) &&
           assert(stringify("01/01-2020T12:36Z[Etc/UTC]").fromJson[ZonedDateTime])(
             isLeft(
               equalTo(
-                "(01/01-2020T12:36Z[Etc/UTC] is not a valid ISO-8601 format, Text '01/01-2020T12:36Z[Etc/UTC]' could not be parsed at index 0)"
+                "(01/01-2020T12:36Z[Etc/UTC] is not a valid ISO-8601 format, expected digit at index 2)"
               )
             )
           ) &&
           assert(stringify("01/01-2020T12:36").fromJson[ZonedDateTime])(
             isLeft(
               equalTo(
-                "(01/01-2020T12:36 is not a valid ISO-8601 format, Text '01/01-2020T12:36' could not be parsed at index 0)"
+                "(01/01-2020T12:36 is not a valid ISO-8601 format, expected digit at index 2)"
               )
             )
           )
