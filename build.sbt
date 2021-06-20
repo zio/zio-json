@@ -225,7 +225,6 @@ lazy val zioJsonYaml = project
   .in(file("zio-json-yaml"))
   .settings(stdSettings("zio-json-yaml"))
   .settings(buildInfoSettings("zio.json.yaml"))
-  .enablePlugins(NeoJmhPlugin)
   .settings(
     crossScalaVersions --= Vector("3.0.0"),
     libraryDependencies ++= Seq(
@@ -243,7 +242,6 @@ lazy val zioJsonMacros = crossProject(JSPlatform, JVMPlatform)
   .in(file("zio-json-macros"))
   .settings(stdSettings("zio-json-macros"))
   .settings(crossProjectSettings)
-  .enablePlugins(NeoJmhPlugin)
   .settings(macroExpansionSettings)
   .settings(
     crossScalaVersions --= Vector("3.0.0"),
@@ -264,7 +262,6 @@ lazy val zioJsonInteropHttp4s = project
   .in(file("zio-json-interop-http4s"))
   .settings(stdSettings("zio-json-interop-http4s"))
   .settings(buildInfoSettings("zio.json.interop.http4s"))
-  .enablePlugins(NeoJmhPlugin)
   .settings(
     crossScalaVersions --= Vector("3.0.0"),
     libraryDependencies ++= Seq(
