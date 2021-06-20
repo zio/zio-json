@@ -52,8 +52,6 @@ jobs:
   mdoc:
     runs-on: ubuntu-20.04
     timeout-minutes: 60
-    matrix:
-      scala: ['2.13.6']
     steps:
       - name: Checkout current branch
         uses: actions/checkout@v2.3.4
@@ -62,7 +60,7 @@ jobs:
       - name: Cache scala dependencies
         uses: coursier/cache-action@v6
       - name: Check Document Generation
-        run: sbt ++${{ matrix.scala }} docs/docusaurusCreateSite
+        run: sbt ++2.13.6 docs/docusaurusCreateSite
 
   test:
     runs-on: ubuntu-20.04
