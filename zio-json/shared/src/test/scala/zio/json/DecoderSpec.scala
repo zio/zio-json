@@ -4,15 +4,14 @@ import zio._
 import zio.json._
 import zio.json.ast.Json
 import zio.test.Assertion._
-import zio.test._
 import zio.test.environment.Live
+import zio.test.{ TestAspect, _ }
 
 import java.util.UUID
 import scala.collection.{ SortedMap, immutable, mutable }
 
 object DecoderSpec extends DefaultRunnableSpec {
-
-  def spec: Spec[ZEnv with Live, TestFailure[Any], TestSuccess] =
+  def spec: Spec[Annotations, TestFailure[Any], TestSuccess] =
     suite("Decoder")(
       suite("fromJson")(
         test("BigDecimal") {
@@ -54,18 +53,35 @@ object DecoderSpec extends DefaultRunnableSpec {
           assert("""null""".fromJson[Parameterless])(isRight(equalTo(Parameterless()))) &&
           assert("""{"field":"value"}""".fromJson[Parameterless])(isRight(equalTo(Parameterless())))
         },
+        test("typical") {
+          case class Banana(ripe: Boolean, curvature: Double)
+          implicit val decoder: JsonDecoder[Banana] = DeriveJsonDecoder.gen
+
+          assert("""{"curvature": 7, "ripe": true}""".fromJson[Banana])(
+            isRight(
+              equalTo(Banana(curvature = 7, ripe = true))
+            )
+          )
+        },
         test("no extra fields") {
           import exampleproducts._
 
           assert("""{"s":""}""".fromJson[OnlyString])(isRight(equalTo(OnlyString("")))) &&
           assert("""{"s":"","t":""}""".fromJson[OnlyString])(isLeft(equalTo("(invalid extra field)")))
         },
+        test("option") {
+          case class WithOpt(id: Int, opt: Option[Int])
+          implicit val decoder: JsonDecoder[WithOpt] = DeriveJsonDecoder.gen
+
+          assert("""{ "id": 1, "opt": 42 }""".fromJson[WithOpt])(isRight(equalTo(WithOpt(1, Some(42))))) &&
+          assert("""{ "id": 1 }""".fromJson[WithOpt])(isRight(equalTo(WithOpt(1, None))))
+        },
         test("default field value") {
           import exampleproducts._
 
           assert("""{}""".fromJson[DefaultString])(isRight(equalTo(DefaultString("")))) &&
           assert("""{"s": null}""".fromJson[DefaultString])(isRight(equalTo(DefaultString(""))))
-        },
+        } @@ TestAspect.exceptDotty,
         test("sum encoding") {
           import examplesum._
 
@@ -214,7 +230,7 @@ object DecoderSpec extends DefaultRunnableSpec {
 
           assert(Json.Obj().as[DefaultString])(isRight(equalTo(DefaultString("")))) &&
           assert(Json.Obj("s" -> Json.Null).as[DefaultString])(isRight(equalTo(DefaultString(""))))
-        },
+        } @@ TestAspect.exceptDotty,
         test("sum encoding") {
           import examplesum._
 
