@@ -324,6 +324,7 @@ lazy val docs = project
     zioJsonInteropScalaz7x.jvm
   )
   .settings(
+    crossScalaVersions --= Vector("3.0.0"),
     publish / skip := true,
     mdocVariables := Map(
       "SNAPSHOT_VERSION" -> version.value,
