@@ -3,8 +3,7 @@ package zio.json
 import zio.Chunk
 import zio.json.ast.Json
 import zio.json.internal._
-import zio.json.javatime.DurationParser.DurationParseException
-import zio.json.javatime.{ DurationParser, ZonedDateTimeParser }
+import zio.json.javatime.parsers
 import zio.json.uuid.UUIDParser
 
 import java.util.UUID
@@ -626,42 +625,34 @@ private[json] trait DecoderLowPriority3 {
   this: JsonDecoder.type =>
 
   import java.time.{ DateTimeException, _ }
-  import java.time.format.{ DateTimeFormatter, DateTimeParseException }
+  import java.time.format.DateTimeParseException
   import java.time.zone.ZoneRulesException
 
   implicit val dayOfWeek: JsonDecoder[DayOfWeek] = mapStringOrFail(s => parseJavaTime(DayOfWeek.valueOf, s.toUpperCase))
-  implicit val duration: JsonDecoder[Duration]   = mapStringOrFail(parseJavaTime(DurationParser.unsafeParse, _))
+  implicit val duration: JsonDecoder[Duration]   = mapStringOrFail(parseJavaTime(parsers.unsafeParseDuration, _))
   implicit val instant: JsonDecoder[Instant]     = mapStringOrFail(parseJavaTime(Instant.parse, _))
-
-  implicit val localDate: JsonDecoder[LocalDate] =
-    mapStringOrFail(parseJavaTime(LocalDate.parse(_, DateTimeFormatter.ISO_LOCAL_DATE), _))
+  implicit val localDate: JsonDecoder[LocalDate] = mapStringOrFail(parseJavaTime(parsers.unsafeParseLocalDate, _))
 
   implicit val localDateTime: JsonDecoder[LocalDateTime] =
-    mapStringOrFail(parseJavaTime(LocalDateTime.parse(_, DateTimeFormatter.ISO_LOCAL_DATE_TIME), _))
+    mapStringOrFail(parseJavaTime(parsers.unsafeParseLocalDateTime, _))
 
-  implicit val localTime: JsonDecoder[LocalTime] =
-    mapStringOrFail(parseJavaTime(LocalTime.parse(_, DateTimeFormatter.ISO_LOCAL_TIME), _))
-  implicit val month: JsonDecoder[Month]       = mapStringOrFail(s => parseJavaTime(Month.valueOf, s.toUpperCase))
-  implicit val monthDay: JsonDecoder[MonthDay] = mapStringOrFail(parseJavaTime(MonthDay.parse, _))
+  implicit val localTime: JsonDecoder[LocalTime] = mapStringOrFail(parseJavaTime(parsers.unsafeParseLocalTime, _))
+  implicit val month: JsonDecoder[Month]         = mapStringOrFail(s => parseJavaTime(Month.valueOf, s.toUpperCase))
+  implicit val monthDay: JsonDecoder[MonthDay]   = mapStringOrFail(parseJavaTime(parsers.unsafeParseMonthDay, _))
 
   implicit val offsetDateTime: JsonDecoder[OffsetDateTime] =
-    mapStringOrFail(parseJavaTime(OffsetDateTime.parse(_, DateTimeFormatter.ISO_OFFSET_DATE_TIME), _))
+    mapStringOrFail(parseJavaTime(parsers.unsafeParseOffsetDateTime, _))
 
-  implicit val offsetTime: JsonDecoder[OffsetTime] =
-    mapStringOrFail(parseJavaTime(OffsetTime.parse(_, DateTimeFormatter.ISO_OFFSET_TIME), _))
-  implicit val period: JsonDecoder[Period] = mapStringOrFail(parseJavaTime(Period.parse, _))
-  implicit val year: JsonDecoder[Year]     = mapStringOrFail(parseJavaTime(Year.parse(_), _))
-
-  implicit val yearMonth: JsonDecoder[YearMonth] =
-    mapStringOrFail(parseJavaTime(YearMonth.parse, _))
+  implicit val offsetTime: JsonDecoder[OffsetTime] = mapStringOrFail(parseJavaTime(parsers.unsafeParseOffsetTime, _))
+  implicit val period: JsonDecoder[Period]         = mapStringOrFail(parseJavaTime(Period.parse, _))
+  implicit val year: JsonDecoder[Year]             = mapStringOrFail(parseJavaTime(parsers.unsafeParseYear, _))
+  implicit val yearMonth: JsonDecoder[YearMonth]   = mapStringOrFail(parseJavaTime(parsers.unsafeParseYearMonth, _))
 
   implicit val zonedDateTime: JsonDecoder[ZonedDateTime] =
-    mapStringOrFail(parseJavaTime(ZonedDateTimeParser.unsafeParse, _))
+    mapStringOrFail(parseJavaTime(parsers.unsafeParseZonedDateTime, _))
 
-  implicit val zoneId: JsonDecoder[ZoneId] = mapStringOrFail(parseJavaTime(ZoneId.of, _))
-
-  implicit val zoneOffset: JsonDecoder[ZoneOffset] =
-    mapStringOrFail(parseJavaTime(ZoneOffset.of, _))
+  implicit val zoneId: JsonDecoder[ZoneId]         = mapStringOrFail(parseJavaTime(parsers.unsafeParseZoneId, _))
+  implicit val zoneOffset: JsonDecoder[ZoneOffset] = mapStringOrFail(parseJavaTime(parsers.unsafeParseZoneOffset, _))
 
   // Commonized handling for decoding from string to java.time Class
   private[json] def parseJavaTime[A](f: String => A, s: String): Either[String, A] =
@@ -671,7 +662,6 @@ private[json] trait DecoderLowPriority3 {
       case zre: ZoneRulesException      => Left(s"$s is not a valid ISO-8601 format, ${zre.getMessage}")
       case dtpe: DateTimeParseException => Left(s"$s is not a valid ISO-8601 format, ${dtpe.getMessage}")
       case dte: DateTimeException       => Left(s"$s is not a valid ISO-8601 format, ${dte.getMessage}")
-      case dpe: DurationParseException  => Left(s"$s is not a valid ISO-8601 format, ${dpe.getMessage}")
       case ex: Exception                => Left(ex.getMessage)
     }
 
@@ -680,8 +670,7 @@ private[json] trait DecoderLowPriority3 {
       try {
         Right(UUIDParser.unsafeParse(str))
       } catch {
-        case iae: IllegalArgumentException =>
-          Left(s"Invalid UUID: ${iae.getMessage}")
+        case iae: IllegalArgumentException => Left(s"Invalid UUID: ${iae.getMessage}")
       }
     }
 }
