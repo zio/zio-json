@@ -651,10 +651,8 @@ private[json] trait DecoderLowPriority3 {
   implicit val zonedDateTime: JsonDecoder[ZonedDateTime] =
     mapStringOrFail(parseJavaTime(parsers.unsafeParseZonedDateTime, _))
 
-  implicit val zoneId: JsonDecoder[ZoneId] = mapStringOrFail(parseJavaTime(ZoneId.of, _))
-
-  implicit val zoneOffset: JsonDecoder[ZoneOffset] =
-    mapStringOrFail(parseJavaTime(ZoneOffset.of, _))
+  implicit val zoneId: JsonDecoder[ZoneId]         = mapStringOrFail(parseJavaTime(parsers.unsafeParseZoneId, _))
+  implicit val zoneOffset: JsonDecoder[ZoneOffset] = mapStringOrFail(parseJavaTime(parsers.unsafeParseZoneOffset, _))
 
   // Commonized handling for decoding from string to java.time Class
   private[json] def parseJavaTime[A](f: String => A, s: String): Either[String, A] =
@@ -672,8 +670,7 @@ private[json] trait DecoderLowPriority3 {
       try {
         Right(UUIDParser.unsafeParse(str))
       } catch {
-        case iae: IllegalArgumentException =>
-          Left(s"Invalid UUID: ${iae.getMessage}")
+        case iae: IllegalArgumentException => Left(s"Invalid UUID: ${iae.getMessage}")
       }
     }
 }

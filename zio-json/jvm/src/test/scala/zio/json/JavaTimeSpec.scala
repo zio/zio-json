@@ -440,36 +440,26 @@ object JavaTimeSpec extends DefaultRunnableSpec {
             )
           ) &&
           assert(stringify("01/01-2020T12:36").fromJson[ZonedDateTime])(
-            isLeft(
-              equalTo(
-                "(01/01-2020T12:36 is not a valid ISO-8601 format, expected digit at index 2)"
-              )
-            )
+            isLeft(equalTo("(01/01-2020T12:36 is not a valid ISO-8601 format, expected digit at index 2)"))
           )
         },
         test("ZoneId") {
           assert(stringify("America/New York").fromJson[ZoneId])(
-            isLeft(
-              equalTo(
-                "(America/New York is not a valid ISO-8601 format, Invalid ID for region-based ZoneId, invalid format: America/New York)"
-              )
-            )
+            isLeft(equalTo("(America/New York is not a valid ISO-8601 format, illegal zone id at index 0)"))
           ) &&
           assert(stringify("Solar_System/Mars").fromJson[ZoneId])(
-            isLeft(
-              equalTo("(Solar_System/Mars is not a valid ISO-8601 format, Unknown time-zone ID: Solar_System/Mars)")
-            )
+            isLeft(equalTo("(Solar_System/Mars is not a valid ISO-8601 format, illegal zone id at index 0)"))
           )
         },
         test("ZoneOffset") {
           assert(stringify("A").fromJson[ZoneOffset])(
-            isLeft(equalTo("(A is not a valid ISO-8601 format, Invalid ID for ZoneOffset, invalid format: A)"))
+            isLeft(equalTo("(A is not a valid ISO-8601 format, expected '+' or '-' or 'Z' at index 0)"))
           ) &&
           assert(stringify("+5.0").fromJson[ZoneOffset])(
-            isLeft(equalTo("(+5.0 is not a valid ISO-8601 format, Invalid ID for ZoneOffset, invalid format: +5.0)"))
+            isLeft(equalTo("(+5.0 is not a valid ISO-8601 format, expected digit at index 2)"))
           ) &&
           assert(stringify("-5.0").fromJson[ZoneOffset])(
-            isLeft(equalTo("(-5.0 is not a valid ISO-8601 format, Invalid ID for ZoneOffset, invalid format: -5.0)"))
+            isLeft(equalTo("(-5.0 is not a valid ISO-8601 format, expected digit at index 2)"))
           )
         }
       )

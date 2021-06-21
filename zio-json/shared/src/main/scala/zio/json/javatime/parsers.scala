@@ -411,23 +411,23 @@ private[json] object parsers {
 
   def unsafeParseMonthDay(input: String): MonthDay = {
     if (input.length != 7) error("illegal month day", 0)
-    val b1    = input.charAt(0)
-    val b2    = input.charAt(1)
-    val b3    = input.charAt(2)
-    val b4    = input.charAt(3)
-    val b5    = input.charAt(4)
-    val b6    = input.charAt(5)
-    val b7    = input.charAt(6)
-    val month = b3 * 10 + b4 - 528 // 528 == '0' * 11
-    val day   = b6 * 10 + b7 - 528 // 528 == '0' * 11
-    if (b1 != '-') charError('-', 0)
-    if (b2 != '-') charError('-', 1)
-    if (b3 < '0' || b3 > '9') digitError(2)
-    if (b4 < '0' || b4 > '9') digitError(3)
+    val ch0   = input.charAt(0)
+    val ch1   = input.charAt(1)
+    val ch2   = input.charAt(2)
+    val ch3   = input.charAt(3)
+    val ch4   = input.charAt(4)
+    val ch5   = input.charAt(5)
+    val ch6   = input.charAt(6)
+    val month = ch2 * 10 + ch3 - 528 // 528 == '0' * 11
+    val day   = ch5 * 10 + ch6 - 528 // 528 == '0' * 11
+    if (ch0 != '-') charError('-', 0)
+    if (ch1 != '-') charError('-', 1)
+    if (ch2 < '0' || ch2 > '9') digitError(2)
+    if (ch3 < '0' || ch3 > '9') digitError(3)
     if (month < 1 || month > 12) monthError(3)
-    if (b5 != '-') charError('-', 4)
-    if (b6 < '0' || b6 > '9') digitError(5)
-    if (b7 < '0' || b7 > '9') digitError(6)
+    if (ch4 != '-') charError('-', 4)
+    if (ch5 < '0' || ch5 > '9') digitError(5)
+    if (ch6 < '0' || ch6 > '9') digitError(6)
     if (day == 0 || (day > 28 && day > maxDayForMonth(month))) dayError(6)
     MonthDay.of(month, day)
   }
@@ -564,14 +564,9 @@ private[json] object parsers {
       }
     }
     val zoneOffset =
-      if (ch == 'Z') {
-        if (pos < len) {
-          ch = input.charAt(pos)
-          pos += 1
-        }
-        ZoneOffset.UTC
-      } else {
-        val offsetNeg = ch == '-' || (ch != '+' && timezoneSignError(nanoDigitWeight, pos))
+      if (ch == 'Z') ZoneOffset.UTC
+      else {
+        val offsetNeg = ch == '-' || (ch != '+' && timezoneSignError(nanoDigitWeight, pos - 1))
         nanoDigitWeight = -3
         val offsetHour = {
           if (pos + 1 >= len) offsetDateTimeError(pos)
@@ -709,14 +704,9 @@ private[json] object parsers {
       }
     }
     val zoneOffset =
-      if (ch == 'Z') {
-        if (pos < len) {
-          ch = input.charAt(pos)
-          pos += 1
-        }
-        ZoneOffset.UTC
-      } else {
-        val offsetNeg = ch == '-' || (ch != '+' && timezoneSignError(nanoDigitWeight, pos))
+      if (ch == 'Z') ZoneOffset.UTC
+      else {
+        val offsetNeg = ch == '-' || (ch != '+' && timezoneSignError(nanoDigitWeight, pos - 1))
         nanoDigitWeight = -3
         val offsetHour = {
           if (pos + 1 >= len) offsetDateTimeError(pos)
@@ -1044,7 +1034,7 @@ private[json] object parsers {
         }
         ZoneOffset.UTC
       } else {
-        val offsetNeg = ch == '-' || (ch != '+' && timezoneSignError(nanoDigitWeight, pos))
+        val offsetNeg = ch == '-' || (ch != '+' && timezoneSignError(nanoDigitWeight, pos - 1))
         nanoDigitWeight = -3
         val offsetHour = {
           if (pos + 1 >= len) zonedDateTimeError(pos)
@@ -1128,7 +1118,7 @@ private[json] object parsers {
             ch = input.charAt(pos)
             ch != ']'
           }) pos += 1
-          val key    = input.subSequence(from, pos).toString
+          val key    = input.substring(from, pos)
           var zoneId = zoneIds.get(key)
           if (
             (zoneId eq null) && {
@@ -1144,6 +1134,105 @@ private[json] object parsers {
       if (pos != len) zonedDateTimeError(pos)
       ZonedDateTime.ofInstant(localDateTime, zoneOffset, zone)
     } else timezoneError(nanoDigitWeight, pos)
+  }
+
+  def unsafeParseZoneId(input: String): ZoneId =
+    try {
+      var zoneId = zoneIds.get(input)
+      if (
+        (zoneId eq null) && {
+          zoneId = ZoneId.of(input)
+          !zoneId.isInstanceOf[ZoneOffset] || zoneId.asInstanceOf[ZoneOffset].getTotalSeconds % 900 == 0
+        }
+      ) zoneIds.put(input, zoneId)
+      zoneId
+    } catch {
+      case _: DateTimeException => error("illegal zone id", 0)
+    }
+
+  def unsafeParseZoneOffset(input: String): ZoneOffset = {
+    val len                  = input.length
+    var pos, nanoDigitWeight = 0
+    if (pos >= len) zoneOffsetError(pos)
+    var ch = input.charAt(pos)
+    pos += 1
+    if (ch == 'Z') ZoneOffset.UTC
+    else {
+      val offsetNeg = ch == '-' || (ch != '+' && timezoneSignError(nanoDigitWeight, pos - 1))
+      nanoDigitWeight = -3
+      val offsetHour = {
+        if (pos + 1 >= len) zoneOffsetError(pos)
+        val ch0        = input.charAt(pos)
+        val ch1        = input.charAt(pos + 1)
+        val offsetHour = ch0 * 10 + ch1 - 528 // 528 == '0' * 11
+        if (ch0 < '0' || ch0 > '9') digitError(pos)
+        if (ch1 < '0' || ch1 > '9') digitError(pos + 1)
+        if (offsetHour > 18) timezoneOffsetHourError(pos + 1)
+        pos += 2
+        offsetHour
+      }
+      var offsetMinute, offsetSecond = 0
+      if (
+        pos < len && {
+          ch = input.charAt(pos)
+          pos += 1
+          ch == ':'
+        }
+      ) {
+        offsetMinute = {
+          if (pos + 1 >= len) zoneOffsetError(pos)
+          val ch0 = input.charAt(pos)
+          val ch1 = input.charAt(pos + 1)
+          if (ch0 < '0' || ch0 > '9') digitError(pos)
+          if (ch1 < '0' || ch1 > '9') digitError(pos + 1)
+          if (ch0 > '5') timezoneOffsetMinuteError(pos + 1)
+          pos += 2
+          ch0 * 10 + ch1 - 528 // 528 == '0' * 11
+        }
+        if (
+          pos < len && {
+            ch = input.charAt(pos)
+            pos += 1
+            ch == ':'
+          }
+        ) {
+          nanoDigitWeight = -4
+          offsetSecond = {
+            if (pos + 1 >= len) zoneOffsetError(pos)
+            val ch0 = input.charAt(pos)
+            val ch1 = input.charAt(pos + 1)
+            if (ch0 < '0' || ch0 > '9') digitError(pos)
+            if (ch1 < '0' || ch1 > '9') digitError(pos + 1)
+            if (ch0 > '5') timezoneOffsetSecondError(pos + 1)
+            pos += 2
+            ch0 * 10 + ch1 - 528 // 528 == '0' * 11
+          }
+          if (pos < len) {
+            ch = input.charAt(pos)
+            pos += 1
+          }
+        }
+      }
+      if (pos != len) zoneOffsetError(pos)
+      var offsetTotal = offsetHour * 3600 + offsetMinute * 60 + offsetSecond
+      var qp          = offsetTotal * 37283
+      if (offsetTotal > 64800) error("illegal timezone offset", pos) // 64800 == 18 * 60 * 60
+      if ((qp & 0x1ff8000) == 0) {                                   // check if offsetTotal divisible by 900
+        qp >>>= 25                                                   // divide offsetTotal by 900
+        if (offsetNeg) qp = -qp
+        var zoneOffset = zoneOffsets(qp + 72)
+        if (zoneOffset ne null) zoneOffset
+        else {
+          if (offsetNeg) offsetTotal = -offsetTotal
+          zoneOffset = ZoneOffset.ofTotalSeconds(offsetTotal)
+          zoneOffsets(qp + 72) = zoneOffset
+          zoneOffset
+        }
+      } else {
+        if (offsetNeg) offsetTotal = -offsetTotal
+        ZoneOffset.ofTotalSeconds(offsetTotal)
+      }
+    }
   }
 
   private[this] def sumSeconds(s1: Long, s2: Long, pos: Int): Long = {
@@ -1226,6 +1315,8 @@ private[json] object parsers {
   private[this] def yearMonthError(pos: Int) = error("illegal year month", pos)
 
   private[this] def zonedDateTimeError(pos: Int) = error("illegal zoned date time", pos)
+
+  private[this] def zoneOffsetError(pos: Int) = error("illegal zone offset", pos)
 
   private[this] def yearError(pos: Int) = error("illegal year", pos)
 
