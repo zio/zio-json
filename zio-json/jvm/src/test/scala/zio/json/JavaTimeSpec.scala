@@ -239,8 +239,8 @@ object JavaTimeSpec extends DefaultRunnableSpec {
           val utc = ZonedDateTime.of(ld, ZoneId.of("Etc/UTC"))
 
           zdtAssert(n.toString, n) &&
-          zdtAssert("2020-01-01T12:36-05:00[America/New_York]", est) &&
-          zdtAssert("2020-01-01T12:36Z[Etc/UTC]", utc) &&
+          zdtAssert("2020-01-01T12:36:00-05:00[America/New_York]", est) &&
+          zdtAssert("2020-01-01T12:36:00Z[Etc/UTC]", utc) &&
           zdtAssert(
             "2018-02-01T00:00Z",
             ZonedDateTime.of(LocalDateTime.of(2018, 2, 1, 0, 0, 0), ZoneOffset.UTC)
