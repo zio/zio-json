@@ -4,7 +4,6 @@ package zio.json.internal
 
 import java.nio.CharBuffer
 import java.util.Arrays
-import scala.annotation.tailrec
 
 // a minimal subset of java.io.Writer that can be optimised
 trait Write {
@@ -18,54 +17,19 @@ final class WriteWriter(out: java.io.Writer) extends Write {
   def write(c: Char): Unit   = out.write(c.toInt)
 }
 
-// optimised in-memory impl of Write that minimises copies
 final class FastStringWrite(initial: Int) extends Write {
-  // the idea is to keep all the strings in memory (reverse order for fast
-  // append) and to also support chars. Chars are held in an Array and converted
-  // into a String if a non-char is written.
-  private[this] var strings: List[String] = Nil
-  private[this] var chars: Array[Char]    = Array.ofDim(initial)
-  private[this] var i: Int                = 0
+  private[this] val sb: java.lang.StringBuilder = new java.lang.StringBuilder(initial)
 
-  private def reconcile(): Unit =
-    if (i > 0) {
-      strings = new String(chars, 0, i) :: strings
-      i = 0
-    }
+  def write(s: String): Unit = sb.append(s): Unit
 
-  def write(s: String): Unit = {
-    reconcile()
-    strings = s :: strings
-  }
-  def write(c: Char): Unit = {
-    if (i == chars.length)
-      chars = Arrays.copyOf(chars, chars.length * 2)
-    chars(i) = c
-    i += 1
-  }
+  def write(c: Char): Unit = sb.append(c): Unit
 
-  def buffer: CharSequence = {
-    reconcile()
-
-    // TODO this could be made faster to optimise for the case where the user
-    // really wants a String, which uses an Array[Byte] and encoding param.
-    @tailrec def len(ss: List[String], acc: Int): Int = ss match {
-      case Nil          => acc
-      case head :: tail => len(tail, head.length + acc)
-    }
-    val output: Array[Char] = Array.ofDim(len(strings, 0))
-    var i                   = 0
-    strings.reverse.foreach { s =>
-      s.getChars(0, s.length, output, i)
-      i += s.length
-    }
-    CharBuffer.wrap(output)
-  }
+  def buffer: CharSequence = sb
 }
 
 // like StringBuilder but doesn't have any encoding or range checks
 private[zio] final class FastStringBuilder(initial: Int) {
-  private[this] var chars: Array[Char] = Array.ofDim(initial)
+  private[this] var chars: Array[Char] = new Array[Char](initial)
   private[this] var i: Int             = 0
 
   def append(c: Char): Unit = {
