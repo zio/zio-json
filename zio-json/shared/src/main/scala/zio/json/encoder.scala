@@ -2,7 +2,7 @@ package zio.json
 
 import zio.Chunk
 import zio.json.ast.Json
-import zio.json.internal.{ FastStringWrite, Write }
+import zio.json.internal.{ FastStringWrite, SafeNumbers, Write }
 import zio.json.javatime.serializers
 
 import java.util.UUID
@@ -167,15 +167,11 @@ object JsonEncoder extends GeneratedTupleEncoders with EncoderLowPriority0 {
   implicit val bigInteger: JsonEncoder[java.math.BigInteger] =
     explicit(_.toString, n => Json.Num(new java.math.BigDecimal(n)))
   implicit val scalaBigInt: JsonEncoder[BigInt] =
-    explicit(_.toString(), n => Json.Num(new java.math.BigDecimal(n.bigInteger)))
-
-  implicit val double: JsonEncoder[Double] = explicit(
-    n =>
-      if (n.isNaN || n.isInfinite) s""""$n""""
-      else n.toString,
-    n => Json.Num(new java.math.BigDecimal(n))
-  )
-  implicit val float: JsonEncoder[Float]                     = double.contramap(_.toDouble)
+    explicit(_.toString, n => Json.Num(new java.math.BigDecimal(n.bigInteger)))
+  implicit val double: JsonEncoder[Double] =
+    explicit(SafeNumbers.toString, n => Json.Num(new java.math.BigDecimal(n)))
+  implicit val float: JsonEncoder[Float] =
+    explicit(SafeNumbers.toString, n => Json.Num(new java.math.BigDecimal(n.toDouble)))
   implicit val bigDecimal: JsonEncoder[java.math.BigDecimal] = explicit(_.toString, Json.Num.apply)
   implicit val scalaBigDecimal: JsonEncoder[BigDecimal]      = explicit(_.toString, n => Json.Num(n.bigDecimal))
 
