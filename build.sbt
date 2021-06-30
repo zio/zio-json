@@ -216,7 +216,8 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform)
 lazy val zioJsonJS = zioJson.js
   .settings(
     scalaJSUseMainModuleInitializer := true,
-    testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework")
+    testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework"),
+    coverageEnabled := false
   )
 
 lazy val zioJsonJVM = zioJson.jvm
@@ -255,7 +256,9 @@ lazy val zioJsonMacros = crossProject(JSPlatform, JVMPlatform)
 
 lazy val zioJsonMacrosJVM = zioJsonMacros.jvm.dependsOn(zioJsonJVM)
 
-lazy val zioJsonMacrosJS = zioJsonMacros.js.dependsOn(zioJsonJS)
+lazy val zioJsonMacrosJS = zioJsonMacros.js
+  .settings(coverageEnabled := false)
+  .dependsOn(zioJsonJS)
 
 lazy val zioJsonInteropHttp4s = project
   .in(file("zio-json-interop-http4s"))

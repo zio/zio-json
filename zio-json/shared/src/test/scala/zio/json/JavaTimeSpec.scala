@@ -1,6 +1,5 @@
 package testzio.json
 
-import zio.blocking._
 import zio.json._
 import zio.test.Assertion._
 import zio.test._
@@ -14,7 +13,7 @@ object JavaTimeSpec extends DefaultRunnableSpec {
 
   private def equalToStringified(expected: String) = equalTo(s""""$expected"""")
 
-  def spec: ZSpec[Blocking, Any] =
+  def spec: Spec[Annotations, TestFailure[Any], TestSuccess] =
     suite("java.time")(
       suite("Encoder")(
         test("DayOfWeek") {
@@ -27,6 +26,7 @@ object JavaTimeSpec extends DefaultRunnableSpec {
           assert(DayOfWeek.SUNDAY.toJson)(equalToStringified("SUNDAY"))
         },
         test("Duration") {
+          assert(Duration.ofDays(0).toJson)(equalToStringified("PT0S")) &&
           assert(Duration.ofDays(1).toJson)(equalToStringified("PT24H")) &&
           assert(Duration.ofHours(24).toJson)(equalToStringified("PT24H")) &&
           assert(Duration.ofMinutes(1440).toJson)(equalToStringified("PT24H")) &&
@@ -149,6 +149,9 @@ object JavaTimeSpec extends DefaultRunnableSpec {
         },
         test("Duration") {
           assert(stringify("PT24H").fromJson[Duration])(isRight(equalTo(Duration.ofHours(24)))) &&
+          assert(stringify("-PT24H").fromJson[Duration])(isRight(equalTo(Duration.ofHours(-24)))) &&
+          assert(stringify("P1D").fromJson[Duration])(isRight(equalTo(Duration.ofHours(24)))) &&
+          assert(stringify("P1DT0H").fromJson[Duration])(isRight(equalTo(Duration.ofHours(24)))) &&
           assert(stringify("PT2562047788015215H30M7.999999999S").fromJson[Duration])(
             isRight(equalTo(Duration.ofSeconds(Long.MaxValue, 999999999L)))
           )
@@ -160,7 +163,7 @@ object JavaTimeSpec extends DefaultRunnableSpec {
         },
         test("LocalDate") {
           val n = LocalDate.now()
-          val p = LocalDate.of(2020, 1, 1)
+          val p = LocalDate.of(2000, 2, 29)
           assert(stringify(n).fromJson[LocalDate])(isRight(equalTo(n))) &&
           assert(stringify(p).fromJson[LocalDate])(isRight(equalTo(p)))
         },
@@ -330,7 +333,10 @@ object JavaTimeSpec extends DefaultRunnableSpec {
       suite("Decoder Sad Path")(
         test("DayOfWeek") {
           assert(stringify("foody").fromJson[DayOfWeek])(
-            isLeft(equalTo("(No enum constant java.time.DayOfWeek.FOODY)"))
+            isLeft(
+              equalTo("(No enum constant java.time.DayOfWeek.FOODY)") || // JVM
+                equalTo("(Unrecognized day of week name: FOODY)")
+            ) // Scala.js
           )
         },
         test("Duration") {
@@ -365,7 +371,10 @@ object JavaTimeSpec extends DefaultRunnableSpec {
         },
         test("Month") {
           assert(stringify("FebTober").fromJson[Month])(
-            isLeft(equalTo("(No enum constant java.time.Month.FEBTOBER)"))
+            isLeft(
+              equalTo("(No enum constant java.time.Month.FEBTOBER)") || // JVM
+                equalTo("(Unrecognized month name: FEBTOBER)")
+            ) // Scala.js
           )
         },
         test("MonthDay") {
@@ -463,5 +472,5 @@ object JavaTimeSpec extends DefaultRunnableSpec {
           )
         }
       )
-    ) @@ TestAspect.parallel
+    )
 }

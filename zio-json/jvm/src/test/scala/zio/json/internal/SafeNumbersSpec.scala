@@ -1,6 +1,6 @@
 package testzio.json.internal
 
-import testzio.json.TestUtils._
+import testzio.json.Gens._
 import zio.json.internal._
 import zio.test.Assertion._
 import zio.test.{ DefaultRunnableSpec, _ }
