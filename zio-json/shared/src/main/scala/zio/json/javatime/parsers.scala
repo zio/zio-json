@@ -37,7 +37,7 @@ private[json] object parsers {
       ch = input.charAt(pos)
       pos += 1
     }
-    if (ch != 'P') durationOrPeriodStartError(isNeg, pos)
+    if (ch != 'P') durationOrPeriodStartError(isNeg, pos - 1)
     if (pos >= len) durationError(pos)
     ch = input.charAt(pos)
     pos += 1
@@ -50,18 +50,18 @@ private[json] object parsers {
           state = 1
         }
       } else if (state == 1) {
-        if (ch != 'T') charsError('T', '"', pos)
+        if (ch != 'T') charsError('T', '"', pos - 1)
         if (pos >= len) durationError(pos)
         ch = input.charAt(pos)
         pos += 1
-      } else if (state == 4 && pos < len) durationError(pos)
+      } else if (state == 4 && pos >= len) durationError(pos - 1)
       val isNegX = ch == '-'
       if (isNegX) {
         if (pos >= len) durationError(pos)
         ch = input.charAt(pos)
         pos += 1
       }
-      if (ch < '0' || ch > '9') durationOrPeriodDigitError(isNegX, state <= 1, pos)
+      if (ch < '0' || ch > '9') durationOrPeriodDigitError(isNegX, state <= 1, pos - 1)
       var x: Long = ('0' - ch).toLong
       while (
         (pos < len) && {
@@ -110,7 +110,7 @@ private[json] object parsers {
           nanoDigitWeight /= 10
           pos += 1
         }
-        if (ch != 'S') nanoError(nanoDigitWeight, 'S', pos + 1)
+        if (ch != 'S') nanoError(nanoDigitWeight, 'S', pos)
         if (isNeg ^ isNegX) nanos = -nanos
         state = 4
       } else if (ch == 'S') {
@@ -1138,7 +1138,7 @@ private[json] object parsers {
     offsetMinute: Int,
     offsetSecond: Int,
     pos: Int
-  ) = {
+  ): ZoneOffset = {
     var offsetTotal = offsetHour * 3600 + offsetMinute * 60 + offsetSecond
     var qp          = offsetTotal * 37283
     if (offsetTotal > 64800) error("illegal timezone offset", pos) // 64800 == 18 * 60 * 60

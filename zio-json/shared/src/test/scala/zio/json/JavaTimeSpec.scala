@@ -340,8 +340,160 @@ object JavaTimeSpec extends DefaultRunnableSpec {
           )
         },
         test("Duration") {
-          assert(""""INVALID"""".fromJson[Duration])(
-            isLeft(containsString("INVALID is not a valid ISO-8601 format, expected 'P' or '-' at index 1"))
+          assert("""""""".fromJson[Duration])(
+            isLeft(containsString(" is not a valid ISO-8601 format, illegal duration at index 0"))
+          ) &&
+          assert(""""X"""".fromJson[Duration])(
+            isLeft(containsString("X is not a valid ISO-8601 format, expected 'P' or '-' at index 0"))
+          ) &&
+          assert(""""P"""".fromJson[Duration])(
+            isLeft(containsString("P is not a valid ISO-8601 format, illegal duration at index 1"))
+          ) &&
+          assert(""""-"""".fromJson[Duration])(
+            isLeft(containsString("- is not a valid ISO-8601 format, illegal duration at index 1"))
+          ) &&
+          assert(""""-X"""".fromJson[Duration])(
+            isLeft(containsString("-X is not a valid ISO-8601 format, expected 'P' at index 1"))
+          ) &&
+          assert(""""PXD"""".fromJson[Duration])(
+            isLeft(containsString("PXD is not a valid ISO-8601 format, expected '-' or digit at index 1"))
+          ) &&
+          assert(""""P-"""".fromJson[Duration])(
+            isLeft(containsString("P- is not a valid ISO-8601 format, illegal duration at index 2"))
+          ) &&
+          assert(""""P-XD"""".fromJson[Duration])(
+            isLeft(containsString("P-XD is not a valid ISO-8601 format, expected digit at index 2"))
+          ) &&
+          assert(""""P1XD"""".fromJson[Duration])(
+            isLeft(containsString("P1XD is not a valid ISO-8601 format, expected 'D' or digit at index 2"))
+          ) &&
+          assert(""""PT"""".fromJson[Duration])(
+            isLeft(containsString("PT is not a valid ISO-8601 format, illegal duration at index 2"))
+          ) &&
+          assert(""""PT0SX"""".fromJson[Duration])(
+            isLeft(containsString("PT0SX is not a valid ISO-8601 format, illegal duration at index 4"))
+          ) &&
+          assert(""""P1DT"""".fromJson[Duration])(
+            isLeft(containsString("P1DT is not a valid ISO-8601 format, illegal duration at index 4"))
+          ) &&
+          assert(""""P106751991167301D"""".fromJson[Duration])(
+            isLeft(containsString("P106751991167301D is not a valid ISO-8601 format, illegal duration at index 16"))
+          ) &&
+          assert(""""P1067519911673000D"""".fromJson[Duration])(
+            isLeft(containsString("P1067519911673000D is not a valid ISO-8601 format, illegal duration at index 17"))
+          ) &&
+          assert(""""P-106751991167301D"""".fromJson[Duration])(
+            isLeft(containsString("P-106751991167301D is not a valid ISO-8601 format, illegal duration at index 17"))
+          ) &&
+          assert(""""P1DX1H"""".fromJson[Duration])(
+            isLeft(containsString("P1DX1H is not a valid ISO-8601 format, expected 'T' or '\"' at index 3"))
+          ) &&
+          assert(""""P1DTXH"""".fromJson[Duration])(
+            isLeft(containsString("P1DTXH is not a valid ISO-8601 format, expected '-' or digit at index 4"))
+          ) &&
+          assert(""""P1DT-XH"""".fromJson[Duration])(
+            isLeft(containsString("P1DT-XH is not a valid ISO-8601 format, expected digit at index 5"))
+          ) &&
+          assert(""""P1DT1XH"""".fromJson[Duration])(
+            isLeft(
+              containsString(
+                "P1DT1XH is not a valid ISO-8601 format, expected 'H' or 'M' or 'S or '.' or digit at index 5"
+              )
+            )
+          ) &&
+          assert(""""P1DT1H1XM"""".fromJson[Duration])(
+            isLeft(
+              containsString("P1DT1H1XM is not a valid ISO-8601 format, expected 'M' or 'S or '.' or digit at index 7")
+            )
+          ) &&
+          assert(""""P0DT2562047788015216H"""".fromJson[Duration])(
+            isLeft(containsString("P0DT2562047788015216H is not a valid ISO-8601 format, illegal duration at index 20"))
+          ) &&
+          assert(""""P0DT-2562047788015216H"""".fromJson[Duration])(
+            isLeft(
+              containsString("P0DT-2562047788015216H is not a valid ISO-8601 format, illegal duration at index 21")
+            )
+          ) &&
+          assert(""""P0DT153722867280912931M"""".fromJson[Duration])(
+            isLeft(
+              containsString("P0DT153722867280912931M is not a valid ISO-8601 format, illegal duration at index 22")
+            )
+          ) &&
+          assert(""""P0DT-153722867280912931M"""".fromJson[Duration])(
+            isLeft(
+              containsString("P0DT-153722867280912931M is not a valid ISO-8601 format, illegal duration at index 23")
+            )
+          ) &&
+          assert(""""P0DT9223372036854775808S"""".fromJson[Duration])(
+            isLeft(
+              containsString("P0DT9223372036854775808S is not a valid ISO-8601 format, illegal duration at index 23")
+            )
+          ) &&
+          assert(""""P0DT92233720368547758000S"""".fromJson[Duration])(
+            isLeft(
+              containsString("P0DT92233720368547758000S is not a valid ISO-8601 format, illegal duration at index 23")
+            )
+          ) &&
+          assert(""""P0DT-9223372036854775809S"""".fromJson[Duration])(
+            isLeft(
+              containsString("P0DT-9223372036854775809S is not a valid ISO-8601 format, illegal duration at index 23")
+            )
+          ) &&
+          assert(""""P1DT1H1MXS"""".fromJson[Duration])(
+            isLeft(
+              containsString("P1DT1H1MXS is not a valid ISO-8601 format, expected '\"' or '-' or digit at index 8")
+            )
+          ) &&
+          assert(""""P1DT1H1M-XS"""".fromJson[Duration])(
+            isLeft(containsString("P1DT1H1M-XS is not a valid ISO-8601 format, expected digit at index 9"))
+          ) &&
+          assert(""""P1DT1H1M0XS"""".fromJson[Duration])(
+            isLeft(containsString("P1DT1H1M0XS is not a valid ISO-8601 format, expected 'S or '.' or digit at index 9"))
+          ) &&
+          assert(""""P1DT1H1M0.XS"""".fromJson[Duration])(
+            isLeft(containsString("P1DT1H1M0.XS is not a valid ISO-8601 format, expected 'S' or digit at index 10"))
+          ) &&
+          assert(""""P1DT1H1M0.012345678XS"""".fromJson[Duration])(
+            isLeft(containsString("P1DT1H1M0.012345678XS is not a valid ISO-8601 format, expected 'S' at index 19"))
+          ) &&
+          assert(""""P1DT1H1M0.0123456789S"""".fromJson[Duration])(
+            isLeft(containsString("P1DT1H1M0.0123456789S is not a valid ISO-8601 format, expected 'S' at index 19"))
+          ) &&
+          assert(""""P0DT0H0M9223372036854775808S"""".fromJson[Duration])(
+            isLeft(
+              containsString(
+                "P0DT0H0M9223372036854775808S is not a valid ISO-8601 format, illegal duration at index 27"
+              )
+            )
+          ) &&
+          assert(""""P0DT0H0M92233720368547758080S"""".fromJson[Duration])(
+            isLeft(
+              containsString(
+                "P0DT0H0M92233720368547758080S is not a valid ISO-8601 format, illegal duration at index 27"
+              )
+            )
+          ) &&
+          assert(""""P0DT0H0M-9223372036854775809S"""".fromJson[Duration])(
+            isLeft(
+              containsString(
+                "P0DT0H0M-9223372036854775809S is not a valid ISO-8601 format, illegal duration at index 27"
+              )
+            )
+          ) &&
+          assert(""""P106751991167300DT24H"""".fromJson[Duration])(
+            isLeft(containsString("P106751991167300DT24H is not a valid ISO-8601 format, illegal duration at index 20"))
+          ) &&
+          assert(""""P0DT2562047788015215H60M"""".fromJson[Duration])(
+            isLeft(
+              containsString("P0DT2562047788015215H60M is not a valid ISO-8601 format, illegal duration at index 23")
+            )
+          ) &&
+          assert(""""P0DT0H153722867280912930M60S"""".fromJson[Duration])(
+            isLeft(
+              containsString(
+                "P0DT0H153722867280912930M60S is not a valid ISO-8601 format, illegal duration at index 27"
+              )
+            )
           )
         },
         test("LocalDate") {
