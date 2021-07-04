@@ -203,7 +203,7 @@ object DecoderSpec extends DefaultRunnableSpec {
           assert(ok1.fromJson[Duration])(isRight(equalTo(Duration.parse("PT1H2M3S")))) &&
           assert(ok2.fromJson[Duration])(isRight(equalTo(Duration.ofNanos(-500000000)))) &&
           assert(bad1.fromJson[Duration])(
-            isLeft(containsString("PT-H is not a valid ISO-8601 format, expected digit at index 4"))
+            isLeft(containsString("PT-H is not a valid ISO-8601 format, expected digit at index 3"))
           )
         },
         test("java.time.ZonedDateTime") {

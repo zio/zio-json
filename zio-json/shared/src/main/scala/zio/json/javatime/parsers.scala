@@ -37,7 +37,7 @@ private[json] object parsers {
       ch = input.charAt(pos)
       pos += 1
     }
-    if (ch != 'P') durationOrPeriodStartError(isNeg, pos)
+    if (ch != 'P') durationOrPeriodStartError(isNeg, pos - 1)
     if (pos >= len) durationError(pos)
     ch = input.charAt(pos)
     pos += 1
@@ -50,18 +50,18 @@ private[json] object parsers {
           state = 1
         }
       } else if (state == 1) {
-        if (ch != 'T') charsError('T', '"', pos)
+        if (ch != 'T') charsError('T', '"', pos - 1)
         if (pos >= len) durationError(pos)
         ch = input.charAt(pos)
         pos += 1
-      } else if (state == 4 && pos < len) durationError(pos)
+      } else if (state == 4 && pos >= len) durationError(pos - 1)
       val isNegX = ch == '-'
       if (isNegX) {
         if (pos >= len) durationError(pos)
         ch = input.charAt(pos)
         pos += 1
       }
-      if (ch < '0' || ch > '9') durationOrPeriodDigitError(isNegX, state <= 1, pos)
+      if (ch < '0' || ch > '9') durationOrPeriodDigitError(isNegX, state <= 1, pos - 1)
       var x: Long = ('0' - ch).toLong
       while (
         (pos < len) && {
@@ -110,10 +110,7 @@ private[json] object parsers {
           nanoDigitWeight /= 10
           pos += 1
         }
-        if (ch != 'S') {
-          pos += 1
-          nanoError(nanoDigitWeight, 'S', pos)
-        }
+        if (ch != 'S') nanoError(nanoDigitWeight, 'S', pos)
         if (isNeg ^ isNegX) nanos = -nanos
         state = 4
       } else if (ch == 'S') {
@@ -170,11 +167,7 @@ private[json] object parsers {
         }
         pos += 1
         if (yearNeg && year == 0 || yearDigits == 10 && year > 1000000000) yearError(pos - 1)
-        if (ch != '-') {
-          if (!yearNeg && yearDigits == 4) digitError(pos)
-          if (yearDigits == 9) charError('-', pos)
-          charOrDigitError('-', pos)
-        }
+        if (ch != '-') yearError(yearNeg, yearDigits, pos)
         if (yearNeg) year = -year
         year
       }
@@ -247,11 +240,7 @@ private[json] object parsers {
         }
         pos += 1
         if (yearNeg && year == 0 || yearDigits == 10 && year > 1000000000) yearError(pos - 1)
-        if (ch != '-') {
-          if (!yearNeg && yearDigits == 4) digitError(pos)
-          if (yearDigits == 9) charError('-', pos)
-          charOrDigitError('-', pos)
-        }
+        if (ch != '-') yearError(yearNeg, yearDigits, pos)
         if (yearNeg) year = -year
         year
       }
@@ -472,11 +461,7 @@ private[json] object parsers {
         }
         pos += 1
         if (yearNeg && year == 0 || yearDigits == 10 && year > 1000000000) yearError(pos - 1)
-        if (ch != '-') {
-          if (!yearNeg && yearDigits == 4) digitError(pos)
-          if (yearDigits == 9) charError('-', pos)
-          charOrDigitError('-', pos)
-        }
+        if (ch != '-') yearError(yearNeg, yearDigits, pos)
         if (yearNeg) year = -year
         year
       }
@@ -615,30 +600,9 @@ private[json] object parsers {
               pos += 2
               ch0 * 10 + ch1 - 528 // 528 == '0' * 11
             }
-            if (pos < len) {
-              ch = input.charAt(pos)
-              pos += 1
-            }
           }
         }
-        var offsetTotal = offsetHour * 3600 + offsetMinute * 60 + offsetSecond
-        var qp          = offsetTotal * 37283
-        if (offsetTotal > 64800) error("illegal timezone offset", pos) // 64800 == 18 * 60 * 60
-        if ((qp & 0x1ff8000) == 0) {                                   // check if offsetTotal divisible by 900
-          qp >>>= 25                                                   // divide offsetTotal by 900
-          if (offsetNeg) qp = -qp
-          var zoneOffset = zoneOffsets(qp + 72)
-          if (zoneOffset ne null) zoneOffset
-          else {
-            if (offsetNeg) offsetTotal = -offsetTotal
-            zoneOffset = ZoneOffset.ofTotalSeconds(offsetTotal)
-            zoneOffsets(qp + 72) = zoneOffset
-            zoneOffset
-          }
-        } else {
-          if (offsetNeg) offsetTotal = -offsetTotal
-          ZoneOffset.ofTotalSeconds(offsetTotal)
-        }
+        toZoneOffset(offsetNeg, offsetHour, offsetMinute, offsetSecond, pos)
       }
     if (pos != len) offsetDateTimeError(pos)
     OffsetDateTime.of(year, month, day, hour, minute, second, nano, zoneOffset)
@@ -755,30 +719,9 @@ private[json] object parsers {
               pos += 2
               ch0 * 10 + ch1 - 528 // 528 == '0' * 11
             }
-            if (pos < len) {
-              ch = input.charAt(pos)
-              pos += 1
-            }
           }
         }
-        var offsetTotal = offsetHour * 3600 + offsetMinute * 60 + offsetSecond
-        var qp          = offsetTotal * 37283
-        if (offsetTotal > 64800) error("illegal timezone offset", pos) // 64800 == 18 * 60 * 60
-        if ((qp & 0x1ff8000) == 0) {                                   // check if offsetTotal divisible by 900
-          qp >>>= 25                                                   // divide offsetTotal by 900
-          if (offsetNeg) qp = -qp
-          var zoneOffset = zoneOffsets(qp + 72)
-          if (zoneOffset ne null) zoneOffset
-          else {
-            if (offsetNeg) offsetTotal = -offsetTotal
-            zoneOffset = ZoneOffset.ofTotalSeconds(offsetTotal)
-            zoneOffsets(qp + 72) = zoneOffset
-            zoneOffset
-          }
-        } else {
-          if (offsetNeg) offsetTotal = -offsetTotal
-          ZoneOffset.ofTotalSeconds(offsetTotal)
-        }
+        toZoneOffset(offsetNeg, offsetHour, offsetMinute, offsetSecond, pos)
       }
     if (pos != len) offsetDateTimeError(pos)
     OffsetTime.of(hour, minute, second, nano, zoneOffset)
@@ -870,11 +813,7 @@ private[json] object parsers {
         }
         pos += 1
         if (yearNeg && year == 0 || yearDigits == 10 && year > 1000000000) yearError(pos - 1)
-        if (ch != '-') {
-          if (!yearNeg && yearDigits == 4) digitError(pos)
-          if (yearDigits == 9) charError('-', pos)
-          charOrDigitError('-', pos)
-        }
+        if (ch != '-') yearError(yearNeg, yearDigits, pos)
         if (yearNeg) year = -year
         year
       }
@@ -934,11 +873,7 @@ private[json] object parsers {
         }
         pos += 1
         if (yearNeg && year == 0 || yearDigits == 10 && year > 1000000000) yearError(pos - 1)
-        if (ch != '-') {
-          if (!yearNeg && yearDigits == 4) digitError(pos)
-          if (yearDigits == 9) charError('-', pos)
-          charOrDigitError('-', pos)
-        }
+        if (ch != '-') yearError(yearNeg, yearDigits, pos)
         if (yearNeg) year = -year
         year
       }
@@ -1089,24 +1024,7 @@ private[json] object parsers {
             }
           }
         }
-        var offsetTotal = offsetHour * 3600 + offsetMinute * 60 + offsetSecond
-        var qp          = offsetTotal * 37283
-        if (offsetTotal > 64800) error("illegal timezone offset", pos) // 64800 == 18 * 60 * 60
-        if ((qp & 0x1ff8000) == 0) {                                   // check if offsetTotal divisible by 900
-          qp >>>= 25                                                   // divide offsetTotal by 900
-          if (offsetNeg) qp = -qp
-          var zoneOffset = zoneOffsets(qp + 72)
-          if (zoneOffset ne null) zoneOffset
-          else {
-            if (offsetNeg) offsetTotal = -offsetTotal
-            zoneOffset = ZoneOffset.ofTotalSeconds(offsetTotal)
-            zoneOffsets(qp + 72) = zoneOffset
-            zoneOffset
-          }
-        } else {
-          if (offsetNeg) offsetTotal = -offsetTotal
-          ZoneOffset.ofTotalSeconds(offsetTotal)
-        }
+        toZoneOffset(offsetNeg, offsetHour, offsetMinute, offsetSecond, pos)
       }
     if (pos == len) ZonedDateTime.ofLocal(localDateTime, zoneOffset, null)
     else if (ch == '[') {
@@ -1207,31 +1125,37 @@ private[json] object parsers {
             pos += 2
             ch0 * 10 + ch1 - 528 // 528 == '0' * 11
           }
-          if (pos < len) {
-            ch = input.charAt(pos)
-            pos += 1
-          }
         }
       }
       if (pos != len) zoneOffsetError(pos)
-      var offsetTotal = offsetHour * 3600 + offsetMinute * 60 + offsetSecond
-      var qp          = offsetTotal * 37283
-      if (offsetTotal > 64800) error("illegal timezone offset", pos) // 64800 == 18 * 60 * 60
-      if ((qp & 0x1ff8000) == 0) {                                   // check if offsetTotal divisible by 900
-        qp >>>= 25                                                   // divide offsetTotal by 900
-        if (offsetNeg) qp = -qp
-        var zoneOffset = zoneOffsets(qp + 72)
-        if (zoneOffset ne null) zoneOffset
-        else {
-          if (offsetNeg) offsetTotal = -offsetTotal
-          zoneOffset = ZoneOffset.ofTotalSeconds(offsetTotal)
-          zoneOffsets(qp + 72) = zoneOffset
-          zoneOffset
-        }
-      } else {
+      toZoneOffset(offsetNeg, offsetHour, offsetMinute, offsetSecond, pos)
+    }
+  }
+
+  private[this] def toZoneOffset(
+    offsetNeg: Boolean,
+    offsetHour: Int,
+    offsetMinute: Int,
+    offsetSecond: Int,
+    pos: Int
+  ): ZoneOffset = {
+    var offsetTotal = offsetHour * 3600 + offsetMinute * 60 + offsetSecond
+    var qp          = offsetTotal * 37283
+    if (offsetTotal > 64800) error("illegal timezone offset", pos) // 64800 == 18 * 60 * 60
+    if ((qp & 0x1ff8000) == 0) {                                   // check if offsetTotal divisible by 900
+      qp >>>= 25                                                   // divide offsetTotal by 900
+      if (offsetNeg) qp = -qp
+      var zoneOffset = zoneOffsets(qp + 72)
+      if (zoneOffset ne null) zoneOffset
+      else {
         if (offsetNeg) offsetTotal = -offsetTotal
-        ZoneOffset.ofTotalSeconds(offsetTotal)
+        zoneOffset = ZoneOffset.ofTotalSeconds(offsetTotal)
+        zoneOffsets(qp + 72) = zoneOffset
+        zoneOffset
       }
+    } else {
+      if (offsetNeg) offsetTotal = -offsetTotal
+      ZoneOffset.ofTotalSeconds(offsetTotal)
     }
   }
 
@@ -1317,6 +1241,12 @@ private[json] object parsers {
   private[this] def zonedDateTimeError(pos: Int) = error("illegal zoned date time", pos)
 
   private[this] def zoneOffsetError(pos: Int) = error("illegal zone offset", pos)
+
+  private[this] def yearError(yearNeg: Boolean, yearDigits: Int, pos: Int) = {
+    if (!yearNeg && yearDigits == 4) digitError(pos)
+    if (yearDigits == 9) charError('-', pos)
+    charOrDigitError('-', pos)
+  }
 
   private[this] def yearError(pos: Int) = error("illegal year", pos)
 

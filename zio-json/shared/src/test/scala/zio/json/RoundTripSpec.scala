@@ -1,10 +1,11 @@
 package testzio.json
 
-import testzio.json.TestUtils._
+import testzio.json.Gens._
 import zio.json._
 import zio.json.ast.Json
 import zio.random.Random
 import zio.test.Assertion._
+import zio.test.TestAspect._
 import zio.test._
 
 import java.time._
@@ -21,24 +22,24 @@ object RoundTripSpec extends DefaultRunnableSpec {
       },
       testM("shorts") {
         check(Gen.anyShort)(assertRoundtrips)
-      },
+      } @@ samples(10000),
       testM("ints") {
         check(Gen.anyInt)(assertRoundtrips)
-      },
+      } @@ samples(10000),
       testM("longs") {
         check(Gen.anyLong)(assertRoundtrips)
-      },
+      } @@ samples(10000),
       testM("bigInts") {
         check(genBigInteger)(assertRoundtrips)
-      },
+      } @@ samples(10000),
       testM("floats") {
         // NaN / Infinity is tested manually, because of == semantics
         check(Gen.anyFloat.filter(java.lang.Float.isFinite))(assertRoundtrips)
-      },
+      } @@ samples(10000),
       testM("doubles") {
         // NaN / Infinity is tested manually, because of == semantics
         check(Gen.anyDouble.filter(java.lang.Double.isFinite))(assertRoundtrips)
-      },
+      } @@ samples(10000),
       testM("AST") {
         check(genAst)(assertRoundtrips)
       },
@@ -48,19 +49,19 @@ object RoundTripSpec extends DefaultRunnableSpec {
         },
         testM("Duration") {
           check(genDuration)(assertRoundtrips)
-        },
+        } @@ samples(10000),
         testM("Instant") {
           check(genInstant)(assertRoundtrips)
-        },
+        } @@ samples(10000),
         testM("LocalDate") {
           check(genLocalDate)(assertRoundtrips)
-        },
+        } @@ samples(10000),
         testM("LocalDateTime") {
           check(genLocalDateTime)(assertRoundtrips)
-        },
+        } @@ samples(10000),
         testM("LocalTime") {
           check(genLocalTime)(assertRoundtrips)
-        },
+        } @@ samples(10000),
         testM("Month") {
           check(genMonth)(assertRoundtrips)
         },
@@ -69,22 +70,22 @@ object RoundTripSpec extends DefaultRunnableSpec {
         },
         testM("OffsetDateTime") {
           check(genOffsetDateTime)(assertRoundtrips)
-        },
+        } @@ samples(10000),
         testM("OffsetTime") {
           check(genOffsetTime)(assertRoundtrips)
-        },
+        } @@ samples(10000),
         testM("Period") {
           check(genPeriod)(assertRoundtrips)
-        },
+        } @@ samples(10000),
         testM("Year") {
           check(genYear)(assertRoundtrips)
-        },
+        } @@ samples(10000),
         testM("YearMonth") {
           check(genYearMonth)(assertRoundtrips)
-        },
+        } @@ samples(10000),
         testM("ZonedDateTime") {
           check(genZonedDateTime)(assertRoundtrips)
-        },
+        } @@ samples(10000),
         testM("ZoneId") {
           check(genZoneId)(assertRoundtrips[ZoneId])
         },
