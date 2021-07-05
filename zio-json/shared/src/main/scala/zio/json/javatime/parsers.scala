@@ -227,13 +227,11 @@ private[json] object parsers {
     var second, nano = 0
     var ch           = (0: Char)
     if (pos < len) {
-      var nanoDigitWeight = -1
       ch = input.charAt(pos)
       pos += 1
       if (ch == ':') {
-        nanoDigitWeight = -2
         second = {
-          if (pos + 2 >= len) instantError(pos)
+          if (pos + 1 >= len) instantError(pos)
           val ch0 = input.charAt(pos)
           val ch1 = input.charAt(pos + 1)
           if (ch0 < '0' || ch0 > '9') digitError(pos)
@@ -246,7 +244,7 @@ private[json] object parsers {
         ch = input.charAt(pos)
         pos += 1
         if (ch == '.') {
-          nanoDigitWeight = 100000000
+          var nanoDigitWeight = 100000000
           while (
             pos < len && {
               ch = input.charAt(pos)
@@ -437,40 +435,36 @@ private[json] object parsers {
     }
     var second, nano = 0
     if (pos < len) {
-      var nanoDigitWeight = -1
-      var ch              = input.charAt(pos)
+      if (input.charAt(pos) != ':') charError(':', pos)
       pos += 1
-      if (ch == ':') {
-        nanoDigitWeight = -2
-        second = {
-          if (pos + 2 >= len) localDateTimeError(pos)
-          val ch0 = input.charAt(pos)
-          val ch1 = input.charAt(pos + 1)
-          if (ch0 < '0' || ch0 > '9') digitError(pos)
-          if (ch1 < '0' || ch1 > '9') digitError(pos + 1)
-          if (ch0 > '5') secondError(pos + 1)
-          pos += 2
-          ch0 * 10 + ch1 - 528 // 528 == '0' * 11
-        }
-        if (pos >= len) localDateTimeError(pos)
-        ch = input.charAt(pos)
+      second = {
+        if (pos + 1 >= len) localDateTimeError(pos)
+        val ch0 = input.charAt(pos)
+        val ch1 = input.charAt(pos + 1)
+        if (ch0 < '0' || ch0 > '9') digitError(pos)
+        if (ch1 < '0' || ch1 > '9') digitError(pos + 1)
+        if (ch0 > '5') secondError(pos + 1)
+        pos += 2
+        ch0 * 10 + ch1 - 528 // 528 == '0' * 11
+      }
+      if (pos < len) {
+        if (input.charAt(pos) != '.') charError('.', pos)
         pos += 1
-        if (ch == '.') {
-          nanoDigitWeight = 100000000
-          while (
-            pos < len && {
-              ch = input.charAt(pos)
-              pos += 1
-              ch >= '0' && ch <= '9' && nanoDigitWeight != 0
-            }
-          ) {
-            nano += (ch - '0') * nanoDigitWeight
-            nanoDigitWeight = (nanoDigitWeight * 3435973837L >> 35).toInt // divide a positive int by 10
+        var nanoDigitWeight = 100000000
+        var ch = (0: Char)
+        while (
+          pos < len && {
+            ch = input.charAt(pos)
+            pos += 1
+            ch >= '0' && ch <= '9' && nanoDigitWeight != 0
           }
+        ) {
+          nano += (ch - '0') * nanoDigitWeight
+          nanoDigitWeight = (nanoDigitWeight * 3435973837L >> 35).toInt // divide a positive int by 10
         }
+        if (pos != len || ch < '0' || ch > '9') localDateTimeError(pos - 1)
       }
     }
-    if (pos != len) localDateTimeError(pos)
     LocalDateTime.of(year, month, day, hour, minute, second, nano)
   }
 
@@ -502,40 +496,36 @@ private[json] object parsers {
     }
     var second, nano = 0
     if (pos < len) {
-      var nanoDigitWeight = -1
-      var ch              = input.charAt(pos)
-      if (ch == ':') {
+      if (input.charAt(pos) != ':') charError(':', pos)
+      pos += 1
+      second = {
+        if (pos + 1 >= len) localTimeError(pos)
+        val ch0 = input.charAt(pos)
+        val ch1 = input.charAt(pos + 1)
+        if (ch0 < '0' || ch0 > '9') digitError(pos)
+        if (ch1 < '0' || ch1 > '9') digitError(pos + 1)
+        if (ch0 > '5') secondError(pos + 1)
+        pos += 2
+        ch0 * 10 + ch1 - 528 // 528 == '0' * 11
+      }
+      if (pos < len) {
+        if (input.charAt(pos) != '.') charError('.', pos)
         pos += 1
-        nanoDigitWeight = -2
-        second = {
-          if (pos + 2 >= len) localTimeError(pos)
-          val ch0 = input.charAt(pos)
-          val ch1 = input.charAt(pos + 1)
-          if (ch0 < '0' || ch0 > '9') digitError(pos)
-          if (ch1 < '0' || ch1 > '9') digitError(pos + 1)
-          if (ch0 > '5') secondError(pos + 1)
-          pos += 2
-          ch0 * 10 + ch1 - 528 // 528 == '0' * 11
-        }
-        if (pos >= len) localTimeError(pos)
-        ch = input.charAt(pos)
-        pos += 1
-        if (ch == '.') {
-          nanoDigitWeight = 100000000
-          while (
-            pos < len && {
-              ch = input.charAt(pos)
-              pos += 1
-              ch >= '0' && ch <= '9' && nanoDigitWeight != 0
-            }
-          ) {
-            nano += (ch - '0') * nanoDigitWeight
-            nanoDigitWeight = (nanoDigitWeight * 3435973837L >> 35).toInt // divide a positive int by 10
+        var nanoDigitWeight = 100000000
+        var ch = (0: Char)
+        while (
+          pos < len && {
+            ch = input.charAt(pos)
+            pos += 1
+            ch >= '0' && ch <= '9' && nanoDigitWeight != 0
           }
+        ) {
+          nano += (ch - '0') * nanoDigitWeight
+          nanoDigitWeight = (nanoDigitWeight * 3435973837L >> 35).toInt // divide a positive int by 10
         }
+        if (pos != len || ch < '0' || ch > '9') localTimeError(pos - 1)
       }
     }
-    if (pos != len) localTimeError(pos)
     LocalTime.of(hour, minute, second, nano)
   }
 
@@ -663,7 +653,7 @@ private[json] object parsers {
     if (ch == ':') {
       nanoDigitWeight = -2
       second = {
-        if (pos + 2 >= len) offsetDateTimeError(pos)
+        if (pos + 1 >= len) offsetDateTimeError(pos)
         val ch0 = input.charAt(pos)
         val ch1 = input.charAt(pos + 1)
         if (ch0 < '0' || ch0 > '9') digitError(pos)
@@ -692,7 +682,6 @@ private[json] object parsers {
       if (ch == 'Z') ZoneOffset.UTC
       else {
         val offsetNeg = ch == '-' || (ch != '+' && timezoneSignError(nanoDigitWeight, pos - 1))
-        nanoDigitWeight = -3
         val offsetHour = {
           if (pos + 1 >= len) offsetDateTimeError(pos)
           val ch0        = input.charAt(pos)
@@ -729,7 +718,6 @@ private[json] object parsers {
               ch == ':'
             }
           ) {
-            nanoDigitWeight = -4
             offsetSecond = {
               if (pos + 1 >= len) offsetDateTimeError(pos)
               val ch0 = input.charAt(pos)
@@ -782,7 +770,7 @@ private[json] object parsers {
     if (ch == ':') {
       nanoDigitWeight = -2
       second = {
-        if (pos + 2 >= len) offsetDateTimeError(pos)
+        if (pos + 1 >= len) offsetDateTimeError(pos)
         val ch0 = input.charAt(pos)
         val ch1 = input.charAt(pos + 1)
         if (ch0 < '0' || ch0 > '9') digitError(pos)
@@ -1072,7 +1060,7 @@ private[json] object parsers {
     if (ch == ':') {
       nanoDigitWeight = -2
       second = {
-        if (pos + 2 >= len) zonedDateTimeError(pos)
+        if (pos + 1 >= len) zonedDateTimeError(pos)
         val ch0 = input.charAt(pos)
         val ch1 = input.charAt(pos + 1)
         if (ch0 < '0' || ch0 > '9') digitError(pos)
