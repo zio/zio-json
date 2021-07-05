@@ -507,6 +507,21 @@ object JavaTimeSpec extends DefaultRunnableSpec {
               equalTo("(2020 is not a valid ISO-8601 format, illegal local date at index 0)")
             )
           ) &&
+          assert(stringify("2020-0").fromJson[LocalDate])(
+            isLeft(
+              equalTo("(2020-0 is not a valid ISO-8601 format, illegal local date at index 5)")
+            )
+          ) &&
+          assert(stringify("2020-01-0").fromJson[LocalDate])(
+            isLeft(
+              equalTo("(2020-01-0 is not a valid ISO-8601 format, illegal local date at index 8)")
+            )
+          ) &&
+          assert(stringify("2020-01-012").fromJson[LocalDate])(
+            isLeft(
+              equalTo("(2020-01-012 is not a valid ISO-8601 format, illegal local date at index 10)")
+            )
+          ) &&
           assert(stringify("X020-01-01").fromJson[LocalDate])(
             isLeft(
               equalTo("(X020-01-01 is not a valid ISO-8601 format, expected '-' or '+' or digit at index 0)")
@@ -530,6 +545,31 @@ object JavaTimeSpec extends DefaultRunnableSpec {
           assert(stringify("2020X01-01").fromJson[LocalDate])(
             isLeft(
               equalTo("(2020X01-01 is not a valid ISO-8601 format, expected '-' at index 4)")
+            )
+          ) &&
+          assert(stringify("2020-X1-01").fromJson[LocalDate])(
+            isLeft(
+              equalTo("(2020-X1-01 is not a valid ISO-8601 format, expected digit at index 5)")
+            )
+          ) &&
+          assert(stringify("2020-0X-01").fromJson[LocalDate])(
+            isLeft(
+              equalTo("(2020-0X-01 is not a valid ISO-8601 format, expected digit at index 6)")
+            )
+          ) &&
+          assert(stringify("2020-01X01").fromJson[LocalDate])(
+            isLeft(
+              equalTo("(2020-01X01 is not a valid ISO-8601 format, expected '-' at index 7)")
+            )
+          ) &&
+          assert(stringify("2020-01-X1").fromJson[LocalDate])(
+            isLeft(
+              equalTo("(2020-01-X1 is not a valid ISO-8601 format, expected digit at index 8)")
+            )
+          ) &&
+          assert(stringify("2020-01-0X").fromJson[LocalDate])(
+            isLeft(
+              equalTo("(2020-01-0X is not a valid ISO-8601 format, expected digit at index 9)")
             )
           ) &&
           assert(stringify("+X0000-01-01").fromJson[LocalDate])(
@@ -585,6 +625,86 @@ object JavaTimeSpec extends DefaultRunnableSpec {
           assert(stringify("-0000-01-01").fromJson[LocalDate])(
             isLeft(
               equalTo("(-0000-01-01 is not a valid ISO-8601 format, illegal year at index 4)")
+            )
+          ) &&
+          assert(stringify("+10000").fromJson[LocalDate])(
+            isLeft(
+              equalTo("(+10000 is not a valid ISO-8601 format, illegal local date at index 6)")
+            )
+          ) &&
+          assert(stringify("2020-00-01").fromJson[LocalDate])(
+            isLeft(
+              equalTo("(2020-00-01 is not a valid ISO-8601 format, illegal month at index 6)")
+            )
+          ) &&
+          assert(stringify("2020-13-01").fromJson[LocalDate])(
+            isLeft(
+              equalTo("(2020-13-01 is not a valid ISO-8601 format, illegal month at index 6)")
+            )
+          ) &&
+          assert(stringify("2020-01-00").fromJson[LocalDate])(
+            isLeft(
+              equalTo("(2020-01-00 is not a valid ISO-8601 format, illegal day at index 9)")
+            )
+          ) &&
+          assert(stringify("2020-01-32").fromJson[LocalDate])(
+            isLeft(
+              equalTo("(2020-01-32 is not a valid ISO-8601 format, illegal day at index 9)")
+            )
+          ) &&
+          assert(stringify("2020-02-30").fromJson[LocalDate])(
+            isLeft(
+              equalTo("(2020-02-30 is not a valid ISO-8601 format, illegal day at index 9)")
+            )
+          ) &&
+          assert(stringify("2020-03-32").fromJson[LocalDate])(
+            isLeft(
+              equalTo("(2020-03-32 is not a valid ISO-8601 format, illegal day at index 9)")
+            )
+          ) &&
+          assert(stringify("2020-04-31").fromJson[LocalDate])(
+            isLeft(
+              equalTo("(2020-04-31 is not a valid ISO-8601 format, illegal day at index 9)")
+            )
+          ) &&
+          assert(stringify("2020-05-32").fromJson[LocalDate])(
+            isLeft(
+              equalTo("(2020-05-32 is not a valid ISO-8601 format, illegal day at index 9)")
+            )
+          ) &&
+          assert(stringify("2020-06-31").fromJson[LocalDate])(
+            isLeft(
+              equalTo("(2020-06-31 is not a valid ISO-8601 format, illegal day at index 9)")
+            )
+          ) &&
+          assert(stringify("2020-07-32").fromJson[LocalDate])(
+            isLeft(
+              equalTo("(2020-07-32 is not a valid ISO-8601 format, illegal day at index 9)")
+            )
+          ) &&
+          assert(stringify("2020-08-32").fromJson[LocalDate])(
+            isLeft(
+              equalTo("(2020-08-32 is not a valid ISO-8601 format, illegal day at index 9)")
+            )
+          ) &&
+          assert(stringify("2020-09-31").fromJson[LocalDate])(
+            isLeft(
+              equalTo("(2020-09-31 is not a valid ISO-8601 format, illegal day at index 9)")
+            )
+          ) &&
+          assert(stringify("2020-10-32").fromJson[LocalDate])(
+            isLeft(
+              equalTo("(2020-10-32 is not a valid ISO-8601 format, illegal day at index 9)")
+            )
+          ) &&
+          assert(stringify("2020-11-31").fromJson[LocalDate])(
+            isLeft(
+              equalTo("(2020-11-31 is not a valid ISO-8601 format, illegal day at index 9)")
+            )
+          ) &&
+          assert(stringify("2020-12-32").fromJson[LocalDate])(
+            isLeft(
+              equalTo("(2020-12-32 is not a valid ISO-8601 format, illegal day at index 9)")
             )
           )
         },

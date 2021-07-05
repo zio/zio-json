@@ -158,18 +158,20 @@ private[json] object parsers {
         while ({
           if (pos >= len) instantError(pos)
           ch = input.charAt(pos)
+          pos += 1
           ch >= '0' && ch <= '9' && yearDigits < 10
         }) {
           year =
             if (year > 100000000) 2147483647
             else year * 10 + (ch - '0')
           yearDigits += 1
-          pos += 1
         }
-        if (yearNeg && year == 0 || yearDigits == 10 && year > 1000000000) yearError(pos - 1)
-        if (ch != '-') yearError(yearNeg, yearDigits, pos)
-        pos += 1
-        if (yearNeg) year = -year
+        if (yearDigits == 10 && year > 1000000000) yearError(pos - 2)
+        if (yearNeg) {
+          if (year == 0) yearError(pos - 2)
+          year = -year
+        }
+        if (ch != '-') yearError(yearNeg, yearDigits, pos - 1)
         year
       }
     }
@@ -261,8 +263,11 @@ private[json] object parsers {
     if (ch != 'Z') charError('Z', pos)
     if (pos != len) instantError(pos)
     val epochDay =
-      epochDayForYear(year) + (dayOfYearForYearMonth(year, month) + day - 719529)        // 719528 == days 0000 to 1970
-    Instant.ofEpochSecond(epochDay * 86400 + (hour * 3600 + minute * 60 + second), nano) // 86400 == seconds per day
+      epochDayForYear(year) + (dayOfYearForYearMonth(year, month) + day - 719529) // 719528 == days 0000 to 1970
+    Instant.ofEpochSecond(
+      epochDay * 86400 + (hour * 3600 + minute * 60 + second),
+      nano.toLong
+    ) // 86400 == seconds per day
   }
 
   def unsafeParseLocalDate(input: String): LocalDate = {
@@ -295,16 +300,17 @@ private[json] object parsers {
         while ({
           if (pos >= len) localDateError(pos)
           ch = input.charAt(pos)
+          pos += 1
           ch >= '0' && ch <= '9' && yearDigits < 9
         }) {
           year = year * 10 + (ch - '0')
           yearDigits += 1
-          pos += 1
         }
-        if (yearNeg && year == 0 || yearDigits == 10) yearError(pos - 1)
-        if (ch != '-') yearError(yearNeg, yearDigits, pos)
-        pos += 1
-        if (yearNeg) year = -year
+        if (yearNeg) {
+          if (year == 0) yearError(pos - 2)
+          year = -year
+        }
+        if (ch != '-') yearError(yearNeg, yearDigits, pos - 1)
         year
       }
     }
@@ -366,16 +372,17 @@ private[json] object parsers {
         while ({
           if (pos >= len) localDateTimeError(pos)
           ch = input.charAt(pos)
+          pos += 1
           ch >= '0' && ch <= '9' && yearDigits < 9
         }) {
           year = year * 10 + (ch - '0')
           yearDigits += 1
-          pos += 1
         }
-        if (yearNeg && year == 0) yearError(pos - 1)
-        if (ch != '-') yearError(yearNeg, yearDigits, pos)
-        pos += 1
-        if (yearNeg) year = -year
+        if (yearNeg) {
+          if (year == 0) yearError(pos - 2)
+          year = -year
+        }
+        if (ch != '-') yearError(yearNeg, yearDigits, pos - 1)
         year
       }
     }
@@ -585,16 +592,17 @@ private[json] object parsers {
         while ({
           if (pos >= len) offsetDateTimeError(pos)
           ch = input.charAt(pos)
+          pos += 1
           ch >= '0' && ch <= '9' && yearDigits < 9
         }) {
           year = year * 10 + (ch - '0')
           yearDigits += 1
-          pos += 1
         }
-        if (yearNeg && year == 0) yearError(pos - 1)
-        if (ch != '-') yearError(yearNeg, yearDigits, pos)
-        pos += 1
-        if (yearNeg) year = -year
+        if (yearNeg) {
+          if (year == 0) yearError(pos - 2)
+          year = -year
+        }
+        if (ch != '-') yearError(yearNeg, yearDigits, pos - 1)
         year
       }
     }
@@ -893,9 +901,10 @@ private[json] object parsers {
           year = year * 10 + (ch - '0')
           yearDigits += 1
         }
-        if (yearNeg && year == 0) yearError(pos)
-        if (!yearNeg && yearDigits == 4) digitError(pos)
-        if (yearNeg) year = -year
+        if (yearNeg) {
+          if (year == 0) yearError(pos - 1)
+          year = -year
+        }
         year
       }
     }
@@ -933,16 +942,17 @@ private[json] object parsers {
         while ({
           if (pos >= len) yearMonthError(pos)
           ch = input.charAt(pos)
+          pos += 1
           ch >= '0' && ch <= '9' && yearDigits < 9
         }) {
           year = year * 10 + (ch - '0')
           yearDigits += 1
-          pos += 1
         }
-        if (yearNeg && year == 0) yearError(pos - 1)
-        if (ch != '-') yearError(yearNeg, yearDigits, pos)
-        pos += 1
-        if (yearNeg) year = -year
+        if (yearNeg) {
+          if (year == 0) yearError(pos - 2)
+          year = -year
+        }
+        if (ch != '-') yearError(yearNeg, yearDigits, pos - 1)
         year
       }
     }
@@ -991,16 +1001,17 @@ private[json] object parsers {
         while ({
           if (pos >= len) zonedDateTimeError(pos)
           ch = input.charAt(pos)
+          pos += 1
           ch >= '0' && ch <= '9' && yearDigits < 9
         }) {
           year = year * 10 + (ch - '0')
           yearDigits += 1
-          pos += 1
         }
-        if (yearNeg && year == 0) yearError(pos - 1)
-        if (ch != '-') yearError(yearNeg, yearDigits, pos)
-        pos += 1
-        if (yearNeg) year = -year
+        if (yearNeg) {
+          if (year == 0) yearError(pos - 2)
+          year = -year
+        }
+        if (ch != '-') yearError(yearNeg, yearDigits, pos - 1)
         year
       }
     }
@@ -1316,7 +1327,7 @@ private[json] object parsers {
   private[this] def isLeap(year: Int): Boolean = (year & 0x3) == 0 && { // (year % 100 != 0 || year % 400 == 0)
     val cp = year * 1374389535L
     val cc = year >> 31
-    ((cp ^ cc) & 0x1FC0000000L) != 0 || (((cp >> 37).toInt - cc) & 0x3) == 0
+    ((cp ^ cc) & 0x1fc0000000L) != 0 || (((cp >> 37).toInt - cc) & 0x3) == 0
   }
 
   private[this] def nanoError(nanoDigitWeight: Int, ch: Char, pos: Int): Nothing = {
