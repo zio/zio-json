@@ -108,7 +108,7 @@ private[json] object parsers {
           }
         ) {
           nanos += (ch - '0') * nanoDigitWeight
-          nanoDigitWeight /= 10
+          nanoDigitWeight = (nanoDigitWeight * 3435973837L >> 35).toInt // divide a positive int by 10
           pos += 1
         }
         if (ch != 'S') nanoError(nanoDigitWeight, 'S', pos)
@@ -253,7 +253,7 @@ private[json] object parsers {
             }
           ) {
             nano += (ch - '0') * nanoDigitWeight
-            nanoDigitWeight /= 10
+            nanoDigitWeight = (nanoDigitWeight * 3435973837L >> 35).toInt // divide a positive int by 10
           }
         }
       }
@@ -458,7 +458,7 @@ private[json] object parsers {
             }
           ) {
             nano += (ch - '0') * nanoDigitWeight
-            nanoDigitWeight /= 10
+            nanoDigitWeight = (nanoDigitWeight * 3435973837L >> 35).toInt // divide a positive int by 10
           }
         }
       }
@@ -523,7 +523,7 @@ private[json] object parsers {
             }
           ) {
             nano += (ch - '0') * nanoDigitWeight
-            nanoDigitWeight /= 10
+            nanoDigitWeight = (nanoDigitWeight * 3435973837L >> 35).toInt // divide a positive int by 10
           }
         }
       }
@@ -676,7 +676,7 @@ private[json] object parsers {
           ch >= '0' && ch <= '9' && nanoDigitWeight != 0
         }) {
           nano += (ch - '0') * nanoDigitWeight
-          nanoDigitWeight /= 10
+          nanoDigitWeight = (nanoDigitWeight * 3435973837L >> 35).toInt // divide a positive int by 10
         }
       }
     }
@@ -795,7 +795,7 @@ private[json] object parsers {
           ch >= '0' && ch <= '9' && nanoDigitWeight != 0
         }) {
           nano += (ch - '0') * nanoDigitWeight
-          nanoDigitWeight /= 10
+          nanoDigitWeight = (nanoDigitWeight * 3435973837L >> 35).toInt // divide a positive int by 10
         }
       }
     }
@@ -1082,7 +1082,7 @@ private[json] object parsers {
           ch >= '0' && ch <= '9' && nanoDigitWeight != 0
         }) {
           nano += (ch - '0') * nanoDigitWeight
-          nanoDigitWeight /= 10
+          nanoDigitWeight = (nanoDigitWeight * 3435973837L >> 35).toInt // divide a positive int by 10
         }
       }
     }
@@ -1314,8 +1314,9 @@ private[json] object parsers {
     else 28
 
   private[this] def isLeap(year: Int): Boolean = (year & 0x3) == 0 && { // (year % 100 != 0 || year % 400 == 0)
-    val century = year / 100
-    century * 100 != year || (century & 0x3) == 0
+    val cp = year * 1374389535L
+    val cc = year >> 31
+    ((cp ^ cc) & 0x1FC0000000L) != 0 || (((cp >> 37).toInt - cc) & 0x3) == 0
   }
 
   private[this] def nanoError(nanoDigitWeight: Int, ch: Char, pos: Int): Nothing = {
