@@ -224,12 +224,14 @@ private[json] object parsers {
       pos += 2
       ch0 * 10 + ch1 - 528 // 528 == '0' * 11
     }
-    var second, nano = 0
-    var ch           = (0: Char)
+    var nanoDigitWeight = -1
+    var second, nano    = 0
+    var ch              = (0: Char)
     if (pos < len) {
       ch = input.charAt(pos)
       pos += 1
       if (ch == ':') {
+        nanoDigitWeight = -2
         second = {
           if (pos + 1 >= len) instantError(pos)
           val ch0 = input.charAt(pos)
@@ -240,25 +242,26 @@ private[json] object parsers {
           pos += 2
           ch0 * 10 + ch1 - 528 // 528 == '0' * 11
         }
-        if (pos >= len) instantError(pos)
-        ch = input.charAt(pos)
-        pos += 1
-        if (ch == '.') {
-          var nanoDigitWeight = 100000000
-          while (
-            pos < len && {
-              ch = input.charAt(pos)
-              pos += 1
-              ch >= '0' && ch <= '9' && nanoDigitWeight != 0
+        if (pos < len) {
+          ch = input.charAt(pos)
+          pos += 1
+          if (ch == '.') {
+            nanoDigitWeight = 100000000
+            while (
+              pos < len && {
+                ch = input.charAt(pos)
+                pos += 1
+                ch >= '0' && ch <= '9' && nanoDigitWeight != 0
+              }
+            ) {
+              nano += (ch - '0') * nanoDigitWeight
+              nanoDigitWeight = (nanoDigitWeight * 3435973837L >> 35).toInt // divide a positive int by 10
             }
-          ) {
-            nano += (ch - '0') * nanoDigitWeight
-            nanoDigitWeight = (nanoDigitWeight * 3435973837L >> 35).toInt // divide a positive int by 10
           }
         }
       }
     }
-    if (ch != 'Z') charError('Z', pos)
+    if (ch != 'Z') instantError(nanoDigitWeight, pos - 1)
     if (pos != len) instantError(pos)
     val epochDay =
       epochDayForYear(year) + (dayOfYearForYearMonth(year, month) + day - 719529) // 719528 == days 0000 to 1970
@@ -451,7 +454,7 @@ private[json] object parsers {
         if (input.charAt(pos) != '.') charError('.', pos)
         pos += 1
         var nanoDigitWeight = 100000000
-        var ch = (0: Char)
+        var ch              = (0: Char)
         while (
           pos < len && {
             ch = input.charAt(pos)
@@ -512,7 +515,7 @@ private[json] object parsers {
         if (input.charAt(pos) != '.') charError('.', pos)
         pos += 1
         var nanoDigitWeight = 100000000
-        var ch = (0: Char)
+        var ch              = (0: Char)
         while (
           pos < len && {
             ch = input.charAt(pos)
@@ -1350,6 +1353,14 @@ private[json] object parsers {
     )
 
   private[this] def durationError(pos: Int) = error("illegal duration", pos)
+
+  private[this] def instantError(nanoDigitWeight: Int, pos: Int) = error(
+    if (nanoDigitWeight == -1) "expected 'Z' or ':'"
+    else if (nanoDigitWeight == -2) "expected 'Z' or '.'"
+    else if (nanoDigitWeight == 100000000) "expected digit"
+    else "expected 'Z'",
+    pos
+  )
 
   private[this] def timezoneError(nanoDigitWeight: Int, pos: Int) =
     error(
