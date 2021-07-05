@@ -497,9 +497,94 @@ object JavaTimeSpec extends DefaultRunnableSpec {
           )
         },
         test("LocalDate") {
-          assert(stringify("01/01/2020").fromJson[LocalDate])(
+          assert(stringify("").fromJson[LocalDate])(
             isLeft(
-              equalTo("(01/01/2020 is not a valid ISO-8601 format, expected digit at index 2)")
+              equalTo("( is not a valid ISO-8601 format, illegal local date at index 0)")
+            )
+          ) &&
+          assert(stringify("2020").fromJson[LocalDate])(
+            isLeft(
+              equalTo("(2020 is not a valid ISO-8601 format, illegal local date at index 0)")
+            )
+          ) &&
+          assert(stringify("X020-01-01").fromJson[LocalDate])(
+            isLeft(
+              equalTo("(X020-01-01 is not a valid ISO-8601 format, expected '-' or '+' or digit at index 0)")
+            )
+          ) &&
+          assert(stringify("2X20-01-01").fromJson[LocalDate])(
+            isLeft(
+              equalTo("(2X20-01-01 is not a valid ISO-8601 format, expected digit at index 1)")
+            )
+          ) &&
+          assert(stringify("20X0-01-01").fromJson[LocalDate])(
+            isLeft(
+              equalTo("(20X0-01-01 is not a valid ISO-8601 format, expected digit at index 2)")
+            )
+          ) &&
+          assert(stringify("202X-01-01").fromJson[LocalDate])(
+            isLeft(
+              equalTo("(202X-01-01 is not a valid ISO-8601 format, expected digit at index 3)")
+            )
+          ) &&
+          assert(stringify("2020X01-01").fromJson[LocalDate])(
+            isLeft(
+              equalTo("(2020X01-01 is not a valid ISO-8601 format, expected '-' at index 4)")
+            )
+          ) &&
+          assert(stringify("+X0000-01-01").fromJson[LocalDate])(
+            isLeft(
+              equalTo("(+X0000-01-01 is not a valid ISO-8601 format, expected digit at index 1)")
+            )
+          ) &&
+          assert(stringify("+1X000-01-01").fromJson[LocalDate])(
+            isLeft(
+              equalTo("(+1X000-01-01 is not a valid ISO-8601 format, expected digit at index 2)")
+            )
+          ) &&
+          assert(stringify("+10X00-01-01").fromJson[LocalDate])(
+            isLeft(
+              equalTo("(+10X00-01-01 is not a valid ISO-8601 format, expected digit at index 3)")
+            )
+          ) &&
+          assert(stringify("+100X0-01-01").fromJson[LocalDate])(
+            isLeft(
+              equalTo("(+100X0-01-01 is not a valid ISO-8601 format, expected digit at index 4)")
+            )
+          ) &&
+          assert(stringify("+1000X-01-01").fromJson[LocalDate])(
+            isLeft(
+              equalTo("(+1000X-01-01 is not a valid ISO-8601 format, expected digit at index 5)")
+            )
+          ) &&
+          assert(stringify("+10000X-01-01").fromJson[LocalDate])(
+            isLeft(
+              equalTo("(+10000X-01-01 is not a valid ISO-8601 format, expected '-' or digit at index 6)")
+            )
+          ) &&
+          assert(stringify("+100000X-01-01").fromJson[LocalDate])(
+            isLeft(
+              equalTo("(+100000X-01-01 is not a valid ISO-8601 format, expected '-' or digit at index 7)")
+            )
+          ) &&
+          assert(stringify("+1000000X-01-01").fromJson[LocalDate])(
+            isLeft(
+              equalTo("(+1000000X-01-01 is not a valid ISO-8601 format, expected '-' or digit at index 8)")
+            )
+          ) &&
+          assert(stringify("+1000000000-01-01").fromJson[LocalDate])(
+            isLeft(
+              equalTo("(+1000000000-01-01 is not a valid ISO-8601 format, expected '-' at index 10)")
+            )
+          ) &&
+          assert(stringify("-1000000000-01-01").fromJson[LocalDate])(
+            isLeft(
+              equalTo("(-1000000000-01-01 is not a valid ISO-8601 format, expected '-' at index 10)")
+            )
+          ) &&
+          assert(stringify("-0000-01-01").fromJson[LocalDate])(
+            isLeft(
+              equalTo("(-0000-01-01 is not a valid ISO-8601 format, illegal year at index 4)")
             )
           )
         },

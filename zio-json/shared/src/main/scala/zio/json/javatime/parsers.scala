@@ -3,6 +3,7 @@ package zio.json.javatime
 import java.time.{
   DateTimeException,
   Duration,
+  Instant,
   LocalDate,
   LocalDateTime,
   LocalTime,
@@ -127,6 +128,143 @@ private[json] object parsers {
     Duration.ofSeconds(seconds, nanos.toLong)
   }
 
+  def unsafeParseInstant(input: String): Instant = {
+    val len = input.length
+    var pos = 0
+    val year = {
+      if (pos + 4 >= len) instantError(pos)
+      val ch0 = input.charAt(pos)
+      val ch1 = input.charAt(pos + 1)
+      val ch2 = input.charAt(pos + 2)
+      val ch3 = input.charAt(pos + 3)
+      val ch4 = input.charAt(pos + 4)
+      if (ch0 >= '0' && ch0 <= '9') {
+        if (ch1 < '0' || ch1 > '9') digitError(pos + 1)
+        if (ch2 < '0' || ch2 > '9') digitError(pos + 2)
+        if (ch3 < '0' || ch3 > '9') digitError(pos + 3)
+        if (ch4 != '-') charError('-', pos + 4)
+        pos += 5
+        ch0 * 1000 + ch1 * 100 + ch2 * 10 + ch3 - 53328 // 53328 == '0' * 1111
+      } else {
+        val yearNeg = ch0 == '-' || (ch0 != '+' && charsOrDigitError('-', '+', pos))
+        if (ch1 < '0' || ch1 > '9') digitError(pos + 1)
+        if (ch2 < '0' || ch2 > '9') digitError(pos + 2)
+        if (ch3 < '0' || ch3 > '9') digitError(pos + 3)
+        if (ch4 < '0' || ch4 > '9') digitError(pos + 4)
+        pos += 5
+        var year       = ch1 * 1000 + ch2 * 100 + ch3 * 10 + ch4 - 53328 // 53328 == '0' * 1111
+        var yearDigits = 4
+        var ch: Char   = '0'
+        while ({
+          if (pos >= len) instantError(pos)
+          ch = input.charAt(pos)
+          ch >= '0' && ch <= '9' && yearDigits < 10
+        }) {
+          year =
+            if (year > 100000000) 2147483647
+            else year * 10 + (ch - '0')
+          yearDigits += 1
+          pos += 1
+        }
+        if (yearNeg && year == 0 || yearDigits == 10 && year > 1000000000) yearError(pos - 1)
+        if (ch != '-') yearError(yearNeg, yearDigits, pos)
+        pos += 1
+        if (yearNeg) year = -year
+        year
+      }
+    }
+    val month = {
+      if (pos + 2 >= len) instantError(pos)
+      val ch0   = input.charAt(pos)
+      val ch1   = input.charAt(pos + 1)
+      val ch2   = input.charAt(pos + 2)
+      val month = ch0 * 10 + ch1 - 528 // 528 == '0' * 11
+      if (ch0 < '0' || ch0 > '9') digitError(pos)
+      if (ch1 < '0' || ch1 > '9') digitError(pos + 1)
+      if (month < 1 || month > 12) monthError(pos + 1)
+      if (ch2 != '-') charError('-', pos + 2)
+      pos += 3
+      month
+    }
+    val day = {
+      if (pos + 2 >= len) instantError(pos)
+      val ch0 = input.charAt(pos)
+      val ch1 = input.charAt(pos + 1)
+      val ch2 = input.charAt(pos + 2)
+      val day = ch0 * 10 + ch1 - 528 // 528 == '0' * 11
+      if (ch0 < '0' || ch0 > '9') digitError(pos)
+      if (ch1 < '0' || ch1 > '9') digitError(pos + 1)
+      if (day == 0 || (day > 28 && day > maxDayForYearMonth(year, month))) dayError(pos + 1)
+      if (ch2 != 'T') charError('T', pos + 2)
+      pos += 3
+      day
+    }
+    val hour = {
+      if (pos + 2 >= len) instantError(pos)
+      val ch0  = input.charAt(pos)
+      val ch1  = input.charAt(pos + 1)
+      val ch2  = input.charAt(pos + 2)
+      val hour = ch0 * 10 + ch1 - 528 // 528 == '0' * 11
+      if (ch0 < '0' || ch0 > '9') digitError(pos)
+      if (ch1 < '0' || ch1 > '9') digitError(pos + 1)
+      if (hour > 23) hourError(pos + 1)
+      if (ch2 != ':') charError(':', pos + 2)
+      pos += 3
+      hour
+    }
+    val minute = {
+      if (pos + 1 >= len) instantError(pos)
+      val ch0 = input.charAt(pos)
+      val ch1 = input.charAt(pos + 1)
+      if (ch0 < '0' || ch0 > '9') digitError(pos)
+      if (ch1 < '0' || ch1 > '9') digitError(pos + 1)
+      if (ch0 > '5') minuteError(pos + 1)
+      pos += 2
+      ch0 * 10 + ch1 - 528 // 528 == '0' * 11
+    }
+    var second, nano = 0
+    var ch           = (0: Char)
+    if (pos < len) {
+      var nanoDigitWeight = -1
+      ch = input.charAt(pos)
+      pos += 1
+      if (ch == ':') {
+        nanoDigitWeight = -2
+        second = {
+          if (pos + 2 >= len) instantError(pos)
+          val ch0 = input.charAt(pos)
+          val ch1 = input.charAt(pos + 1)
+          if (ch0 < '0' || ch0 > '9') digitError(pos)
+          if (ch1 < '0' || ch1 > '9') digitError(pos + 1)
+          if (ch0 > '5') secondError(pos + 1)
+          pos += 2
+          ch0 * 10 + ch1 - 528 // 528 == '0' * 11
+        }
+        if (pos >= len) instantError(pos)
+        ch = input.charAt(pos)
+        pos += 1
+        if (ch == '.') {
+          nanoDigitWeight = 100000000
+          while (
+            pos < len && {
+              ch = input.charAt(pos)
+              pos += 1
+              ch >= '0' && ch <= '9' && nanoDigitWeight != 0
+            }
+          ) {
+            nano += (ch - '0') * nanoDigitWeight
+            nanoDigitWeight /= 10
+          }
+        }
+      }
+    }
+    if (ch != 'Z') charError('Z', pos)
+    if (pos != len) instantError(pos)
+    val epochDay =
+      epochDayForYear(year) + (dayOfYearForYearMonth(year, month) + day - 719529)        // 719528 == days 0000 to 1970
+    Instant.ofEpochSecond(epochDay * 86400 + (hour * 3600 + minute * 60 + second), nano) // 86400 == seconds per day
+  }
+
   def unsafeParseLocalDate(input: String): LocalDate = {
     val len = input.length
     var pos = 0
@@ -159,15 +297,13 @@ private[json] object parsers {
           ch = input.charAt(pos)
           ch >= '0' && ch <= '9' && yearDigits < 9
         }) {
-          year =
-            if (year > 100000000) 2147483647
-            else year * 10 + (ch - '0')
+          year = year * 10 + (ch - '0')
           yearDigits += 1
           pos += 1
         }
-        pos += 1
-        if (yearNeg && year == 0 || yearDigits == 10 && year > 1000000000) yearError(pos - 1)
+        if (yearNeg && year == 0 || yearDigits == 10) yearError(pos - 1)
         if (ch != '-') yearError(yearNeg, yearDigits, pos)
+        pos += 1
         if (yearNeg) year = -year
         year
       }
@@ -232,15 +368,13 @@ private[json] object parsers {
           ch = input.charAt(pos)
           ch >= '0' && ch <= '9' && yearDigits < 9
         }) {
-          year =
-            if (year > 100000000) 2147483647
-            else year * 10 + (ch - '0')
+          year = year * 10 + (ch - '0')
           yearDigits += 1
           pos += 1
         }
-        pos += 1
-        if (yearNeg && year == 0 || yearDigits == 10 && year > 1000000000) yearError(pos - 1)
+        if (yearNeg && year == 0) yearError(pos - 1)
         if (ch != '-') yearError(yearNeg, yearDigits, pos)
+        pos += 1
         if (yearNeg) year = -year
         year
       }
@@ -453,15 +587,13 @@ private[json] object parsers {
           ch = input.charAt(pos)
           ch >= '0' && ch <= '9' && yearDigits < 9
         }) {
-          year =
-            if (year > 100000000) 2147483647
-            else year * 10 + (ch - '0')
+          year = year * 10 + (ch - '0')
           yearDigits += 1
           pos += 1
         }
-        pos += 1
-        if (yearNeg && year == 0 || yearDigits == 10 && year > 1000000000) yearError(pos - 1)
+        if (yearNeg && year == 0) yearError(pos - 1)
         if (ch != '-') yearError(yearNeg, yearDigits, pos)
+        pos += 1
         if (yearNeg) year = -year
         year
       }
@@ -758,12 +890,10 @@ private[json] object parsers {
             ch >= '0' && ch <= '9' && yearDigits < 9
           }
         ) {
-          year =
-            if (year > 100000000) 2147483647
-            else year * 10 + (ch - '0')
+          year = year * 10 + (ch - '0')
           yearDigits += 1
         }
-        if (yearNeg && year == 0 || yearDigits == 10 && year > 1000000000) yearError(pos)
+        if (yearNeg && year == 0) yearError(pos)
         if (!yearNeg && yearDigits == 4) digitError(pos)
         if (yearNeg) year = -year
         year
@@ -805,15 +935,13 @@ private[json] object parsers {
           ch = input.charAt(pos)
           ch >= '0' && ch <= '9' && yearDigits < 9
         }) {
-          year =
-            if (year > 100000000) 2147483647
-            else year * 10 + (ch - '0')
+          year = year * 10 + (ch - '0')
           yearDigits += 1
           pos += 1
         }
-        pos += 1
-        if (yearNeg && year == 0 || yearDigits == 10 && year > 1000000000) yearError(pos - 1)
+        if (yearNeg && year == 0) yearError(pos - 1)
         if (ch != '-') yearError(yearNeg, yearDigits, pos)
+        pos += 1
         if (yearNeg) year = -year
         year
       }
@@ -865,15 +993,13 @@ private[json] object parsers {
           ch = input.charAt(pos)
           ch >= '0' && ch <= '9' && yearDigits < 9
         }) {
-          year =
-            if (year > 100000000) 2147483647
-            else year * 10 + (ch - '0')
+          year = year * 10 + (ch - '0')
           yearDigits += 1
           pos += 1
         }
-        pos += 1
-        if (yearNeg && year == 0 || yearDigits == 10 && year > 1000000000) yearError(pos - 1)
+        if (yearNeg && year == 0) yearError(pos - 1)
         if (ch != '-') yearError(yearNeg, yearDigits, pos)
+        pos += 1
         if (yearNeg) year = -year
         year
       }
@@ -1165,6 +1291,19 @@ private[json] object parsers {
     s
   }
 
+  private[this] def epochDayForYear(year: Int): Long =
+    year * 365L + (((year + 3) >> 2) - {
+      val cp = year * 1374389535L
+      if (year < 0) (cp >> 37) - (cp >> 39)                        // year / 100 - year / 400
+      else (cp + 136064563965L >> 37) - (cp + 548381424465L >> 39) // (year + 99) / 100 - (year + 399) / 400
+    }.toInt)
+
+  private[this] def dayOfYearForYearMonth(year: Int, month: Int): Int =
+    ((month * 1002277 - 988622) >> 15) - // (month * 367 - 362) / 12
+      (if (month <= 2) 0
+       else if (isLeap(year)) 1
+       else 2)
+
   private[this] def maxDayForMonth(month: Int): Int =
     if (month != 2) ((month >> 3) ^ (month & 0x1)) + 30
     else 29
@@ -1227,6 +1366,8 @@ private[json] object parsers {
       else "expected '+' or '-' or 'Z' or digit",
       pos
     )
+
+  private[this] def instantError(pos: Int) = error("illegal instant", pos)
 
   private[this] def localDateError(pos: Int) = error("illegal local date", pos)
 

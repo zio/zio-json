@@ -630,7 +630,7 @@ private[json] trait DecoderLowPriority3 {
 
   implicit val dayOfWeek: JsonDecoder[DayOfWeek] = mapStringOrFail(s => parseJavaTime(DayOfWeek.valueOf, s.toUpperCase))
   implicit val duration: JsonDecoder[Duration]   = mapStringOrFail(parseJavaTime(parsers.unsafeParseDuration, _))
-  implicit val instant: JsonDecoder[Instant]     = mapStringOrFail(parseJavaTime(Instant.parse, _))
+  implicit val instant: JsonDecoder[Instant]     = mapStringOrFail(parseJavaTime(parsers.unsafeParseInstant, _))
   implicit val localDate: JsonDecoder[LocalDate] = mapStringOrFail(parseJavaTime(parsers.unsafeParseLocalDate, _))
 
   implicit val localDateTime: JsonDecoder[LocalDateTime] =
