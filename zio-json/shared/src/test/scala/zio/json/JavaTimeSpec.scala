@@ -1303,11 +1303,89 @@ object JavaTimeSpec extends DefaultRunnableSpec {
           )
         },
         test("LocalTime") {
-          assert(stringify("12:36.000").fromJson[LocalTime])(
+          assert(stringify("").fromJson[LocalTime])(
             isLeft(
-              equalTo(
-                "(12:36.000 is not a valid ISO-8601 format, expected ':' at index 5)"
-              )
+              equalTo("( is not a valid ISO-8601 format, illegal local time at index 0)")
+            )
+          ) &&
+          assert(stringify("0").fromJson[LocalTime])(
+            isLeft(
+              equalTo("(0 is not a valid ISO-8601 format, illegal local time at index 0)")
+            )
+          ) &&
+          assert(stringify("01:0").fromJson[LocalTime])(
+            isLeft(
+              equalTo("(01:0 is not a valid ISO-8601 format, illegal local time at index 3)")
+            )
+          ) &&
+          assert(stringify("X1:01").fromJson[LocalTime])(
+            isLeft(
+              equalTo("(X1:01 is not a valid ISO-8601 format, expected digit at index 0)")
+            )
+          ) &&
+          assert(stringify("0X:01").fromJson[LocalTime])(
+            isLeft(
+              equalTo("(0X:01 is not a valid ISO-8601 format, expected digit at index 1)")
+            )
+          ) &&
+          assert(stringify("24:01").fromJson[LocalTime])(
+            isLeft(
+              equalTo("(24:01 is not a valid ISO-8601 format, illegal hour at index 1)")
+            )
+          ) &&
+          assert(stringify("01X01").fromJson[LocalTime])(
+            isLeft(
+              equalTo("(01X01 is not a valid ISO-8601 format, expected ':' at index 2)")
+            )
+          ) &&
+          assert(stringify("01:X1").fromJson[LocalTime])(
+            isLeft(
+              equalTo("(01:X1 is not a valid ISO-8601 format, expected digit at index 3)")
+            )
+          ) &&
+          assert(stringify("01:0X").fromJson[LocalTime])(
+            isLeft(
+              equalTo("(01:0X is not a valid ISO-8601 format, expected digit at index 4)")
+            )
+          ) &&
+          assert(stringify("01:60").fromJson[LocalTime])(
+            isLeft(
+              equalTo("(01:60 is not a valid ISO-8601 format, illegal minute at index 4)")
+            )
+          ) &&
+          assert(stringify("01:01X").fromJson[LocalTime])(
+            isLeft(
+              equalTo("(01:01X is not a valid ISO-8601 format, expected ':' at index 5)")
+            )
+          ) &&
+          assert(stringify("01:01:0").fromJson[LocalTime])(
+            isLeft(
+              equalTo("(01:01:0 is not a valid ISO-8601 format, illegal local time at index 6)")
+            )
+          ) &&
+          assert(stringify("01:01:X1").fromJson[LocalTime])(
+            isLeft(
+              equalTo("(01:01:X1 is not a valid ISO-8601 format, expected digit at index 6)")
+            )
+          ) &&
+          assert(stringify("01:01:0X").fromJson[LocalTime])(
+            isLeft(
+              equalTo("(01:01:0X is not a valid ISO-8601 format, expected digit at index 7)")
+            )
+          ) &&
+          assert(stringify("01:01:60").fromJson[LocalTime])(
+            isLeft(
+              equalTo("(01:01:60 is not a valid ISO-8601 format, illegal second at index 7)")
+            )
+          ) &&
+          assert(stringify("01:01:012").fromJson[LocalTime])(
+            isLeft(
+              equalTo("(01:01:012 is not a valid ISO-8601 format, expected '.' at index 8)")
+            )
+          ) &&
+          assert(stringify("01:01:01.X").fromJson[LocalTime])(
+            isLeft(
+              equalTo("(01:01:01.X is not a valid ISO-8601 format, illegal local time at index 9)")
             )
           )
         },
