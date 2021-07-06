@@ -650,7 +650,7 @@ private[json] object parsers {
     }
     var second, nano    = 0
     var nanoDigitWeight = -1
-    if (pos >= len) offsetDateTimeError(pos)
+    if (pos >= len) timezoneSignError(nanoDigitWeight, pos)
     var ch = input.charAt(pos)
     pos += 1
     if (ch == ':') {
@@ -665,7 +665,7 @@ private[json] object parsers {
         pos += 2
         ch0 * 10 + ch1 - 528 // 528 == '0' * 11
       }
-      if (pos >= len) offsetDateTimeError(pos)
+      if (pos >= len) timezoneSignError(nanoDigitWeight, pos)
       ch = input.charAt(pos)
       pos += 1
       if (ch == '.') {
@@ -1355,10 +1355,10 @@ private[json] object parsers {
   private[this] def durationError(pos: Int) = error("illegal duration", pos)
 
   private[this] def instantError(nanoDigitWeight: Int, pos: Int) = error(
-    if (nanoDigitWeight == -1) "expected 'Z' or ':'"
-    else if (nanoDigitWeight == -2) "expected 'Z' or '.'"
-    else if (nanoDigitWeight == 100000000) "expected digit"
-    else "expected 'Z'",
+    if (nanoDigitWeight == -1) "expected ':' or 'Z'"
+    else if (nanoDigitWeight == -2) "expected '.' or 'Z'"
+    else if (nanoDigitWeight == 0) "expected 'Z'"
+    else "expected digit or 'Z'",
     pos
   )
 
@@ -1374,7 +1374,7 @@ private[json] object parsers {
       if (nanoDigitWeight == -2) "expected '.' or '+' or '-' or 'Z'"
       else if (nanoDigitWeight == -1) "expected ':' or '+' or '-' or 'Z'"
       else if (nanoDigitWeight == 0) "expected '+' or '-' or 'Z'"
-      else "expected '+' or '-' or 'Z' or digit",
+      else "expected digit or '+' or '-' or 'Z'",
       pos
     )
 
