@@ -80,6 +80,8 @@ object JsonCodec extends GeneratedTupleCodecs with CodecLowPriority0 {
 
           override def unsafeEncode(a: A, indent: Option[Int], out: Write): Unit =
             encoder0.unsafeEncode(a, indent, out)
+
+          override def isNothing(a: A): Boolean = encoder0.isNothing(a)
         }
     }
 }
