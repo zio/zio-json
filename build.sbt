@@ -89,7 +89,7 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform)
       CrossVersion.partialVersion(scalaVersion.value) match {
         case Some((3, _)) =>
           Vector(
-            "com.softwaremill.magnolia" %% "magnolia-core" % "2.0.0-M8"
+            "com.softwaremill.magnolia" %% "magnolia-core" % "2.0.0-M9"
           )
 
         case _ =>
