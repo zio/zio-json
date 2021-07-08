@@ -942,6 +942,7 @@ private[json] object parsers {
         if (ch1 < '0' || ch1 > '9') digitError(pos + 1)
         if (ch2 < '0' || ch2 > '9') digitError(pos + 2)
         if (ch3 < '0' || ch3 > '9') digitError(pos + 3)
+        if (len != 4) yearError(pos + 4)
         pos += 4
         ch0 * 1000 + ch1 * 100 + ch2 * 10 + ch3 - 53328 // 53328 == '0' * 1111
       } else {
@@ -956,21 +957,24 @@ private[json] object parsers {
         while (
           pos < len && {
             ch = input.charAt(pos)
-            pos += 1
             ch >= '0' && ch <= '9' && yearDigits < 9
           }
         ) {
           year = year * 10 + (ch - '0')
           yearDigits += 1
+          pos += 1
         }
         if (yearNeg) {
           if (year == 0) yearError(pos - 1)
           year = -year
         }
+        if (pos != len || ch < '0' || ch > '9') {
+          if (yearDigits == 9) yearError(pos)
+          digitError(pos)
+        }
         year
       }
     }
-    if (pos != len) yearError(pos)
     Year.of(year)
   }
 

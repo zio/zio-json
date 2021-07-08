@@ -2252,8 +2252,105 @@ object JavaTimeSpec extends DefaultRunnableSpec {
           )
         },
         test("Year") {
-          assert(stringify("1999-").fromJson[Year])(
-            isLeft(equalTo("(1999- is not a valid ISO-8601 format, illegal year at index 4)"))
+          assert(stringify("").fromJson[Year])(
+            isLeft(
+              equalTo("( is not a valid ISO-8601 format, illegal year at index 0)")
+            )
+          ) &&
+          assert(stringify("2").fromJson[Year])(
+            isLeft(
+              equalTo("(2 is not a valid ISO-8601 format, illegal year at index 0)")
+            )
+          ) &&
+          assert(stringify("22").fromJson[Year])(
+            isLeft(
+              equalTo("(22 is not a valid ISO-8601 format, illegal year at index 0)")
+            )
+          ) &&
+          assert(stringify("222").fromJson[Year])(
+            isLeft(
+              equalTo("(222 is not a valid ISO-8601 format, illegal year at index 0)")
+            )
+          ) &&
+          assert(stringify("X020").fromJson[Year])(
+            isLeft(
+              equalTo("(X020 is not a valid ISO-8601 format, expected '-' or '+' or digit at index 0)")
+            )
+          ) &&
+          assert(stringify("2X20").fromJson[Year])(
+            isLeft(
+              equalTo("(2X20 is not a valid ISO-8601 format, expected digit at index 1)")
+            )
+          ) &&
+          assert(stringify("20X0").fromJson[Year])(
+            isLeft(
+              equalTo("(20X0 is not a valid ISO-8601 format, expected digit at index 2)")
+            )
+          ) &&
+          assert(stringify("202X").fromJson[Year])(
+            isLeft(
+              equalTo("(202X is not a valid ISO-8601 format, expected digit at index 3)")
+            )
+          ) &&
+          assert(stringify("+X0000").fromJson[Year])(
+            isLeft(
+              equalTo("(+X0000 is not a valid ISO-8601 format, expected digit at index 1)")
+            )
+          ) &&
+          assert(stringify("+1X000").fromJson[Year])(
+            isLeft(
+              equalTo("(+1X000 is not a valid ISO-8601 format, expected digit at index 2)")
+            )
+          ) &&
+          assert(stringify("+10X00").fromJson[Year])(
+            isLeft(
+              equalTo("(+10X00 is not a valid ISO-8601 format, expected digit at index 3)")
+            )
+          ) &&
+          assert(stringify("+100X0").fromJson[Year])(
+            isLeft(
+              equalTo("(+100X0 is not a valid ISO-8601 format, expected digit at index 4)")
+            )
+          ) &&
+          assert(stringify("+1000X").fromJson[Year])(
+            isLeft(
+              equalTo("(+1000X is not a valid ISO-8601 format, expected digit at index 5)")
+            )
+          ) &&
+          assert(stringify("+10000X").fromJson[Year])(
+            isLeft(
+              equalTo("(+10000X is not a valid ISO-8601 format, expected digit at index 6)")
+            )
+          ) &&
+          assert(stringify("+100000X").fromJson[Year])(
+            isLeft(
+              equalTo("(+100000X is not a valid ISO-8601 format, expected digit at index 7)")
+            )
+          ) &&
+          assert(stringify("+1000000X").fromJson[Year])(
+            isLeft(
+              equalTo("(+1000000X is not a valid ISO-8601 format, expected digit at index 8)")
+            )
+          ) &&
+          assert(stringify("+1000000000").fromJson[Year])(
+            isLeft(
+              equalTo("(+1000000000 is not a valid ISO-8601 format, illegal year at index 10)")
+            )
+          ) &&
+          assert(stringify("-1000000000").fromJson[Year])(
+            isLeft(
+              equalTo("(-1000000000 is not a valid ISO-8601 format, illegal year at index 10)")
+            )
+          ) &&
+          assert(stringify("-0000").fromJson[Year])(
+            isLeft(
+              equalTo("(-0000 is not a valid ISO-8601 format, illegal year at index 4)")
+            )
+          ) &&
+          assert(stringify("10000").fromJson[Year])(
+            isLeft(
+              equalTo("(10000 is not a valid ISO-8601 format, illegal year at index 4)")
+            )
           )
         },
         test("YearMonth") {
