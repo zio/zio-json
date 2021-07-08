@@ -1658,6 +1658,11 @@ object JavaTimeSpec extends DefaultRunnableSpec {
               equalTo("(2020-01-01T01:01:01+01:01X01 is not a valid ISO-8601 format, illegal offset date time at index 26)")
             )
           ) &&
+          assert(stringify("2020-01-01T01:01:01+01:01:0").fromJson[OffsetDateTime])(
+            isLeft(
+              equalTo("(2020-01-01T01:01:01+01:01:0 is not a valid ISO-8601 format, illegal offset date time at index 26)")
+            )
+          ) &&
           assert(stringify("2020-01-01T01:01:01+01:01:X1").fromJson[OffsetDateTime])(
             isLeft(
               equalTo("(2020-01-01T01:01:01+01:01:X1 is not a valid ISO-8601 format, expected digit at index 26)")
