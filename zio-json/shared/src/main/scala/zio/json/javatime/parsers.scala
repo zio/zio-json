@@ -1,6 +1,22 @@
 package zio.json.javatime
 
-import java.time.{DateTimeException, Duration, Instant, LocalDate, LocalDateTime, LocalTime, MonthDay, OffsetDateTime, OffsetTime, Period, Year, YearMonth, ZoneId, ZoneOffset, ZonedDateTime}
+import java.time.{
+  DateTimeException,
+  Duration,
+  Instant,
+  LocalDate,
+  LocalDateTime,
+  LocalTime,
+  MonthDay,
+  OffsetDateTime,
+  OffsetTime,
+  Period,
+  Year,
+  YearMonth,
+  ZoneId,
+  ZoneOffset,
+  ZonedDateTime
+}
 import java.util.concurrent.ConcurrentHashMap
 import scala.annotation.switch
 import scala.util.control.NoStackTrace

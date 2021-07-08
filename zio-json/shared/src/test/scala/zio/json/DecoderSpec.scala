@@ -220,7 +220,9 @@ object DecoderSpec extends DefaultRunnableSpec {
           ) &&
           assert(bad1.fromJson[ZonedDateTime])(
             isLeft(
-              equalTo("(2018-10-28T02:30 is not a valid ISO-8601 format, expected ':' or '+' or '-' or 'Z' at index 16)")
+              equalTo(
+                "(2018-10-28T02:30 is not a valid ISO-8601 format, expected ':' or '+' or '-' or 'Z' at index 16)"
+              )
             )
           )
         }
