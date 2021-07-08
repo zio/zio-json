@@ -743,7 +743,7 @@ private[json] object parsers {
     val len = input.length
     var pos = 0
     val hour = {
-      if (pos + 2 >= len) offsetDateTimeError(pos)
+      if (pos + 2 >= len) offsetTimeError(pos)
       val ch0  = input.charAt(pos)
       val ch1  = input.charAt(pos + 1)
       val ch2  = input.charAt(pos + 2)
@@ -756,7 +756,7 @@ private[json] object parsers {
       hour
     }
     val minute = {
-      if (pos + 1 >= len) offsetDateTimeError(pos)
+      if (pos + 1 >= len) offsetTimeError(pos)
       val ch0 = input.charAt(pos)
       val ch1 = input.charAt(pos + 1)
       if (ch0 < '0' || ch0 > '9') digitError(pos)
@@ -767,13 +767,13 @@ private[json] object parsers {
     }
     var second, nano    = 0
     var nanoDigitWeight = -1
-    if (pos >= len) offsetDateTimeError(pos)
+    if (pos >= len) timezoneSignError(nanoDigitWeight, pos)
     var ch = input.charAt(pos)
     pos += 1
     if (ch == ':') {
       nanoDigitWeight = -2
       second = {
-        if (pos + 1 >= len) offsetDateTimeError(pos)
+        if (pos + 1 >= len) offsetTimeError(pos)
         val ch0 = input.charAt(pos)
         val ch1 = input.charAt(pos + 1)
         if (ch0 < '0' || ch0 > '9') digitError(pos)
@@ -782,13 +782,13 @@ private[json] object parsers {
         pos += 2
         ch0 * 10 + ch1 - 528 // 528 == '0' * 11
       }
-      if (pos >= len) offsetDateTimeError(pos)
+      if (pos >= len) timezoneSignError(nanoDigitWeight, pos)
       ch = input.charAt(pos)
       pos += 1
       if (ch == '.') {
         nanoDigitWeight = 100000000
         while ({
-          if (pos >= len) offsetDateTimeError(pos)
+          if (pos >= len) timezoneSignError(nanoDigitWeight, pos)
           ch = input.charAt(pos)
           pos += 1
           ch >= '0' && ch <= '9' && nanoDigitWeight != 0
@@ -804,7 +804,7 @@ private[json] object parsers {
         val offsetNeg = ch == '-' || (ch != '+' && timezoneSignError(nanoDigitWeight, pos - 1))
         nanoDigitWeight = -3
         val offsetHour = {
-          if (pos + 1 >= len) offsetDateTimeError(pos)
+          if (pos + 1 >= len) offsetTimeError(pos)
           val ch0        = input.charAt(pos)
           val ch1        = input.charAt(pos + 1)
           val offsetHour = ch0 * 10 + ch1 - 528 // 528 == '0' * 11
@@ -823,7 +823,7 @@ private[json] object parsers {
           }
         ) {
           offsetMinute = {
-            if (pos + 1 >= len) offsetDateTimeError(pos)
+            if (pos + 1 >= len) offsetTimeError(pos)
             val ch0 = input.charAt(pos)
             val ch1 = input.charAt(pos + 1)
             if (ch0 < '0' || ch0 > '9') digitError(pos)
@@ -841,7 +841,7 @@ private[json] object parsers {
           ) {
             nanoDigitWeight = -4
             offsetSecond = {
-              if (pos + 1 >= len) offsetDateTimeError(pos)
+              if (pos + 1 >= len) offsetTimeError(pos)
               val ch0 = input.charAt(pos)
               val ch1 = input.charAt(pos + 1)
               if (ch0 < '0' || ch0 > '9') digitError(pos)
@@ -854,7 +854,7 @@ private[json] object parsers {
         }
         toZoneOffset(offsetNeg, offsetHour, offsetMinute, offsetSecond, pos)
       }
-    if (pos != len) offsetDateTimeError(pos)
+    if (pos != len) offsetTimeError(pos)
     OffsetTime.of(hour, minute, second, nano, zoneOffset)
   }
 
@@ -1269,9 +1269,9 @@ private[json] object parsers {
   ): ZoneOffset = {
     var offsetTotal = offsetHour * 3600 + offsetMinute * 60 + offsetSecond
     var qp          = offsetTotal * 37283
-    if (offsetTotal > 64800) error("illegal timezone offset", pos) // 64800 == 18 * 60 * 60
-    if ((qp & 0x1ff8000) == 0) {                                   // check if offsetTotal divisible by 900
-      qp >>>= 25                                                   // divide offsetTotal by 900
+    if (offsetTotal > 64800) zoneOffsetError(pos) // 64800 == 18 * 60 * 60
+    if ((qp & 0x1ff8000) == 0) {                  // check if offsetTotal divisible by 900
+      qp >>>= 25                                  // divide offsetTotal by 900
       if (offsetNeg) qp = -qp
       var zoneOffset = zoneOffsets(qp + 72)
       if (zoneOffset ne null) zoneOffset
@@ -1387,6 +1387,8 @@ private[json] object parsers {
   private[this] def localTimeError(pos: Int) = error("illegal local time", pos)
 
   private[this] def offsetDateTimeError(pos: Int) = error("illegal offset date time", pos)
+
+  private[this] def offsetTimeError(pos: Int) = error("illegal offset time", pos)
 
   private[this] def yearMonthError(pos: Int) = error("illegal year month", pos)
 

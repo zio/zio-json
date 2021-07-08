@@ -1691,12 +1691,16 @@ object JavaTimeSpec extends DefaultRunnableSpec {
           ) &&
           assert(stringify("2020-01-01T01:01:01+19:01:01").fromJson[OffsetDateTime])(
             isLeft(
-              equalTo("(2020-01-01T01:01:01+19:01:01 is not a valid ISO-8601 format, illegal timezone offset hour at index 21)")
+              equalTo(
+                "(2020-01-01T01:01:01+19:01:01 is not a valid ISO-8601 format, illegal timezone offset hour at index 21)"
+              )
             )
           ) &&
           assert(stringify("2020-01-01T01:01:01+01X01:01").fromJson[OffsetDateTime])(
             isLeft(
-              equalTo("(2020-01-01T01:01:01+01X01:01 is not a valid ISO-8601 format, illegal offset date time at index 23)")
+              equalTo(
+                "(2020-01-01T01:01:01+01X01:01 is not a valid ISO-8601 format, illegal offset date time at index 23)"
+              )
             )
           ) &&
           assert(stringify("2020-01-01T01:01:01+01:0").fromJson[OffsetDateTime])(
@@ -1716,17 +1720,23 @@ object JavaTimeSpec extends DefaultRunnableSpec {
           ) &&
           assert(stringify("2020-01-01T01:01:01+01:60:01").fromJson[OffsetDateTime])(
             isLeft(
-              equalTo("(2020-01-01T01:01:01+01:60:01 is not a valid ISO-8601 format, illegal timezone offset minute at index 24)")
+              equalTo(
+                "(2020-01-01T01:01:01+01:60:01 is not a valid ISO-8601 format, illegal timezone offset minute at index 24)"
+              )
             )
           ) &&
           assert(stringify("2020-01-01T01:01:01+01:01X01").fromJson[OffsetDateTime])(
             isLeft(
-              equalTo("(2020-01-01T01:01:01+01:01X01 is not a valid ISO-8601 format, illegal offset date time at index 26)")
+              equalTo(
+                "(2020-01-01T01:01:01+01:01X01 is not a valid ISO-8601 format, illegal offset date time at index 26)"
+              )
             )
           ) &&
           assert(stringify("2020-01-01T01:01:01+01:01:0").fromJson[OffsetDateTime])(
             isLeft(
-              equalTo("(2020-01-01T01:01:01+01:01:0 is not a valid ISO-8601 format, illegal offset date time at index 26)")
+              equalTo(
+                "(2020-01-01T01:01:01+01:01:0 is not a valid ISO-8601 format, illegal offset date time at index 26)"
+              )
             )
           ) &&
           assert(stringify("2020-01-01T01:01:01+01:01:X1").fromJson[OffsetDateTime])(
@@ -1741,7 +1751,9 @@ object JavaTimeSpec extends DefaultRunnableSpec {
           ) &&
           assert(stringify("2020-01-01T01:01:01+01:01:60").fromJson[OffsetDateTime])(
             isLeft(
-              equalTo("(2020-01-01T01:01:01+01:01:60 is not a valid ISO-8601 format, illegal timezone offset second at index 27)")
+              equalTo(
+                "(2020-01-01T01:01:01+01:01:60 is not a valid ISO-8601 format, illegal timezone offset second at index 27)"
+              )
             )
           ) &&
           assert(stringify("+X0000-01-01T01:01Z").fromJson[OffsetDateTime])(
@@ -1881,11 +1893,198 @@ object JavaTimeSpec extends DefaultRunnableSpec {
           )
         },
         test("OffsetTime") {
-          assert(stringify("12:36:12.000").fromJson[OffsetTime])(
+          assert(stringify("").fromJson[OffsetTime])(
+            isLeft(
+              equalTo("( is not a valid ISO-8601 format, illegal offset time at index 0)")
+            )
+          ) &&
+          assert(stringify("0").fromJson[OffsetTime])(
+            isLeft(
+              equalTo("(0 is not a valid ISO-8601 format, illegal offset time at index 0)")
+            )
+          ) &&
+          assert(stringify("01:0").fromJson[OffsetTime])(
+            isLeft(
+              equalTo("(01:0 is not a valid ISO-8601 format, illegal offset time at index 3)")
+            )
+          ) &&
+          assert(stringify("X1:01").fromJson[OffsetTime])(
+            isLeft(
+              equalTo("(X1:01 is not a valid ISO-8601 format, expected digit at index 0)")
+            )
+          ) &&
+          assert(stringify("0X:01").fromJson[OffsetTime])(
+            isLeft(
+              equalTo("(0X:01 is not a valid ISO-8601 format, expected digit at index 1)")
+            )
+          ) &&
+          assert(stringify("24:01").fromJson[OffsetTime])(
+            isLeft(
+              equalTo("(24:01 is not a valid ISO-8601 format, illegal hour at index 1)")
+            )
+          ) &&
+          assert(stringify("01X01").fromJson[OffsetTime])(
+            isLeft(
+              equalTo("(01X01 is not a valid ISO-8601 format, expected ':' at index 2)")
+            )
+          ) &&
+          assert(stringify("01:X1").fromJson[OffsetTime])(
+            isLeft(
+              equalTo("(01:X1 is not a valid ISO-8601 format, expected digit at index 3)")
+            )
+          ) &&
+          assert(stringify("01:0X").fromJson[OffsetTime])(
+            isLeft(
+              equalTo("(01:0X is not a valid ISO-8601 format, expected digit at index 4)")
+            )
+          ) &&
+          assert(stringify("01:60").fromJson[OffsetTime])(
+            isLeft(
+              equalTo("(01:60 is not a valid ISO-8601 format, illegal minute at index 4)")
+            )
+          ) &&
+          assert(stringify("01:01").fromJson[OffsetTime])(
             isLeft(
               equalTo(
-                "(12:36:12.000 is not a valid ISO-8601 format, illegal offset date time at index 12)"
+                "(01:01 is not a valid ISO-8601 format, expected ':' or '+' or '-' or 'Z' at index 5)"
               )
+            )
+          ) &&
+          assert(stringify("01:01X").fromJson[OffsetTime])(
+            isLeft(
+              equalTo(
+                "(01:01X is not a valid ISO-8601 format, expected ':' or '+' or '-' or 'Z' at index 5)"
+              )
+            )
+          ) &&
+          assert(stringify("01:01:0").fromJson[OffsetTime])(
+            isLeft(
+              equalTo("(01:01:0 is not a valid ISO-8601 format, illegal offset time at index 6)")
+            )
+          ) &&
+          assert(stringify("01:01:X1Z").fromJson[OffsetTime])(
+            isLeft(
+              equalTo("(01:01:X1Z is not a valid ISO-8601 format, expected digit at index 6)")
+            )
+          ) &&
+          assert(stringify("01:01:0XZ").fromJson[OffsetTime])(
+            isLeft(
+              equalTo("(01:01:0XZ is not a valid ISO-8601 format, expected digit at index 7)")
+            )
+          ) &&
+          assert(stringify("01:01:60Z").fromJson[OffsetTime])(
+            isLeft(
+              equalTo("(01:01:60Z is not a valid ISO-8601 format, illegal second at index 7)")
+            )
+          ) &&
+          assert(stringify("01:01:01").fromJson[OffsetTime])(
+            isLeft(
+              equalTo(
+                "(01:01:01 is not a valid ISO-8601 format, expected '.' or '+' or '-' or 'Z' at index 8)"
+              )
+            )
+          ) &&
+          assert(stringify("01:01:012").fromJson[OffsetTime])(
+            isLeft(
+              equalTo(
+                "(01:01:012 is not a valid ISO-8601 format, expected '.' or '+' or '-' or 'Z' at index 8)"
+              )
+            )
+          ) &&
+          assert(stringify("01:01:01.").fromJson[OffsetTime])(
+            isLeft(
+              equalTo(
+                "(01:01:01. is not a valid ISO-8601 format, expected digit or '+' or '-' or 'Z' at index 9)"
+              )
+            )
+          ) &&
+          assert(stringify("01:01:01.X").fromJson[OffsetTime])(
+            isLeft(
+              equalTo(
+                "(01:01:01.X is not a valid ISO-8601 format, expected digit or '+' or '-' or 'Z' at index 9)"
+              )
+            )
+          ) &&
+          assert(stringify("01:01:01.123456789X").fromJson[OffsetTime])(
+            isLeft(
+              equalTo(
+                "(01:01:01.123456789X is not a valid ISO-8601 format, expected '+' or '-' or 'Z' at index 18)"
+              )
+            )
+          ) &&
+          assert(stringify("01:01:01ZX").fromJson[OffsetTime])(
+            isLeft(
+              equalTo("(01:01:01ZX is not a valid ISO-8601 format, illegal offset time at index 9)")
+            )
+          ) &&
+          assert(stringify("01:01:01+X1:01:01").fromJson[OffsetTime])(
+            isLeft(
+              equalTo("(01:01:01+X1:01:01 is not a valid ISO-8601 format, expected digit at index 9)")
+            )
+          ) &&
+          assert(stringify("01:01:01+0").fromJson[OffsetTime])(
+            isLeft(
+              equalTo("(01:01:01+0 is not a valid ISO-8601 format, illegal offset time at index 9)")
+            )
+          ) &&
+          assert(stringify("01:01:01+0X:01:01").fromJson[OffsetTime])(
+            isLeft(
+              equalTo("(01:01:01+0X:01:01 is not a valid ISO-8601 format, expected digit at index 10)")
+            )
+          ) &&
+          assert(stringify("01:01:01+19:01:01").fromJson[OffsetTime])(
+            isLeft(
+              equalTo("(01:01:01+19:01:01 is not a valid ISO-8601 format, illegal timezone offset hour at index 10)")
+            )
+          ) &&
+          assert(stringify("01:01:01+01X01:01").fromJson[OffsetTime])(
+            isLeft(
+              equalTo("(01:01:01+01X01:01 is not a valid ISO-8601 format, illegal offset time at index 12)")
+            )
+          ) &&
+          assert(stringify("01:01:01+01:0").fromJson[OffsetTime])(
+            isLeft(
+              equalTo("(01:01:01+01:0 is not a valid ISO-8601 format, illegal offset time at index 12)")
+            )
+          ) &&
+          assert(stringify("01:01:01+01:X1:01").fromJson[OffsetTime])(
+            isLeft(
+              equalTo("(01:01:01+01:X1:01 is not a valid ISO-8601 format, expected digit at index 12)")
+            )
+          ) &&
+          assert(stringify("01:01:01+01:0X:01").fromJson[OffsetTime])(
+            isLeft(
+              equalTo("(01:01:01+01:0X:01 is not a valid ISO-8601 format, expected digit at index 13)")
+            )
+          ) &&
+          assert(stringify("01:01:01+01:60:01").fromJson[OffsetTime])(
+            isLeft(
+              equalTo("(01:01:01+01:60:01 is not a valid ISO-8601 format, illegal timezone offset minute at index 13)")
+            )
+          ) &&
+          assert(stringify("01:01:01+01:01X01").fromJson[OffsetTime])(
+            isLeft(
+              equalTo("(01:01:01+01:01X01 is not a valid ISO-8601 format, illegal offset time at index 15)")
+            )
+          ) &&
+          assert(stringify("01:01:01+01:01:0").fromJson[OffsetTime])(
+            isLeft(
+              equalTo("(01:01:01+01:01:0 is not a valid ISO-8601 format, illegal offset time at index 15)")
+            )
+          ) &&
+          assert(stringify("01:01:01+01:01:X1").fromJson[OffsetTime])(
+            isLeft(
+              equalTo("(01:01:01+01:01:X1 is not a valid ISO-8601 format, expected digit at index 15)")
+            )
+          ) &&
+          assert(stringify("01:01:01+01:01:0X").fromJson[OffsetTime])(
+            isLeft(
+              equalTo("(01:01:01+01:01:0X is not a valid ISO-8601 format, expected digit at index 16)")
+            )
+          ) &&
+          assert(stringify("01:01:01+01:01:60").fromJson[OffsetTime])(
+            isLeft(
+              equalTo("(01:01:01+01:01:60 is not a valid ISO-8601 format, illegal timezone offset second at index 16)")
             )
           )
         },
