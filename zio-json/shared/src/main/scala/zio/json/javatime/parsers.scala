@@ -454,7 +454,7 @@ private[json] object parsers {
         if (input.charAt(pos) != '.') charError('.', pos)
         pos += 1
         var nanoDigitWeight = 100000000
-        var ch              = (0: Char)
+        var ch              = '0'
         while (
           pos < len && {
             ch = input.charAt(pos)
@@ -515,7 +515,7 @@ private[json] object parsers {
         if (input.charAt(pos) != '.') charError('.', pos)
         pos += 1
         var nanoDigitWeight = 100000000
-        var ch              = (0: Char)
+        var ch              = '0'
         while (
           pos < len && {
             ch = input.charAt(pos)
@@ -671,7 +671,7 @@ private[json] object parsers {
       if (ch == '.') {
         nanoDigitWeight = 100000000
         while ({
-          if (pos >= len) offsetDateTimeError(pos)
+          if (pos >= len) timezoneSignError(nanoDigitWeight, pos)
           ch = input.charAt(pos)
           pos += 1
           ch >= '0' && ch <= '9' && nanoDigitWeight != 0

@@ -173,12 +173,14 @@ object JavaTimeSpec extends DefaultRunnableSpec {
           val p = LocalDateTime.of(2020, 1, 1, 12, 36, 0)
           assert(stringify(n).fromJson[LocalDateTime])(isRight(equalTo(n))) &&
           assert(stringify("2020-01-01T12:36").fromJson[LocalDateTime])(isRight(equalTo(p)))
+          assert(stringify("2020-01-01T12:36:00.").fromJson[LocalDateTime])(isRight(equalTo(p)))
         },
         test("LocalTime") {
           val n = LocalTime.now()
           val p = LocalTime.of(12, 36, 0)
           assert(stringify(n).fromJson[LocalTime])(isRight(equalTo(n))) &&
           assert(stringify("12:36").fromJson[LocalTime])(isRight(equalTo(p)))
+          assert(stringify("12:36:00.").fromJson[LocalTime])(isRight(equalTo(p)))
         },
         test("Month") {
           assert(stringify("JANUARY").fromJson[Month])(isRight(equalTo(Month.JANUARY))) &&
@@ -214,6 +216,7 @@ object JavaTimeSpec extends DefaultRunnableSpec {
           val p = OffsetTime.of(12, 36, 12, 0, ZoneOffset.ofHours(-4))
           assert(stringify(n).fromJson[OffsetTime])(isRight(equalTo(n))) &&
           assert(stringify("12:36:12-04:00").fromJson[OffsetTime])(isRight(equalTo(p)))
+          assert(stringify("12:36:12.-04:00").fromJson[OffsetTime])(isRight(equalTo(p)))
         },
         test("Period") {
           assert(stringify("P0D").fromJson[Period])(isRight(equalTo(Period.ZERO))) &&
@@ -246,6 +249,7 @@ object JavaTimeSpec extends DefaultRunnableSpec {
           zdtAssert(n.toString, n) &&
           zdtAssert("2020-01-01T12:36:00-05:00[America/New_York]", est) &&
           zdtAssert("2020-01-01T12:36:00Z[Etc/UTC]", utc) &&
+          zdtAssert("2020-01-01T12:36:00.Z[Etc/UTC]", utc) &&
           zdtAssert(
             "2018-02-01T00:00Z",
             ZonedDateTime.of(LocalDateTime.of(2018, 2, 1, 0, 0, 0), ZoneOffset.UTC)
@@ -1578,6 +1582,13 @@ object JavaTimeSpec extends DefaultRunnableSpec {
               )
             )
           ) &&
+          assert(stringify("2020-01-01T01:01:01.").fromJson[OffsetDateTime])(
+            isLeft(
+              equalTo(
+                "(2020-01-01T01:01:01. is not a valid ISO-8601 format, expected digit or '+' or '-' or 'Z' at index 20)"
+              )
+            )
+          ) &&
           assert(stringify("2020-01-01T01:01:01.X").fromJson[OffsetDateTime])(
             isLeft(
               equalTo(
@@ -1595,6 +1606,71 @@ object JavaTimeSpec extends DefaultRunnableSpec {
           assert(stringify("2020-01-01T01:01:01ZX").fromJson[OffsetDateTime])(
             isLeft(
               equalTo("(2020-01-01T01:01:01ZX is not a valid ISO-8601 format, illegal offset date time at index 20)")
+            )
+          ) &&
+          assert(stringify("2020-01-01T01:01:01+X1:01:01").fromJson[OffsetDateTime])(
+            isLeft(
+              equalTo("(2020-01-01T01:01:01+X1:01:01 is not a valid ISO-8601 format, expected digit at index 20)")
+            )
+          ) &&
+          assert(stringify("2020-01-01T01:01:01+0").fromJson[OffsetDateTime])(
+            isLeft(
+              equalTo("(2020-01-01T01:01:01+0 is not a valid ISO-8601 format, illegal offset date time at index 20)")
+            )
+          ) &&
+          assert(stringify("2020-01-01T01:01:01+0X:01:01").fromJson[OffsetDateTime])(
+            isLeft(
+              equalTo("(2020-01-01T01:01:01+0X:01:01 is not a valid ISO-8601 format, expected digit at index 21)")
+            )
+          ) &&
+          assert(stringify("2020-01-01T01:01:01+19:01:01").fromJson[OffsetDateTime])(
+            isLeft(
+              equalTo("(2020-01-01T01:01:01+19:01:01 is not a valid ISO-8601 format, illegal timezone offset hour at index 21)")
+            )
+          ) &&
+          assert(stringify("2020-01-01T01:01:01+01X01:01").fromJson[OffsetDateTime])(
+            isLeft(
+              equalTo("(2020-01-01T01:01:01+01X01:01 is not a valid ISO-8601 format, illegal offset date time at index 23)")
+            )
+          ) &&
+          assert(stringify("2020-01-01T01:01:01+01:0").fromJson[OffsetDateTime])(
+            isLeft(
+              equalTo("(2020-01-01T01:01:01+01:0 is not a valid ISO-8601 format, illegal offset date time at index 23)")
+            )
+          ) &&
+          assert(stringify("2020-01-01T01:01:01+01:X1:01").fromJson[OffsetDateTime])(
+            isLeft(
+              equalTo("(2020-01-01T01:01:01+01:X1:01 is not a valid ISO-8601 format, expected digit at index 23)")
+            )
+          ) &&
+          assert(stringify("2020-01-01T01:01:01+01:0X:01").fromJson[OffsetDateTime])(
+            isLeft(
+              equalTo("(2020-01-01T01:01:01+01:0X:01 is not a valid ISO-8601 format, expected digit at index 24)")
+            )
+          ) &&
+          assert(stringify("2020-01-01T01:01:01+01:60:01").fromJson[OffsetDateTime])(
+            isLeft(
+              equalTo("(2020-01-01T01:01:01+01:60:01 is not a valid ISO-8601 format, illegal timezone offset minute at index 24)")
+            )
+          ) &&
+          assert(stringify("2020-01-01T01:01:01+01:01X01").fromJson[OffsetDateTime])(
+            isLeft(
+              equalTo("(2020-01-01T01:01:01+01:01X01 is not a valid ISO-8601 format, illegal offset date time at index 26)")
+            )
+          ) &&
+          assert(stringify("2020-01-01T01:01:01+01:01:X1").fromJson[OffsetDateTime])(
+            isLeft(
+              equalTo("(2020-01-01T01:01:01+01:01:X1 is not a valid ISO-8601 format, expected digit at index 26)")
+            )
+          ) &&
+          assert(stringify("2020-01-01T01:01:01+01:01:0X").fromJson[OffsetDateTime])(
+            isLeft(
+              equalTo("(2020-01-01T01:01:01+01:01:0X is not a valid ISO-8601 format, expected digit at index 27)")
+            )
+          ) &&
+          assert(stringify("2020-01-01T01:01:01+01:01:60").fromJson[OffsetDateTime])(
+            isLeft(
+              equalTo("(2020-01-01T01:01:01+01:01:60 is not a valid ISO-8601 format, illegal timezone offset second at index 27)")
             )
           ) &&
           assert(stringify("+X0000-01-01T01:01Z").fromJson[OffsetDateTime])(
