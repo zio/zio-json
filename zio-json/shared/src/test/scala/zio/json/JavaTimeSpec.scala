@@ -1409,8 +1409,74 @@ object JavaTimeSpec extends DefaultRunnableSpec {
           )
         },
         test("MonthDay") {
-          assert(stringify("01-01").fromJson[MonthDay])(
-            isLeft(equalTo("(01-01 is not a valid ISO-8601 format, illegal month day at index 0)"))
+          assert(stringify("").fromJson[MonthDay])(
+            isLeft(equalTo("( is not a valid ISO-8601 format, illegal month day at index 0)"))
+          ) &&
+          assert(stringify("X-01-01").fromJson[MonthDay])(
+            isLeft(equalTo("(X-01-01 is not a valid ISO-8601 format, expected '-' at index 0)"))
+          ) &&
+          assert(stringify("-X01-01").fromJson[MonthDay])(
+            isLeft(equalTo("(-X01-01 is not a valid ISO-8601 format, expected '-' at index 1)"))
+          ) &&
+          assert(stringify("--X1-01").fromJson[MonthDay])(
+            isLeft(equalTo("(--X1-01 is not a valid ISO-8601 format, expected digit at index 2)"))
+          ) &&
+          assert(stringify("--0X-01").fromJson[MonthDay])(
+            isLeft(equalTo("(--0X-01 is not a valid ISO-8601 format, expected digit at index 3)"))
+          ) &&
+          assert(stringify("--00-01").fromJson[MonthDay])(
+            isLeft(equalTo("(--00-01 is not a valid ISO-8601 format, illegal month at index 3)"))
+          ) &&
+          assert(stringify("--13-01").fromJson[MonthDay])(
+            isLeft(equalTo("(--13-01 is not a valid ISO-8601 format, illegal month at index 3)"))
+          ) &&
+          assert(stringify("--01X01").fromJson[MonthDay])(
+            isLeft(equalTo("(--01X01 is not a valid ISO-8601 format, expected '-' at index 4)"))
+          ) &&
+          assert(stringify("--01-X1").fromJson[MonthDay])(
+            isLeft(equalTo("(--01-X1 is not a valid ISO-8601 format, expected digit at index 5)"))
+          ) &&
+          assert(stringify("--01-0X").fromJson[MonthDay])(
+            isLeft(equalTo("(--01-0X is not a valid ISO-8601 format, expected digit at index 6)"))
+          ) &&
+          assert(stringify("--01-00").fromJson[MonthDay])(
+            isLeft(equalTo("(--01-00 is not a valid ISO-8601 format, illegal day at index 6)"))
+          ) &&
+          assert(stringify("--01-32").fromJson[MonthDay])(
+            isLeft(equalTo("(--01-32 is not a valid ISO-8601 format, illegal day at index 6)"))
+          ) &&
+          assert(stringify("--02-30").fromJson[MonthDay])(
+            isLeft(equalTo("(--02-30 is not a valid ISO-8601 format, illegal day at index 6)"))
+          ) &&
+          assert(stringify("--03-32").fromJson[MonthDay])(
+            isLeft(equalTo("(--03-32 is not a valid ISO-8601 format, illegal day at index 6)"))
+          ) &&
+          assert(stringify("--04-31").fromJson[MonthDay])(
+            isLeft(equalTo("(--04-31 is not a valid ISO-8601 format, illegal day at index 6)"))
+          ) &&
+          assert(stringify("--05-32").fromJson[MonthDay])(
+            isLeft(equalTo("(--05-32 is not a valid ISO-8601 format, illegal day at index 6)"))
+          ) &&
+          assert(stringify("--06-31").fromJson[MonthDay])(
+            isLeft(equalTo("(--06-31 is not a valid ISO-8601 format, illegal day at index 6)"))
+          ) &&
+          assert(stringify("--07-32").fromJson[MonthDay])(
+            isLeft(equalTo("(--07-32 is not a valid ISO-8601 format, illegal day at index 6)"))
+          ) &&
+          assert(stringify("--08-32").fromJson[MonthDay])(
+            isLeft(equalTo("(--08-32 is not a valid ISO-8601 format, illegal day at index 6)"))
+          ) &&
+          assert(stringify("--09-31").fromJson[MonthDay])(
+            isLeft(equalTo("(--09-31 is not a valid ISO-8601 format, illegal day at index 6)"))
+          ) &&
+          assert(stringify("--10-32").fromJson[MonthDay])(
+            isLeft(equalTo("(--10-32 is not a valid ISO-8601 format, illegal day at index 6)"))
+          ) &&
+          assert(stringify("--11-31").fromJson[MonthDay])(
+            isLeft(equalTo("(--11-31 is not a valid ISO-8601 format, illegal day at index 6)"))
+          ) &&
+          assert(stringify("--12-32").fromJson[MonthDay])(
+            isLeft(equalTo("(--12-32 is not a valid ISO-8601 format, illegal day at index 6)"))
           )
         },
         test("OffsetDateTime") {
