@@ -34,6 +34,7 @@ object JavaTimeSpec extends DefaultRunnableSpec {
             equalToStringified("PT2562047788015215H30M7.999999999S")
           ) &&
           assert(""""PT-0.5S"""".fromJson[Duration].map(_.toString))(isRight(equalTo("PT-0.5S")))
+          assert(""""-PT0.5S"""".fromJson[Duration].map(_.toString))(isRight(equalTo("PT-0.5S")))
         },
         test("Instant") {
           val n = Instant.now()
@@ -221,6 +222,8 @@ object JavaTimeSpec extends DefaultRunnableSpec {
         test("Period") {
           assert(stringify("P0D").fromJson[Period])(isRight(equalTo(Period.ZERO))) &&
           assert(stringify("P1D").fromJson[Period])(isRight(equalTo(Period.ofDays(1)))) &&
+          assert(stringify("P-1D").fromJson[Period])(isRight(equalTo(Period.ofDays(-1)))) &&
+          assert(stringify("-P1D").fromJson[Period])(isRight(equalTo(Period.ofDays(-1)))) &&
           assert(stringify("P2M").fromJson[Period])(isRight(equalTo(Period.ofMonths(2)))) &&
           assert(stringify("P364D").fromJson[Period])(isRight(equalTo(Period.ofWeeks(52)))) &&
           assert(stringify("P10Y").fromJson[Period])(isRight(equalTo(Period.ofYears(10))))
@@ -2089,20 +2092,163 @@ object JavaTimeSpec extends DefaultRunnableSpec {
           )
         },
         test("Period") {
-          assert(stringify("0D").fromJson[Period])(
-            isLeft(equalTo("(0D is not a valid ISO-8601 format, Text cannot be parsed to a Period)"))
+          assert(stringify("").fromJson[Period])(
+            isLeft(equalTo("( is not a valid ISO-8601 format, illegal period at index 0)"))
           ) &&
-          assert(stringify("1D").fromJson[Period])(
-            isLeft(equalTo("(1D is not a valid ISO-8601 format, Text cannot be parsed to a Period)"))
+          assert(stringify("X").fromJson[Period])(
+            isLeft(equalTo("(X is not a valid ISO-8601 format, expected 'P' or '-' at index 0)"))
           ) &&
-          assert(stringify("2M").fromJson[Period])(
-            isLeft(equalTo("(2M is not a valid ISO-8601 format, Text cannot be parsed to a Period)"))
+          assert(stringify("P").fromJson[Period])(
+            isLeft(equalTo("(P is not a valid ISO-8601 format, illegal period at index 1)"))
           ) &&
-          assert(stringify("364D").fromJson[Period])(
-            isLeft(equalTo("(364D is not a valid ISO-8601 format, Text cannot be parsed to a Period)"))
+          assert(stringify("-").fromJson[Period])(
+            isLeft(equalTo("(- is not a valid ISO-8601 format, illegal period at index 1)"))
           ) &&
-          assert(stringify("10Y").fromJson[Period])(
-            isLeft(equalTo("(10Y is not a valid ISO-8601 format, Text cannot be parsed to a Period)"))
+          assert(stringify("PXY").fromJson[Period])(
+            isLeft(equalTo("(PXY is not a valid ISO-8601 format, expected '-' or digit at index 1)"))
+          ) &&
+          assert(stringify("P-").fromJson[Period])(
+            isLeft(equalTo("(P- is not a valid ISO-8601 format, illegal period at index 2)"))
+          ) &&
+          assert(stringify("P-XY").fromJson[Period])(
+            isLeft(equalTo("(P-XY is not a valid ISO-8601 format, expected digit at index 2)"))
+          ) &&
+          assert(stringify("P1XY").fromJson[Period])(
+            isLeft(
+              equalTo("(P1XY is not a valid ISO-8601 format, expected 'Y' or 'M' or 'W' or 'D' or digit at index 2)")
+            )
+          ) &&
+          assert(stringify("P2147483648Y").fromJson[Period])(
+            isLeft(equalTo("(P2147483648Y is not a valid ISO-8601 format, illegal period at index 11)"))
+          ) &&
+          assert(stringify("P21474836470Y").fromJson[Period])(
+            isLeft(equalTo("(P21474836470Y is not a valid ISO-8601 format, illegal period at index 11)"))
+          ) &&
+          assert(stringify("P-2147483649Y").fromJson[Period])(
+            isLeft(equalTo("(P-2147483649Y is not a valid ISO-8601 format, illegal period at index 11)"))
+          ) &&
+          assert(stringify("P2147483648M").fromJson[Period])(
+            isLeft(equalTo("(P2147483648M is not a valid ISO-8601 format, illegal period at index 11)"))
+          ) &&
+          assert(stringify("P21474836470M").fromJson[Period])(
+            isLeft(equalTo("(P21474836470M is not a valid ISO-8601 format, illegal period at index 11)"))
+          ) &&
+          assert(stringify("P-2147483649M").fromJson[Period])(
+            isLeft(equalTo("(P-2147483649M is not a valid ISO-8601 format, illegal period at index 11)"))
+          ) &&
+          assert(stringify("P2147483648W").fromJson[Period])(
+            isLeft(equalTo("(P2147483648W is not a valid ISO-8601 format, illegal period at index 11)"))
+          ) &&
+          assert(stringify("P21474836470W").fromJson[Period])(
+            isLeft(equalTo("(P21474836470W is not a valid ISO-8601 format, illegal period at index 11)"))
+          ) &&
+          assert(stringify("P-2147483649W").fromJson[Period])(
+            isLeft(equalTo("(P-2147483649W is not a valid ISO-8601 format, illegal period at index 11)"))
+          ) &&
+          assert(stringify("P2147483648D").fromJson[Period])(
+            isLeft(equalTo("(P2147483648D is not a valid ISO-8601 format, illegal period at index 11)"))
+          ) &&
+          assert(stringify("P21474836470D").fromJson[Period])(
+            isLeft(equalTo("(P21474836470D is not a valid ISO-8601 format, illegal period at index 11)"))
+          ) &&
+          assert(stringify("P-2147483649D").fromJson[Period])(
+            isLeft(equalTo("(P-2147483649D is not a valid ISO-8601 format, illegal period at index 11)"))
+          ) &&
+          assert(stringify("P1YXM").fromJson[Period])(
+            isLeft(equalTo("(P1YXM is not a valid ISO-8601 format, expected '-' or digit at index 3)"))
+          ) &&
+          assert(stringify("P1Y-XM").fromJson[Period])(
+            isLeft(equalTo("(P1Y-XM is not a valid ISO-8601 format, expected digit at index 4)"))
+          ) &&
+          assert(stringify("P1Y1XM").fromJson[Period])(
+            isLeft(equalTo("(P1Y1XM is not a valid ISO-8601 format, expected 'M' or 'W' or 'D' or digit at index 4)"))
+          ) &&
+          assert(stringify("P1Y2147483648M").fromJson[Period])(
+            isLeft(equalTo("(P1Y2147483648M is not a valid ISO-8601 format, illegal period at index 13)"))
+          ) &&
+          assert(stringify("P1Y21474836470M").fromJson[Period])(
+            isLeft(equalTo("(P1Y21474836470M is not a valid ISO-8601 format, illegal period at index 13)"))
+          ) &&
+          assert(stringify("P1Y-2147483649M").fromJson[Period])(
+            isLeft(equalTo("(P1Y-2147483649M is not a valid ISO-8601 format, illegal period at index 13)"))
+          ) &&
+          assert(stringify("P1Y2147483648W").fromJson[Period])(
+            isLeft(equalTo("(P1Y2147483648W is not a valid ISO-8601 format, illegal period at index 13)"))
+          ) &&
+          assert(stringify("P1Y21474836470W").fromJson[Period])(
+            isLeft(equalTo("(P1Y21474836470W is not a valid ISO-8601 format, illegal period at index 13)"))
+          ) &&
+          assert(stringify("P1Y-2147483649W").fromJson[Period])(
+            isLeft(equalTo("(P1Y-2147483649W is not a valid ISO-8601 format, illegal period at index 13)"))
+          ) &&
+          assert(stringify("P1Y2147483648D").fromJson[Period])(
+            isLeft(equalTo("(P1Y2147483648D is not a valid ISO-8601 format, illegal period at index 13)"))
+          ) &&
+          assert(stringify("P1Y21474836470D").fromJson[Period])(
+            isLeft(equalTo("(P1Y21474836470D is not a valid ISO-8601 format, illegal period at index 13)"))
+          ) &&
+          assert(stringify("P1Y-2147483649D").fromJson[Period])(
+            isLeft(equalTo("(P1Y-2147483649D is not a valid ISO-8601 format, illegal period at index 13)"))
+          ) &&
+          assert(stringify("P1Y1MXW").fromJson[Period])(
+            isLeft(equalTo("(P1Y1MXW is not a valid ISO-8601 format, expected '\"' or '-' or digit at index 5)"))
+          ) &&
+          assert(stringify("P1Y1M-XW").fromJson[Period])(
+            isLeft(equalTo("(P1Y1M-XW is not a valid ISO-8601 format, expected digit at index 6)"))
+          ) &&
+          assert(stringify("P1Y1M1XW").fromJson[Period])(
+            isLeft(equalTo("(P1Y1M1XW is not a valid ISO-8601 format, expected 'W' or 'D' or digit at index 6)"))
+          ) &&
+          assert(stringify("P1Y1M306783379W").fromJson[Period])(
+            isLeft(equalTo("(P1Y1M306783379W is not a valid ISO-8601 format, illegal period at index 14)"))
+          ) &&
+          assert(stringify("P1Y1M3067833790W").fromJson[Period])(
+            isLeft(equalTo("(P1Y1M3067833790W is not a valid ISO-8601 format, illegal period at index 14)"))
+          ) &&
+          assert(stringify("P1Y1M-306783379W").fromJson[Period])(
+            isLeft(equalTo("(P1Y1M-306783379W is not a valid ISO-8601 format, illegal period at index 15)"))
+          ) &&
+          assert(stringify("P1Y1M2147483648D").fromJson[Period])(
+            isLeft(equalTo("(P1Y1M2147483648D is not a valid ISO-8601 format, illegal period at index 15)"))
+          ) &&
+          assert(stringify("P1Y1M21474836470D").fromJson[Period])(
+            isLeft(equalTo("(P1Y1M21474836470D is not a valid ISO-8601 format, illegal period at index 15)"))
+          ) &&
+          assert(stringify("P1Y1M-2147483649D").fromJson[Period])(
+            isLeft(equalTo("(P1Y1M-2147483649D is not a valid ISO-8601 format, illegal period at index 15)"))
+          ) &&
+          assert(stringify("P1Y1M1WXD").fromJson[Period])(
+            isLeft(equalTo("(P1Y1M1WXD is not a valid ISO-8601 format, expected '\"' or '-' or digit at index 7)"))
+          ) &&
+          assert(stringify("P1Y1M1W-XD").fromJson[Period])(
+            isLeft(equalTo("(P1Y1M1W-XD is not a valid ISO-8601 format, expected digit at index 8)"))
+          ) &&
+          assert(stringify("P1Y1M1W1XD").fromJson[Period])(
+            isLeft(equalTo("(P1Y1M1W1XD is not a valid ISO-8601 format, expected 'D' or digit at index 8)"))
+          ) &&
+          assert(stringify("P1Y1M306783378W8D").fromJson[Period])(
+            isLeft(equalTo("(P1Y1M306783378W8D is not a valid ISO-8601 format, illegal period at index 16)"))
+          ) &&
+          assert(stringify("P1Y1M-306783378W-8D").fromJson[Period])(
+            isLeft(equalTo("(P1Y1M-306783378W-8D is not a valid ISO-8601 format, illegal period at index 18)"))
+          ) &&
+          assert(stringify("P1Y1M1W2147483647D").fromJson[Period])(
+            isLeft(equalTo("(P1Y1M1W2147483647D is not a valid ISO-8601 format, illegal period at index 17)"))
+          ) &&
+          assert(stringify("P1Y1M-1W-2147483648D").fromJson[Period])(
+            isLeft(equalTo("(P1Y1M-1W-2147483648D is not a valid ISO-8601 format, illegal period at index 19)"))
+          ) &&
+          assert(stringify("P1Y1M0W2147483648D").fromJson[Period])(
+            isLeft(equalTo("(P1Y1M0W2147483648D is not a valid ISO-8601 format, illegal period at index 17)"))
+          ) &&
+          assert(stringify("P1Y1M0W21474836470D").fromJson[Period])(
+            isLeft(equalTo("(P1Y1M0W21474836470D is not a valid ISO-8601 format, illegal period at index 17)"))
+          ) &&
+          assert(stringify("P1Y1M0W-2147483649D").fromJson[Period])(
+            isLeft(equalTo("(P1Y1M0W-2147483649D is not a valid ISO-8601 format, illegal period at index 17)"))
+          ) &&
+          assert(stringify("P1Y1M1W1DX").fromJson[Period])(
+            isLeft(equalTo("(P1Y1M1W1DX is not a valid ISO-8601 format, illegal period at index 9)"))
           )
         },
         test("Year") {

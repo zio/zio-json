@@ -10,6 +10,7 @@ import java.time.{
   MonthDay,
   OffsetDateTime,
   OffsetTime,
+  Period,
   Year,
   YearMonth,
   ZoneId,
@@ -858,6 +859,76 @@ private[json] object parsers {
     OffsetTime.of(hour, minute, second, nano, zoneOffset)
   }
 
+  def unsafeParsePeriod(input: String): Period = {
+    val len                             = input.length
+    var pos, state, years, months, days = 0
+    if (pos >= len) periodError(pos)
+    var ch = input.charAt(pos)
+    pos += 1
+    val isNeg = ch == '-'
+    if (isNeg) {
+      if (pos >= len) periodError(pos)
+      ch = input.charAt(pos)
+      pos += 1
+    }
+    if (ch != 'P') durationOrPeriodStartError(isNeg, pos - 1)
+    if (pos >= len) periodError(pos)
+    ch = input.charAt(pos)
+    pos += 1
+    while ({
+      if (state == 4 && pos >= len) periodError(pos - 1)
+      val isNegX = ch == '-'
+      if (isNegX) {
+        if (pos >= len) periodError(pos)
+        ch = input.charAt(pos)
+        pos += 1
+      }
+      if (ch < '0' || ch > '9') durationOrPeriodDigitError(isNegX, state <= 1, pos - 1)
+      var x: Int = '0' - ch
+      while (
+        (pos < len) && {
+          ch = input.charAt(pos)
+          ch >= '0' && ch <= '9'
+        }
+      ) {
+        if (
+          x < -214748364 || {
+            x = x * 10 + ('0' - ch)
+            x > 0
+          }
+        ) periodError(pos)
+        pos += 1
+      }
+      if (!(isNeg ^ isNegX)) {
+        if (x == -2147483648) periodError(pos)
+        x = -x
+      }
+      if (ch == 'Y' && state <= 0) {
+        years = x
+        state = 1
+      } else if (ch == 'M' && state <= 1) {
+        months = x
+        state = 2
+      } else if (ch == 'W' && state <= 2) {
+        if (x < -306783378 || x > 306783378) periodError(pos)
+        days = x * 7
+        state = 3
+      } else if (ch == 'D') {
+        val ds = x.toLong + days
+        if (ds != ds.toInt) periodError(pos)
+        days = ds.toInt
+        state = 4
+      } else periodError(state, pos)
+      pos += 1
+      (pos < len) && {
+        ch = input.charAt(pos)
+        pos += 1
+        true
+      }
+    }) ()
+    Period.of(years, months, days)
+  }
+
   def unsafeParseYear(input: String): Year = {
     val len = input.length
     var pos = 0
@@ -1294,14 +1365,14 @@ private[json] object parsers {
   }
 
   private[this] def epochDayForYear(year: Int): Long =
-    year * 365L + (((year + 3) >> 2) - {
+    year * 365L + ((year + 3 >> 2) - {
       val cp = year * 1374389535L
       if (year < 0) (cp >> 37) - (cp >> 39)                        // year / 100 - year / 400
       else (cp + 136064563965L >> 37) - (cp + 548381424465L >> 39) // (year + 99) / 100 - (year + 399) / 400
     }.toInt)
 
   private[this] def dayOfYearForYearMonth(year: Int, month: Int): Int =
-    ((month * 1002277 - 988622) >> 15) - // (month * 367 - 362) / 12
+    (month * 1002277 - 988622 >> 15) - // (month * 367 - 362) / 12
       (if (month <= 2) 0
        else if (isLeap(year)) 1
        else 2)
@@ -1389,6 +1460,19 @@ private[json] object parsers {
   private[this] def offsetDateTimeError(pos: Int) = error("illegal offset date time", pos)
 
   private[this] def offsetTimeError(pos: Int) = error("illegal offset time", pos)
+
+  private[this] def periodError(state: Int, pos: Int): Nothing =
+    error(
+      (state: @switch) match {
+        case 0 => "expected 'Y' or 'M' or 'W' or 'D' or digit"
+        case 1 => "expected 'M' or 'W' or 'D' or digit"
+        case 2 => "expected 'W' or 'D' or digit"
+        case 3 => "expected 'D' or digit"
+      },
+      pos
+    )
+
+  private[this] def periodError(pos: Int) = error("illegal period", pos)
 
   private[this] def yearMonthError(pos: Int) = error("illegal year month", pos)
 
