@@ -1,22 +1,6 @@
 package zio.json.javatime
 
-import java.time.{
-  DateTimeException,
-  Duration,
-  Instant,
-  LocalDate,
-  LocalDateTime,
-  LocalTime,
-  MonthDay,
-  OffsetDateTime,
-  OffsetTime,
-  Period,
-  Year,
-  YearMonth,
-  ZoneId,
-  ZoneOffset,
-  ZonedDateTime
-}
+import java.time.{DateTimeException, Duration, Instant, LocalDate, LocalDateTime, LocalTime, MonthDay, OffsetDateTime, OffsetTime, Period, Year, YearMonth, ZoneId, ZoneOffset, ZonedDateTime}
 import java.util.concurrent.ConcurrentHashMap
 import scala.annotation.switch
 import scala.util.control.NoStackTrace
@@ -1132,7 +1116,7 @@ private[json] object parsers {
     }
     var second, nano    = 0
     var nanoDigitWeight = -1
-    if (pos >= len) zonedDateTimeError(pos)
+    if (pos >= len) timezoneSignError(nanoDigitWeight, pos)
     var ch = input.charAt(pos)
     pos += 1
     if (ch == ':') {
@@ -1147,13 +1131,13 @@ private[json] object parsers {
         pos += 2
         ch0 * 10 + ch1 - 528 // 528 == '0' * 11
       }
-      if (pos >= len) zonedDateTimeError(pos)
+      if (pos >= len) timezoneSignError(nanoDigitWeight, pos)
       ch = input.charAt(pos)
       pos += 1
       if (ch == '.') {
         nanoDigitWeight = 100000000
         while ({
-          if (pos >= len) zonedDateTimeError(pos)
+          if (pos >= len) timezoneSignError(nanoDigitWeight, pos)
           ch = input.charAt(pos)
           pos += 1
           ch >= '0' && ch <= '9' && nanoDigitWeight != 0
@@ -1168,6 +1152,7 @@ private[json] object parsers {
       if (ch == 'Z') {
         if (pos < len) {
           ch = input.charAt(pos)
+          if (ch != '[') charError('[', pos)
           pos += 1
         }
         ZoneOffset.UTC
@@ -1190,7 +1175,7 @@ private[json] object parsers {
           pos < len && {
             ch = input.charAt(pos)
             pos += 1
-            ch == ':'
+            ch == ':' || ch != '[' && charError('[', pos - 1)
           }
         ) {
           offsetMinute = {
@@ -1207,7 +1192,7 @@ private[json] object parsers {
             pos < len && {
               ch = input.charAt(pos)
               pos += 1
-              ch == ':'
+              ch == ':' || ch != '[' && charError('[', pos - 1)
             }
           ) {
             nanoDigitWeight = -4
@@ -1223,14 +1208,14 @@ private[json] object parsers {
             }
             if (pos < len) {
               ch = input.charAt(pos)
+              if (ch != '[') charError('[', pos)
               pos += 1
             }
           }
         }
         toZoneOffset(offsetNeg, offsetHour, offsetMinute, offsetSecond, pos)
       }
-    if (pos == len) ZonedDateTime.ofLocal(localDateTime, zoneOffset, null)
-    else if (ch == '[') {
+    if (ch == '[') {
       val zone =
         try {
           val from = pos
@@ -1249,12 +1234,12 @@ private[json] object parsers {
           ) zoneIds.put(key, zoneId)
           zoneId
         } catch {
-          case _: DateTimeException => zonedDateTimeError(pos)
+          case _: DateTimeException => zonedDateTimeError(pos - 1)
         }
       pos += 1
       if (pos != len) zonedDateTimeError(pos)
       ZonedDateTime.ofInstant(localDateTime, zoneOffset, zone)
-    } else timezoneError(nanoDigitWeight, pos)
+    } else ZonedDateTime.ofLocal(localDateTime, zoneOffset, null)
   }
 
   def unsafeParseZoneId(input: String): ZoneId =
@@ -1436,13 +1421,6 @@ private[json] object parsers {
     else "expected digit or 'Z'",
     pos
   )
-
-  private[this] def timezoneError(nanoDigitWeight: Int, pos: Int) =
-    error(
-      if (nanoDigitWeight > -3) "expected '[' or '\"'"
-      else "expected ':' or '[' or '\"'",
-      pos
-    )
 
   private[this] def timezoneSignError(nanoDigitWeight: Int, pos: Int) =
     error(

@@ -248,11 +248,13 @@ object JavaTimeSpec extends DefaultRunnableSpec {
           val ld  = LocalDateTime.of(2020, 1, 1, 12, 36, 0)
           val est = ZonedDateTime.of(ld, ZoneId.of("America/New_York"))
           val utc = ZonedDateTime.of(ld, ZoneId.of("Etc/UTC"))
+          val gmt = ZonedDateTime.of(ld, ZoneId.of("+00:00"))
 
           zdtAssert(n.toString, n) &&
           zdtAssert("2020-01-01T12:36:00-05:00[America/New_York]", est) &&
           zdtAssert("2020-01-01T12:36:00Z[Etc/UTC]", utc) &&
           zdtAssert("2020-01-01T12:36:00.Z[Etc/UTC]", utc) &&
+          zdtAssert("2020-01-01T12:36:00+00:00[+00:00]", gmt) &&
           zdtAssert(
             "2018-02-01T00:00Z",
             ZonedDateTime.of(LocalDateTime.of(2018, 2, 1, 0, 0, 0), ZoneOffset.UTC)
@@ -2481,23 +2483,437 @@ object JavaTimeSpec extends DefaultRunnableSpec {
           )
         },
         test("ZonedDateTime") {
-          assert(stringify("01/01-2020T12:36-05:00[America/New_York]").fromJson[ZonedDateTime])(
+          assert(stringify("").fromJson[ZonedDateTime])(
             isLeft(
-              equalTo(
-                "(01/01-2020T12:36-05:00[America/New_York] is not a valid ISO-8601 format, expected digit at index 2)"
-              )
+              equalTo("( is not a valid ISO-8601 format, illegal zoned date time at index 0)")
             )
           ) &&
-          assert(stringify("01/01-2020T12:36Z[Etc/UTC]").fromJson[ZonedDateTime])(
-            isLeft(
-              equalTo(
-                "(01/01-2020T12:36Z[Etc/UTC] is not a valid ISO-8601 format, expected digit at index 2)"
+            assert(stringify("2020").fromJson[ZonedDateTime])(
+              isLeft(
+                equalTo("(2020 is not a valid ISO-8601 format, illegal zoned date time at index 0)")
+              )
+            ) &&
+            assert(stringify("2020-0").fromJson[ZonedDateTime])(
+              isLeft(
+                equalTo("(2020-0 is not a valid ISO-8601 format, illegal zoned date time at index 5)")
+              )
+            ) &&
+            assert(stringify("2020-01-0").fromJson[ZonedDateTime])(
+              isLeft(
+                equalTo("(2020-01-0 is not a valid ISO-8601 format, illegal zoned date time at index 8)")
+              )
+            ) &&
+            assert(stringify("2020-01-01T0").fromJson[ZonedDateTime])(
+              isLeft(
+                equalTo("(2020-01-01T0 is not a valid ISO-8601 format, illegal zoned date time at index 11)")
+              )
+            ) &&
+            assert(stringify("2020-01-01T01:0").fromJson[ZonedDateTime])(
+              isLeft(
+                equalTo("(2020-01-01T01:0 is not a valid ISO-8601 format, illegal zoned date time at index 14)")
+              )
+            ) &&
+            assert(stringify("X020-01-01T01:01Z").fromJson[ZonedDateTime])(
+              isLeft(
+                equalTo("(X020-01-01T01:01Z is not a valid ISO-8601 format, expected '-' or '+' or digit at index 0)")
+              )
+            ) &&
+            assert(stringify("2X20-01-01T01:01Z").fromJson[ZonedDateTime])(
+              isLeft(
+                equalTo("(2X20-01-01T01:01Z is not a valid ISO-8601 format, expected digit at index 1)")
+              )
+            ) &&
+            assert(stringify("20X0-01-01T01:01Z").fromJson[ZonedDateTime])(
+              isLeft(
+                equalTo("(20X0-01-01T01:01Z is not a valid ISO-8601 format, expected digit at index 2)")
+              )
+            ) &&
+            assert(stringify("202X-01-01T01:01Z").fromJson[ZonedDateTime])(
+              isLeft(
+                equalTo("(202X-01-01T01:01Z is not a valid ISO-8601 format, expected digit at index 3)")
+              )
+            ) &&
+            assert(stringify("2020X01-01T01:01Z").fromJson[ZonedDateTime])(
+              isLeft(
+                equalTo("(2020X01-01T01:01Z is not a valid ISO-8601 format, expected '-' at index 4)")
+              )
+            ) &&
+            assert(stringify("2020-X1-01T01:01Z").fromJson[ZonedDateTime])(
+              isLeft(
+                equalTo("(2020-X1-01T01:01Z is not a valid ISO-8601 format, expected digit at index 5)")
+              )
+            ) &&
+            assert(stringify("2020-0X-01T01:01Z").fromJson[ZonedDateTime])(
+              isLeft(
+                equalTo("(2020-0X-01T01:01Z is not a valid ISO-8601 format, expected digit at index 6)")
+              )
+            ) &&
+            assert(stringify("2020-01X01T01:01Z").fromJson[ZonedDateTime])(
+              isLeft(
+                equalTo("(2020-01X01T01:01Z is not a valid ISO-8601 format, expected '-' at index 7)")
+              )
+            ) &&
+            assert(stringify("2020-01-X1T01:01Z").fromJson[ZonedDateTime])(
+              isLeft(
+                equalTo("(2020-01-X1T01:01Z is not a valid ISO-8601 format, expected digit at index 8)")
+              )
+            ) &&
+            assert(stringify("2020-01-0XT01:01Z").fromJson[ZonedDateTime])(
+              isLeft(
+                equalTo("(2020-01-0XT01:01Z is not a valid ISO-8601 format, expected digit at index 9)")
+              )
+            ) &&
+            assert(stringify("2020-01-01X01:01Z").fromJson[ZonedDateTime])(
+              isLeft(
+                equalTo("(2020-01-01X01:01Z is not a valid ISO-8601 format, expected 'T' at index 10)")
+              )
+            ) &&
+            assert(stringify("2020-01-01TX1:01").fromJson[ZonedDateTime])(
+              isLeft(
+                equalTo("(2020-01-01TX1:01 is not a valid ISO-8601 format, expected digit at index 11)")
+              )
+            ) &&
+            assert(stringify("2020-01-01T0X:01").fromJson[ZonedDateTime])(
+              isLeft(
+                equalTo("(2020-01-01T0X:01 is not a valid ISO-8601 format, expected digit at index 12)")
+              )
+            ) &&
+            assert(stringify("2020-01-01T24:01").fromJson[ZonedDateTime])(
+              isLeft(
+                equalTo("(2020-01-01T24:01 is not a valid ISO-8601 format, illegal hour at index 12)")
+              )
+            ) &&
+            assert(stringify("2020-01-01T01X01").fromJson[ZonedDateTime])(
+              isLeft(
+                equalTo("(2020-01-01T01X01 is not a valid ISO-8601 format, expected ':' at index 13)")
+              )
+            ) &&
+            assert(stringify("2020-01-01T01:X1").fromJson[ZonedDateTime])(
+              isLeft(
+                equalTo("(2020-01-01T01:X1 is not a valid ISO-8601 format, expected digit at index 14)")
+              )
+            ) &&
+            assert(stringify("2020-01-01T01:0X").fromJson[ZonedDateTime])(
+              isLeft(
+                equalTo("(2020-01-01T01:0X is not a valid ISO-8601 format, expected digit at index 15)")
+              )
+            ) &&
+            assert(stringify("2020-01-01T01:60").fromJson[ZonedDateTime])(
+              isLeft(
+                equalTo("(2020-01-01T01:60 is not a valid ISO-8601 format, illegal minute at index 15)")
+              )
+            ) &&
+            assert(stringify("2020-01-01T01:01").fromJson[ZonedDateTime])(
+              isLeft(
+                equalTo(
+                  "(2020-01-01T01:01 is not a valid ISO-8601 format, expected ':' or '+' or '-' or 'Z' at index 16)"
+                )
+              )
+            ) &&
+            assert(stringify("2020-01-01T01:01X").fromJson[ZonedDateTime])(
+              isLeft(
+                equalTo(
+                  "(2020-01-01T01:01X is not a valid ISO-8601 format, expected ':' or '+' or '-' or 'Z' at index 16)"
+                )
+              )
+            ) &&
+            assert(stringify("2020-01-01T01:01:0").fromJson[ZonedDateTime])(
+              isLeft(
+                equalTo("(2020-01-01T01:01:0 is not a valid ISO-8601 format, illegal zoned date time at index 17)")
+              )
+            ) &&
+            assert(stringify("2020-01-01T01:01:X1Z").fromJson[ZonedDateTime])(
+              isLeft(
+                equalTo("(2020-01-01T01:01:X1Z is not a valid ISO-8601 format, expected digit at index 17)")
+              )
+            ) &&
+            assert(stringify("2020-01-01T01:01:0XZ").fromJson[ZonedDateTime])(
+              isLeft(
+                equalTo("(2020-01-01T01:01:0XZ is not a valid ISO-8601 format, expected digit at index 18)")
+              )
+            ) &&
+            assert(stringify("2020-01-01T01:01:60Z").fromJson[ZonedDateTime])(
+              isLeft(
+                equalTo("(2020-01-01T01:01:60Z is not a valid ISO-8601 format, illegal second at index 18)")
+              )
+            ) &&
+            assert(stringify("2020-01-01T01:01:01").fromJson[ZonedDateTime])(
+              isLeft(
+                equalTo(
+                  "(2020-01-01T01:01:01 is not a valid ISO-8601 format, expected '.' or '+' or '-' or 'Z' at index 19)"
+                )
+              )
+            ) &&
+            assert(stringify("2020-01-01T01:01:012").fromJson[ZonedDateTime])(
+              isLeft(
+                equalTo(
+                  "(2020-01-01T01:01:012 is not a valid ISO-8601 format, expected '.' or '+' or '-' or 'Z' at index 19)"
+                )
+              )
+            ) &&
+            assert(stringify("2020-01-01T01:01:01.").fromJson[ZonedDateTime])(
+              isLeft(
+                equalTo(
+                  "(2020-01-01T01:01:01. is not a valid ISO-8601 format, expected digit or '+' or '-' or 'Z' at index 20)"
+                )
+              )
+            ) &&
+            assert(stringify("2020-01-01T01:01:01.X").fromJson[ZonedDateTime])(
+              isLeft(
+                equalTo(
+                  "(2020-01-01T01:01:01.X is not a valid ISO-8601 format, expected digit or '+' or '-' or 'Z' at index 20)"
+                )
+              )
+            ) &&
+            assert(stringify("2020-01-01T01:01:01.123456789X").fromJson[ZonedDateTime])(
+              isLeft(
+                equalTo(
+                  "(2020-01-01T01:01:01.123456789X is not a valid ISO-8601 format, expected '+' or '-' or 'Z' at index 29)"
+                )
+              )
+            ) &&
+            assert(stringify("2020-01-01T01:01:01ZX").fromJson[ZonedDateTime])(
+              isLeft(
+                equalTo("(2020-01-01T01:01:01ZX is not a valid ISO-8601 format, expected '[' at index 20)")
+              )
+            ) &&
+            assert(stringify("2020-01-01T01:01:01+X1:01:01").fromJson[ZonedDateTime])(
+              isLeft(
+                equalTo("(2020-01-01T01:01:01+X1:01:01 is not a valid ISO-8601 format, expected digit at index 20)")
+              )
+            ) &&
+            assert(stringify("2020-01-01T01:01:01+0").fromJson[ZonedDateTime])(
+              isLeft(
+                equalTo("(2020-01-01T01:01:01+0 is not a valid ISO-8601 format, illegal zoned date time at index 20)")
+              )
+            ) &&
+            assert(stringify("2020-01-01T01:01:01+0X:01:01").fromJson[ZonedDateTime])(
+              isLeft(
+                equalTo("(2020-01-01T01:01:01+0X:01:01 is not a valid ISO-8601 format, expected digit at index 21)")
+              )
+            ) &&
+            assert(stringify("2020-01-01T01:01:01+19:01:01").fromJson[ZonedDateTime])(
+              isLeft(
+                equalTo(
+                  "(2020-01-01T01:01:01+19:01:01 is not a valid ISO-8601 format, illegal timezone offset hour at index 21)"
+                )
+              )
+            ) &&
+            assert(stringify("2020-01-01T01:01:01+01X01:01").fromJson[ZonedDateTime])(
+              isLeft(
+                equalTo(
+                  "(2020-01-01T01:01:01+01X01:01 is not a valid ISO-8601 format, expected '[' at index 22)"
+                )
+              )
+            ) &&
+            assert(stringify("2020-01-01T01:01:01+01:0").fromJson[ZonedDateTime])(
+              isLeft(
+                equalTo("(2020-01-01T01:01:01+01:0 is not a valid ISO-8601 format, illegal zoned date time at index 23)")
+              )
+            ) &&
+            assert(stringify("2020-01-01T01:01:01+01:X1:01").fromJson[ZonedDateTime])(
+              isLeft(
+                equalTo("(2020-01-01T01:01:01+01:X1:01 is not a valid ISO-8601 format, expected digit at index 23)")
+              )
+            ) &&
+            assert(stringify("2020-01-01T01:01:01+01:0X:01").fromJson[ZonedDateTime])(
+              isLeft(
+                equalTo("(2020-01-01T01:01:01+01:0X:01 is not a valid ISO-8601 format, expected digit at index 24)")
+              )
+            ) &&
+            assert(stringify("2020-01-01T01:01:01+01:60:01").fromJson[ZonedDateTime])(
+              isLeft(
+                equalTo(
+                  "(2020-01-01T01:01:01+01:60:01 is not a valid ISO-8601 format, illegal timezone offset minute at index 24)"
+                )
+              )
+            ) &&
+            assert(stringify("2020-01-01T01:01:01+01:01X01").fromJson[ZonedDateTime])(
+              isLeft(
+                equalTo(
+                  "(2020-01-01T01:01:01+01:01X01 is not a valid ISO-8601 format, expected '[' at index 25)"
+                )
+              )
+            ) &&
+            assert(stringify("2020-01-01T01:01:01+01:01:0").fromJson[ZonedDateTime])(
+              isLeft(
+                equalTo(
+                  "(2020-01-01T01:01:01+01:01:0 is not a valid ISO-8601 format, illegal zoned date time at index 26)"
+                )
+              )
+            ) &&
+            assert(stringify("2020-01-01T01:01:01+01:01:X1").fromJson[ZonedDateTime])(
+              isLeft(
+                equalTo("(2020-01-01T01:01:01+01:01:X1 is not a valid ISO-8601 format, expected digit at index 26)")
+              )
+            ) &&
+            assert(stringify("2020-01-01T01:01:01+01:01:0X").fromJson[ZonedDateTime])(
+              isLeft(
+                equalTo("(2020-01-01T01:01:01+01:01:0X is not a valid ISO-8601 format, expected digit at index 27)")
+              )
+            ) &&
+            assert(stringify("2020-01-01T01:01:01+01:01:01X").fromJson[ZonedDateTime])(
+              isLeft(
+                equalTo("(2020-01-01T01:01:01+01:01:01X is not a valid ISO-8601 format, expected '[' at index 28)")
+              )
+            ) &&
+            assert(stringify("2020-01-01T01:01:01+01:01:60").fromJson[ZonedDateTime])(
+              isLeft(
+                equalTo(
+                  "(2020-01-01T01:01:01+01:01:60 is not a valid ISO-8601 format, illegal timezone offset second at index 27)"
+                )
+              )
+            ) &&
+            assert(stringify("+X0000-01-01T01:01Z").fromJson[ZonedDateTime])(
+              isLeft(
+                equalTo("(+X0000-01-01T01:01Z is not a valid ISO-8601 format, expected digit at index 1)")
+              )
+            ) &&
+            assert(stringify("+1X000-01-01T01:01Z").fromJson[ZonedDateTime])(
+              isLeft(
+                equalTo("(+1X000-01-01T01:01Z is not a valid ISO-8601 format, expected digit at index 2)")
+              )
+            ) &&
+            assert(stringify("+10X00-01-01T01:01Z").fromJson[ZonedDateTime])(
+              isLeft(
+                equalTo("(+10X00-01-01T01:01Z is not a valid ISO-8601 format, expected digit at index 3)")
+              )
+            ) &&
+            assert(stringify("+100X0-01-01T01:01Z").fromJson[ZonedDateTime])(
+              isLeft(
+                equalTo("(+100X0-01-01T01:01Z is not a valid ISO-8601 format, expected digit at index 4)")
+              )
+            ) &&
+            assert(stringify("+1000X-01-01T01:01Z").fromJson[ZonedDateTime])(
+              isLeft(
+                equalTo("(+1000X-01-01T01:01Z is not a valid ISO-8601 format, expected digit at index 5)")
+              )
+            ) &&
+            assert(stringify("+10000X-01-01T01:01Z").fromJson[ZonedDateTime])(
+              isLeft(
+                equalTo("(+10000X-01-01T01:01Z is not a valid ISO-8601 format, expected '-' or digit at index 6)")
+              )
+            ) &&
+            assert(stringify("+100000X-01-01T01:01Z").fromJson[ZonedDateTime])(
+              isLeft(
+                equalTo("(+100000X-01-01T01:01Z is not a valid ISO-8601 format, expected '-' or digit at index 7)")
+              )
+            ) &&
+            assert(stringify("+1000000X-01-01T01:01Z").fromJson[ZonedDateTime])(
+              isLeft(
+                equalTo("(+1000000X-01-01T01:01Z is not a valid ISO-8601 format, expected '-' or digit at index 8)")
+              )
+            ) &&
+            assert(stringify("+1000000000-01-01T01:01Z").fromJson[ZonedDateTime])(
+              isLeft(
+                equalTo("(+1000000000-01-01T01:01Z is not a valid ISO-8601 format, expected '-' at index 10)")
+              )
+            ) &&
+            assert(stringify("-1000000000-01-01T01:01Z").fromJson[ZonedDateTime])(
+              isLeft(
+                equalTo("(-1000000000-01-01T01:01Z is not a valid ISO-8601 format, expected '-' at index 10)")
+              )
+            ) &&
+            assert(stringify("-0000-01-01T01:01Z").fromJson[ZonedDateTime])(
+              isLeft(
+                equalTo("(-0000-01-01T01:01Z is not a valid ISO-8601 format, illegal year at index 4)")
+              )
+            ) &&
+            assert(stringify("+10000").fromJson[ZonedDateTime])(
+              isLeft(
+                equalTo("(+10000 is not a valid ISO-8601 format, illegal zoned date time at index 6)")
+              )
+            ) &&
+            assert(stringify("2020-00-01T01:01Z").fromJson[ZonedDateTime])(
+              isLeft(
+                equalTo("(2020-00-01T01:01Z is not a valid ISO-8601 format, illegal month at index 6)")
+              )
+            ) &&
+            assert(stringify("2020-13-01T01:01Z").fromJson[ZonedDateTime])(
+              isLeft(
+                equalTo("(2020-13-01T01:01Z is not a valid ISO-8601 format, illegal month at index 6)")
+              )
+            ) &&
+            assert(stringify("2020-01-00T01:01Z").fromJson[ZonedDateTime])(
+              isLeft(
+                equalTo("(2020-01-00T01:01Z is not a valid ISO-8601 format, illegal day at index 9)")
+              )
+            ) &&
+            assert(stringify("2020-01-32T01:01Z").fromJson[ZonedDateTime])(
+              isLeft(
+                equalTo("(2020-01-32T01:01Z is not a valid ISO-8601 format, illegal day at index 9)")
+              )
+            ) &&
+            assert(stringify("2020-02-30T01:01Z").fromJson[ZonedDateTime])(
+              isLeft(
+                equalTo("(2020-02-30T01:01Z is not a valid ISO-8601 format, illegal day at index 9)")
+              )
+            ) &&
+            assert(stringify("2020-03-32T01:01Z").fromJson[ZonedDateTime])(
+              isLeft(
+                equalTo("(2020-03-32T01:01Z is not a valid ISO-8601 format, illegal day at index 9)")
+              )
+            ) &&
+            assert(stringify("2020-04-31T01:01Z").fromJson[ZonedDateTime])(
+              isLeft(
+                equalTo("(2020-04-31T01:01Z is not a valid ISO-8601 format, illegal day at index 9)")
+              )
+            ) &&
+            assert(stringify("2020-05-32T01:01Z").fromJson[ZonedDateTime])(
+              isLeft(
+                equalTo("(2020-05-32T01:01Z is not a valid ISO-8601 format, illegal day at index 9)")
+              )
+            ) &&
+            assert(stringify("2020-06-31T01:01Z").fromJson[ZonedDateTime])(
+              isLeft(
+                equalTo("(2020-06-31T01:01Z is not a valid ISO-8601 format, illegal day at index 9)")
+              )
+            ) &&
+            assert(stringify("2020-07-32T01:01Z").fromJson[ZonedDateTime])(
+              isLeft(
+                equalTo("(2020-07-32T01:01Z is not a valid ISO-8601 format, illegal day at index 9)")
+              )
+            ) &&
+            assert(stringify("2020-08-32T01:01Z").fromJson[ZonedDateTime])(
+              isLeft(
+                equalTo("(2020-08-32T01:01Z is not a valid ISO-8601 format, illegal day at index 9)")
+              )
+            ) &&
+            assert(stringify("2020-09-31T01:01Z").fromJson[ZonedDateTime])(
+              isLeft(
+                equalTo("(2020-09-31T01:01Z is not a valid ISO-8601 format, illegal day at index 9)")
+              )
+            ) &&
+            assert(stringify("2020-10-32T01:01Z").fromJson[ZonedDateTime])(
+              isLeft(
+                equalTo("(2020-10-32T01:01Z is not a valid ISO-8601 format, illegal day at index 9)")
+              )
+            ) &&
+            assert(stringify("2020-11-31T01:01Z").fromJson[ZonedDateTime])(
+              isLeft(
+                equalTo("(2020-11-31T01:01Z is not a valid ISO-8601 format, illegal day at index 9)")
+              )
+            ) &&
+            assert(stringify("2020-12-32T01:01Z").fromJson[ZonedDateTime])(
+              isLeft(
+                equalTo("(2020-12-32T01:01Z is not a valid ISO-8601 format, illegal day at index 9)")
+              )
+            ) &&
+            assert(stringify("2020-01-01T01:01Z[").fromJson[ZonedDateTime])(
+              isLeft(
+                equalTo("(2020-01-01T01:01Z[ is not a valid ISO-8601 format, illegal zoned date time at index 17)")
+              )
+            ) &&
+            assert(stringify("2020-01-01T01:01Z[X]").fromJson[ZonedDateTime])(
+              isLeft(
+                equalTo("(2020-01-01T01:01Z[X] is not a valid ISO-8601 format, illegal zoned date time at index 18)")
+              )
+            ) &&
+            assert(stringify("2020-01-01T01:01Z[GMT]X").fromJson[ZonedDateTime])(
+              isLeft(
+                equalTo("(2020-01-01T01:01Z[GMT]X is not a valid ISO-8601 format, illegal zoned date time at index 22)")
               )
             )
-          ) &&
-          assert(stringify("01/01-2020T12:36").fromJson[ZonedDateTime])(
-            isLeft(equalTo("(01/01-2020T12:36 is not a valid ISO-8601 format, expected digit at index 2)"))
-          )
         },
         test("ZoneId") {
           assert(stringify("America/New York").fromJson[ZoneId])(
