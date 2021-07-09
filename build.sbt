@@ -244,7 +244,7 @@ lazy val zioJsonMacros = crossProject(JSPlatform, JVMPlatform)
   .settings(crossProjectSettings)
   .settings(macroExpansionSettings)
   .settings(
-    crossScalaVersions --= Vector("3.0.0"),
+    crossScalaVersions --= Vector("3.0.1"),
     scalacOptions -= "-Xfatal-warnings", // not quite ready.
     libraryDependencies ++= Seq(
       "org.scala-lang" % "scala-reflect" % scalaVersion.value % Provided,
@@ -265,7 +265,7 @@ lazy val zioJsonInteropHttp4s = project
   .settings(stdSettings("zio-json-interop-http4s"))
   .settings(buildInfoSettings("zio.json.interop.http4s"))
   .settings(
-    crossScalaVersions --= Vector("3.0.0"),
+    crossScalaVersions --= Vector("3.0.1"),
     libraryDependencies ++= Seq(
       "org.http4s"    %% "http4s-dsl"       % "0.21.24",
       "dev.zio"       %% "zio"              % zioVersion,
@@ -286,7 +286,7 @@ lazy val zioJsonInteropRefined = crossProject(JSPlatform, JVMPlatform)
   .settings(stdSettings("zio-json-interop-refined"))
   .settings(buildInfoSettings("zio.json.interop.refined"))
   .settings(
-    crossScalaVersions --= Vector("3.0.0"),
+    crossScalaVersions --= Vector("3.0.1"),
     libraryDependencies ++= Seq(
       "eu.timepit" %%% "refined"      % "0.9.26",
       "dev.zio"    %%% "zio-test"     % zioVersion % "test",
@@ -303,7 +303,7 @@ lazy val zioJsonInteropScalaz7x = crossProject(JSPlatform, JVMPlatform)
   .settings(stdSettings("zio-json-interop-scalaz7x"))
   .settings(buildInfoSettings("zio.json.interop.scalaz7x"))
   .settings(
-    crossScalaVersions --= Vector("3.0.0"),
+    crossScalaVersions --= Vector("3.0.1"),
     libraryDependencies ++= Seq(
       "org.scalaz" %%% "scalaz-core"  % "7.3.4",
       "dev.zio"    %%% "zio-test"     % zioVersion % "test",
@@ -324,7 +324,7 @@ lazy val docs = project
     zioJsonInteropScalaz7x.jvm
   )
   .settings(
-    crossScalaVersions --= Vector("3.0.0"),
+    crossScalaVersions --= Vector("3.0.1"),
     publish / skip := true,
     mdocVariables := Map(
       "SNAPSHOT_VERSION" -> version.value,
