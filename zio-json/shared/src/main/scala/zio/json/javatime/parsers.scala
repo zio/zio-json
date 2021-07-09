@@ -10,6 +10,7 @@ import java.time.{
   MonthDay,
   OffsetDateTime,
   OffsetTime,
+  Period,
   Year,
   YearMonth,
   ZoneId,
@@ -454,7 +455,7 @@ private[json] object parsers {
         if (input.charAt(pos) != '.') charError('.', pos)
         pos += 1
         var nanoDigitWeight = 100000000
-        var ch              = (0: Char)
+        var ch              = '0'
         while (
           pos < len && {
             ch = input.charAt(pos)
@@ -515,7 +516,7 @@ private[json] object parsers {
         if (input.charAt(pos) != '.') charError('.', pos)
         pos += 1
         var nanoDigitWeight = 100000000
-        var ch              = (0: Char)
+        var ch              = '0'
         while (
           pos < len && {
             ch = input.charAt(pos)
@@ -671,7 +672,7 @@ private[json] object parsers {
       if (ch == '.') {
         nanoDigitWeight = 100000000
         while ({
-          if (pos >= len) offsetDateTimeError(pos)
+          if (pos >= len) timezoneSignError(nanoDigitWeight, pos)
           ch = input.charAt(pos)
           pos += 1
           ch >= '0' && ch <= '9' && nanoDigitWeight != 0
@@ -743,7 +744,7 @@ private[json] object parsers {
     val len = input.length
     var pos = 0
     val hour = {
-      if (pos + 2 >= len) offsetDateTimeError(pos)
+      if (pos + 2 >= len) offsetTimeError(pos)
       val ch0  = input.charAt(pos)
       val ch1  = input.charAt(pos + 1)
       val ch2  = input.charAt(pos + 2)
@@ -756,7 +757,7 @@ private[json] object parsers {
       hour
     }
     val minute = {
-      if (pos + 1 >= len) offsetDateTimeError(pos)
+      if (pos + 1 >= len) offsetTimeError(pos)
       val ch0 = input.charAt(pos)
       val ch1 = input.charAt(pos + 1)
       if (ch0 < '0' || ch0 > '9') digitError(pos)
@@ -767,13 +768,13 @@ private[json] object parsers {
     }
     var second, nano    = 0
     var nanoDigitWeight = -1
-    if (pos >= len) offsetDateTimeError(pos)
+    if (pos >= len) timezoneSignError(nanoDigitWeight, pos)
     var ch = input.charAt(pos)
     pos += 1
     if (ch == ':') {
       nanoDigitWeight = -2
       second = {
-        if (pos + 1 >= len) offsetDateTimeError(pos)
+        if (pos + 1 >= len) offsetTimeError(pos)
         val ch0 = input.charAt(pos)
         val ch1 = input.charAt(pos + 1)
         if (ch0 < '0' || ch0 > '9') digitError(pos)
@@ -782,13 +783,13 @@ private[json] object parsers {
         pos += 2
         ch0 * 10 + ch1 - 528 // 528 == '0' * 11
       }
-      if (pos >= len) offsetDateTimeError(pos)
+      if (pos >= len) timezoneSignError(nanoDigitWeight, pos)
       ch = input.charAt(pos)
       pos += 1
       if (ch == '.') {
         nanoDigitWeight = 100000000
         while ({
-          if (pos >= len) offsetDateTimeError(pos)
+          if (pos >= len) timezoneSignError(nanoDigitWeight, pos)
           ch = input.charAt(pos)
           pos += 1
           ch >= '0' && ch <= '9' && nanoDigitWeight != 0
@@ -804,7 +805,7 @@ private[json] object parsers {
         val offsetNeg = ch == '-' || (ch != '+' && timezoneSignError(nanoDigitWeight, pos - 1))
         nanoDigitWeight = -3
         val offsetHour = {
-          if (pos + 1 >= len) offsetDateTimeError(pos)
+          if (pos + 1 >= len) offsetTimeError(pos)
           val ch0        = input.charAt(pos)
           val ch1        = input.charAt(pos + 1)
           val offsetHour = ch0 * 10 + ch1 - 528 // 528 == '0' * 11
@@ -823,7 +824,7 @@ private[json] object parsers {
           }
         ) {
           offsetMinute = {
-            if (pos + 1 >= len) offsetDateTimeError(pos)
+            if (pos + 1 >= len) offsetTimeError(pos)
             val ch0 = input.charAt(pos)
             val ch1 = input.charAt(pos + 1)
             if (ch0 < '0' || ch0 > '9') digitError(pos)
@@ -841,7 +842,7 @@ private[json] object parsers {
           ) {
             nanoDigitWeight = -4
             offsetSecond = {
-              if (pos + 1 >= len) offsetDateTimeError(pos)
+              if (pos + 1 >= len) offsetTimeError(pos)
               val ch0 = input.charAt(pos)
               val ch1 = input.charAt(pos + 1)
               if (ch0 < '0' || ch0 > '9') digitError(pos)
@@ -854,8 +855,78 @@ private[json] object parsers {
         }
         toZoneOffset(offsetNeg, offsetHour, offsetMinute, offsetSecond, pos)
       }
-    if (pos != len) offsetDateTimeError(pos)
+    if (pos != len) offsetTimeError(pos)
     OffsetTime.of(hour, minute, second, nano, zoneOffset)
+  }
+
+  def unsafeParsePeriod(input: String): Period = {
+    val len                             = input.length
+    var pos, state, years, months, days = 0
+    if (pos >= len) periodError(pos)
+    var ch = input.charAt(pos)
+    pos += 1
+    val isNeg = ch == '-'
+    if (isNeg) {
+      if (pos >= len) periodError(pos)
+      ch = input.charAt(pos)
+      pos += 1
+    }
+    if (ch != 'P') durationOrPeriodStartError(isNeg, pos - 1)
+    if (pos >= len) periodError(pos)
+    ch = input.charAt(pos)
+    pos += 1
+    while ({
+      if (state == 4 && pos >= len) periodError(pos - 1)
+      val isNegX = ch == '-'
+      if (isNegX) {
+        if (pos >= len) periodError(pos)
+        ch = input.charAt(pos)
+        pos += 1
+      }
+      if (ch < '0' || ch > '9') durationOrPeriodDigitError(isNegX, state <= 1, pos - 1)
+      var x: Int = '0' - ch
+      while (
+        (pos < len) && {
+          ch = input.charAt(pos)
+          ch >= '0' && ch <= '9'
+        }
+      ) {
+        if (
+          x < -214748364 || {
+            x = x * 10 + ('0' - ch)
+            x > 0
+          }
+        ) periodError(pos)
+        pos += 1
+      }
+      if (!(isNeg ^ isNegX)) {
+        if (x == -2147483648) periodError(pos)
+        x = -x
+      }
+      if (ch == 'Y' && state <= 0) {
+        years = x
+        state = 1
+      } else if (ch == 'M' && state <= 1) {
+        months = x
+        state = 2
+      } else if (ch == 'W' && state <= 2) {
+        if (x < -306783378 || x > 306783378) periodError(pos)
+        days = x * 7
+        state = 3
+      } else if (ch == 'D') {
+        val ds = x.toLong + days
+        if (ds != ds.toInt) periodError(pos)
+        days = ds.toInt
+        state = 4
+      } else periodError(state, pos)
+      pos += 1
+      (pos < len) && {
+        ch = input.charAt(pos)
+        pos += 1
+        true
+      }
+    }) ()
+    Period.of(years, months, days)
   }
 
   def unsafeParseYear(input: String): Year = {
@@ -871,6 +942,7 @@ private[json] object parsers {
         if (ch1 < '0' || ch1 > '9') digitError(pos + 1)
         if (ch2 < '0' || ch2 > '9') digitError(pos + 2)
         if (ch3 < '0' || ch3 > '9') digitError(pos + 3)
+        if (len != 4) yearError(pos + 4)
         pos += 4
         ch0 * 1000 + ch1 * 100 + ch2 * 10 + ch3 - 53328 // 53328 == '0' * 1111
       } else {
@@ -885,21 +957,24 @@ private[json] object parsers {
         while (
           pos < len && {
             ch = input.charAt(pos)
-            pos += 1
             ch >= '0' && ch <= '9' && yearDigits < 9
           }
         ) {
           year = year * 10 + (ch - '0')
           yearDigits += 1
+          pos += 1
         }
         if (yearNeg) {
           if (year == 0) yearError(pos - 1)
           year = -year
         }
+        if (pos != len || ch < '0' || ch > '9') {
+          if (yearDigits == 9) yearError(pos)
+          digitError(pos)
+        }
         year
       }
     }
-    if (pos != len) yearError(pos)
     Year.of(year)
   }
 
@@ -1057,7 +1132,7 @@ private[json] object parsers {
     }
     var second, nano    = 0
     var nanoDigitWeight = -1
-    if (pos >= len) zonedDateTimeError(pos)
+    if (pos >= len) timezoneSignError(nanoDigitWeight, pos)
     var ch = input.charAt(pos)
     pos += 1
     if (ch == ':') {
@@ -1072,13 +1147,13 @@ private[json] object parsers {
         pos += 2
         ch0 * 10 + ch1 - 528 // 528 == '0' * 11
       }
-      if (pos >= len) zonedDateTimeError(pos)
+      if (pos >= len) timezoneSignError(nanoDigitWeight, pos)
       ch = input.charAt(pos)
       pos += 1
       if (ch == '.') {
         nanoDigitWeight = 100000000
         while ({
-          if (pos >= len) zonedDateTimeError(pos)
+          if (pos >= len) timezoneSignError(nanoDigitWeight, pos)
           ch = input.charAt(pos)
           pos += 1
           ch >= '0' && ch <= '9' && nanoDigitWeight != 0
@@ -1093,6 +1168,7 @@ private[json] object parsers {
       if (ch == 'Z') {
         if (pos < len) {
           ch = input.charAt(pos)
+          if (ch != '[') charError('[', pos)
           pos += 1
         }
         ZoneOffset.UTC
@@ -1115,7 +1191,7 @@ private[json] object parsers {
           pos < len && {
             ch = input.charAt(pos)
             pos += 1
-            ch == ':'
+            ch == ':' || ch != '[' && charError('[', pos - 1)
           }
         ) {
           offsetMinute = {
@@ -1132,7 +1208,7 @@ private[json] object parsers {
             pos < len && {
               ch = input.charAt(pos)
               pos += 1
-              ch == ':'
+              ch == ':' || ch != '[' && charError('[', pos - 1)
             }
           ) {
             nanoDigitWeight = -4
@@ -1148,14 +1224,14 @@ private[json] object parsers {
             }
             if (pos < len) {
               ch = input.charAt(pos)
+              if (ch != '[') charError('[', pos)
               pos += 1
             }
           }
         }
         toZoneOffset(offsetNeg, offsetHour, offsetMinute, offsetSecond, pos)
       }
-    if (pos == len) ZonedDateTime.ofLocal(localDateTime, zoneOffset, null)
-    else if (ch == '[') {
+    if (ch == '[') {
       val zone =
         try {
           val from = pos
@@ -1174,12 +1250,12 @@ private[json] object parsers {
           ) zoneIds.put(key, zoneId)
           zoneId
         } catch {
-          case _: DateTimeException => zonedDateTimeError(pos)
+          case _: DateTimeException => zonedDateTimeError(pos - 1)
         }
       pos += 1
       if (pos != len) zonedDateTimeError(pos)
       ZonedDateTime.ofInstant(localDateTime, zoneOffset, zone)
-    } else timezoneError(nanoDigitWeight, pos)
+    } else ZonedDateTime.ofLocal(localDateTime, zoneOffset, null)
   }
 
   def unsafeParseZoneId(input: String): ZoneId =
@@ -1269,9 +1345,9 @@ private[json] object parsers {
   ): ZoneOffset = {
     var offsetTotal = offsetHour * 3600 + offsetMinute * 60 + offsetSecond
     var qp          = offsetTotal * 37283
-    if (offsetTotal > 64800) error("illegal timezone offset", pos) // 64800 == 18 * 60 * 60
-    if ((qp & 0x1ff8000) == 0) {                                   // check if offsetTotal divisible by 900
-      qp >>>= 25                                                   // divide offsetTotal by 900
+    if (offsetTotal > 64800) zoneOffsetError(pos) // 64800 == 18 * 60 * 60
+    if ((qp & 0x1ff8000) == 0) {                  // check if offsetTotal divisible by 900
+      qp >>>= 25                                  // divide offsetTotal by 900
       if (offsetNeg) qp = -qp
       var zoneOffset = zoneOffsets(qp + 72)
       if (zoneOffset ne null) zoneOffset
@@ -1294,14 +1370,14 @@ private[json] object parsers {
   }
 
   private[this] def epochDayForYear(year: Int): Long =
-    year * 365L + (((year + 3) >> 2) - {
+    year * 365L + ((year + 3 >> 2) - {
       val cp = year * 1374389535L
       if (year < 0) (cp >> 37) - (cp >> 39)                        // year / 100 - year / 400
       else (cp + 136064563965L >> 37) - (cp + 548381424465L >> 39) // (year + 99) / 100 - (year + 399) / 400
     }.toInt)
 
   private[this] def dayOfYearForYearMonth(year: Int, month: Int): Int =
-    ((month * 1002277 - 988622) >> 15) - // (month * 367 - 362) / 12
+    (month * 1002277 - 988622 >> 15) - // (month * 367 - 362) / 12
       (if (month <= 2) 0
        else if (isLeap(year)) 1
        else 2)
@@ -1362,13 +1438,6 @@ private[json] object parsers {
     pos
   )
 
-  private[this] def timezoneError(nanoDigitWeight: Int, pos: Int) =
-    error(
-      if (nanoDigitWeight > -3) "expected '[' or '\"'"
-      else "expected ':' or '[' or '\"'",
-      pos
-    )
-
   private[this] def timezoneSignError(nanoDigitWeight: Int, pos: Int) =
     error(
       if (nanoDigitWeight == -2) "expected '.' or '+' or '-' or 'Z'"
@@ -1387,6 +1456,21 @@ private[json] object parsers {
   private[this] def localTimeError(pos: Int) = error("illegal local time", pos)
 
   private[this] def offsetDateTimeError(pos: Int) = error("illegal offset date time", pos)
+
+  private[this] def offsetTimeError(pos: Int) = error("illegal offset time", pos)
+
+  private[this] def periodError(state: Int, pos: Int): Nothing =
+    error(
+      (state: @switch) match {
+        case 0 => "expected 'Y' or 'M' or 'W' or 'D' or digit"
+        case 1 => "expected 'M' or 'W' or 'D' or digit"
+        case 2 => "expected 'W' or 'D' or digit"
+        case 3 => "expected 'D' or digit"
+      },
+      pos
+    )
+
+  private[this] def periodError(pos: Int) = error("illegal period", pos)
 
   private[this] def yearMonthError(pos: Int) = error("illegal year month", pos)
 
