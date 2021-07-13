@@ -145,11 +145,12 @@ object SafeNumbers {
         val len = digitCount(dv)
         exp += len - 1
         if (exp < -3 || exp >= 7) {
+          val dotOff = s.length + 1
           s.append(dv)
           var i = s.length - 1
-          while (i > 2 && s.charAt(i) == '0') i -= 1
+          while (i > dotOff && s.charAt(i) == '0') i -= 1
           s.setLength(i + 1)
-          s.insert(1, '.').append('E').append(exp)
+          s.insert(dotOff, '.').append('E').append(exp)
         } else if (exp < 0) {
           s.append('0').append('.')
           while ({
@@ -162,11 +163,12 @@ object SafeNumbers {
           s.setLength(i + 1)
           s
         } else if (exp + 1 < len) {
+          val dotOff = s.length + exp + 1
           s.append(dv)
           var i = s.length - 1
           while (s.charAt(i) == '0') i -= 1
           s.setLength(i + 1)
-          s.insert(exp + 1, '.')
+          s.insert(dotOff, '.')
         } else s.append(dv).append('.').append('0')
       }
     }.toString
@@ -237,11 +239,12 @@ object SafeNumbers {
         val len = digitCount(dv.toLong)
         exp += len - 1
         if (exp < -3 || exp >= 7) {
+          val dotOff = s.length + 1
           s.append(dv)
           var i = s.length - 1
-          while (i > 2 && s.charAt(i) == '0') i -= 1
+          while (i > dotOff && s.charAt(i) == '0') i -= 1
           s.setLength(i + 1)
-          s.insert(1, '.').append('E').append(exp)
+          s.insert(dotOff, '.').append('E').append(exp)
         } else if (exp < 0) {
           s.append('0').append('.')
           while ({
@@ -254,11 +257,12 @@ object SafeNumbers {
           s.setLength(i + 1)
           s
         } else if (exp + 1 < len) {
+          val dotOff = s.length + exp + 1
           s.append(dv)
           var i = s.length - 1
           while (s.charAt(i) == '0') i -= 1
           s.setLength(i + 1)
-          s.insert(exp + 1, '.')
+          s.insert(dotOff, '.')
         } else s.append(dv).append('.').append('0')
       }
     }.toString
