@@ -23,12 +23,18 @@ import scala.collection.immutable
  * intCodec.encodeJson(intCodec.encodeJson(42)) == Right(42)
  * }}
  */
-trait JsonCodec[A] extends JsonDecoder[A] with JsonEncoder[A] {
+trait JsonCodec[A] extends JsonDecoder[A] with JsonEncoder[A] { self =>
   def encoder: JsonEncoder[A]
   def decoder: JsonDecoder[A]
 
   override def xmap[B](f: A => B, g: B => A): JsonCodec[B] =
     JsonCodec(encoder.contramap(g), decoder.map(f))
+
+  def either[B](that: JsonCodec[B]): JsonCodec[Either[A, B]] =
+    JsonCodec(
+      self.encoder.either(that.encoder),
+      self.decoder.orElseEither(that.decoder)
+    )
 }
 
 object JsonCodec extends GeneratedTupleCodecs with CodecLowPriority0 {
