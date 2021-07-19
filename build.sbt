@@ -267,7 +267,7 @@ lazy val zioJsonInteropHttp4s = project
   .settings(
     crossScalaVersions --= Vector("3.0.1"),
     libraryDependencies ++= Seq(
-      "org.http4s"    %% "http4s-dsl"       % "0.21.24",
+      "org.http4s"    %% "http4s-dsl"       % "0.21.25",
       "dev.zio"       %% "zio"              % zioVersion,
       "org.typelevel" %% "cats-effect"      % "2.5.1",
       "dev.zio"       %% "zio-interop-cats" % "2.5.1.0"  % "test",
