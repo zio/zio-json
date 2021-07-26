@@ -47,6 +47,16 @@ trait JsonEncoder[A] extends JsonEncoderPlatformSpecific[A] {
   final def either[B](that: => JsonEncoder[B]): JsonEncoder[Either[A, B]] = JsonEncoder.either[A, B](self, that)
 
   /**
+   * Returns a new encoder that can accepts an `Either[A, B]` to either, and uses either this
+   * encoder or the specified encoder to encode the two different types of values.
+   * The difference with the classic `either` encoder is that the resulting JSON has no field
+   * `Left` or `Right`.
+   * What should be: `{"Right": "John Doe"}` is encoded as `"John Doe"`
+   */
+  final def eraseEither[B](that: => JsonEncoder[B]): JsonEncoder[Either[A, B]] =
+    JsonEncoder.eraseEither[A, B](self, that)
+
+  /**
    * Returns a new encoder with a new input type, which can be transformed to either the input
    * type of this encoder, or the input type of the specified encoder, using the user-defined
    * transformation function.
@@ -226,6 +236,19 @@ object JsonEncoder extends GeneratedTupleEncoders with EncoderLowPriority0 {
         a match {
           case Left(value)  => A.toJsonAST(value).map(v => Json.Obj(Chunk("Left" -> v)))
           case Right(value) => B.toJsonAST(value).map(v => Json.Obj(Chunk("Right" -> v)))
+        }
+    }
+
+  def eraseEither[A, B](implicit A: JsonEncoder[A], B: JsonEncoder[B]): JsonEncoder[Either[A, B]] =
+    new JsonEncoder[Either[A, B]] {
+      def unsafeEncode(
+        a: Either[A, B],
+        indent: Option[Int],
+        out: Write
+      ): Unit =
+        a match {
+          case Left(s)  => A.unsafeEncode(s, indent, out)
+          case Right(l) => B.unsafeEncode(l, indent, out)
         }
     }
 }
