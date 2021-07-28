@@ -1,11 +1,11 @@
 package testzio.json
 
-import zio.Chunk
 import zio.json._
 import zio.json.ast.Json
 import zio.test.Assertion._
 import zio.test.TestAspect._
 import zio.test._
+import zio.{ Chunk, NonEmptyChunk }
 
 import java.util.UUID
 import scala.collection.{ immutable, mutable }
@@ -213,6 +213,9 @@ object EncoderSpec extends DefaultRunnableSpec {
           assert((Right(1): Either[Int, Int]).toJsonPretty)(equalTo("{\n  \"Right\" : 1\n}"))
         },
         test("collections") {
+          assert(Chunk[Int]().toJson)(equalTo("[]")) &&
+          assert(Chunk(1, 2, 3).toJson)(equalTo("[1,2,3]")) &&
+          assert(NonEmptyChunk(1, 2, 3).toJson)(equalTo("[1,2,3]")) &&
           assert(List[Int]().toJson)(equalTo("[]")) &&
           assert(List(1, 2, 3).toJson)(equalTo("[1,2,3]")) &&
           assert(Vector[Int]().toJson)(equalTo("[]")) &&
@@ -348,6 +351,9 @@ object EncoderSpec extends DefaultRunnableSpec {
           val objEmpty = Json.Obj()
           val objHW    = Json.Obj("hello" -> Json.Str("world"))
 
+          assert(Chunk[Int]().toJsonAST)(isRight(equalTo(arrEmpty))) &&
+          assert(Chunk(1, 2, 3).toJsonAST)(isRight(equalTo(arr123))) &&
+          assert(NonEmptyChunk(1, 2, 3).toJsonAST)(isRight(equalTo(arr123))) &&
           assert(List[Int]().toJsonAST)(isRight(equalTo(arrEmpty))) &&
           assert(List(1, 2, 3).toJsonAST)(isRight(equalTo(arr123))) &&
           assert(Vector[Int]().toJsonAST)(isRight(equalTo(arrEmpty))) &&

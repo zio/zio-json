@@ -1,9 +1,9 @@
 package zio.json
 
-import zio.Chunk
 import zio.json.ast.Json
 import zio.json.internal.{ FastStringWrite, SafeNumbers, Write }
 import zio.json.javatime.serializers
+import zio.{ Chunk, NonEmptyChunk }
 
 import java.util.UUID
 import scala.annotation._
@@ -256,6 +256,9 @@ object JsonEncoder extends GeneratedTupleEncoders with EncoderLowPriority0 {
 private[json] trait EncoderLowPriority0 extends EncoderLowPriority1 {
   this: JsonEncoder.type =>
   implicit def chunk[A: JsonEncoder]: JsonEncoder[Chunk[A]] =
+    seq[A].contramap(_.toSeq)
+
+  implicit def nonEmptyChunk[A: JsonEncoder]: JsonEncoder[NonEmptyChunk[A]] =
     seq[A].contramap(_.toSeq)
 
   implicit def array[A: JsonEncoder: reflect.ClassTag]: JsonEncoder[Array[A]] =

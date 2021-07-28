@@ -1,10 +1,10 @@
 package zio.json
 
-import zio.Chunk
 import zio.json.ast.Json
 import zio.json.internal._
 import zio.json.javatime.parsers
 import zio.json.uuid.UUIDParser
+import zio.{ Chunk, NonEmptyChunk }
 
 import java.util.UUID
 import scala.annotation._
@@ -487,6 +487,9 @@ private[json] trait DecoderLowPriority0 extends DecoderLowPriority1 {
         case _ => Left("Not an array")
       }
   }
+
+  implicit def nonEmptyChunk[A: JsonDecoder]: JsonDecoder[NonEmptyChunk[A]] =
+    JsonDecoder.chunk[A].mapOrFail(NonEmptyChunk.fromChunk(_).toRight("Chunk was empty"))
 
   implicit def hashSet[A: JsonDecoder]: JsonDecoder[immutable.HashSet[A]] =
     list[A].map(lst => immutable.HashSet(lst: _*))
