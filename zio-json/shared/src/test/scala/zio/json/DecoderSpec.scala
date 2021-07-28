@@ -172,6 +172,17 @@ object DecoderSpec extends DefaultRunnableSpec {
 
           assert(jsonStr.fromJson[Chunk[String]])(isRight(equalTo(expected)))
         },
+        test("zio.NonEmptyChunk") {
+          val jsonStr  = """["5XL","2XL","XL"]"""
+          val expected = NonEmptyChunk("5XL", "2XL", "XL")
+
+          assert(jsonStr.fromJson[NonEmptyChunk[String]])(isRight(equalTo(expected)))
+        },
+        test("zio.NonEmptyChunk failure") {
+          val jsonStr = "[]"
+
+          assert(jsonStr.fromJson[NonEmptyChunk[String]])(isLeft(equalTo("(Chunk was empty)")))
+        },
         test("java.util.UUID") {
           val ok1  = """"64d7c38d-2afd-4514-9832-4e70afe4b0f8""""
           val ok2  = """"0000000064D7C38D-FD-14-32-70AFE4B0f8""""
@@ -355,6 +366,12 @@ object DecoderSpec extends DefaultRunnableSpec {
           val expected = Chunk("5XL", "2XL", "XL")
 
           assert(json.as[Chunk[String]])(isRight(equalTo(expected)))
+        },
+        test("zio.NonEmptyChunk") {
+          val json     = Json.Arr(Json.Str("5XL"), Json.Str("2XL"), Json.Str("XL"))
+          val expected = NonEmptyChunk("5XL", "2XL", "XL")
+
+          assert(json.as[NonEmptyChunk[String]])(isRight(equalTo(expected)))
         },
         test("java.util.UUID") {
           val ok1  = Json.Str("64d7c38d-2afd-4514-9832-4e70afe4b0f8")
