@@ -2,10 +2,9 @@ package zio.json
 
 import zio.Chunk
 import zio.json.ast.Json
-import zio.json.internal.{ FastStringWrite, Write }
+import zio.json.internal.{ FastStringWrite, SafeNumbers, Write }
+import zio.json.javatime.serializers
 
-import java.time.format.{ DateTimeFormatterBuilder, SignStyle }
-import java.time.temporal.ChronoField.YEAR
 import java.util.UUID
 import scala.annotation._
 import scala.collection.{ immutable, mutable }
@@ -46,6 +45,16 @@ trait JsonEncoder[A] extends JsonEncoderPlatformSpecific[A] {
    * encoder or the specified encoder to encode the two different types of values.
    */
   final def either[B](that: => JsonEncoder[B]): JsonEncoder[Either[A, B]] = JsonEncoder.either[A, B](self, that)
+
+  /**
+   * Returns a new encoder that can accepts an `Either[A, B]` to either, and uses either this
+   * encoder or the specified encoder to encode the two different types of values.
+   * The difference with the classic `either` encoder is that the resulting JSON has no field
+   * `Left` or `Right`.
+   * What should be: `{"Right": "John Doe"}` is encoded as `"John Doe"`
+   */
+  final def eraseEither[B](that: => JsonEncoder[B]): JsonEncoder[Either[A, B]] =
+    JsonEncoder.eraseEither[A, B](self, that)
 
   /**
    * Returns a new encoder with a new input type, which can be transformed to either the input
@@ -149,7 +158,11 @@ object JsonEncoder extends GeneratedTupleEncoders with EncoderLowPriority0 {
   }
 
   private[json] def stringify[A](f: A => String): JsonEncoder[A] = new JsonEncoder[A] {
-    def unsafeEncode(a: A, indent: Option[Int], out: Write): Unit = out.write(s""""${f(a)}"""")
+    def unsafeEncode(a: A, indent: Option[Int], out: Write): Unit = {
+      out.write('"')
+      out.write(f(a))
+      out.write('"')
+    }
 
     override final def toJsonAST(a: A): Either[String, Json] =
       Right(Json.Str(f(a)))
@@ -164,15 +177,11 @@ object JsonEncoder extends GeneratedTupleEncoders with EncoderLowPriority0 {
   implicit val bigInteger: JsonEncoder[java.math.BigInteger] =
     explicit(_.toString, n => Json.Num(new java.math.BigDecimal(n)))
   implicit val scalaBigInt: JsonEncoder[BigInt] =
-    explicit(_.toString(), n => Json.Num(new java.math.BigDecimal(n.bigInteger)))
-
-  implicit val double: JsonEncoder[Double] = explicit(
-    n =>
-      if (n.isNaN || n.isInfinite) s""""$n""""
-      else n.toString,
-    n => Json.Num(new java.math.BigDecimal(n))
-  )
-  implicit val float: JsonEncoder[Float]                     = double.contramap(_.toDouble)
+    explicit(_.toString, n => Json.Num(new java.math.BigDecimal(n.bigInteger)))
+  implicit val double: JsonEncoder[Double] =
+    explicit(SafeNumbers.toString, n => Json.Num(new java.math.BigDecimal(n)))
+  implicit val float: JsonEncoder[Float] =
+    explicit(SafeNumbers.toString, n => Json.Num(new java.math.BigDecimal(n.toDouble)))
   implicit val bigDecimal: JsonEncoder[java.math.BigDecimal] = explicit(_.toString, Json.Num.apply)
   implicit val scalaBigDecimal: JsonEncoder[BigDecimal]      = explicit(_.toString, n => Json.Num(n.bigDecimal))
 
@@ -198,7 +207,7 @@ object JsonEncoder extends GeneratedTupleEncoders with EncoderLowPriority0 {
   }
 
   def pad(indent: Option[Int], out: Write): Unit =
-    indent.foreach(i => out.write("\n" + (" " * 2 * i)))
+    indent.foreach(i => out.write("\n" + ("  " * i)))
 
   implicit def either[A, B](implicit A: JsonEncoder[A], B: JsonEncoder[B]): JsonEncoder[Either[A, B]] =
     new JsonEncoder[Either[A, B]] {
@@ -227,6 +236,19 @@ object JsonEncoder extends GeneratedTupleEncoders with EncoderLowPriority0 {
         a match {
           case Left(value)  => A.toJsonAST(value).map(v => Json.Obj(Chunk("Left" -> v)))
           case Right(value) => B.toJsonAST(value).map(v => Json.Obj(Chunk("Right" -> v)))
+        }
+    }
+
+  def eraseEither[A, B](implicit A: JsonEncoder[A], B: JsonEncoder[B]): JsonEncoder[Either[A, B]] =
+    new JsonEncoder[Either[A, B]] {
+      def unsafeEncode(
+        a: Either[A, B],
+        indent: Option[Int],
+        out: Write
+      ): Unit =
+        a match {
+          case Left(s)  => A.unsafeEncode(s, indent, out)
+          case Right(l) => B.unsafeEncode(l, indent, out)
         }
     }
 }
@@ -368,45 +390,23 @@ private[json] trait EncoderLowPriority3 {
   this: JsonEncoder.type =>
 
   import java.time._
-  import java.time.format.DateTimeFormatter
 
-  implicit val dayOfWeek: JsonEncoder[DayOfWeek] = stringify(_.toString)
-  implicit val duration: JsonEncoder[Duration]   = stringify(_.toString)
-  implicit val instant: JsonEncoder[Instant]     = stringify(_.toString)
-
-  implicit val localDate: JsonEncoder[LocalDate] = stringify(
-    _.format(DateTimeFormatter.ISO_LOCAL_DATE)
-  )
-
-  implicit val localDateTime: JsonEncoder[LocalDateTime] = stringify(
-    _.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
-  )
-
-  implicit val localTime: JsonEncoder[LocalTime] = stringify(
-    _.format(DateTimeFormatter.ISO_LOCAL_TIME)
-  )
-  implicit val month: JsonEncoder[Month]       = stringify(_.toString)
-  implicit val monthDay: JsonEncoder[MonthDay] = stringify(_.toString)
-
-  implicit val offsetDateTime: JsonEncoder[OffsetDateTime] = stringify(
-    _.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)
-  )
-
-  implicit val offsetTime: JsonEncoder[OffsetTime] = stringify(
-    _.format(DateTimeFormatter.ISO_OFFSET_TIME)
-  )
-  implicit val period: JsonEncoder[Period] = stringify(_.toString)
-
-  private val yearFormatter =
-    new DateTimeFormatterBuilder().appendValue(YEAR, 4, 10, SignStyle.EXCEEDS_PAD).toFormatter
-  implicit val year: JsonEncoder[Year]           = stringify(_.format(yearFormatter))
-  implicit val yearMonth: JsonEncoder[YearMonth] = stringify(_.toString)
-
-  implicit val zonedDateTime: JsonEncoder[ZonedDateTime] = stringify(
-    _.format(DateTimeFormatter.ISO_ZONED_DATE_TIME)
-  )
-  implicit val zoneId: JsonEncoder[ZoneId]         = stringify(_.toString)
-  implicit val zoneOffset: JsonEncoder[ZoneOffset] = stringify(_.toString)
+  implicit val dayOfWeek: JsonEncoder[DayOfWeek]           = stringify(_.toString)
+  implicit val duration: JsonEncoder[Duration]             = stringify(serializers.toString)
+  implicit val instant: JsonEncoder[Instant]               = stringify(serializers.toString)
+  implicit val localDate: JsonEncoder[LocalDate]           = stringify(serializers.toString)
+  implicit val localDateTime: JsonEncoder[LocalDateTime]   = stringify(serializers.toString)
+  implicit val localTime: JsonEncoder[LocalTime]           = stringify(serializers.toString)
+  implicit val month: JsonEncoder[Month]                   = stringify(_.toString)
+  implicit val monthDay: JsonEncoder[MonthDay]             = stringify(serializers.toString)
+  implicit val offsetDateTime: JsonEncoder[OffsetDateTime] = stringify(serializers.toString)
+  implicit val offsetTime: JsonEncoder[OffsetTime]         = stringify(serializers.toString)
+  implicit val period: JsonEncoder[Period]                 = stringify(serializers.toString)
+  implicit val year: JsonEncoder[Year]                     = stringify(serializers.toString)
+  implicit val yearMonth: JsonEncoder[YearMonth]           = stringify(serializers.toString)
+  implicit val zonedDateTime: JsonEncoder[ZonedDateTime]   = stringify(serializers.toString)
+  implicit val zoneId: JsonEncoder[ZoneId]                 = stringify(serializers.toString)
+  implicit val zoneOffset: JsonEncoder[ZoneOffset]         = stringify(serializers.toString)
 
   implicit val uuid: JsonEncoder[UUID] = stringify(_.toString)
 }

@@ -24,14 +24,20 @@ addCommandAlias("fixCheck", "scalafixAll --check")
 addCommandAlias("fmt", "all scalafmtSbt scalafmtAll")
 addCommandAlias("fmtCheck", "all scalafmtSbtCheck scalafmtCheckAll")
 addCommandAlias("prepare", "fix; fmt")
+
 addCommandAlias(
   "testJVM",
   "zioJsonJVM/test; zioJsonYaml/test; zioJsonMacrosJVM/test; zioJsonInteropHttp4s/test; zioJsonInteropScalaz7xJVM/test; zioJsonInteropScalaz7xJS/test; zioJsonInteropRefinedJVM/test; zioJsonInteropRefinedJS/test"
 )
 
+addCommandAlias(
+  "testJVMDotty",
+  "zioJsonJVM/test"
+)
+
 addCommandAlias("testJS", "zioJsonJS/test")
 
-val zioVersion = "1.0.9"
+val zioVersion = "1.0.10"
 
 lazy val root = project
   .in(file("."))
@@ -67,22 +73,36 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform)
     // as per @fommil, optimization slows things down.
     scalacOptions -= "-opt:l:inline",
     scalacOptions -= "-opt-inline-from:zio.internal.**",
+    scalaVersion := ScalaDotty,
     libraryDependencies ++= Seq(
-      "com.propensive"                        %%% "magnolia"                % "0.17.0",
-      "org.scala-lang"                          % "scala-reflect"           % scalaVersion.value % Provided,
-      "dev.zio"                               %%% "zio"                     % zioVersion,
-      "dev.zio"                               %%% "zio-streams"             % zioVersion,
-      "org.scala-lang.modules"                %%% "scala-collection-compat" % "2.4.4",
-      "dev.zio"                               %%% "zio-test"                % zioVersion         % "test",
-      "dev.zio"                               %%% "zio-test-sbt"            % zioVersion         % "test",
-      "io.circe"                              %%% "circe-core"              % circeVersion       % "test",
-      "io.circe"                              %%% "circe-generic"           % circeVersion       % "test",
-      "io.circe"                              %%% "circe-parser"            % circeVersion       % "test",
-      "io.circe"                              %%% "circe-generic-extras"    % circeVersion       % "test",
-      "com.typesafe.play"                     %%% "play-json"               % "2.9.2"            % "test",
-      "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-core"     % "2.8.2"            % "test",
-      "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-macros"   % "2.8.2"            % "test"
+      "dev.zio"                %%% "zio"                     % zioVersion,
+      "dev.zio"                %%% "zio-streams"             % zioVersion,
+      "org.scala-lang.modules" %%% "scala-collection-compat" % "2.5.0",
+      "dev.zio"                %%% "zio-test"                % zioVersion   % "test",
+      "dev.zio"                %%% "zio-test-sbt"            % zioVersion   % "test",
+      "io.circe"               %%% "circe-core"              % circeVersion % "test",
+      "io.circe"               %%% "circe-generic"           % circeVersion % "test",
+      "io.circe"               %%% "circe-parser"            % circeVersion % "test"
     ),
+    // scala version specific depenendies
+    libraryDependencies ++= {
+      CrossVersion.partialVersion(scalaVersion.value) match {
+        case Some((3, _)) =>
+          Vector(
+            "com.softwaremill.magnolia" %% "magnolia-core" % "2.0.0-M9"
+          )
+
+        case _ =>
+          Vector(
+            "org.scala-lang"                          % "scala-reflect"         % scalaVersion.value % Provided,
+            "com.propensive"                        %%% "magnolia"              % "0.17.0",
+            "io.circe"                              %%% "circe-generic-extras"  % circeVersion       % "test",
+            "com.typesafe.play"                     %%% "play-json"             % "2.9.2"            % "test",
+            "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-core"   % "2.9.1"            % "test",
+            "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-macros" % "2.9.1"            % "test"
+          )
+      }
+    },
     Compile / sourceGenerators += Def.task {
       val dir  = (Compile / sourceManaged).value
       val file = dir / "zio" / "json" / "GeneratedTupleDecoders.scala"
@@ -176,17 +196,28 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform)
     )
   )
   .jvmSettings(
-    libraryDependencies ++= Seq(
-      "ai.x"          %% "play-json-extensions" % "0.42.0" % "test",
-      "org.typelevel" %% "jawn-ast"             % "1.1.2"  % "test"
-    )
+    libraryDependencies ++= {
+      CrossVersion.partialVersion(scalaVersion.value) match {
+        case Some((3, _)) =>
+          Vector(
+            "org.typelevel" %% "jawn-ast" % "1.2.0" % "test"
+          )
+
+        case _ =>
+          Seq(
+            "ai.x"          %% "play-json-extensions" % "0.42.0" % "test",
+            "org.typelevel" %% "jawn-ast"             % "1.2.0"  % "test"
+          )
+      }
+    }
   )
   .enablePlugins(BuildInfoPlugin)
 
 lazy val zioJsonJS = zioJson.js
   .settings(
     scalaJSUseMainModuleInitializer := true,
-    testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework")
+    testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework"),
+    coverageEnabled := false
   )
 
 lazy val zioJsonJVM = zioJson.jvm
@@ -195,7 +226,6 @@ lazy val zioJsonYaml = project
   .in(file("zio-json-yaml"))
   .settings(stdSettings("zio-json-yaml"))
   .settings(buildInfoSettings("zio.json.yaml"))
-  .enablePlugins(NeoJmhPlugin)
   .settings(
     libraryDependencies ++= Seq(
       "org.yaml" % "snakeyaml"    % "1.29",
@@ -212,9 +242,9 @@ lazy val zioJsonMacros = crossProject(JSPlatform, JVMPlatform)
   .in(file("zio-json-macros"))
   .settings(stdSettings("zio-json-macros"))
   .settings(crossProjectSettings)
-  .enablePlugins(NeoJmhPlugin)
   .settings(macroExpansionSettings)
   .settings(
+    crossScalaVersions --= Vector("3.0.1"),
     scalacOptions -= "-Xfatal-warnings", // not quite ready.
     libraryDependencies ++= Seq(
       "org.scala-lang" % "scala-reflect" % scalaVersion.value % Provided,
@@ -226,19 +256,21 @@ lazy val zioJsonMacros = crossProject(JSPlatform, JVMPlatform)
 
 lazy val zioJsonMacrosJVM = zioJsonMacros.jvm.dependsOn(zioJsonJVM)
 
-lazy val zioJsonMacrosJS = zioJsonMacros.js.dependsOn(zioJsonJS)
+lazy val zioJsonMacrosJS = zioJsonMacros.js
+  .settings(coverageEnabled := false)
+  .dependsOn(zioJsonJS)
 
 lazy val zioJsonInteropHttp4s = project
   .in(file("zio-json-interop-http4s"))
   .settings(stdSettings("zio-json-interop-http4s"))
   .settings(buildInfoSettings("zio.json.interop.http4s"))
-  .enablePlugins(NeoJmhPlugin)
   .settings(
+    crossScalaVersions --= Vector("3.0.1"),
     libraryDependencies ++= Seq(
-      "org.http4s"    %% "http4s-dsl"       % "0.21.24",
+      "org.http4s"    %% "http4s-dsl"       % "0.21.25",
       "dev.zio"       %% "zio"              % zioVersion,
-      "org.typelevel" %% "cats-effect"      % "2.5.1",
-      "dev.zio"       %% "zio-interop-cats" % "3.1.1.0"  % "test",
+      "org.typelevel" %% "cats-effect"      % "2.5.2",
+      "dev.zio"       %% "zio-interop-cats" % "2.5.1.0"  % "test",
       "dev.zio"       %% "zio-test"         % zioVersion % "test",
       "dev.zio"       %% "zio-test-sbt"     % zioVersion % "test"
     ),
@@ -254,8 +286,9 @@ lazy val zioJsonInteropRefined = crossProject(JSPlatform, JVMPlatform)
   .settings(stdSettings("zio-json-interop-refined"))
   .settings(buildInfoSettings("zio.json.interop.refined"))
   .settings(
+    crossScalaVersions --= Vector("3.0.1"),
     libraryDependencies ++= Seq(
-      "eu.timepit" %%% "refined"      % "0.9.26",
+      "eu.timepit" %%% "refined"      % "0.9.27",
       "dev.zio"    %%% "zio-test"     % zioVersion % "test",
       "dev.zio"    %%% "zio-test-sbt" % zioVersion % "test"
     ),
@@ -270,8 +303,9 @@ lazy val zioJsonInteropScalaz7x = crossProject(JSPlatform, JVMPlatform)
   .settings(stdSettings("zio-json-interop-scalaz7x"))
   .settings(buildInfoSettings("zio.json.interop.scalaz7x"))
   .settings(
+    crossScalaVersions --= Vector("3.0.1"),
     libraryDependencies ++= Seq(
-      "org.scalaz" %%% "scalaz-core"  % "7.3.3",
+      "org.scalaz" %%% "scalaz-core"  % "7.3.4",
       "dev.zio"    %%% "zio-test"     % zioVersion % "test",
       "dev.zio"    %%% "zio-test-sbt" % zioVersion % "test"
     ),
@@ -290,6 +324,7 @@ lazy val docs = project
     zioJsonInteropScalaz7x.jvm
   )
   .settings(
+    crossScalaVersions --= Vector("3.0.1"),
     publish / skip := true,
     mdocVariables := Map(
       "SNAPSHOT_VERSION" -> version.value,

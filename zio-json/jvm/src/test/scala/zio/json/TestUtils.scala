@@ -2,32 +2,11 @@ package testzio.json
 
 import zio._
 import zio.blocking._
-import zio.random.Random
 import zio.stream._
-import zio.test.{ Gen, Sized }
 
 import java.io.{ File, IOException }
-import java.math.BigInteger
 
 object TestUtils {
-  val genBigInteger: Gen[Random, BigInteger] =
-    Gen
-      .bigInt((BigInt(2).pow(128) - 1) * -1, BigInt(2).pow(128) - 1)
-      .map(_.bigInteger)
-      .filter(_.bitLength < 128)
-
-  val genBigDecimal: Gen[Random, java.math.BigDecimal] =
-    Gen
-      .bigDecimal((BigDecimal(2).pow(128) - 1) * -1, BigDecimal(2).pow(128) - 1)
-      .map(_.bigDecimal)
-      .filter(_.toBigInteger.bitLength < 128)
-
-  val genUsAsciiString: Gen[Random with Sized, String] =
-    Gen.string(Gen.oneOf(Gen.char('!', '~')))
-
-  val genAlphaLowerString: Gen[Random with Sized, String] =
-    Gen.string(Gen.oneOf(Gen.char('a', 'z')))
-
   def writeFile(path: String, s: String): Unit = {
     val bw = new java.io.BufferedWriter(new java.io.FileWriter(path))
     bw.write(s)

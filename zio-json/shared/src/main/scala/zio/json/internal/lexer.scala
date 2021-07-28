@@ -65,12 +65,12 @@ object Lexer {
     in: OneCharReader,
     matrix: StringMatrix
   ): Int = {
-    val f = enum(trace, in, matrix)
+    val f = enumeration(trace, in, matrix)
     char(trace, in, ':')
     f
   }
 
-  def enum(
+  def enumeration(
     trace: List[JsonError],
     in: OneCharReader,
     matrix: StringMatrix

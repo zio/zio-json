@@ -1,10 +1,11 @@
 package testzio.json
 
-import testzio.json.TestUtils._
+import testzio.json.Gens._
 import zio.json._
 import zio.json.ast.Json
 import zio.random.Random
 import zio.test.Assertion._
+import zio.test.TestAspect._
 import zio.test._
 
 import java.time._
@@ -21,79 +22,75 @@ object RoundTripSpec extends DefaultRunnableSpec {
       },
       testM("shorts") {
         check(Gen.anyShort)(assertRoundtrips)
-      },
+      } @@ samples(10000),
       testM("ints") {
         check(Gen.anyInt)(assertRoundtrips)
-      },
+      } @@ samples(10000),
       testM("longs") {
         check(Gen.anyLong)(assertRoundtrips)
-      },
+      } @@ samples(10000),
       testM("bigInts") {
         check(genBigInteger)(assertRoundtrips)
-      },
+      } @@ samples(10000),
       testM("floats") {
         // NaN / Infinity is tested manually, because of == semantics
         check(Gen.anyFloat.filter(java.lang.Float.isFinite))(assertRoundtrips)
-      },
+      } @@ samples(10000),
       testM("doubles") {
         // NaN / Infinity is tested manually, because of == semantics
         check(Gen.anyDouble.filter(java.lang.Double.isFinite))(assertRoundtrips)
-      },
+      } @@ samples(10000),
       testM("AST") {
         check(genAst)(assertRoundtrips)
       },
       suite("java.time")(
-        test("DayOfWeek") {
-          assertRoundtrips(DayOfWeek.MONDAY)
+        testM("DayOfWeek") {
+          check(genDayOfWeek)(assertRoundtrips)
         },
-        test("Duration") {
-          assertRoundtrips(Duration.ofDays(1)) &&
-          assertRoundtrips(Duration.ofSeconds(Long.MaxValue, 999999999L))
+        testM("Duration") {
+          check(genDuration)(assertRoundtrips)
+        } @@ samples(10000),
+        testM("Instant") {
+          check(genInstant)(assertRoundtrips)
+        } @@ samples(10000),
+        testM("LocalDate") {
+          check(genLocalDate)(assertRoundtrips)
+        } @@ samples(10000),
+        testM("LocalDateTime") {
+          check(genLocalDateTime)(assertRoundtrips)
+        } @@ samples(10000),
+        testM("LocalTime") {
+          check(genLocalTime)(assertRoundtrips)
+        } @@ samples(10000),
+        testM("Month") {
+          check(genMonth)(assertRoundtrips)
         },
-        test("Instant") {
-          assertRoundtrips(Instant.EPOCH)
+        testM("MonthDay") {
+          check(genMonthDay)(assertRoundtrips)
         },
-        test("LocalDate") {
-          assertRoundtrips(LocalDate.of(2020, 1, 1))
+        testM("OffsetDateTime") {
+          check(genOffsetDateTime)(assertRoundtrips)
+        } @@ samples(10000),
+        testM("OffsetTime") {
+          check(genOffsetTime)(assertRoundtrips)
+        } @@ samples(10000),
+        testM("Period") {
+          check(genPeriod)(assertRoundtrips)
+        } @@ samples(10000),
+        testM("Year") {
+          check(genYear)(assertRoundtrips)
+        } @@ samples(10000),
+        testM("YearMonth") {
+          check(genYearMonth)(assertRoundtrips)
+        } @@ samples(10000),
+        testM("ZonedDateTime") {
+          check(genZonedDateTime)(assertRoundtrips)
+        } @@ samples(10000),
+        testM("ZoneId") {
+          check(genZoneId)(assertRoundtrips[ZoneId])
         },
-        test("LocalDateTime") {
-          assertRoundtrips(LocalDateTime.of(2020, 1, 1, 12, 36, 0))
-        },
-        test("LocalTime") {
-          assertRoundtrips(LocalTime.of(12, 36, 0))
-        },
-        test("Month") {
-          assertRoundtrips(Month.JANUARY)
-        },
-        test("MonthDay") {
-          assertRoundtrips(MonthDay.of(1, 1))
-        },
-        test("OffsetDateTime") {
-          assertRoundtrips(OffsetDateTime.of(2020, 1, 1, 12, 36, 12, 0, ZoneOffset.UTC))
-        },
-        test("OffsetTime") {
-          assertRoundtrips(OffsetTime.of(12, 36, 12, 0, ZoneOffset.ofHours(-4)))
-        },
-        test("Period") {
-          assertRoundtrips(Period.ofDays(1))
-        },
-        test("Year") {
-          assertRoundtrips(Year.of(1999)) &&
-          assertRoundtrips(Year.of(10000)) &&
-          assertRoundtrips(Year.MIN_VALUE) &&
-          assertRoundtrips(Year.MAX_VALUE)
-        },
-        test("YearMonth") {
-          assertRoundtrips(YearMonth.of(1999, 12))
-        },
-        test("ZonedDateTime") {
-          assertRoundtrips(LocalDateTime.of(2020, 1, 1, 12, 36, 0))
-        },
-        test("ZoneId") {
-          assertRoundtrips(ZoneId.of("Pacific/Auckland"))
-        },
-        test("ZoneOffset") {
-          assertRoundtrips(ZoneOffset.ofHours(5))
+        testM("ZoneOffset") {
+          check(genZoneOffset)(assertRoundtrips[ZoneOffset])
         }
       )
     )
