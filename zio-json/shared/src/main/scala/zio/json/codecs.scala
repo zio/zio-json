@@ -1,8 +1,8 @@
 package zio.json
 
-import zio.Chunk
 import zio.json.JsonDecoder.JsonError
 import zio.json.internal._
+import zio.{ Chunk, NonEmptyChunk }
 
 import scala.collection.immutable
 
@@ -102,6 +102,9 @@ private[json] trait CodecLowPriority0 extends CodecLowPriority1 { this: JsonCode
 
   implicit def chunk[A: JsonCodec]: JsonCodec[Chunk[A]] =
     JsonCodec(JsonEncoder.chunk[A], JsonDecoder.chunk[A])
+
+  implicit def nonEmptyChunk[A: JsonCodec]: JsonCodec[NonEmptyChunk[A]] =
+    JsonCodec(JsonEncoder.nonEmptyChunk[A], JsonDecoder.nonEmptyChunk[A])
 
   implicit def hashSet[A: JsonCodec]: JsonCodec[immutable.HashSet[A]] =
     JsonCodec(JsonEncoder.hashSet[A], JsonDecoder.hashSet[A])
