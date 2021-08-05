@@ -192,7 +192,11 @@ object JsonEncoder extends GeneratedTupleEncoders with EncoderLowPriority0 {
       case Some(a) => A.unsafeEncode(a, indent, out)
     }
 
-    override def isNothing(a: Option[A]): Boolean = a.isEmpty
+    override def isNothing(a: Option[A]): Boolean =
+      a match {
+        case Some(value) => A.isNothing(value)
+        case None        => true
+      }
 
     override final def toJsonAST(a: Option[A]): Either[String, Json] =
       a match {
