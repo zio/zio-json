@@ -68,16 +68,11 @@ private[json] object serializers {
     val minute     = secsOfHour * 17477 >> 20 // divide a small positive int by 60
     val second     = secsOfHour - minute * 60
     appendYear(year, s)
-    s.append('-')
-    append2Digits(month, s)
-    s.append('-')
-    append2Digits(day, s)
-    s.append('T')
-    append2Digits(hour, s)
-    s.append(':')
-    append2Digits(minute, s)
-    s.append(':')
-    append2Digits(second, s)
+    append2Digits(month, s.append('-'))
+    append2Digits(day, s.append('-'))
+    append2Digits(hour, s.append('T'))
+    append2Digits(minute, s.append(':'))
+    append2Digits(second, s.append(':'))
     val nano = x.getNano
     if (nano != 0) {
       s.append('.')
@@ -91,8 +86,7 @@ private[json] object serializers {
         if (r2 != 0) append3Digits(r2, s)
       }
     }
-    s.append('Z')
-    s.toString
+    s.append('Z').toString
   }
 
   def toString(x: LocalDate): String = {
@@ -104,8 +98,7 @@ private[json] object serializers {
   def toString(x: LocalDateTime): String = {
     val s = new java.lang.StringBuilder(32)
     appendLocalDate(x.toLocalDate, s)
-    s.append('T')
-    appendLocalTime(x.toLocalTime, s)
+    appendLocalTime(x.toLocalTime, s.append('T'))
     s.toString
   }
 
@@ -117,19 +110,15 @@ private[json] object serializers {
 
   def toString(x: MonthDay): String = {
     val s = new java.lang.StringBuilder(8)
-    s.append('-')
-    s.append('-')
-    append2Digits(x.getMonthValue, s)
-    s.append('-')
-    append2Digits(x.getDayOfMonth, s)
+    append2Digits(x.getMonthValue, s.append('-').append('-'))
+    append2Digits(x.getDayOfMonth, s.append('-'))
     s.toString
   }
 
   def toString(x: OffsetDateTime): String = {
     val s = new java.lang.StringBuilder(48)
     appendLocalDate(x.toLocalDate, s)
-    s.append('T')
-    appendLocalTime(x.toLocalTime, s)
+    appendLocalTime(x.toLocalTime, s.append('T'))
     appendZoneOffset(x.getOffset, s)
     s.toString
   }
@@ -165,23 +154,17 @@ private[json] object serializers {
   def toString(x: YearMonth): String = {
     val s = new java.lang.StringBuilder(16)
     appendYear(x.getYear, s)
-    s.append('-')
-    append2Digits(x.getMonthValue, s)
+    append2Digits(x.getMonthValue, s.append('-'))
     s.toString
   }
 
   def toString(x: ZonedDateTime): String = {
     val s = new java.lang.StringBuilder(48)
     appendLocalDate(x.toLocalDate, s)
-    s.append('T')
-    appendLocalTime(x.toLocalTime, s)
+    appendLocalTime(x.toLocalTime, s.append('T'))
     appendZoneOffset(x.getOffset, s)
     val zone = x.getZone
-    if (!zone.isInstanceOf[ZoneOffset]) {
-      s.append('[')
-      s.append(zone.getId)
-      s.append(']')
-    }
+    if (!zone.isInstanceOf[ZoneOffset]) s.append('[').append(zone.getId).append(']')
     s.toString
   }
 
@@ -195,18 +178,14 @@ private[json] object serializers {
 
   private[this] def appendLocalDate(x: LocalDate, s: java.lang.StringBuilder): Unit = {
     appendYear(x.getYear, s)
-    s.append('-')
-    append2Digits(x.getMonthValue, s)
-    s.append('-')
-    append2Digits(x.getDayOfMonth, s)
+    append2Digits(x.getMonthValue, s.append('-'))
+    append2Digits(x.getDayOfMonth, s.append('-'))
   }
 
   private[this] def appendLocalTime(x: LocalTime, s: java.lang.StringBuilder): Unit = {
     append2Digits(x.getHour, s)
-    s.append(':')
-    append2Digits(x.getMinute, s)
-    s.append(':')
-    append2Digits(x.getSecond, s)
+    append2Digits(x.getMinute, s.append(':'))
+    append2Digits(x.getSecond, s.append(':'))
     val nano = x.getNano
     if (nano != 0) {
       val dotPos = s.length
@@ -237,10 +216,7 @@ private[json] object serializers {
       val q2 = r1 * 17477 >> 20 // divide a small positive int by 60
       val r2 = r1 - q2 * 60
       append2Digits(q2, s)
-      if (r2 != 0) {
-        s.append(':')
-        append2Digits(r2, s)
-      }
+      if (r2 != 0) append2Digits(r2, s.append(':'))
     }
   }
 
@@ -248,25 +224,24 @@ private[json] object serializers {
     if (x >= 0) {
       if (x < 10000) append4Digits(x, s)
       else s.append('+').append(x): Unit
-    } else if (x > -10000) {
-      s.append('-')
-      append4Digits(-x, s)
-    } else s.append(x): Unit
+    } else if (x > -10000) append4Digits(-x, s.append('-'))
+    else s.append(x): Unit
 
-  private[this] def append4Digits(x: Int, s: java.lang.StringBuilder): Unit =
-    if (x > 999) s.append(x): Unit
-    else if (x > 99) s.append('0').append(x): Unit
-    else if (x > 9) s.append('0').append('0').append(x): Unit
-    else s.append('0').append('0').append('0').append(x): Unit
+  private[this] def append4Digits(x: Int, s: java.lang.StringBuilder): Unit = {
+    val q = x * 5243 >> 19 // divide a 4-digit positive int by 100
+    append2Digits(q, s)
+    append2Digits(x - q * 100, s)
+  }
 
-  private[this] def append3Digits(x: Int, s: java.lang.StringBuilder): Unit =
-    if (x > 99) s.append(x): Unit
-    else if (x > 9) s.append('0').append(x): Unit
-    else s.append('0').append('0').append(x): Unit
+  private[this] def append3Digits(x: Int, s: java.lang.StringBuilder): Unit = {
+    val q = x * 1311 >> 17 // divide a 3-digit positive int by 100
+    append2Digits(x - q * 100, s.append((q + '0').toChar))
+  }
 
-  private[this] def append2Digits(x: Int, s: java.lang.StringBuilder): Unit =
-    if (x > 9) s.append(x): Unit
-    else s.append('0').append(x): Unit
+  private[this] def append2Digits(x: Int, s: java.lang.StringBuilder): Unit = {
+    val q = x * 103 >> 10 // divide a 2-digit positive int by 10
+    s.append((q + '0').toChar).append((x + '0' - q * 10).toChar): Unit
+  }
 
   private[this] def to400YearCycle(day: Long): Int =
     (day / 146097).toInt // 146097 == number of days in a 400 year cycle
