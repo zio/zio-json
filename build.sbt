@@ -98,8 +98,8 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform)
             "com.propensive"                        %%% "magnolia"              % "0.17.0",
             "io.circe"                              %%% "circe-generic-extras"  % circeVersion       % "test",
             "com.typesafe.play"                     %%% "play-json"             % "2.9.2"            % "test",
-            "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-core"   % "2.9.1"            % "test",
-            "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-macros" % "2.9.1"            % "test"
+            "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-core"   % "2.10.2"            % "test",
+            "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-macros" % "2.10.2"            % "test"
           )
       }
     },
