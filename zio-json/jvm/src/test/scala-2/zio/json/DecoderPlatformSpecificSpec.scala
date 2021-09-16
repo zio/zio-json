@@ -197,6 +197,15 @@ object DecoderPlatformSpecificSpec extends DefaultRunnableSpec {
                   assert(xs)(equalTo(Chunk(1001)))
                 }
             },
+            testM("empty array") {
+              ZStream
+                .fromIterable("[]".toSeq)
+                .transduce(JsonDecoder[String].decodeJsonTransducer(JsonStreamDelimiter.Array))
+                .runCollect
+                .map { xs =>
+                  assert(xs)(isEmpty)
+                }
+            },
             testM("decodes multiple elements") {
               ZStream
                 .fromIterable("[ 1001, 1002, 1003 ]".toSeq)
