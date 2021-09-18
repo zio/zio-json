@@ -53,12 +53,12 @@ trait JsonDecoderPlatformSpecific[A] { self: JsonDecoder[A] =>
     ZTransducer {
       for {
         // format: off
-        runtime    <- ZIO.runtime[Any].toManaged_
+        runtime    <- ZManaged.runtime[Any]
         inQueue    <- Queue.unbounded[Take[Nothing, Char]].toManaged_
         outQueue   <- Queue.unbounded[Take[Throwable, A]].toManaged_
         ended      <- Ref.makeManaged(false)
         reader     <- ZManaged.fromAutoCloseable {
-                        ZIO.effectTotal {
+                        UIO {
                           def readPull: Iterator[Chunk[Char]] =
                             runtime.unsafeRun(inQueue.take)
                               .fold(
@@ -70,13 +70,23 @@ trait JsonDecoderPlatformSpecific[A] { self: JsonDecoder[A] =>
                           new zio.stream.internal.ZReader(Iterator.empty ++ readPull)
                         }
                       }
-        jsonReader <- ZManaged.fromAutoCloseable(ZIO.effectTotal(new WithRetractReader(reader)))
+        jsonReader <- ZManaged.fromAutoCloseable(UIO(new WithRetractReader(reader)))
         process    <- effectBlockingInterrupt {
                         // Exceptions fall through and are pushed into the queue
                         @tailrec def loop(atBeginning: Boolean): Unit = {
                           val nextElem = try {
                             if (atBeginning && delimiter == JsonStreamDelimiter.Array)  {
                               Lexer.char(Nil, jsonReader, '[')
+
+                              jsonReader.nextNonWhitespace() match {
+                                case ']' =>
+                                  // returning empty here instead of falling through, which would
+                                  // attempt to decode a value that we know doesn’t exist.
+                                  return ()
+
+                                case _ =>
+                                  jsonReader.retract()
+                              }
                             } else {
                               delimiter match {
                                 case JsonStreamDelimiter.Newline =>

@@ -37,7 +37,7 @@ addCommandAlias(
 
 addCommandAlias("testJS", "zioJsonJS/test")
 
-val zioVersion = "1.0.10"
+val zioVersion = "1.0.11"
 
 lazy val root = project
   .in(file("."))
@@ -244,7 +244,7 @@ lazy val zioJsonMacros = crossProject(JSPlatform, JVMPlatform)
   .settings(crossProjectSettings)
   .settings(macroExpansionSettings)
   .settings(
-    crossScalaVersions --= Vector("3.0.1"),
+    crossScalaVersions --= Vector("3.0.2"),
     scalacOptions -= "-Xfatal-warnings", // not quite ready.
     libraryDependencies ++= Seq(
       "org.scala-lang" % "scala-reflect" % scalaVersion.value % Provided,
@@ -265,12 +265,12 @@ lazy val zioJsonInteropHttp4s = project
   .settings(stdSettings("zio-json-interop-http4s"))
   .settings(buildInfoSettings("zio.json.interop.http4s"))
   .settings(
-    crossScalaVersions --= Vector("3.0.1"),
+    crossScalaVersions --= Vector("3.0.2"),
     libraryDependencies ++= Seq(
-      "org.http4s"    %% "http4s-dsl"       % "0.21.25",
+      "org.http4s"    %% "http4s-dsl"       % "0.21.28",
       "dev.zio"       %% "zio"              % zioVersion,
-      "org.typelevel" %% "cats-effect"      % "2.5.3",
-      "dev.zio"       %% "zio-interop-cats" % "3.1.1.0"  % "test",
+      "org.typelevel" %% "cats-effect"      % "2.5.4",
+      "dev.zio"       %% "zio-interop-cats" % "2.5.1.0"  % "test",
       "dev.zio"       %% "zio-test"         % zioVersion % "test",
       "dev.zio"       %% "zio-test-sbt"     % zioVersion % "test"
     ),
@@ -286,7 +286,7 @@ lazy val zioJsonInteropRefined = crossProject(JSPlatform, JVMPlatform)
   .settings(stdSettings("zio-json-interop-refined"))
   .settings(buildInfoSettings("zio.json.interop.refined"))
   .settings(
-    crossScalaVersions --= Vector("3.0.1"),
+    crossScalaVersions --= Vector("3.0.2"),
     libraryDependencies ++= Seq(
       "eu.timepit" %%% "refined"      % "0.9.27",
       "dev.zio"    %%% "zio-test"     % zioVersion % "test",
@@ -303,9 +303,9 @@ lazy val zioJsonInteropScalaz7x = crossProject(JSPlatform, JVMPlatform)
   .settings(stdSettings("zio-json-interop-scalaz7x"))
   .settings(buildInfoSettings("zio.json.interop.scalaz7x"))
   .settings(
-    crossScalaVersions --= Vector("3.0.1"),
+    crossScalaVersions --= Vector("3.0.2"),
     libraryDependencies ++= Seq(
-      "org.scalaz" %%% "scalaz-core"  % "7.3.4",
+      "org.scalaz" %%% "scalaz-core"  % "7.3.5",
       "dev.zio"    %%% "zio-test"     % zioVersion % "test",
       "dev.zio"    %%% "zio-test-sbt" % zioVersion % "test"
     ),
@@ -324,7 +324,7 @@ lazy val docs = project
     zioJsonInteropScalaz7x.jvm
   )
   .settings(
-    crossScalaVersions --= Vector("3.0.1"),
+    crossScalaVersions --= Vector("3.0.2"),
     publish / skip := true,
     mdocVariables := Map(
       "SNAPSHOT_VERSION" -> version.value,

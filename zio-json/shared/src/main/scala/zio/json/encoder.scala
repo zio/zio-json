@@ -8,6 +8,7 @@ import zio.{ Chunk, NonEmptyChunk }
 import java.util.UUID
 import scala.annotation._
 import scala.collection.{ immutable, mutable }
+import scala.reflect.ClassTag
 
 trait JsonEncoder[A] extends JsonEncoderPlatformSpecific[A] {
   self =>
@@ -101,7 +102,7 @@ trait JsonEncoder[A] extends JsonEncoderPlatformSpecific[A] {
   final def narrow[B <: A]: JsonEncoder[B] = self.asInstanceOf[JsonEncoder[B]]
 }
 
-object JsonEncoder extends GeneratedTupleEncoders with EncoderLowPriority0 {
+object JsonEncoder extends GeneratedTupleEncoders with EncoderLowPriority1 {
   def apply[A](implicit a: JsonEncoder[A]): JsonEncoder[A] = a
 
   implicit val string: JsonEncoder[String] = new JsonEncoder[String] {
@@ -136,12 +137,12 @@ object JsonEncoder extends GeneratedTupleEncoders with EncoderLowPriority0 {
 
     override def unsafeEncode(a: Char, indent: Option[Int], out: Write): Unit = {
       out.write('"')
-      a match {
+      (a: @switch) match {
         case '"'  => out.write("\\\"")
         case '\\' => out.write("\\\\")
         case c =>
           if (c < ' ') out.write("\\u%04x".format(c.toInt))
-          else out.write(c.toString)
+          else out.write(c)
       }
       out.write('"')
     }
@@ -150,11 +151,11 @@ object JsonEncoder extends GeneratedTupleEncoders with EncoderLowPriority0 {
       Right(Json.Str(a.toString))
   }
 
-  private[json] def explicit[A](f: A => String, toAst: A => Json): JsonEncoder[A] = new JsonEncoder[A] {
+  private[json] def explicit[A](f: A => String, g: A => Json): JsonEncoder[A] = new JsonEncoder[A] {
     def unsafeEncode(a: A, indent: Option[Int], out: Write): Unit = out.write(f(a))
 
     override final def toJsonAST(a: A): Either[String, Json] =
-      Right(toAst(a))
+      Right(g(a))
   }
 
   private[json] def stringify[A](f: A => String): JsonEncoder[A] = new JsonEncoder[A] {
@@ -192,12 +193,16 @@ object JsonEncoder extends GeneratedTupleEncoders with EncoderLowPriority0 {
       case Some(a) => A.unsafeEncode(a, indent, out)
     }
 
-    override def isNothing(a: Option[A]): Boolean = a.isEmpty
+    override def isNothing(oa: Option[A]): Boolean =
+      oa match {
+        case None    => true
+        case Some(a) => A.isNothing(a)
+      }
 
-    override final def toJsonAST(a: Option[A]): Either[String, Json] =
-      a match {
-        case Some(value) => A.toJsonAST(value)
-        case None        => Right(Json.Null)
+    override final def toJsonAST(oa: Option[A]): Either[String, Json] =
+      oa match {
+        case None    => Right(Json.Null)
+        case Some(a) => A.toJsonAST(a)
       }
   }
 
@@ -206,75 +211,120 @@ object JsonEncoder extends GeneratedTupleEncoders with EncoderLowPriority0 {
     case Some(i) => Some(i + 1)
   }
 
-  def pad(indent: Option[Int], out: Write): Unit =
-    indent.foreach(i => out.write("\n" + ("  " * i)))
+  def pad(indent: Option[Int], out: Write): Unit = indent match {
+    case None => ()
+    case Some(n) =>
+      out.write('\n')
+      var i = n
+      while (i > 0) {
+        out.write("  ")
+        i -= 1
+      }
+  }
 
   implicit def either[A, B](implicit A: JsonEncoder[A], B: JsonEncoder[B]): JsonEncoder[Either[A, B]] =
     new JsonEncoder[Either[A, B]] {
-
       def unsafeEncode(eab: Either[A, B], indent: Option[Int], out: Write): Unit = {
         out.write('{')
+        if (indent.isDefined) unsafeEncodePadded(eab, indent, out)
+        else unsafeEncodeCompact(eab, indent, out)
+        out.write('}')
+      }
+
+      private[this] def unsafeEncodeCompact(eab: Either[A, B], indent: Option[Int], out: Write): Unit =
+        eab match {
+          case Left(a) =>
+            out.write("\"Left\":")
+            A.unsafeEncode(a, indent, out)
+          case Right(b) =>
+            out.write("\"Right\":")
+            B.unsafeEncode(b, indent, out)
+        }
+
+      private[this] def unsafeEncodePadded(eab: Either[A, B], indent: Option[Int], out: Write): Unit = {
         val indent_ = bump(indent)
         pad(indent_, out)
         eab match {
           case Left(a) =>
-            out.write("\"Left\"")
-            if (indent.isEmpty) out.write(':')
-            else out.write(" : ")
+            out.write("\"Left\" : ")
             A.unsafeEncode(a, indent_, out)
           case Right(b) =>
-            out.write("\"Right\"")
-            if (indent.isEmpty) out.write(':')
-            else out.write(" : ")
+            out.write("\"Right\" : ")
             B.unsafeEncode(b, indent_, out)
         }
         pad(indent, out)
-        out.write('}')
       }
 
-      override final def toJsonAST(a: Either[A, B]): Either[String, Json] =
-        a match {
-          case Left(value)  => A.toJsonAST(value).map(v => Json.Obj(Chunk("Left" -> v)))
-          case Right(value) => B.toJsonAST(value).map(v => Json.Obj(Chunk("Right" -> v)))
+      override final def toJsonAST(eab: Either[A, B]): Either[String, Json] =
+        eab match {
+          case Left(a)  => A.toJsonAST(a).map(v => Json.Obj(Chunk.single("Left" -> v)))
+          case Right(b) => B.toJsonAST(b).map(v => Json.Obj(Chunk.single("Right" -> v)))
         }
     }
 
   def eraseEither[A, B](implicit A: JsonEncoder[A], B: JsonEncoder[B]): JsonEncoder[Either[A, B]] =
     new JsonEncoder[Either[A, B]] {
-      def unsafeEncode(
-        a: Either[A, B],
-        indent: Option[Int],
-        out: Write
-      ): Unit =
-        a match {
-          case Left(s)  => A.unsafeEncode(s, indent, out)
-          case Right(l) => B.unsafeEncode(l, indent, out)
+      def unsafeEncode(eab: Either[A, B], indent: Option[Int], out: Write): Unit =
+        eab match {
+          case Left(a)  => A.unsafeEncode(a, indent, out)
+          case Right(b) => B.unsafeEncode(b, indent, out)
         }
     }
-}
-
-private[json] trait EncoderLowPriority0 extends EncoderLowPriority1 {
-  this: JsonEncoder.type =>
-  implicit def chunk[A: JsonEncoder]: JsonEncoder[Chunk[A]] =
-    seq[A].contramap(_.toSeq)
-
-  implicit def nonEmptyChunk[A: JsonEncoder]: JsonEncoder[NonEmptyChunk[A]] =
-    seq[A].contramap(_.toSeq)
-
-  implicit def array[A: JsonEncoder: reflect.ClassTag]: JsonEncoder[Array[A]] =
-    seq[A].contramap(_.toSeq)
-
-  implicit def hashSet[A: JsonEncoder]: JsonEncoder[immutable.HashSet[A]] =
-    list[A].contramap(_.toList)
-
-  implicit def hashMap[K: JsonFieldEncoder, V: JsonEncoder]: JsonEncoder[immutable.HashMap[K, V]] =
-    keyValueChunk[K, V].contramap(Chunk.fromIterable(_))
 }
 
 private[json] trait EncoderLowPriority1 extends EncoderLowPriority2 {
   this: JsonEncoder.type =>
 
+  implicit def array[A](implicit A: JsonEncoder[A], classTag: ClassTag[A]): JsonEncoder[Array[A]] =
+    new JsonEncoder[Array[A]] {
+      def unsafeEncode(as: Array[A], indent: Option[Int], out: Write): Unit =
+        if (as.isEmpty) out.write("[]")
+        else {
+          out.write('[')
+          if (indent.isDefined) unsafeEncodePadded(as, indent, out)
+          else unsafeEncodeCompact(as, indent, out)
+          out.write(']')
+        }
+
+      private[this] def unsafeEncodeCompact(as: Array[A], indent: Option[Int], out: Write): Unit = {
+        val len = as.length
+        var i   = 0
+        while (i < len) {
+          if (i != 0) out.write(',')
+          A.unsafeEncode(as(i), indent, out)
+          i += 1
+        }
+      }
+
+      private[this] def unsafeEncodePadded(as: Array[A], indent: Option[Int], out: Write): Unit = {
+        val indent_ = bump(indent)
+        pad(indent_, out)
+        val len = as.length
+        var i   = 0
+        while (i < len) {
+          if (i != 0) {
+            out.write(',')
+            pad(indent_, out)
+          }
+          A.unsafeEncode(as(i), indent_, out)
+          i += 1
+        }
+        pad(indent, out)
+      }
+
+      override final def toJsonAST(as: Array[A]): Either[String, Json] =
+        as.map(A.toJsonAST)
+          .foldLeft[Either[String, Chunk[Json]]](Right(Chunk.empty)) { (s, i) =>
+            s.flatMap(chunk => i.map(item => chunk :+ item))
+          }
+          .map(Json.Arr(_))
+    }
+
   implicit def seq[A: JsonEncoder]: JsonEncoder[Seq[A]] = iterable[A, Seq]
+
+  implicit def chunk[A: JsonEncoder]: JsonEncoder[Chunk[A]] = iterable[A, Chunk]
+
+  implicit def nonEmptyChunk[A: JsonEncoder]: JsonEncoder[NonEmptyChunk[A]] = chunk[A].contramap(_.toChunk)
 
   implicit def indexedSeq[A: JsonEncoder]: JsonEncoder[IndexedSeq[A]] = iterable[A, IndexedSeq]
 
@@ -290,17 +340,22 @@ private[json] trait EncoderLowPriority1 extends EncoderLowPriority2 {
 
   implicit def set[A: JsonEncoder]: JsonEncoder[Set[A]] = iterable[A, Set]
 
+  implicit def hashSet[A: JsonEncoder]: JsonEncoder[immutable.HashSet[A]] = iterable[A, immutable.HashSet]
+
+  implicit def sortedSet[A: Ordering: JsonEncoder]: JsonEncoder[immutable.SortedSet[A]] =
+    iterable[A, immutable.SortedSet]
+
   implicit def map[K: JsonFieldEncoder, V: JsonEncoder]: JsonEncoder[Map[K, V]] =
     keyValueIterable[K, V, Map]
+
+  implicit def hashMap[K: JsonFieldEncoder, V: JsonEncoder]: JsonEncoder[immutable.HashMap[K, V]] =
+    keyValueIterable[K, V, immutable.HashMap]
 
   implicit def mutableMap[K: JsonFieldEncoder, V: JsonEncoder]: JsonEncoder[mutable.Map[K, V]] =
     keyValueIterable[K, V, mutable.Map]
 
   implicit def sortedMap[K: JsonFieldEncoder, V: JsonEncoder]: JsonEncoder[collection.SortedMap[K, V]] =
     keyValueIterable[K, V, collection.SortedMap]
-
-  implicit def sortedSet[A: Ordering: JsonEncoder]: JsonEncoder[immutable.SortedSet[A]] =
-    list[A].contramap(_.toList)
 }
 
 private[json] trait EncoderLowPriority2 extends EncoderLowPriority3 {
@@ -308,34 +363,46 @@ private[json] trait EncoderLowPriority2 extends EncoderLowPriority3 {
 
   implicit def iterable[A, T[X] <: Iterable[X]](implicit A: JsonEncoder[A]): JsonEncoder[T[A]] =
     new JsonEncoder[T[A]] {
+      def unsafeEncode(as: T[A], indent: Option[Int], out: Write): Unit =
+        if (as.isEmpty) out.write("[]")
+        else {
+          out.write('[')
+          if (indent.isDefined) unsafeEncodePadded(as, indent, out)
+          else unsafeEncodeCompact(as, indent, out)
+          out.write(']')
+        }
 
-      def unsafeEncode(as: T[A], indent: Option[Int], out: Write): Unit = {
-        if (as.isEmpty) return out.write("[]")
+      private[this] def unsafeEncodeCompact(as: T[A], indent: Option[Int], out: Write): Unit =
+        as.foreach {
+          var first = true
+          a =>
+            if (first) first = false
+            else out.write(',')
+            A.unsafeEncode(a, indent, out)
+        }
 
-        out.write('[')
+      private[this] def unsafeEncodePadded(as: T[A], indent: Option[Int], out: Write): Unit = {
         val indent_ = bump(indent)
         pad(indent_, out)
-        var first = true
-        as.foreach { a =>
-          if (first)
-            first = false
-          else {
-            out.write(',')
-            if (!indent.isEmpty)
+        as.foreach {
+          var first = true
+          a =>
+            if (first) first = false
+            else {
+              out.write(',')
               pad(indent_, out)
-          }
-          A.unsafeEncode(a, indent_, out)
+            }
+            A.unsafeEncode(a, indent_, out)
         }
         pad(indent, out)
-        out.write(']')
       }
 
-      override final def toJsonAST(a: T[A]): Either[String, Json] =
-        a.map(A.toJsonAST)
+      override final def toJsonAST(as: T[A]): Either[String, Json] =
+        as.map(A.toJsonAST)
           .foldLeft[Either[String, Chunk[Json]]](Right(Chunk.empty)) { (s, i) =>
             s.flatMap(chunk => i.map(item => chunk :+ item))
           }
-          .map(Json.Arr.apply)
+          .map(Json.Arr(_))
     }
 
   // not implicit because this overlaps with encoders for lists of tuples
@@ -343,42 +410,58 @@ private[json] trait EncoderLowPriority2 extends EncoderLowPriority3 {
     K: JsonFieldEncoder[K],
     A: JsonEncoder[A]
   ): JsonEncoder[T[K, A]] = new JsonEncoder[T[K, A]] {
+    def unsafeEncode(kvs: T[K, A], indent: Option[Int], out: Write): Unit =
+      if (kvs.isEmpty) out.write("{}")
+      else {
+        out.write('{')
+        if (indent.isDefined) unsafeEncodePadded(kvs, indent, out)
+        else unsafeEncodeCompact(kvs, indent, out)
+        out.write('}')
+      }
 
-    def unsafeEncode(kvs: T[K, A], indent: Option[Int], out: Write): Unit = {
-      if (kvs.isEmpty) return out.write("{}")
+    private[this] def unsafeEncodeCompact(kvs: T[K, A], indent: Option[Int], out: Write): Unit =
+      kvs.foreach {
+        var first = true
+        kv =>
+          if (!A.isNothing(kv._2)) {
+            if (first) first = false
+            else out.write(',')
+            string.unsafeEncode(K.unsafeEncodeField(kv._1), indent, out)
+            out.write(':')
+            A.unsafeEncode(kv._2, indent, out)
+          }
+      }
 
-      out.write('{')
+    private[this] def unsafeEncodePadded(kvs: T[K, A], indent: Option[Int], out: Write): Unit = {
       val indent_ = bump(indent)
       pad(indent_, out)
-      var first = true
-      kvs.foreach { case (k, a) =>
-        if (!A.isNothing(a)) {
-          if (first)
-            first = false
-          else {
-            out.write(',')
-            if (!indent.isEmpty)
+      kvs.foreach {
+        var first = true
+        kv =>
+          if (!A.isNothing(kv._2)) {
+            if (first) first = false
+            else {
+              out.write(',')
               pad(indent_, out)
+            }
+            string.unsafeEncode(K.unsafeEncodeField(kv._1), indent_, out)
+            out.write(" : ")
+            A.unsafeEncode(kv._2, indent_, out)
           }
-
-          string.unsafeEncode(K.unsafeEncodeField(k), indent_, out)
-          if (indent.isEmpty) out.write(':')
-          else out.write(" : ")
-          A.unsafeEncode(a, indent_, out)
-        }
       }
       pad(indent, out)
-      out.write('}')
     }
 
-    override final def toJsonAST(a: T[K, A]): Either[String, Json] =
-      a.foldLeft[Either[String, Chunk[(String, Json)]]](Right(Chunk.empty)) { case (s, (k, v)) =>
-        for {
-          chunk <- s
-          key    = K.unsafeEncodeField(k)
-          value <- A.toJsonAST(v)
-        } yield if (value == Json.Null) chunk else chunk :+ (key -> value)
-      }.map(Json.Obj.apply)
+    override final def toJsonAST(kvs: T[K, A]): Either[String, Json] =
+      kvs
+        .foldLeft[Either[String, Chunk[(String, Json)]]](Right(Chunk.empty)) { case (s, (k, v)) =>
+          for {
+            chunk <- s
+            key    = K.unsafeEncodeField(k)
+            value <- A.toJsonAST(v)
+          } yield if (value == Json.Null) chunk else chunk :+ (key -> value)
+        }
+        .map(Json.Obj(_))
   }
 
   // not implicit because this overlaps with encoders for lists of tuples
