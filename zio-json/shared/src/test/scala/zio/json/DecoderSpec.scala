@@ -11,7 +11,7 @@ import java.util.UUID
 import scala.collection.{ SortedMap, immutable, mutable }
 
 object DecoderSpec extends DefaultRunnableSpec {
-  def spec: Spec[Annotations, TestFailure[Any], TestSuccess] =
+  def spec: Spec[Has[Annotations], TestFailure[Any], TestSuccess] =
     suite("Decoder")(
       suite("fromJson")(
         test("BigDecimal") {

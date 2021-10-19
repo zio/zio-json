@@ -8,7 +8,7 @@ import zio.test.{ DefaultRunnableSpec, _ }
 object SafeNumbersSpec extends DefaultRunnableSpec {
   def spec: ZSpec[Environment, Failure] =
     suite("SafeNumbers")(
-      testM("valid big decimals") {
+      test("valid big decimals") {
         check(genBigDecimal)(i => assert(SafeNumbers.bigDecimal(i.toString, 2048))(isSome(equalTo(i))))
       },
       test("invalid big decimals") {
@@ -28,7 +28,7 @@ object SafeNumbersSpec extends DefaultRunnableSpec {
 
         assert(invalidBigDecimalEdgeCases)(forall(isNone))
       },
-      testM("valid big decimal edge cases") {
+      test("valid big decimal edge cases") {
         val invalidBigDecimalEdgeCases = List(
           ".0",
           "-.0",
@@ -48,10 +48,10 @@ object SafeNumbersSpec extends DefaultRunnableSpec {
           )
         }
       },
-      testM("invalid BigDecimal text") {
+      test("invalid BigDecimal text") {
         check(genAlphaLowerString)(s => assert(SafeNumbers.bigDecimal(s))(isNone))
       },
-      testM("valid BigInteger edge cases") {
+      test("valid BigInteger edge cases") {
         val inputs = List(
           "00",
           "01",
@@ -70,48 +70,48 @@ object SafeNumbersSpec extends DefaultRunnableSpec {
           )
         }
       },
-      testM("invalid BigInteger edge cases") {
+      test("invalid BigInteger edge cases") {
         val inputs = List("0foo", "01foo", "0.1", "", "1 ")
 
         check(Gen.fromIterable(inputs))(s => assert(SafeNumbers.bigInteger(s))(isNone))
       },
-      testM("valid big Integer") {
+      test("valid big Integer") {
         check(genBigInteger)(i => assert(SafeNumbers.bigInteger(i.toString, 2048))(isSome(equalTo(i))))
       },
-      testM("invalid BigInteger") {
+      test("invalid BigInteger") {
         check(genAlphaLowerString)(s => assert(SafeNumbers.bigInteger(s))(isNone))
       },
-      testM("valid Byte") {
+      test("valid Byte") {
         check(Gen.byte(Byte.MinValue, Byte.MaxValue)) { b =>
           assert(SafeNumbers.byte(b.toString))(equalTo(ByteSome(b)))
         }
       },
-      testM("invalid Byte (numbers)") {
+      test("invalid Byte (numbers)") {
         check(Gen.anyLong.filter(i => i < Byte.MinValue || i > Byte.MaxValue)) { b =>
           assert(SafeNumbers.byte(b.toString))(equalTo(ByteNone))
         }
       },
-      testM("invalid Byte (text)") {
+      test("invalid Byte (text)") {
         check(genAlphaLowerString)(b => assert(SafeNumbers.byte(b.toString))(equalTo(ByteNone)))
       },
       suite("Double")(
-        testM("valid") {
+        test("valid") {
           check(Gen.anyDouble.filterNot(_.isNaN)) { d =>
             assert(SafeNumbers.double(d.toString))(equalTo(DoubleSome(d)))
           }
         },
-        testM("valid (from Int)") {
+        test("valid (from Int)") {
           check(Gen.anyInt)(i => assert(SafeNumbers.double(i.toString))(equalTo(DoubleSome(i.toDouble))))
         },
-        testM("valid (from Long)") {
+        test("valid (from Long)") {
           check(Gen.anyLong)(i => assert(SafeNumbers.double(i.toString))(equalTo(DoubleSome(i.toDouble))))
         },
-        testM("invalid edge cases") {
+        test("invalid edge cases") {
           val inputs = List("N", "Inf", "-NaN", "+NaN", "e1", "1.1.1", "1 ")
 
           check(Gen.fromIterable(inputs))(i => assert(SafeNumbers.double(i))(equalTo(DoubleNone)))
         },
-        testM("valid edge cases") {
+        test("valid edge cases") {
           val inputs = List(
             ".0",
             "-.0",
@@ -142,30 +142,30 @@ object SafeNumbersSpec extends DefaultRunnableSpec {
           assert(SafeNumbers.double("+Infinity"))(not(equalTo(DoubleNone))) &&
           assert(SafeNumbers.double("-Infinity"))(not(equalTo(DoubleNone)))
         },
-        testM("invalid doubles (text)") {
+        test("invalid doubles (text)") {
           check(genAlphaLowerString)(s => assert(SafeNumbers.double(s))(equalTo(DoubleNone)))
         }
       ),
       suite("Float")(
-        testM("valid") {
+        test("valid") {
           check(Gen.anyFloat.filterNot(_.isNaN))(d => assert(SafeNumbers.float(d.toString))(equalTo(FloatSome(d))))
         },
         test("large mantissa") {
           // https://github.com/zio/zio-json/issues/221
           assert(SafeNumbers.float("1.199999988079071"))(equalTo(FloatSome(1.1999999f)))
         },
-        testM("valid (from Int)") {
+        test("valid (from Int)") {
           check(Gen.anyInt)(i => assert(SafeNumbers.float(i.toString))(equalTo(FloatSome(i.toFloat))))
         },
-        testM("valid (from Long)") {
+        test("valid (from Long)") {
           check(Gen.anyLong)(i => assert(SafeNumbers.float(i.toString))(equalTo(FloatSome(i.toFloat))))
         },
-        testM("invalid edge cases") {
+        test("invalid edge cases") {
           val inputs = List("N", "Inf", "-NaN", "+NaN", "e1", "1.1.1")
 
           check(Gen.fromIterable(inputs))(i => assert(SafeNumbers.float(i))(equalTo(FloatNone)))
         },
-        testM("valid edge cases") {
+        test("valid edge cases") {
           val inputs = List(
             ".0",
             "-.0",
@@ -189,35 +189,35 @@ object SafeNumbersSpec extends DefaultRunnableSpec {
             )
           }
         },
-        testM("valid (from Double)") {
+        test("valid (from Double)") {
           check(Gen.anyDouble.filterNot(_.isNaN)) { d =>
             assert(SafeNumbers.float(d.toString))(equalTo(FloatSome(d.toFloat)))
           }
         },
-        testM("invalid float (text)") {
+        test("invalid float (text)") {
           check(genAlphaLowerString)(s => assert(SafeNumbers.float(s))(equalTo(FloatNone)))
         }
       ),
       suite("Int")(
-        testM("valid") {
+        test("valid") {
           check(Gen.anyInt)(d => assert(SafeNumbers.int(d.toString))(equalTo(IntSome(d))))
         },
-        testM("invalid (out of range)") {
+        test("invalid (out of range)") {
           check(Gen.anyLong.filter(i => i < Int.MinValue || i > Int.MaxValue))(d =>
             assert(SafeNumbers.int(d.toString))(equalTo(IntNone))
           )
         },
-        testM("invalid (text)") {
+        test("invalid (text)") {
           check(genAlphaLowerString)(s => assert(SafeNumbers.int(s))(equalTo(IntNone)))
         }
       ),
       suite("Long")(
-        testM("valid edge cases") {
+        test("valid edge cases") {
           val input = List("00", "01", "0000001", "-9223372036854775807", "9223372036854775806")
 
           check(Gen.fromIterable(input))(x => assert(SafeNumbers.long(x))(equalTo(LongSome(x.toLong))))
         },
-        testM("in valid edge cases") {
+        test("in valid edge cases") {
           val input = List(
             "0foo",
             "01foo",
@@ -230,29 +230,29 @@ object SafeNumbersSpec extends DefaultRunnableSpec {
 
           check(Gen.fromIterable(input))(x => assert(SafeNumbers.long(x))(equalTo(LongNone)))
         },
-        testM("valid") {
+        test("valid") {
           check(Gen.anyLong)(d => assert(SafeNumbers.long(d.toString))(equalTo(LongSome(d))))
         },
-        testM("invalid (out of range)") {
+        test("invalid (out of range)") {
           val outOfRange = genBigInteger
             .filter(_.bitLength > 63)
 
           check(outOfRange)(x => assert(SafeNumbers.long(x.toString))(equalTo(LongNone)))
         },
-        testM("invalid (text)") {
+        test("invalid (text)") {
           check(genAlphaLowerString)(s => assert(SafeNumbers.long(s))(equalTo(LongNone)))
         }
       ),
       suite("Short")(
-        testM("valid") {
+        test("valid") {
           check(Gen.anyShort)(d => assert(SafeNumbers.short(d.toString))(equalTo(ShortSome(d))))
         },
-        testM("invalid (out of range)") {
+        test("invalid (out of range)") {
           check(Gen.anyLong.filter(i => i < Short.MinValue || i > Short.MaxValue))(d =>
             assert(SafeNumbers.short(d.toString))(equalTo(ShortNone))
           )
         },
-        testM("invalid (text)") {
+        test("invalid (text)") {
           check(genAlphaLowerString)(s => assert(SafeNumbers.short(s))(equalTo(ShortNone)))
         }
       )

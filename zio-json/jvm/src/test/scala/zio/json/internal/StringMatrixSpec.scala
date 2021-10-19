@@ -1,13 +1,14 @@
 package testzio.json.internal
 
 import zio.json.internal._
-import zio.random.Random
 import zio.test.Assertion._
-import zio.test.{ DefaultRunnableSpec, _ }
+import zio.test.{DefaultRunnableSpec, _}
+import zio.{Has, Random}
+import zio.test.Sized
 
 object StringMatrixSpec extends DefaultRunnableSpec {
   def spec: ZSpec[Environment, Failure] = suite("StringMatrix")(
-    testM("positive succeeds") {
+    test("positive succeeds") {
       // Watch out: TestStrings were passed
       check(genTestStrings) { xs =>
         val asserts = xs.map(s => matcher(xs, s).contains(s))
@@ -15,13 +16,13 @@ object StringMatrixSpec extends DefaultRunnableSpec {
         assert(asserts)(forall(isTrue))
       }
     },
-    testM("negative fails") {
+    test("negative fails") {
       check(genTestStrings.filterNot(_.startsWith("wibble")))(xs => assert(matcher(xs, "wibble"))(isEmpty))
     },
-    testM("substring fails") {
+    test("substring fails") {
       check(genTestStrings.filter(_.length > 1))(xs => assert(matcher(xs, xs.mkString))(isEmpty))
     },
-    testM("trivial") {
+    test("trivial") {
       check(genNonEmptyString)(s => assert(matcher(List(s), s))(equalTo(List(s))))
     },
     test("exact match is a substring") {
@@ -34,10 +35,10 @@ object StringMatrixSpec extends DefaultRunnableSpec {
     }
   )
 
-  val genNonEmptyString: Gen[Random with Sized, String] =
+  val genNonEmptyString: Gen[Has[Random] with Has[Sized], String] =
     Gen.alphaNumericString.filter(_.nonEmpty)
 
-  val genTestStrings: Gen[Random with Sized, List[String]] =
+  val genTestStrings: Gen[Has[Random] with Has[Sized], List[String]] =
     for {
       n  <- Gen.int(1, 63)
       xs <- Gen.listOfN(n)(genNonEmptyString)

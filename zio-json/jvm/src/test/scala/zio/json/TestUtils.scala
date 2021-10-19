@@ -1,10 +1,11 @@
 package testzio.json
 
 import zio._
-import zio.blocking._
 import zio.stream._
 
 import java.io.{ File, IOException }
+import zio.Random
+import zio.ZIO.attemptBlockingIO
 
 object TestUtils {
   def writeFile(path: String, s: String): Unit = {
@@ -26,14 +27,14 @@ object TestUtils {
     } finally is.close()
   }
 
-  def getResourceAsStringM(res: String): ZIO[Blocking, IOException, String] =
+  def getResourceAsStringM(res: String): ZIO[Any, IOException, String] =
     ZStream
       .fromResource(res)
       .transduce(ZTransducer.utf8Decode)
       .run(ZSink.foldLeftChunks("")((acc, c) => acc ++ c.mkString))
 
-  def getResourcePaths(folderPath: String): ZIO[Blocking, IOException, Vector[String]] =
-    effectBlockingIO {
+  def getResourcePaths(folderPath: String): ZIO[Any, IOException, Vector[String]] =
+    attemptBlockingIO {
       val url    = getClass.getClassLoader.getResource(folderPath)
       val folder = new File(url.getPath)
 

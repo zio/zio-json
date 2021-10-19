@@ -3,99 +3,100 @@ package testzio.json
 import testzio.json.Gens._
 import zio.json._
 import zio.json.ast.Json
-import zio.random.Random
 import zio.test.Assertion._
 import zio.test.TestAspect._
 import zio.test._
 
 import java.time._
+import zio.{Has, Random}
+import zio.test.Sized
 
 object RoundTripSpec extends DefaultRunnableSpec {
 
   def spec: ZSpec[Environment, Failure] =
     suite("RoundTrip")(
-      testM("booleans") {
+      test("booleans") {
         check(Gen.boolean)(assertRoundtrips)
       },
-      testM("bytes") {
+      test("bytes") {
         check(Gen.anyByte)(assertRoundtrips)
       },
-      testM("shorts") {
+      test("shorts") {
         check(Gen.anyShort)(assertRoundtrips)
       } @@ samples(10000),
-      testM("ints") {
+      test("ints") {
         check(Gen.anyInt)(assertRoundtrips)
       } @@ samples(10000),
-      testM("longs") {
+      test("longs") {
         check(Gen.anyLong)(assertRoundtrips)
       } @@ samples(10000),
-      testM("bigInts") {
+      test("bigInts") {
         check(genBigInteger)(assertRoundtrips)
       } @@ samples(10000),
-      testM("floats") {
+      test("floats") {
         // NaN / Infinity is tested manually, because of == semantics
         check(Gen.anyFloat.filter(java.lang.Float.isFinite))(assertRoundtrips)
       } @@ samples(10000),
-      testM("doubles") {
+      test("doubles") {
         // NaN / Infinity is tested manually, because of == semantics
         check(Gen.anyDouble.filter(java.lang.Double.isFinite))(assertRoundtrips)
       } @@ samples(10000),
-      testM("AST") {
+      test("AST") {
         check(genAst)(assertRoundtrips)
       },
       suite("java.time")(
-        testM("DayOfWeek") {
+        test("DayOfWeek") {
           check(genDayOfWeek)(assertRoundtrips)
         },
-        testM("Duration") {
+        test("Duration") {
           check(genDuration)(assertRoundtrips)
         } @@ samples(10000),
-        testM("Instant") {
+        test("Instant") {
           check(genInstant)(assertRoundtrips)
         } @@ samples(10000),
-        testM("LocalDate") {
+        test("LocalDate") {
           check(genLocalDate)(assertRoundtrips)
         } @@ samples(10000),
-        testM("LocalDateTime") {
+        test("LocalDateTime") {
           check(genLocalDateTime)(assertRoundtrips)
         } @@ samples(10000),
-        testM("LocalTime") {
+        test("LocalTime") {
           check(genLocalTime)(assertRoundtrips)
         } @@ samples(10000),
-        testM("Month") {
+        test("Month") {
           check(genMonth)(assertRoundtrips)
         },
-        testM("MonthDay") {
+        test("MonthDay") {
           check(genMonthDay)(assertRoundtrips)
         },
-        testM("OffsetDateTime") {
+        test("OffsetDateTime") {
           check(genOffsetDateTime)(assertRoundtrips)
         } @@ samples(10000),
-        testM("OffsetTime") {
+        test("OffsetTime") {
           check(genOffsetTime)(assertRoundtrips)
         } @@ samples(10000),
-        testM("Period") {
+        test("Period") {
           check(genPeriod)(assertRoundtrips)
         } @@ samples(10000),
-        testM("Year") {
+        test("Year") {
           check(genYear)(assertRoundtrips)
         } @@ samples(10000),
-        testM("YearMonth") {
+        test("YearMonth") {
           check(genYearMonth)(assertRoundtrips)
         } @@ samples(10000),
-        testM("ZonedDateTime") {
+        test("ZonedDateTime") {
           check(genZonedDateTime)(assertRoundtrips)
         } @@ samples(10000),
-        testM("ZoneId") {
+        test("ZoneId") {
           check(genZoneId)(assertRoundtrips[ZoneId])
         },
-        testM("ZoneOffset") {
+        test("ZoneOffset") {
           check(genZoneOffset)(assertRoundtrips[ZoneOffset])
         }
       )
     )
 
-  lazy val genAst: Gen[Random with Sized, Json] =
+  lazy val genAst: Gen[Has[Random] with Has[Sized], Json] =
     Gen.size.flatMap { size =>
       val entry = genUsAsciiString <*> genAst
       val sz    = 0 min (size - 1)

@@ -1,18 +1,19 @@
 package zio.json
 
 import zio._
-import zio.blocking._
 import zio.json.JsonDecoder.JsonError
 import zio.json.internal._
 import zio.stream.{ Take, ZStream, ZTransducer }
 
 import java.nio.charset.{ Charset, StandardCharsets }
 import scala.annotation.tailrec
+import zio.Random
+import zio.ZIO.{ attemptBlocking, attemptBlockingInterrupt }
 
 trait JsonDecoderPlatformSpecific[A] { self: JsonDecoder[A] =>
 
-  private def readAll(reader: java.io.Reader): ZIO[Blocking, Throwable, A] =
-    effectBlocking {
+  private def readAll(reader: java.io.Reader): ZIO[Any, Throwable, A] =
+    attemptBlocking {
       try unsafeDecode(Nil, new zio.json.internal.WithRetractReader(reader))
       catch {
         case JsonDecoder.UnsafeJson(trace)      => throw new Exception(JsonError.render(trace))
@@ -28,7 +29,7 @@ trait JsonDecoderPlatformSpecific[A] { self: JsonDecoder[A] =>
    *
    * @see [[decodeJsonStream]] For a `Char` stream variant
    */
-  final def decodeJsonStreamInput[R <: Blocking](
+  final def decodeJsonStreamInput[R <: Any](
     stream: ZStream[R, Throwable, Byte],
     charset: Charset = StandardCharsets.UTF_8
   ): ZIO[R, Throwable, A] =
@@ -44,18 +45,18 @@ trait JsonDecoderPlatformSpecific[A] { self: JsonDecoder[A] =>
    *
    * @see also [[decodeJsonStreamInput]]
    */
-  final def decodeJsonStream[R <: Blocking](stream: ZStream[R, Throwable, Char]): ZIO[R, Throwable, A] =
+  final def decodeJsonStream[R <: Any](stream: ZStream[R, Throwable, Char]): ZIO[R, Throwable, A] =
     stream.toReader.use(readAll)
 
   final def decodeJsonTransducer(
     delimiter: JsonStreamDelimiter = JsonStreamDelimiter.Array
-  ): ZTransducer[Blocking, Throwable, Char, A] =
+  ): ZTransducer[Any, Throwable, Char, A] =
     ZTransducer {
       for {
         // format: off
         runtime    <- ZManaged.runtime[Any]
-        inQueue    <- Queue.unbounded[Take[Nothing, Char]].toManaged_
-        outQueue   <- Queue.unbounded[Take[Throwable, A]].toManaged_
+        inQueue    <- Queue.unbounded[Take[Nothing, Char]].toManaged
+        outQueue   <- Queue.unbounded[Take[Throwable, A]].toManaged
         ended      <- Ref.makeManaged(false)
         reader     <- ZManaged.fromAutoCloseable {
                         UIO {
@@ -71,7 +72,7 @@ trait JsonDecoderPlatformSpecific[A] { self: JsonDecoder[A] =>
                         }
                       }
         jsonReader <- ZManaged.fromAutoCloseable(UIO(new WithRetractReader(reader)))
-        process    <- effectBlockingInterrupt {
+        process    <- attemptBlockingInterrupt {
                         // Exceptions fall through and are pushed into the queue
                         @tailrec def loop(atBeginning: Boolean): Unit = {
                           val nextElem = try {
@@ -124,7 +125,7 @@ trait JsonDecoderPlatformSpecific[A] { self: JsonDecoder[A] =>
                       .catchAll {
                         case t: zio.json.internal.UnexpectedEnd =>
                           // swallow if stream ended
-                          ZIO.unlessM(ended.get) {
+                          ZIO.unlessZIO(ended.get) {
                             outQueue.offer(Take.fail(t))
                           }
 

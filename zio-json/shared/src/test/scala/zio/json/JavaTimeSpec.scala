@@ -1,5 +1,6 @@
 package testzio.json
 
+import zio.Has
 import zio.json._
 import zio.test.Assertion._
 import zio.test._
@@ -13,7 +14,7 @@ object JavaTimeSpec extends DefaultRunnableSpec {
 
   private def equalToStringified(expected: String) = equalTo(s""""$expected"""")
 
-  def spec: Spec[Annotations, TestFailure[Any], TestSuccess] =
+  def spec: Spec[Has[Annotations], TestFailure[Any], TestSuccess] =
     suite("java.time")(
       suite("Encoder")(
         test("DayOfWeek") {
