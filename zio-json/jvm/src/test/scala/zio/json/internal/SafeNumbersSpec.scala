@@ -4,6 +4,7 @@ import testzio.json.Gens._
 import zio.json.internal._
 import zio.test.Assertion._
 import zio.test.{ DefaultRunnableSpec, _ }
+import zio.test.Gen
 
 object SafeNumbersSpec extends DefaultRunnableSpec {
   def spec: ZSpec[Environment, Failure] =
@@ -87,7 +88,7 @@ object SafeNumbersSpec extends DefaultRunnableSpec {
         }
       },
       test("invalid Byte (numbers)") {
-        check(Gen.anyLong.filter(i => i < Byte.MinValue || i > Byte.MaxValue)) { b =>
+        check(Gen.long.filter(i => i < Byte.MinValue || i > Byte.MaxValue)) { b =>
           assert(SafeNumbers.byte(b.toString))(equalTo(ByteNone))
         }
       },
@@ -96,15 +97,15 @@ object SafeNumbersSpec extends DefaultRunnableSpec {
       },
       suite("Double")(
         test("valid") {
-          check(Gen.anyDouble.filterNot(_.isNaN)) { d =>
+          check(Gen.double.filterNot(_.isNaN)) { d =>
             assert(SafeNumbers.double(d.toString))(equalTo(DoubleSome(d)))
           }
         },
         test("valid (from Int)") {
-          check(Gen.anyInt)(i => assert(SafeNumbers.double(i.toString))(equalTo(DoubleSome(i.toDouble))))
+          check(Gen.int)(i => assert(SafeNumbers.double(i.toString))(equalTo(DoubleSome(i.toDouble))))
         },
         test("valid (from Long)") {
-          check(Gen.anyLong)(i => assert(SafeNumbers.double(i.toString))(equalTo(DoubleSome(i.toDouble))))
+          check(Gen.long)(i => assert(SafeNumbers.double(i.toString))(equalTo(DoubleSome(i.toDouble))))
         },
         test("invalid edge cases") {
           val inputs = List("N", "Inf", "-NaN", "+NaN", "e1", "1.1.1", "1 ")
@@ -148,17 +149,17 @@ object SafeNumbersSpec extends DefaultRunnableSpec {
       ),
       suite("Float")(
         test("valid") {
-          check(Gen.anyFloat.filterNot(_.isNaN))(d => assert(SafeNumbers.float(d.toString))(equalTo(FloatSome(d))))
+          check(Gen.float.filterNot(_.isNaN))(d => assert(SafeNumbers.float(d.toString))(equalTo(FloatSome(d))))
         },
         test("large mantissa") {
           // https://github.com/zio/zio-json/issues/221
           assert(SafeNumbers.float("1.199999988079071"))(equalTo(FloatSome(1.1999999f)))
         },
         test("valid (from Int)") {
-          check(Gen.anyInt)(i => assert(SafeNumbers.float(i.toString))(equalTo(FloatSome(i.toFloat))))
+          check(Gen.int)(i => assert(SafeNumbers.float(i.toString))(equalTo(FloatSome(i.toFloat))))
         },
         test("valid (from Long)") {
-          check(Gen.anyLong)(i => assert(SafeNumbers.float(i.toString))(equalTo(FloatSome(i.toFloat))))
+          check(Gen.long)(i => assert(SafeNumbers.float(i.toString))(equalTo(FloatSome(i.toFloat))))
         },
         test("invalid edge cases") {
           val inputs = List("N", "Inf", "-NaN", "+NaN", "e1", "1.1.1")
@@ -190,7 +191,7 @@ object SafeNumbersSpec extends DefaultRunnableSpec {
           }
         },
         test("valid (from Double)") {
-          check(Gen.anyDouble.filterNot(_.isNaN)) { d =>
+          check(Gen.double.filterNot(_.isNaN)) { d =>
             assert(SafeNumbers.float(d.toString))(equalTo(FloatSome(d.toFloat)))
           }
         },
@@ -200,10 +201,10 @@ object SafeNumbersSpec extends DefaultRunnableSpec {
       ),
       suite("Int")(
         test("valid") {
-          check(Gen.anyInt)(d => assert(SafeNumbers.int(d.toString))(equalTo(IntSome(d))))
+          check(Gen.int)(d => assert(SafeNumbers.int(d.toString))(equalTo(IntSome(d))))
         },
         test("invalid (out of range)") {
-          check(Gen.anyLong.filter(i => i < Int.MinValue || i > Int.MaxValue))(d =>
+          check(Gen.long.filter(i => i < Int.MinValue || i > Int.MaxValue))(d =>
             assert(SafeNumbers.int(d.toString))(equalTo(IntNone))
           )
         },
@@ -231,7 +232,7 @@ object SafeNumbersSpec extends DefaultRunnableSpec {
           check(Gen.fromIterable(input))(x => assert(SafeNumbers.long(x))(equalTo(LongNone)))
         },
         test("valid") {
-          check(Gen.anyLong)(d => assert(SafeNumbers.long(d.toString))(equalTo(LongSome(d))))
+          check(Gen.long)(d => assert(SafeNumbers.long(d.toString))(equalTo(LongSome(d))))
         },
         test("invalid (out of range)") {
           val outOfRange = genBigInteger
@@ -245,10 +246,10 @@ object SafeNumbersSpec extends DefaultRunnableSpec {
       ),
       suite("Short")(
         test("valid") {
-          check(Gen.anyShort)(d => assert(SafeNumbers.short(d.toString))(equalTo(ShortSome(d))))
+          check(Gen.short)(d => assert(SafeNumbers.short(d.toString))(equalTo(ShortSome(d))))
         },
         test("invalid (out of range)") {
-          check(Gen.anyLong.filter(i => i < Short.MinValue || i > Short.MaxValue))(d =>
+          check(Gen.long.filter(i => i < Short.MinValue || i > Short.MaxValue))(d =>
             assert(SafeNumbers.short(d.toString))(equalTo(ShortNone))
           )
         },

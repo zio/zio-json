@@ -6,8 +6,9 @@ import java.math.BigInteger
 import java.time._
 import scala.jdk.CollectionConverters._
 import scala.util.Try
-import zio.{Has, Random}
+import zio.{ Has, Random }
 import zio.test.Sized
+import zio.test.Gen
 
 object Gens {
   val genBigInteger: Gen[Has[Random], BigInteger] =
@@ -100,9 +101,9 @@ object Gens {
   } yield OffsetTime.of(localTime, zoneOffset)
 
   val genPeriod: Gen[Has[Random], Period] = for {
-    year  <- Gen.anyInt
-    month <- Gen.anyInt
-    day   <- Gen.anyInt
+    year  <- Gen.int
+    month <- Gen.int
+    day   <- Gen.int
   } yield Period.of(year, month, day)
 
   val genYearMonth: Gen[Has[Random], YearMonth] = for {

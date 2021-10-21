@@ -20,7 +20,7 @@ object BuildHelper {
   }
   val Scala212: String   = versions("2.12")
   val Scala213: String   = versions("2.13")
-  val ScalaDotty: String = "3.0.2"
+  val ScalaDotty: String = "3.1.0"
 
   val SilencerVersion = "1.7.6"
 
@@ -243,8 +243,8 @@ object BuildHelper {
           compilerPlugin("org.typelevel"  %% "kind-projector"  % "0.13.2" cross CrossVersion.full)
         )
     },
-    semanticdbEnabled := scalaVersion.value != ScalaDotty, // enable SemanticDB
-    semanticdbOptions += "-P:semanticdb:synthetics:on",
+//    semanticdbEnabled := scalaVersion.value != ScalaDotty, // enable SemanticDB
+//    semanticdbOptions += "-P:semanticdb:synthetics:on",
     Test / parallelExecution := true,
     incOptions ~= (_.withLogRecompileOnMacro(false)),
     autoAPIMappings := true,

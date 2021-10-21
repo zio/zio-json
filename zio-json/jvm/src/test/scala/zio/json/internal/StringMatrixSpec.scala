@@ -2,8 +2,8 @@ package testzio.json.internal
 
 import zio.json.internal._
 import zio.test.Assertion._
-import zio.test.{DefaultRunnableSpec, _}
-import zio.{Has, Random}
+import zio.test.{ DefaultRunnableSpec, _ }
+import zio.{ Has, Random }
 import zio.test.Sized
 
 object StringMatrixSpec extends DefaultRunnableSpec {

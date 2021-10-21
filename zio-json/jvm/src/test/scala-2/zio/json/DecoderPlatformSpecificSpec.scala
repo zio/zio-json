@@ -5,9 +5,9 @@ import org.typelevel.jawn.{ ast => jawn }
 import testzio.json.TestUtils._
 import testzio.json.data.googlemaps._
 import testzio.json.data.twitter._
+import zio.Console.printLine
+import zio.ZIO.attemptBlocking
 import zio._
-import zio.blocking._
-import zio.duration._
 import zio.json._
 import zio.json.ast._
 import zio.stream.ZStream
@@ -21,9 +21,9 @@ import java.nio.file.Paths
 
 object DecoderPlatformSpecificSpec extends DefaultRunnableSpec {
 
-  def spec: Spec[TestEnvironment, TestFailure[Any], TestSuccess] =
+  def spec: Spec[TestEnvironment with Has[Console], TestFailure[Any], TestSuccess] =
     suite("Decoder")(
-      testM("excessively nested structures") {
+      test("excessively nested structures") {
         // JVM specific: getResourceAsString not yet supported
         val testFile = "json_test_suite/n_structure_open_array_object.json"
 
@@ -34,27 +34,27 @@ object DecoderPlatformSpecificSpec extends DefaultRunnableSpec {
           assert(r)(fails(equalTo("Unexpected structure")))
         }
       },
-      testM("googleMapsNormal") {
+      test("googleMapsNormal") {
         getResourceAsStringM("google_maps_api_response.json").map { str =>
           assert(str.fromJson[DistanceMatrix])(matchesCirceDecoded[DistanceMatrix](str))
         }
       },
-      testM("googleMapsCompact") {
+      test("googleMapsCompact") {
         getResourceAsStringM("google_maps_api_compact_response.json").map { str =>
           assert(str.fromJson[DistanceMatrix])(matchesCirceDecoded[DistanceMatrix](str))
         }
       },
-      testM("googleMapsExtra") {
+      test("googleMapsExtra") {
         getResourceAsStringM("google_maps_api_extra.json").map { str =>
           assert(str.fromJson[DistanceMatrix])(matchesCirceDecoded[DistanceMatrix](str))
         }
       },
-      testM("googleMapsError") {
+      test("googleMapsError") {
         getResourceAsStringM("google_maps_api_error_response.json").map { str =>
           assert(str.fromJson[DistanceMatrix])(isLeft(equalTo(".rows[0].elements[0].distance.value(missing)")))
         }
       },
-      testM("googleMapsAst") {
+      test("googleMapsAst") {
         val response = getResourceAsStringM("google_maps_api_response.json")
         val compact  = getResourceAsStringM("google_maps_api_compact_response.json")
 
@@ -62,33 +62,33 @@ object DecoderPlatformSpecificSpec extends DefaultRunnableSpec {
           assert(response.fromJson[Json])(equalTo(compact.fromJson[Json]))
         }
       },
-      testM("twitter") {
+      test("twitter") {
         getResourceAsStringM("twitter_api_response.json").map { str =>
           assert(str.fromJson[List[Tweet]])(matchesCirceDecoded[List[Tweet]](str))
         }
       },
-      testM("geojson1") {
+      test("geojson1") {
         import testzio.json.data.geojson.generated._
 
         getResourceAsStringM("che.geo.json").map { str =>
           assert(str.fromJson[GeoJSON])(matchesCirceDecoded[GeoJSON](str))
         }
       },
-      testM("geojson1 alt") {
+      test("geojson1 alt") {
         import testzio.json.data.geojson.handrolled._
 
         getResourceAsStringM("che.geo.json").map { str =>
           assert(str.fromJson[GeoJSON])(matchesCirceDecoded[GeoJSON](str))
         }
       },
-      testM("geojson2") {
+      test("geojson2") {
         import testzio.json.data.geojson.generated._
 
         getResourceAsStringM("che-2.geo.json").map { str =>
           assert(str.fromJson[GeoJSON])(matchesCirceDecoded[GeoJSON](str))
         }
       },
-      testM("geojson2 lowlevel") {
+      test("geojson2 lowlevel") {
         import testzio.json.data.geojson.generated._
         // this uses a lower level Reader to ensure that the more general recorder
         // impl is covered by the tests
@@ -97,7 +97,7 @@ object DecoderPlatformSpecificSpec extends DefaultRunnableSpec {
           ZManaged.fromAutoCloseable(Task(getResourceAsReader("che-2.geo.json"))).use { reader =>
             for {
               circe <- ZIO.fromEither(circe.parser.decode[GeoJSON](str))
-              got   <- effectBlocking(JsonDecoder[GeoJSON].unsafeDecode(Nil, reader))
+              got   <- attemptBlocking(JsonDecoder[GeoJSON].unsafeDecode(Nil, reader))
             } yield {
               assert(got)(equalTo(circe))
             }
@@ -116,21 +116,21 @@ object DecoderPlatformSpecificSpec extends DefaultRunnableSpec {
         testAst("ugh10k")
       ),
       suite("ZIO Streams integration")(
-        testM("decodes a stream of chars") {
+        test("decodes a stream of chars") {
           for {
             int <- JsonDecoder[Int].decodeJsonStream(ZStream('1', '2', '3'))
           } yield {
             assert(int)(equalTo(123))
           }
         },
-        testM("decodes an encoded stream of bytes") {
+        test("decodes an encoded stream of bytes") {
           for {
             int <- JsonDecoder[Int].decodeJsonStreamInput(ZStream.fromIterable("123".getBytes(StandardCharsets.UTF_8)))
           } yield assert(int)(equalTo(123))
         },
         suite("decodeJsonTransducer")(
           suite("Newline delimited")(
-            testM("decodes single elements") {
+            test("decodes single elements") {
               ZStream
                 .fromIterable("1001".toSeq)
                 .transduce(JsonDecoder[Int].decodeJsonTransducer(JsonStreamDelimiter.Newline))
@@ -139,7 +139,7 @@ object DecoderPlatformSpecificSpec extends DefaultRunnableSpec {
                   assert(xs)(equalTo(Chunk(1001)))
                 }
             },
-            testM("decodes multiple elements") {
+            test("decodes multiple elements") {
               ZStream
                 .fromIterable("1001\n1002".toSeq)
                 .transduce(JsonDecoder[Int].decodeJsonTransducer(JsonStreamDelimiter.Newline))
@@ -148,7 +148,7 @@ object DecoderPlatformSpecificSpec extends DefaultRunnableSpec {
                   assert(xs)(equalTo(Chunk(1001, 1002)))
                 }
             },
-            testM("decodes multiple elements when fed in smaller chunks") {
+            test("decodes multiple elements when fed in smaller chunks") {
               ZStream
                 .fromIterable("1001\n1002".toSeq)
                 .chunkN(1)
@@ -158,7 +158,7 @@ object DecoderPlatformSpecificSpec extends DefaultRunnableSpec {
                   assert(xs)(equalTo(Chunk(1001, 1002)))
                 }
             },
-            testM("accepts trailing NL") {
+            test("accepts trailing NL") {
               ZStream
                 .fromIterable("1001\n1002\n".toSeq)
                 .transduce(JsonDecoder[Int].decodeJsonTransducer(JsonStreamDelimiter.Newline))
@@ -167,7 +167,7 @@ object DecoderPlatformSpecificSpec extends DefaultRunnableSpec {
                   assert(xs)(equalTo(Chunk(1001, 1002)))
                 }
             },
-            testM("errors") {
+            test("errors") {
               ZStream
                 .fromIterable("1\nfalse\n3".toSeq)
                 .transduce(JsonDecoder[Int].decodeJsonTransducer(JsonStreamDelimiter.Newline))
@@ -177,7 +177,7 @@ object DecoderPlatformSpecificSpec extends DefaultRunnableSpec {
                   assert(exit)(fails(anything))
                 }
             },
-            testM("is interruptible") {
+            test("is interruptible") {
               (ZStream.fromIterable("1\n2\n3\n4") ++ ZStream.fromEffect(ZIO.interrupt))
                 .transduce(JsonDecoder[Int].decodeJsonTransducer(JsonStreamDelimiter.Newline))
                 .runDrain
@@ -188,7 +188,7 @@ object DecoderPlatformSpecificSpec extends DefaultRunnableSpec {
             } @@ timeout(2.seconds)
           ),
           suite("Array delimited")(
-            testM("decodes single elements") {
+            test("decodes single elements") {
               ZStream
                 .fromIterable("[1001]".toSeq)
                 .transduce(JsonDecoder[Int].decodeJsonTransducer(JsonStreamDelimiter.Array))
@@ -197,7 +197,7 @@ object DecoderPlatformSpecificSpec extends DefaultRunnableSpec {
                   assert(xs)(equalTo(Chunk(1001)))
                 }
             },
-            testM("empty array") {
+            test("empty array") {
               ZStream
                 .fromIterable("[]".toSeq)
                 .transduce(JsonDecoder[String].decodeJsonTransducer(JsonStreamDelimiter.Array))
@@ -206,7 +206,7 @@ object DecoderPlatformSpecificSpec extends DefaultRunnableSpec {
                   assert(xs)(isEmpty)
                 }
             },
-            testM("decodes multiple elements") {
+            test("decodes multiple elements") {
               ZStream
                 .fromIterable("[ 1001, 1002, 1003 ]".toSeq)
                 .transduce(JsonDecoder[Int].decodeJsonTransducer(JsonStreamDelimiter.Array))
@@ -215,7 +215,7 @@ object DecoderPlatformSpecificSpec extends DefaultRunnableSpec {
                   assert(xs)(equalTo(Chunk(1001, 1002, 1003)))
                 }
             },
-            testM("handles whitespace leniently") {
+            test("handles whitespace leniently") {
               val in =
                 """[
                   1001, 1002,
@@ -233,7 +233,7 @@ object DecoderPlatformSpecificSpec extends DefaultRunnableSpec {
           )
         ),
         suite("helpers in zio.json")(
-          testM("readJsonLines reads from files") {
+          test("readJsonLines reads from files") {
             import logEvent._
 
             for {
@@ -243,7 +243,7 @@ object DecoderPlatformSpecificSpec extends DefaultRunnableSpec {
               assert(lines(1))(equalTo(Event(1603669876, "world")))
             }
           },
-          testM("readJsonLines reads from URLs") {
+          test("readJsonLines reads from URLs") {
             import logEvent._
 
             val url = this.getClass.getClassLoader.getResource("log.jsonlines")
@@ -274,8 +274,8 @@ object DecoderPlatformSpecificSpec extends DefaultRunnableSpec {
       )
     )
 
-  def testAst(label: String): ZSpec[Blocking with zio.console.Console, Throwable] =
-    testM(label) {
+  def testAst(label: String): ZSpec[Has[Console], Throwable] =
+    test(label) {
       getResourceAsStringM(s"jawn/$label.json").flatMap { input =>
         val expected = jawn.JParser.parseFromString(input).toEither.map(fromJawn)
         val got      = input.fromJson[Json].map(normalize)
@@ -291,9 +291,9 @@ object DecoderPlatformSpecificSpec extends DefaultRunnableSpec {
           val expectedf = s"${label}-expected.json"
 
           for {
-            _ <- effectBlocking(writeFile(gotf, e2s(got)))
-            _ <- effectBlocking(writeFile(expectedf, e2s(expected)))
-            _ <- console.putStrLn(s"dumped .json files, use `cmp <(jq . ${expectedf}) <(jq . ${gotf})`")
+            _ <- attemptBlocking(writeFile(gotf, e2s(got)))
+            _ <- attemptBlocking(writeFile(expectedf, e2s(expected)))
+            _ <- printLine(s"dumped .json files, use `cmp <(jq . ${expectedf}) <(jq . ${gotf})`")
           } yield {
             assert(got)(equalTo(expected.left.map(_.getMessage)))
           }

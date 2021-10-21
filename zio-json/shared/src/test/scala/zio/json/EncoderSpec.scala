@@ -4,10 +4,10 @@ import zio.json._
 import zio.json.ast.Json
 import zio.test.Assertion._
 import zio.test._
-import zio.{Chunk, Has, NonEmptyChunk}
+import zio.{ Chunk, Has, NonEmptyChunk }
 
 import java.util.UUID
-import scala.collection.{immutable, mutable}
+import scala.collection.{ immutable, mutable }
 
 // zioJsonJVM/testOnly testzio.json.EncoderSpec
 object EncoderSpec extends DefaultRunnableSpec {
