@@ -22,7 +22,7 @@ object BuildHelper {
   val Scala213: String   = versions("2.13")
   val ScalaDotty: String = "3.0.2"
 
-  val SilencerVersion = "1.7.6"
+  val SilencerVersion = "1.7.7"
 
   private val stdOptions = Seq(
     "-deprecation",
