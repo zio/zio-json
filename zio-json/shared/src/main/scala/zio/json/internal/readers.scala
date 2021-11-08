@@ -51,6 +51,12 @@ private[zio] final class UnexpectedEnd
     )
     with NoStackTrace
 
+private[zio] final class RewindTwice
+    extends Exception(
+      "RecordingReader's rewind was called twice"
+    )
+    with NoStackTrace
+
 /**
  * A Reader that can retract and replay the last char that it read.
  *
@@ -130,8 +136,8 @@ final class WithRetractReader(in: java.io.Reader) extends RetractReader with Aut
 
 /**
  * Records the contents of an underlying Reader and allows rewinding back to
- * the beginning many times. If rewound and reading continues past the
- * recording, the recording continues.
+ * the beginning once. If rewound and reading continues past the
+ * recording, the recording no longer continues.
  *
  * To avoid feature interaction edge cases, `retract` is not allowed as the
  * first action nor is `retract` allowed to happen immediately before or after
@@ -142,10 +148,7 @@ private[zio] sealed trait RecordingReader extends RetractReader {
 }
 private[zio] object RecordingReader {
   def apply(in: OneCharReader): RecordingReader =
-    in match {
-      case rr: PlaybackReader => new WrappedRecordingReader(rr)
-      case _                  => new WithRecordingReader(in, 64)
-    }
+    WithRecordingReader(in, 64)
 }
 
 // used to optimise RecordingReader
@@ -185,23 +188,31 @@ private[zio] final class WithRecordingReader(in: OneCharReader, initial: Int)
       reading += 1
       if (reading >= writing)
         reading = -1 // caught up
+      writing = -1   // stop recording
       v
     } else {
       val v = in.readChar()
-      tape(writing) = v
-      writing += 1
-      if (writing == tape.length)
-        tape = Arrays.copyOf(tape, tape.length * 2)
+      if (writing != -1) {
+        tape(writing) = v
+        writing += 1
+        if (writing == tape.length)
+          tape = Arrays.copyOf(tape, tape.length * 2)
+      }
       v
     }
 
-  def rewind(): Unit = reading = 0
+  def rewind(): Unit =
+    if (writing != -1)
+      reading = 0
+    else throw new RewindTwice
   def retract(): Unit =
     if (reading == -1) {
       in match {
         case rr: RetractReader =>
           rr.retract()
-          writing -= 1 // factor in retracted delegate
+          if (writing != -1) {
+            writing -= 1 // factor in retracted delegate
+          }
 
         case _ =>
           reading = writing - 1
@@ -216,31 +227,4 @@ private[zio] final class WithRecordingReader(in: OneCharReader, initial: Int)
       reading
 
   def history(idx: Int): Char = tape(idx)
-}
-
-// since the underlying is a recording reader, it implies that anything we would
-// be recording has already been recorded as part of a larger recording.
-// Therefore, reuse the existing recording.
-private[zio] final class WrappedRecordingReader(rr: PlaybackReader) extends RecordingReader with PlaybackReader {
-
-  private[this] val start  = rr.offset()
-  private[this] var i: Int = start
-  def offset(): Int        = i
-
-  def close(): Unit = rr.close()
-
-  override def read(): Int =
-    try readChar().toInt
-    catch { case _: UnexpectedEnd => -1 }
-
-  override def readChar(): Char = {
-    val v = if (rr.offset() <= i) rr.readChar() else history(i)
-    i += 1
-    v
-  }
-
-  def retract(): Unit         = i -= 1
-  def rewind(): Unit          = i = start
-  def history(idx: Int): Char = rr.history(idx)
-
 }
