@@ -148,7 +148,7 @@ private[zio] sealed trait RecordingReader extends RetractReader {
 }
 private[zio] object RecordingReader {
   def apply(in: OneCharReader): RecordingReader =
-    WithRecordingReader(in, 64)
+    new WithRecordingReader(in, 64)
 }
 
 // used to optimise RecordingReader
