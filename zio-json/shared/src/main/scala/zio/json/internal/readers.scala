@@ -55,7 +55,6 @@ private[zio] final class RewindTwice
     extends Exception(
       "RecordingReader's rewind was called twice"
     )
-    with NoStackTrace
 
 /**
  * A Reader that can retract and replay the last char that it read.
@@ -186,9 +185,10 @@ private[zio] final class WithRecordingReader(in: OneCharReader, initial: Int)
       if (reading == eob) throw new UnexpectedEnd
       val v = tape(reading)
       reading += 1
-      if (reading >= writing)
+      if (reading >= writing) {
         reading = -1 // caught up
-      writing = -1   // stop recording
+        writing = -1 // stop recording
+      }
       v
     } else {
       val v = in.readChar()
@@ -205,6 +205,7 @@ private[zio] final class WithRecordingReader(in: OneCharReader, initial: Int)
     if (writing != -1)
       reading = 0
     else throw new RewindTwice
+
   def retract(): Unit =
     if (reading == -1) {
       in match {
