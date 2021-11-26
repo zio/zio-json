@@ -71,7 +71,7 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform)
     // as per @fommil, optimization slows things down.
     scalacOptions -= "-opt:l:inline",
     scalacOptions -= "-opt-inline-from:zio.internal.**",
-    scalaVersion := ScalaDotty,
+    //scalaVersion := ScalaDotty,
     libraryDependencies ++= Seq(
       "dev.zio"                %%% "zio"                     % zioVersion,
       "dev.zio"                %%% "zio-streams"             % zioVersion,
