@@ -81,7 +81,7 @@ object DecoderSpec extends DefaultRunnableSpec {
 
           assert("""{}""".fromJson[DefaultString])(isRight(equalTo(DefaultString("")))) &&
           assert("""{"s": null}""".fromJson[DefaultString])(isRight(equalTo(DefaultString(""))))
-        } @@ TestAspect.exceptDotty,
+        } @@ TestAspect.exceptScala3,
         test("sum encoding") {
           import examplesum._
 
@@ -272,7 +272,7 @@ object DecoderSpec extends DefaultRunnableSpec {
 
           assert(Json.Obj().as[DefaultString])(isRight(equalTo(DefaultString("")))) &&
           assert(Json.Obj("s" -> Json.Null).as[DefaultString])(isRight(equalTo(DefaultString(""))))
-        } @@ TestAspect.exceptDotty,
+        } @@ TestAspect.exceptScala3,
         test("sum encoding") {
           import examplesum._
 

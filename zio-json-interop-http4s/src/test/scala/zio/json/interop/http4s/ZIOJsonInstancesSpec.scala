@@ -15,8 +15,8 @@ object ZIOJsonInstancesSpec extends DefaultRunnableSpec {
 
   def spec: ZSpec[Environment, Failure] = suite("json instances")(
     suite("jsonEncoderOf") {
-      testM("returns an EntityEncoder that can encode for the given effect and type") {
-        checkM(Gen.anyString, Gen.anyInt) { (s, i) =>
+      test("returns an EntityEncoder that can encode for the given effect and type") {
+        check(Gen.string, Gen.int) { (s, i) =>
           val result = jsonEncoderOf[Task, Test]
             .toEntity(Test(s, i))
             .body
@@ -29,8 +29,8 @@ object ZIOJsonInstancesSpec extends DefaultRunnableSpec {
       }
     },
     suite("jsonOf")(
-      testM("returns an EntityDecoder that can decode for the given effect and type")(
-        checkM(Gen.anyString, Gen.anyInt) { (s, i) =>
+      test("returns an EntityDecoder that can decode for the given effect and type")(
+        check(Gen.string, Gen.int) { (s, i) =>
           val media = Request[Task]()
             .withEntity(s"""{"string":"$s","int":$i}""")
             .withHeaders(Header("Content-Type", "application/json"))
@@ -38,7 +38,7 @@ object ZIOJsonInstancesSpec extends DefaultRunnableSpec {
           assertM(jsonOf[Task, Test].decode(media, true).value)(isRight(equalTo(Test(s, i))))
         }
       ),
-      testM("returns MalformedMessageBodyFailure when json is empty") {
+      test("returns MalformedMessageBodyFailure when json is empty") {
         val media = Request[Task]()
           .withEntity("")
           .withHeaders(Header("Content-Type", "application/json"))
@@ -47,7 +47,7 @@ object ZIOJsonInstancesSpec extends DefaultRunnableSpec {
           isLeft(equalTo(MalformedMessageBodyFailure("Invalid JSON: empty body")))
         )
       },
-      testM("returns MalformedMessageBodyFailure when json is invalid") {
+      test("returns MalformedMessageBodyFailure when json is invalid") {
         val media = Request[Task]()
           .withEntity("""{"bad" "json"}""")
           .withHeaders(Header("Content-Type", "application/json"))
@@ -56,7 +56,7 @@ object ZIOJsonInstancesSpec extends DefaultRunnableSpec {
           isLeft(equalTo(MalformedMessageBodyFailure("(expected ':' got '\"')")))
         )
       },
-      testM("returns MalformedMessageBodyFailure when message body is not a json") {
+      test("returns MalformedMessageBodyFailure when message body is not a json") {
         val media = Request[Task]()
           .withEntity("not a json")
           .withHeaders(Header("Content-Type", "text/plain"))

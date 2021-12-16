@@ -1,6 +1,5 @@
 package testzio.json
 
-import zio.blocking._
 import zio.json._
 import zio.test.Assertion._
 import zio.test._
@@ -28,7 +27,7 @@ object CarterSpec extends DefaultRunnableSpec {
     implicit val decoder: JsonDecoder[Testing1] = DeriveJsonDecoder.gen
   }
 
-  def spec: ZSpec[Blocking, Any] =
+  def spec: ZSpec[Any, Any] =
     suite("Carter")(
       test("simple left") {
         type Data = Union[String, Int]

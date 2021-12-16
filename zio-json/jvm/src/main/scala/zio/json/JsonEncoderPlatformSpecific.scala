@@ -1,7 +1,5 @@
 package zio.json
 
-import com.github.ghik.silencer.silent
-import zio.blocking._
 import zio.json.internal.WriteWriter
 import zio.stream._
 import zio.{ Chunk, Ref, ZIO, ZManaged }
@@ -11,20 +9,20 @@ trait JsonEncoderPlatformSpecific[A] { self: JsonEncoder[A] =>
   /**
    * Encodes the specified value into a character stream.
    */
-  final def encodeJsonStream(a: A): ZStream[Blocking, Throwable, Char] =
-    ZStream(a).transduce(encodeJsonDelimitedTransducer(None, None, None))
+  final def encodeJsonStream(a: A): ZStream[Any, Throwable, Char] =
+    ZStream(a).via(encodeJsonDelimitedPipeline(None, None, None))
 
-  final private def encodeJsonDelimitedTransducer(
+  final private def encodeJsonDelimitedPipeline(
     startWith: Option[Char],
     delimiter: Option[Char],
     endWith: Option[Char]
-  ): ZTransducer[Blocking, Throwable, A, Char] =
-    ZTransducer {
+  ): ZPipeline[Any, Throwable, A, Char] =
+    fromManagedPush {
       for {
-        runtime     <- ZIO.runtime[Any].toManaged_
+        runtime     <- ZIO.runtime[Any].toManaged
         chunkBuffer <- Ref.makeManaged(Chunk.fromIterable(startWith.toList))
         writer <- ZManaged.fromAutoCloseable {
-                    ZIO.effectTotal {
+                    ZIO.succeed {
                       new java.io.BufferedWriter(
                         new java.io.Writer {
                           override def write(buffer: Array[Char], offset: Int, len: Int): Unit = {
@@ -48,7 +46,7 @@ trait JsonEncoderPlatformSpecific[A] { self: JsonEncoder[A] =>
 
           is match {
             case None =>
-              effectBlocking(writer.close()) *> pushChars.map { terminal =>
+              ZIO.attemptBlocking(writer.close()) *> pushChars.map { terminal =>
                 endWith.fold(terminal) { last =>
                   // Chop off terminal deliminator
                   (if (delimiter.isDefined) terminal.dropRight(1) else terminal) :+ last
@@ -56,7 +54,7 @@ trait JsonEncoderPlatformSpecific[A] { self: JsonEncoder[A] =>
               }
 
             case Some(xs) =>
-              effectBlocking {
+              ZIO.attemptBlocking {
                 for (x <- xs) {
                   unsafeEncode(x, indent = None, writeWriter)
 
@@ -69,9 +67,9 @@ trait JsonEncoderPlatformSpecific[A] { self: JsonEncoder[A] =>
       } yield push
     }
 
-  final val encodeJsonLinesTransducer: ZTransducer[Blocking, Throwable, A, Char] =
-    encodeJsonDelimitedTransducer(None, Some('\n'), None)
+  final val encodeJsonLinesPipeline: ZPipeline[Any, Throwable, A, Char] =
+    encodeJsonDelimitedPipeline(None, Some('\n'), None)
 
-  final val encodeJsonArrayTransducer: ZTransducer[Blocking, Throwable, A, Char] =
-    encodeJsonDelimitedTransducer(Some('['), Some(','), Some(']'))
+  final val encodeJsonArrayPipeline: ZPipeline[Any, Throwable, A, Char] =
+    encodeJsonDelimitedPipeline(Some('['), Some(','), Some(']'))
 }
