@@ -265,12 +265,12 @@ lazy val zioJsonInteropHttp4s = project
   .settings(
     crossScalaVersions --= Vector("3.0.2"),
     libraryDependencies ++= Seq(
-      "org.http4s"    %% "http4s-dsl"       % "0.21.31",
+      "org.http4s"    %% "http4s-dsl"       % "0.23.7",
       "dev.zio"       %% "zio"              % zioVersion,
-      "org.typelevel" %% "cats-effect"      % "2.5.4",
-      "dev.zio"       %% "zio-interop-cats" % "2.5.1.0"  % "test",
-      "dev.zio"       %% "zio-test"         % zioVersion % "test",
-      "dev.zio"       %% "zio-test-sbt"     % zioVersion % "test"
+      "org.typelevel" %% "cats-effect"      % "3.3.0",
+      "dev.zio"       %% "zio-interop-cats" % "3.3.0-RC1" % "test",
+      "dev.zio"       %% "zio-test"         % zioVersion  % "test",
+      "dev.zio"       %% "zio-test-sbt"     % zioVersion  % "test"
     ),
     testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework")
   )
