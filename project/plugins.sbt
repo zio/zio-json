@@ -11,7 +11,7 @@ addSbtPlugin("org.portable-scala"                % "sbt-scalajs-crossproject"   
 addSbtPlugin("org.scala-js"                      % "sbt-scalajs"                   % "1.8.0")
 addSbtPlugin("org.scala-native"                  % "sbt-scala-native"              % "0.4.1")
 addSbtPlugin("org.scalameta"                     % "sbt-mdoc"                      % "2.2.24")
-addSbtPlugin("org.scalameta"                     % "sbt-scalafmt"                  % "2.4.3")
+addSbtPlugin("org.scalameta"                     % "sbt-scalafmt"                  % "2.4.5")
 addSbtPlugin("pl.project13.scala"                % "sbt-jcstress"                  % "0.2.0")
 addSbtPlugin("org.scoverage"                     % "sbt-scoverage"                 % "1.9.2")
 
