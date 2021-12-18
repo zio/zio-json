@@ -6,12 +6,10 @@ import testzio.json.data.geojson.generated._
 import testzio.json.data.googlemaps._
 import testzio.json.data.twitter._
 import zio.Chunk
-import zio.blocking.Blocking
 import zio.json.ast.Json
 import zio.stream.ZStream
 import zio.test.Assertion._
-import zio.test.environment.TestEnvironment
-import zio.test.{ DefaultRunnableSpec, assert, _ }
+import zio.test.{ DefaultRunnableSpec, TestEnvironment, assert, _ }
 
 import java.io.IOException
 import java.nio.file.Files
@@ -27,7 +25,7 @@ object EncoderPlatformSpecificSpec extends DefaultRunnableSpec {
         testRoundTrip[GeoJSON]("che.geo")
       ),
       suite("ZIO Streams integration")(
-        testM("encodes into a ZStream of Char") {
+        test("encodes into a ZStream of Char") {
           val intEncoder = JsonEncoder[Int]
           val value      = 1234
 
@@ -37,7 +35,7 @@ object EncoderPlatformSpecificSpec extends DefaultRunnableSpec {
             assert(chars.mkString)(equalTo("1234"))
           }
         },
-        testM("encodes values that yield a result of length > DefaultChunkSize") {
+        test("encodes values that yield a result of length > DefaultChunkSize") {
           val longString = List.fill(ZStream.DefaultChunkSize * 2)('x').mkString
 
           for {
@@ -47,40 +45,40 @@ object EncoderPlatformSpecificSpec extends DefaultRunnableSpec {
             assert(chars.mkString(""))(equalTo("\"" ++ longString ++ "\""))
           }
         },
-        testM("encodeJsonLinesTransducer") {
+        test("encodeJsonLinesPipeline") {
           val ints = ZStream(1, 2, 3, 4)
 
           for {
-            xs <- ints.transduce(JsonEncoder[Int].encodeJsonLinesTransducer).runCollect
+            xs <- ints.via(JsonEncoder[Int].encodeJsonLinesPipeline).runCollect
           } yield {
             assert(xs.mkString)(equalTo("1\n2\n3\n4\n"))
           }
         },
-        testM("encodeJsonLinesTransducer handles elements which take up > DefaultChunkSize to encode") {
+        test("encodeJsonLinesPipeline handles elements which take up > DefaultChunkSize to encode") {
           val longString = List.fill(5000)('x').mkString
 
           val ints    = ZStream(longString, longString)
           val encoder = JsonEncoder[String]
 
           for {
-            xs <- ints.transduce(encoder.encodeJsonLinesTransducer).runCollect
+            xs <- ints.via(encoder.encodeJsonLinesPipeline).runCollect
           } yield {
             // leading `"`, trailing `"` and `\n` = 3
             assert(xs.size)(equalTo((5000 + 3) * 2))
           }
         },
-        testM("encodeJsonArrayTransducer") {
+        test("encodeJsonArrayPipeline XYZ") {
           val ints = ZStream(1, 2, 3).map(n => Json.Obj(Chunk("id" -> Json.Num(BigDecimal(n).bigDecimal))))
 
           for {
-            xs <- ints.transduce(JsonEncoder[Json].encodeJsonArrayTransducer).runCollect
+            xs <- ints.via(JsonEncoder[Json].encodeJsonArrayPipeline).runCollect
           } yield {
             assert(xs.mkString)(equalTo("""[{"id":1},{"id":2},{"id":3}]"""))
           }
         }
       ),
       suite("helpers in zio.json")(
-        testM("writeJsonLines writes JSON lines") {
+        test("writeJsonLines writes JSON lines") {
           val path = Files.createTempFile("log", "json")
           val events = Chunk(
             Event(1603669876, "hello"),
@@ -97,8 +95,8 @@ object EncoderPlatformSpecificSpec extends DefaultRunnableSpec {
       )
     )
 
-  def testRoundTrip[A: circe.Decoder: JsonEncoder](label: String): ZSpec[Blocking, IOException] =
-    testM(label) {
+  def testRoundTrip[A: circe.Decoder: JsonEncoder](label: String): ZSpec[Any, IOException] =
+    test(label) {
       getResourceAsStringM(s"$label.json").map { input =>
         val circeDecoded  = circe.parser.decode[A](input)
         val circeRecoded  = circeDecoded.toOption.get.toJson

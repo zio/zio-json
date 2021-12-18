@@ -3,7 +3,6 @@ package testzio.json
 import zio.json._
 import zio.test.Assertion._
 import zio.test._
-import zio.test.environment.TestEnvironment
 
 object DeriveSpec extends DefaultRunnableSpec {
 

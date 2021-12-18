@@ -3,7 +3,7 @@ package testzio.json
 import testzio.json.Gens._
 import zio.json._
 import zio.json.ast.Json
-import zio.random.Random
+import zio.Random
 import zio.test.Assertion._
 import zio.test.TestAspect._
 import zio.test._
@@ -14,82 +14,82 @@ object RoundTripSpec extends DefaultRunnableSpec {
 
   def spec: ZSpec[Environment, Failure] =
     suite("RoundTrip")(
-      testM("booleans") {
-        check(Gen.boolean)(assertRoundtrips)
+      test("booleans") {
+        check(Gen.boolean)(assertRoundtrips[Boolean])
       },
-      testM("bytes") {
-        check(Gen.anyByte)(assertRoundtrips)
+      test("bytes") {
+        check(Gen.byte)(assertRoundtrips[Byte])
       },
-      testM("shorts") {
-        check(Gen.anyShort)(assertRoundtrips)
+      test("shorts") {
+        check(Gen.short)(assertRoundtrips[Short])
       } @@ samples(10000),
-      testM("ints") {
-        check(Gen.anyInt)(assertRoundtrips)
+      test("ints") {
+        check(Gen.int)(assertRoundtrips[Int])
       } @@ samples(10000),
-      testM("longs") {
-        check(Gen.anyLong)(assertRoundtrips)
+      test("longs") {
+        check(Gen.long)(assertRoundtrips[Long])
       } @@ samples(10000),
-      testM("bigInts") {
-        check(genBigInteger)(assertRoundtrips)
+      test("bigInts") {
+        check(genBigInteger)(assertRoundtrips[java.math.BigInteger])
       } @@ samples(10000),
-      testM("floats") {
+      test("floats") {
         // NaN / Infinity is tested manually, because of == semantics
-        check(Gen.anyFloat.filter(java.lang.Float.isFinite))(assertRoundtrips)
+        check(Gen.float.filter(java.lang.Float.isFinite))(assertRoundtrips[Float])
       } @@ samples(10000),
-      testM("doubles") {
+      test("doubles") {
         // NaN / Infinity is tested manually, because of == semantics
-        check(Gen.anyDouble.filter(java.lang.Double.isFinite))(assertRoundtrips)
+        check(Gen.double.filter(java.lang.Double.isFinite))(assertRoundtrips[Double])
       } @@ samples(10000),
-      testM("AST") {
-        check(genAst)(assertRoundtrips)
+      test("AST") {
+        check(genAst)(assertRoundtrips[Json])
       },
       suite("java.time")(
-        testM("DayOfWeek") {
-          check(genDayOfWeek)(assertRoundtrips)
+        test("DayOfWeek") {
+          check(genDayOfWeek)(assertRoundtrips[DayOfWeek])
         },
-        testM("Duration") {
-          check(genDuration)(assertRoundtrips)
+        test("Duration") {
+          check(genDuration)(assertRoundtrips[Duration])
         } @@ samples(10000),
-        testM("Instant") {
-          check(genInstant)(assertRoundtrips)
+        test("Instant") {
+          check(genInstant)(assertRoundtrips[Instant])
         } @@ samples(10000),
-        testM("LocalDate") {
-          check(genLocalDate)(assertRoundtrips)
+        test("LocalDate") {
+          check(genLocalDate)(assertRoundtrips[LocalDate])
         } @@ samples(10000),
-        testM("LocalDateTime") {
-          check(genLocalDateTime)(assertRoundtrips)
+        test("LocalDateTime") {
+          check(genLocalDateTime)(assertRoundtrips[LocalDateTime])
         } @@ samples(10000),
-        testM("LocalTime") {
-          check(genLocalTime)(assertRoundtrips)
+        test("LocalTime") {
+          check(genLocalTime)(assertRoundtrips[LocalTime])
         } @@ samples(10000),
-        testM("Month") {
-          check(genMonth)(assertRoundtrips)
+        test("Month") {
+          check(genMonth)(assertRoundtrips[Month])
         },
-        testM("MonthDay") {
-          check(genMonthDay)(assertRoundtrips)
+        test("MonthDay") {
+          check(genMonthDay)(assertRoundtrips[MonthDay])
         },
-        testM("OffsetDateTime") {
-          check(genOffsetDateTime)(assertRoundtrips)
+        test("OffsetDateTime") {
+          check(genOffsetDateTime)(assertRoundtrips[OffsetDateTime])
         } @@ samples(10000),
-        testM("OffsetTime") {
-          check(genOffsetTime)(assertRoundtrips)
+        test("OffsetTime") {
+          check(genOffsetTime)(assertRoundtrips[OffsetTime])
         } @@ samples(10000),
-        testM("Period") {
-          check(genPeriod)(assertRoundtrips)
+        test("Period") {
+          check(genPeriod)(assertRoundtrips[Period])
         } @@ samples(10000),
-        testM("Year") {
-          check(genYear)(assertRoundtrips)
+        test("Year") {
+          check(genYear)(assertRoundtrips[Year])
         } @@ samples(10000),
-        testM("YearMonth") {
-          check(genYearMonth)(assertRoundtrips)
+        test("YearMonth") {
+          check(genYearMonth)(assertRoundtrips[YearMonth])
         } @@ samples(10000),
-        testM("ZonedDateTime") {
-          check(genZonedDateTime)(assertRoundtrips)
+        test("ZonedDateTime") {
+          check(genZonedDateTime)(assertRoundtrips[ZonedDateTime])
         } @@ samples(10000),
-        testM("ZoneId") {
+        test("ZoneId") {
           check(genZoneId)(assertRoundtrips[ZoneId])
         },
-        testM("ZoneOffset") {
+        test("ZoneOffset") {
           check(genZoneOffset)(assertRoundtrips[ZoneOffset])
         }
       )

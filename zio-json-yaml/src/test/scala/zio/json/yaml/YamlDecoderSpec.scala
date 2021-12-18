@@ -3,7 +3,6 @@ package zio.json.yaml
 import zio.json.yaml.YamlEncoderSpec.{ Example, ex1, ex1Yaml, ex1Yaml2 }
 import zio.test.Assertion.{ equalTo, isRight }
 import zio.test._
-import zio.test.environment.TestEnvironment
 
 object YamlDecoderSpec extends DefaultRunnableSpec {
   override def spec: ZSpec[TestEnvironment, Any] =

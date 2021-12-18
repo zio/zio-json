@@ -5,7 +5,6 @@ import zio.json._
 import zio.json.ast.Json
 import zio.test.Assertion._
 import zio.test._
-import zio.test.environment.TestEnvironment
 
 object YamlEncoderSpec extends DefaultRunnableSpec {
   override def spec: ZSpec[TestEnvironment, Any] =

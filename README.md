@@ -451,7 +451,7 @@ This attack is very effective in schemas with lots of numbers, causing ops/sec t
 
 # Even Moar Performance
 
-If `zio-json` isn't fast enough for you, then try out [jsoniter-scala](https://github.com/plokhotnyuk/jsoniter-scala); whereas `zio-json` is fully integrated into ZIO, including streams and transducer support, jsoniter is library agnostic.
+If `zio-json` isn't fast enough for you, then try out [jsoniter-scala](https://github.com/plokhotnyuk/jsoniter-scala); whereas `zio-json` is fully integrated into ZIO, including streams and pipeline support, jsoniter is library agnostic.
 
 JSON is an inefficient transport format and everybody would benefit from a port of this library to msgpack or protobuf. For legacy services, a port supporting XML is also be possible.
 

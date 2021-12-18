@@ -3,7 +3,7 @@ package zio.json
 import org.openjdk.jmh.annotations._
 import zio.Chunk
 import zio.json.uuid.UUIDParser
-import zio.random.Random
+import zio.Random
 import zio.test.Gen
 
 import java.util.UUID
