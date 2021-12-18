@@ -286,7 +286,7 @@ lazy val zioJsonInteropRefined = crossProject(JSPlatform, JVMPlatform)
   .settings(
     crossScalaVersions --= Vector("3.0.2"),
     libraryDependencies ++= Seq(
-      "eu.timepit" %%% "refined"      % "0.9.27",
+      "eu.timepit" %%% "refined"      % "0.9.28",
       "dev.zio"    %%% "zio-test"     % zioVersion % "test",
       "dev.zio"    %%% "zio-test-sbt" % zioVersion % "test"
     ),
