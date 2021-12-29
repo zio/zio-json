@@ -36,6 +36,88 @@ final case class jsonDiscriminator(name: String) extends Annotation
 // does not provide a mechanism for obtaining the CaseClass associated to the
 // Subtype.
 
+sealed trait JsonMemberFormat extends (String => String)
+case class CustomCase(f: String => String) extends JsonMemberFormat {
+  override def apply(memberName: String): String = f(memberName)
+}
+case object SnakeCase extends JsonMemberFormat {
+  override def apply(memberName: String): String = jsonMemberNames.enforceSnakeOrKebabCase(memberName, '_')
+}
+case object CamelCase extends JsonMemberFormat {
+  override def apply(memberName: String): String =
+    jsonMemberNames.enforceCamelOrPascalCase(memberName, toPascal = false)
+}
+case object PascalCase extends JsonMemberFormat {
+  override def apply(memberName: String): String = jsonMemberNames.enforceCamelOrPascalCase(memberName, toPascal = true)
+}
+case object KebabCase extends JsonMemberFormat {
+  override def apply(memberName: String): String = jsonMemberNames.enforceSnakeOrKebabCase(memberName, '-')
+}
+
+final case class jsonMemberNames(format: JsonMemberFormat) extends Annotation
+private[json] object jsonMemberNames {
+
+  /**
+   * ~~Stolen~~ Borrowed from jsoniter-scala by Andriy Plokhotnyuk
+   * (he even granted permission for this, imagine that!)
+   */
+
+  import java.lang.Character._
+
+  def enforceCamelOrPascalCase(s: String, toPascal: Boolean): String =
+    if (s.indexOf('_') == -1 && s.indexOf('-') == -1) {
+      if (s.isEmpty) s
+      else {
+        val ch = s.charAt(0)
+        val fixedCh =
+          if (toPascal) toUpperCase(ch)
+          else toLowerCase(ch)
+        s"$fixedCh${s.substring(1)}"
+      }
+    } else {
+      val len             = s.length
+      val sb              = new StringBuilder(len)
+      var i               = 0
+      var isPrecedingDash = toPascal
+      while (i < len) isPrecedingDash = {
+        val ch = s.charAt(i)
+        i += 1
+        (ch == '_' || ch == '-') || {
+          val fixedCh =
+            if (isPrecedingDash) toUpperCase(ch)
+            else toLowerCase(ch)
+          sb.append(fixedCh)
+          false
+        }
+      }
+      sb.toString
+    }
+
+  def enforceSnakeOrKebabCase(s: String, separator: Char): String = {
+    val len                   = s.length
+    val sb                    = new StringBuilder(len << 1)
+    var i                     = 0
+    var isPrecedingLowerCased = false
+    while (i < len) isPrecedingLowerCased = {
+      val ch = s.charAt(i)
+      i += 1
+      if (ch == '_' || ch == '-') {
+        sb.append(separator)
+        false
+      } else if (isLowerCase(ch)) {
+        sb.append(ch)
+        true
+      } else {
+        if (isPrecedingLowerCased || i > 1 && i < len && isLowerCase(s.charAt(i))) sb.append(separator)
+        sb.append(toLowerCase(ch))
+        false
+      }
+    }
+    sb.toString
+  }
+
+}
+
 /**
  * If used on a case class will determine the type hint value for disambiguating
  * sealed traits. Defaults to the short type name.
@@ -64,9 +146,15 @@ object DeriveJsonDecoder {
   type Typeclass[A] = JsonDecoder[A]
 
   def combine[A](ctx: CaseClass[JsonDecoder, A]): JsonDecoder[A] = {
+    val (transformNames, nameTransform): (Boolean, String => String) =
+      ctx.annotations.collectFirst { case jsonMemberNames(format) => format }
+        .map(true -> _)
+        .getOrElse(false -> identity _)
+
     val no_extra = ctx.annotations.collectFirst { case _: jsonNoExtraFields =>
       ()
     }.isDefined
+
     if (ctx.parameters.isEmpty)
       new JsonDecoder[A] {
         def unsafeDecode(trace: List[JsonError], in: RetractReader): A = {
@@ -91,7 +179,7 @@ object DeriveJsonDecoder {
         val names: Array[String] = ctx.parameters.map { p =>
           p.annotations.collectFirst { case jsonField(name) =>
             name
-          }.getOrElse(p.label)
+          }.getOrElse(if (transformNames) nameTransform(p.label) else p.label)
         }.toArray
         val len: Int                = names.length
         val matrix: StringMatrix    = new StringMatrix(names)
@@ -313,14 +401,19 @@ object DeriveJsonEncoder {
       }
     else
       new JsonEncoder[A] {
+        val (transformNames, nameTransform): (Boolean, String => String) =
+          ctx.annotations.collectFirst { case jsonMemberNames(format) => format }
+            .map(true -> _)
+            .getOrElse(false -> identity)
+
         val params = ctx.parameters
-          .filter(p => p.annotations.collectFirst { case _: jsonExclude => () }.isDefined == false)
+          .filter(p => p.annotations.collectFirst { case _: jsonExclude => () }.isEmpty)
           .toArray
 
         val names: Array[String] = params.map { p =>
           p.annotations.collectFirst { case jsonField(name) =>
             name
-          }.getOrElse(p.label)
+          }.getOrElse(if (transformNames) nameTransform(p.label) else p.label)
         }
         lazy val tcs: Array[JsonEncoder[Any]] = params.map(p => p.typeclass.asInstanceOf[JsonEncoder[Any]])
         val len: Int                          = params.length
