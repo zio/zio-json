@@ -84,6 +84,9 @@ trait JsonEncoder[A] extends JsonEncoderPlatformSpecific[A] {
   @nowarn("msg=is never used")
   def xmap[B](f: A => B, g: B => A): JsonEncoder[B] = contramap(g)
 
+  @nowarn("msg=is never used")
+  def xmapOrFail[B](f: A => Either[String, B], g: B => A): JsonEncoder[B] = contramap(g)
+
   def unsafeEncode(a: A, indent: Option[Int], out: Write): Unit
 
   /**
