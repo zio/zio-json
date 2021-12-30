@@ -43,11 +43,8 @@ final case class jsonDiscriminator(name: String) extends Annotation
 // Subtype.
 
 sealed trait JsonMemberFormat extends (String => String)
-case class Custom(f: String => String) extends JsonMemberFormat {
+case class CustomCase(f: String => String) extends JsonMemberFormat {
   override def apply(memberName: String): String = f(memberName)
-}
-case object Literal extends JsonMemberFormat {
-  override def apply(memberName: String): String = memberName
 }
 case object SnakeCase extends JsonMemberFormat {
   override def apply(memberName: String): String = jsonMemberNames.enforceSnakeOrKebabCase(memberName, '_')
