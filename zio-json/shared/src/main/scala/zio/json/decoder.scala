@@ -171,6 +171,9 @@ trait JsonDecoder[A] extends JsonDecoderPlatformSpecific[A] {
   @nowarn("msg=is never used")
   def xmap[B](f: A => B, g: B => A): JsonDecoder[B] = map(f)
 
+  @nowarn("msg=is never used")
+  def xmapOrFail[B](f: A => Either[String, B], g: B => A): JsonDecoder[B] = mapOrFail(f)
+
   /**
    * Returns a new codec that combines this codec and the specified codec into a single codec that
    * decodes a tuple of the values decoded by the respective codecs.
