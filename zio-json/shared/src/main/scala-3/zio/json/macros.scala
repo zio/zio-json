@@ -465,7 +465,7 @@ object DeriveJsonEncoder extends Derivation[JsonEncoder] { self =>
             }
             .toArray
 
-        val tcs: Array[JsonEncoder[Any]] =
+        lazy val tcs: Array[JsonEncoder[Any]] =
           params.map(_.typeclass.asInstanceOf[JsonEncoder[Any]]).toArray
 
         def unsafeEncode(a: A, indent: Option[Int], out: Write): Unit = {
