@@ -168,10 +168,10 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform)
       val dir  = (Compile / sourceManaged).value
       val file = dir / "zio" / "json" / "GeneratedTupleCodecs.scala"
       val codecs = (1 to 22).map { i =>
-        val tparams   = (1 to i).map(p => s"A$p").mkString(", ")
-        val implicits = (1 to i).map(p => s"A$p: JsonCodec[A$p]").mkString(", ")
+        val tparamDecls = (1 to i).map(p => s"A$p: JsonEncoder: JsonDecoder").mkString(", ")
+        val tparams     = (1 to i).map(p => s"A$p").mkString(", ")
 
-        s"""implicit def tuple$i[$tparams](implicit $implicits): JsonCodec[Tuple$i[$tparams]] =
+        s"""implicit def tuple$i[$tparamDecls]: JsonCodec[Tuple$i[$tparams]] =
            |    JsonCodec(JsonEncoder.tuple$i, JsonDecoder.tuple$i)""".stripMargin
       }
       IO.write(

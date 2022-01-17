@@ -9,22 +9,10 @@ import java.util.UUID
 import scala.annotation._
 import scala.collection.{ immutable, mutable }
 import scala.reflect.ClassTag
+import scala.language.implicitConversions
 
 trait JsonEncoder[A] extends JsonEncoderPlatformSpecific[A] {
   self =>
-
-  /**
-   * Returns a new encoder that is capable of encoding a tuple containing the values of this
-   * encoder and the specified encoder.
-   */
-  final def both[B](that: => JsonEncoder[B]): JsonEncoder[(A, B)] = JsonEncoder.tuple2(self, that)
-
-  /**
-   * Returns a new encoder that is capable of encoding a user-defined value, which is create from
-   * a tuple of the values of this encoder and the specified encoder, from the specified user-
-   * defined function.
-   */
-  final def bothWith[B, C](that: => JsonEncoder[B])(f: C => (A, B)): JsonEncoder[C] = self.both(that).contramap(f)
 
   /**
    * Returns a new encoder, with a new input type, which can be transformed to the old input type
@@ -54,8 +42,8 @@ trait JsonEncoder[A] extends JsonEncoderPlatformSpecific[A] {
    * `Left` or `Right`.
    * What should be: `{"Right": "John Doe"}` is encoded as `"John Doe"`
    */
-  final def eraseEither[B](that: => JsonEncoder[B]): JsonEncoder[Either[A, B]] =
-    JsonEncoder.eraseEither[A, B](self, that)
+  final def orElseEither[B](that: => JsonEncoder[B]): JsonEncoder[Either[A, B]] =
+    JsonEncoder.orElseEither[A, B](self, that)
 
   /**
    * Returns a new encoder with a new input type, which can be transformed to either the input
@@ -81,32 +69,46 @@ trait JsonEncoder[A] extends JsonEncoderPlatformSpecific[A] {
   @nowarn("msg=is never used")
   def isNothing(a: A): Boolean = false
 
-  @nowarn("msg=is never used")
-  def xmap[B](f: A => B, g: B => A): JsonEncoder[B] = contramap(g)
+  /**
+   * Returns this encoder but narrowed to the its given sub-type
+   */
+  final def narrow[B <: A]: JsonEncoder[B] = self.asInstanceOf[JsonEncoder[B]]
 
   @nowarn("msg=is never used")
-  def xmapOrFail[B](f: A => Either[String, B], g: B => A): JsonEncoder[B] = contramap(g)
+  def transform[B](f: A => B, g: B => A): JsonEncoder[B] = contramap(g)
+
+  @nowarn("msg=is never used")
+  def transformOrFail[B](f: A => Either[String, B], g: B => A): JsonEncoder[B] = contramap(g)
 
   def unsafeEncode(a: A, indent: Option[Int], out: Write): Unit
 
   /**
    * Converts a value to a Json AST
    *
-   * The default implementation encodes the value to a Json byte stream and uses decode to parse that
-   * back to an AST.
-   * Override to provide a more performant implementation.
+   * The default implementation encodes the value to a Json byte stream and
+   * uses decode to parse that back to an AST. Override to provide a more performant
+   * implementation.
    */
-  def toJsonAST(a: A): Either[String, Json] =
-    Json.decoder.decodeJson(encodeJson(a, None))
+  def toJsonAST(a: A): Either[String, Json] = Json.decoder.decodeJson(encodeJson(a, None))
 
   /**
-   * Returns this encoder but narrowed to the its given sub-type
+   * Returns a new encoder that is capable of encoding a tuple containing the values of this
+   * encoder and the specified encoder.
    */
-  final def narrow[B <: A]: JsonEncoder[B] = self.asInstanceOf[JsonEncoder[B]]
+  final def zip[B](that: => JsonEncoder[B]): JsonEncoder[(A, B)] = JsonEncoder.tuple2(self, that)
+
+  /**
+   * Returns a new encoder that is capable of encoding a user-defined value, which is create from
+   * a tuple of the values of this encoder and the specified encoder, from the specified user-
+   * defined function.
+   */
+  final def zipWith[B, C](that: => JsonEncoder[B])(f: C => (A, B)): JsonEncoder[C] = self.zip(that).contramap(f)
 }
 
 object JsonEncoder extends GeneratedTupleEncoders with EncoderLowPriority1 {
   def apply[A](implicit a: JsonEncoder[A]): JsonEncoder[A] = a
+
+  implicit def fromCodec[A](codec: JsonCodec[A]): JsonEncoder[A] = codec.encoder
 
   implicit val string: JsonEncoder[String] = new JsonEncoder[String] {
 
@@ -265,7 +267,7 @@ object JsonEncoder extends GeneratedTupleEncoders with EncoderLowPriority1 {
         }
     }
 
-  def eraseEither[A, B](implicit A: JsonEncoder[A], B: JsonEncoder[B]): JsonEncoder[Either[A, B]] =
+  def orElseEither[A, B](implicit A: JsonEncoder[A], B: JsonEncoder[B]): JsonEncoder[Either[A, B]] =
     new JsonEncoder[Either[A, B]] {
       def unsafeEncode(eab: Either[A, B], indent: Option[Int], out: Write): Unit =
         eab match {

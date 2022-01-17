@@ -11,6 +11,7 @@ import scala.annotation._
 import scala.collection.immutable.{ LinearSeq, ListSet, TreeSet }
 import scala.collection.{ immutable, mutable }
 import scala.util.control.NoStackTrace
+import scala.language.implicitConversions
 
 /**
  * A `JsonError` value describes the ways in which decoding could fail. This structure is used
@@ -169,10 +170,10 @@ trait JsonDecoder[A] extends JsonDecoderPlatformSpecific[A] {
     }
 
   @nowarn("msg=is never used")
-  def xmap[B](f: A => B, g: B => A): JsonDecoder[B] = map(f)
+  def transform[B](f: A => B, g: B => A): JsonDecoder[B] = map(f)
 
   @nowarn("msg=is never used")
-  def xmapOrFail[B](f: A => Either[String, B], g: B => A): JsonDecoder[B] = mapOrFail(f)
+  def transformOrFail[B](f: A => Either[String, B], g: B => A): JsonDecoder[B] = mapOrFail(f)
 
   /**
    * Returns a new codec that combines this codec and the specified codec into a single codec that
@@ -191,7 +192,7 @@ trait JsonDecoder[A] extends JsonDecoderPlatformSpecific[A] {
   final def zipRight[B](that: => JsonDecoder[B]): JsonDecoder[B] = self.zipWith(that)((_, b) => b)
 
   /**
-   * Zips two codecs into one, transforming the outputs of both codecs by the specified function.
+   * Zips two codecs into one, transforming the outputs of zip codecs by the specified function.
    */
   final def zipWith[B, C](that: => JsonDecoder[B])(f: (A, B) => C): JsonDecoder[C] =
     self.zip(that).map(f.tupled)
@@ -243,6 +244,8 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority1 {
       }
     }
   }
+
+  implicit def fromCodec[A](codec: JsonCodec[A]): JsonDecoder[A] = codec.decoder
 
   implicit val string: JsonDecoder[String] = new JsonDecoder[String] {
 
@@ -412,7 +415,7 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority1 {
           throw UnsafeJson(JsonError.Message("missing fields") :: trace)
         if (values(0) != null && values(1) != null)
           throw UnsafeJson(
-            JsonError.Message("ambiguous either, both present") :: trace
+            JsonError.Message("ambiguous either, zip present") :: trace
           )
         if (values(0) != null)
           Left(values(0).asInstanceOf[A])

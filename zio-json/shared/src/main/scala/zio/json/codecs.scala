@@ -1,7 +1,5 @@
 package zio.json
 
-import zio.json.JsonDecoder.JsonError
-import zio.json.internal._
 import zio.{ Chunk, NonEmptyChunk }
 
 import scala.collection.immutable
@@ -10,10 +8,9 @@ import scala.collection.immutable
  * A `JsonCodec[A]` instance has the ability to encode values of type `A` into JSON, together with
  * the ability to decode such JSON into values of type `A`.
  *
- * The trait is the intersection composition of `JsonDecoder[A]` and `JsonEncoder[A]`, and
- * instances should satisfy round-tripping laws: that is, for every value, instances must be able
- * to successfully encode the value into JSON, and then successfully decode the same value from
- * such JSON.
+ * Instances of this trait should satisfy round-tripping laws: that is, for every value, instances
+ * must be able to successfully encode the value into JSON, and then successfully decode the same
+ * value from such JSON.
  *
  * For more information, see [[JsonDecoder]] and [[JsonEncoder]].
  *
@@ -23,27 +20,59 @@ import scala.collection.immutable
  * intCodec.encodeJson(intCodec.encodeJson(42)) == Right(42)
  * }}
  */
-trait JsonCodec[A] extends JsonDecoder[A] with JsonEncoder[A] { self =>
-  def encoder: JsonEncoder[A]
-  def decoder: JsonDecoder[A]
+final case class JsonCodec[A](encoder: JsonEncoder[A], decoder: JsonDecoder[A]) { self =>
 
-  override def xmap[B](f: A => B, g: B => A): JsonCodec[B] =
+  /**
+   * An alias for [[JsonCodec#orElse]].
+   */
+  final def <>(that: => JsonCodec[A]): JsonCodec[A] = self.orElse(that)
+
+  /**
+   * An alias for [[JsonCodec#orElseEither]].
+   */
+  final def <+>[B](that: => JsonCodec[B]): JsonCodec[Either[A, B]] = self.orElseEither(that)
+
+  /**
+   * An alias for [[JsonCodec#zip]].
+   */
+  final def <*>[B](that: => JsonCodec[B]): JsonCodec[(A, B)] =
+    JsonCodec(self.encoder.zip(that.encoder), self.decoder.zip(that.decoder))
+
+  final def *>[B](that: => JsonCodec[B])(implicit ev: Unit <:< A): JsonCodec[B] = self.zipRight(that)
+
+  final def <*(that: => JsonCodec[Unit]): JsonCodec[A] = self.zipLeft(that)
+
+  final def orElse(that: => JsonCodec[A]): JsonCodec[A] =
+    self.orElseEither[A](that).transform(_.merge, Right(_))
+
+  final def orElseEither[B](that: => JsonCodec[B]): JsonCodec[Either[A, B]] =
+    JsonCodec.orElseEither(self, that)
+
+  final def transform[B](f: A => B, g: B => A): JsonCodec[B] =
     JsonCodec(encoder.contramap(g), decoder.map(f))
 
-  override def xmapOrFail[B](f: A => Either[String, B], g: B => A): JsonCodec[B] =
+  final def transformOrFail[B](f: A => Either[String, B], g: B => A): JsonCodec[B] =
     JsonCodec(encoder.contramap(g), decoder.mapOrFail(f))
 
-  def eraseEither[B](that: JsonCodec[B]): JsonCodec[Either[A, B]] =
-    JsonCodec.eraseEither(self, that)
+  final def zip[B](that: => JsonCodec[B]): JsonCodec[(A, B)] =
+    JsonCodec(self.encoder.zip(that.encoder), self.decoder.zip(that.decoder))
+
+  final def zipRight[B](that: => JsonCodec[B])(implicit ev: Unit <:< A): JsonCodec[B] =
+    self.zip(that).transform((t: (A, B)) => t._2, b => (ev(()), b))
+
+  final def zipLeft(that: => JsonCodec[Unit]): JsonCodec[A] =
+    self.zip(that).transform((t: (A, Unit)) => t._1, a => (a, ()))
 
 }
 
 object JsonCodec extends GeneratedTupleCodecs with CodecLowPriority0 {
   def apply[A](implicit jsonCodec: JsonCodec[A]): JsonCodec[A] = jsonCodec
 
-  def eraseEither[A, B](A: JsonCodec[A], B: JsonCodec[B]): JsonCodec[Either[A, B]] =
+  def apply[A](encoder: JsonEncoder[A], decoder: JsonDecoder[A]): JsonCodec[A] = new JsonCodec(encoder, decoder)
+
+  private def orElseEither[A, B](A: JsonCodec[A], B: JsonCodec[B]): JsonCodec[Either[A, B]] =
     JsonCodec(
-      JsonEncoder.eraseEither[A, B](A, B),
+      JsonEncoder.orElseEither[A, B](A, B),
       A.decoder
         .map(x => Left(x): Either[A, B])
         .orElse(B.decoder.map(x => Right(x): Either[A, B]))
@@ -66,79 +95,54 @@ object JsonCodec extends GeneratedTupleCodecs with CodecLowPriority0 {
   implicit val scalaBigDecimal: JsonCodec[BigDecimal] =
     JsonCodec(JsonEncoder.scalaBigDecimal, JsonDecoder.scalaBigDecimal)
 
-  implicit def option[A](implicit c: JsonCodec[A]): JsonCodec[Option[A]] =
-    JsonCodec(JsonEncoder.option(c.encoder), JsonDecoder.option(c.decoder))
+  implicit def option[A: JsonEncoder: JsonDecoder]: JsonCodec[Option[A]] =
+    JsonCodec(JsonEncoder.option(JsonEncoder[A]), JsonDecoder.option(JsonDecoder[A]))
 
-  implicit def either[A, B](implicit ac: JsonCodec[A], bc: JsonCodec[B]): JsonCodec[Either[A, B]] =
-    JsonCodec(JsonEncoder.either(ac.encoder, bc.encoder), JsonDecoder.either(ac.decoder, bc.decoder))
-
-  /**
-   * Derives a `JsonCodec[A]` from an encoder and a decoder.
-   */
-  implicit def apply[A](implicit encoder0: JsonEncoder[A], decoder0: JsonDecoder[A]): JsonCodec[A] =
-    (encoder0, decoder0) match {
-      case (e: JsonCodec[_], d: JsonCodec[_]) =>
-        // protects against cycles in implicit resolution, unfortunately the
-        // instantiation of decoder0 could have been wasteful.
-        e
-      case _ =>
-        new JsonCodec[A] {
-          override def encoder: JsonEncoder[A] = encoder0
-
-          override def decoder: JsonDecoder[A] = decoder0
-
-          override def unsafeDecodeMissing(trace: List[JsonError]): A =
-            decoder0.unsafeDecodeMissing(trace)
-
-          override def unsafeDecode(trace: List[JsonError], in: RetractReader): A =
-            decoder0.unsafeDecode(trace, in)
-
-          override def unsafeEncode(a: A, indent: Option[Int], out: Write): Unit =
-            encoder0.unsafeEncode(a, indent, out)
-
-          override def isNothing(a: A): Boolean = encoder0.isNothing(a)
-        }
-    }
+  implicit def either[A: JsonEncoder: JsonDecoder, B: JsonEncoder: JsonDecoder]: JsonCodec[Either[A, B]] =
+    JsonCodec(JsonEncoder.either(JsonEncoder[A], JsonEncoder[B]), JsonDecoder.either(JsonDecoder[A], JsonDecoder[B]))
 }
 
 private[json] trait CodecLowPriority0 extends CodecLowPriority1 { this: JsonCodec.type =>
 
-  implicit def chunk[A: JsonCodec]: JsonCodec[Chunk[A]] =
+  implicit def chunk[A: JsonEncoder: JsonDecoder]: JsonCodec[Chunk[A]] =
     JsonCodec(JsonEncoder.chunk[A], JsonDecoder.chunk[A])
 
-  implicit def nonEmptyChunk[A: JsonCodec]: JsonCodec[NonEmptyChunk[A]] =
+  implicit def nonEmptyChunk[A: JsonEncoder: JsonDecoder]: JsonCodec[NonEmptyChunk[A]] =
     JsonCodec(JsonEncoder.nonEmptyChunk[A], JsonDecoder.nonEmptyChunk[A])
 
-  implicit def hashSet[A: JsonCodec]: JsonCodec[immutable.HashSet[A]] =
+  implicit def hashSet[A: JsonEncoder: JsonDecoder]: JsonCodec[immutable.HashSet[A]] =
     JsonCodec(JsonEncoder.hashSet[A], JsonDecoder.hashSet[A])
 
-  implicit def hashMap[K: JsonFieldEncoder: JsonFieldDecoder, V: JsonCodec]: JsonEncoder[immutable.HashMap[K, V]] =
+  implicit def hashMap[K: JsonFieldEncoder: JsonFieldDecoder, V: JsonEncoder: JsonDecoder]
+    : JsonEncoder[immutable.HashMap[K, V]] =
     JsonCodec(JsonEncoder.hashMap[K, V], JsonDecoder.hashMap[K, V])
 }
 
 private[json] trait CodecLowPriority1 extends CodecLowPriority2 { this: JsonCodec.type =>
-  implicit def seq[A: JsonCodec]: JsonCodec[Seq[A]]       = JsonCodec(JsonEncoder.seq[A], JsonDecoder.seq[A])
-  implicit def list[A: JsonCodec]: JsonCodec[List[A]]     = JsonCodec(JsonEncoder.list[A], JsonDecoder.list[A])
-  implicit def vector[A: JsonCodec]: JsonCodec[Vector[A]] = JsonCodec(JsonEncoder.vector[A], JsonDecoder.vector[A])
-  implicit def set[A: JsonCodec]: JsonCodec[Set[A]]       = JsonCodec(JsonEncoder.set[A], JsonDecoder.set[A])
+  implicit def seq[A: JsonEncoder: JsonDecoder]: JsonCodec[Seq[A]] = JsonCodec(JsonEncoder.seq[A], JsonDecoder.seq[A])
+  implicit def list[A: JsonEncoder: JsonDecoder]: JsonCodec[List[A]] =
+    JsonCodec(JsonEncoder.list[A], JsonDecoder.list[A])
+  implicit def vector[A: JsonEncoder: JsonDecoder]: JsonCodec[Vector[A]] =
+    JsonCodec(JsonEncoder.vector[A], JsonDecoder.vector[A])
+  implicit def set[A: JsonEncoder: JsonDecoder]: JsonCodec[Set[A]] = JsonCodec(JsonEncoder.set[A], JsonDecoder.set[A])
 
-  implicit def map[K: JsonFieldEncoder: JsonFieldDecoder, V: JsonCodec]: JsonCodec[Map[K, V]] =
+  implicit def map[K: JsonFieldEncoder: JsonFieldDecoder, V: JsonEncoder: JsonDecoder]: JsonCodec[Map[K, V]] =
     JsonCodec(JsonEncoder.map[K, V], JsonDecoder.map[K, V])
 
   implicit def sortedMap[
     K: JsonFieldEncoder: JsonFieldDecoder: Ordering,
-    V: JsonCodec
+    V: JsonEncoder: JsonDecoder
   ]: JsonCodec[collection.SortedMap[K, V]] =
     JsonCodec(JsonEncoder.sortedMap[K, V], JsonDecoder.sortedMap[K, V])
 
-  implicit def sortedSet[A: Ordering: JsonCodec]: JsonCodec[immutable.SortedSet[A]] =
+  implicit def sortedSet[A: Ordering: JsonEncoder: JsonDecoder]: JsonCodec[immutable.SortedSet[A]] =
     JsonCodec(JsonEncoder.sortedSet[A], JsonDecoder.sortedSet[A])
 }
 
 private[json] trait CodecLowPriority2 extends CodecLowPriority3 { this: JsonCodec.type =>
 
-  implicit def iterable[A: JsonCodec]: JsonCodec[Iterable[A]] =
-    JsonCodec(JsonEncoder.iterable, JsonDecoder.iterable)
+  implicit def iterable[A: JsonEncoder: JsonDecoder]: JsonCodec[Iterable[A]] =
+    JsonCodec(JsonEncoder.iterable[A, Iterable], JsonDecoder.iterable)
 }
 
 private[json] trait CodecLowPriority3 { this: JsonCodec.type =>
