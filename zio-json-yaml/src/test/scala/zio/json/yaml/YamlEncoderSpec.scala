@@ -62,7 +62,11 @@ object YamlEncoderSpec extends DefaultRunnableSpec {
         )
       },
       test("sequence root") {
-        assert(Json.Arr(Json.Bool(true), Json.Bool(false), Json.Bool(true)).toYaml(YamlOptions.default.copy(lineBreak = LineBreak.UNIX)))(
+        assert(
+          Json
+            .Arr(Json.Bool(true), Json.Bool(false), Json.Bool(true))
+            .toYaml(YamlOptions.default.copy(lineBreak = LineBreak.UNIX))
+        )(
           isRight(equalTo("""  - true
                             |  - false
                             |  - true
@@ -126,7 +130,7 @@ object YamlEncoderSpec extends DefaultRunnableSpec {
       |""".stripMargin
 
   case class Example(i: Int, d: Double, s: List[String], o: Option[Example])
-  object Example {      
+  object Example {
     implicit lazy val codec: JsonCodec[Example] = DeriveJsonCodec.gen[Example]
   }
 }
