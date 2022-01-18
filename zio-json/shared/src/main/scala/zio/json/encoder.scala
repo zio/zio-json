@@ -9,7 +9,6 @@ import java.util.UUID
 import scala.annotation._
 import scala.collection.{ immutable, mutable }
 import scala.reflect.ClassTag
-import scala.language.implicitConversions
 
 trait JsonEncoder[A] extends JsonEncoderPlatformSpecific[A] {
   self =>
@@ -107,8 +106,6 @@ trait JsonEncoder[A] extends JsonEncoderPlatformSpecific[A] {
 
 object JsonEncoder extends GeneratedTupleEncoders with EncoderLowPriority1 {
   def apply[A](implicit a: JsonEncoder[A]): JsonEncoder[A] = a
-
-  implicit def fromCodec[A](codec: JsonCodec[A]): JsonEncoder[A] = codec.encoder
 
   implicit val string: JsonEncoder[String] = new JsonEncoder[String] {
 
@@ -477,7 +474,7 @@ private[json] trait EncoderLowPriority2 extends EncoderLowPriority3 {
     keyValueIterable[K, A, ({ type lambda[X, Y] = Chunk[(X, Y)] })#lambda]
 }
 
-private[json] trait EncoderLowPriority3 {
+private[json] trait EncoderLowPriority3 extends EncoderLowPriority4 {
   this: JsonEncoder.type =>
 
   import java.time._
@@ -500,6 +497,10 @@ private[json] trait EncoderLowPriority3 {
   implicit val zoneOffset: JsonEncoder[ZoneOffset]         = stringify(serializers.toString)
 
   implicit val uuid: JsonEncoder[UUID] = stringify(_.toString)
+}
+
+private[json] trait EncoderLowPriority4 {
+  implicit def fromCodec[A](implicit codec: JsonCodec[A]): JsonEncoder[A] = codec.encoder
 }
 
 /** When encoding a JSON Object, we only allow keys that implement this interface. */

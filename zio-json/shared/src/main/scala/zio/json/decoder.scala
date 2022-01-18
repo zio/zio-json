@@ -11,33 +11,6 @@ import scala.annotation._
 import scala.collection.immutable.{ LinearSeq, ListSet, TreeSet }
 import scala.collection.{ immutable, mutable }
 import scala.util.control.NoStackTrace
-import scala.language.implicitConversions
-
-/**
- * A `JsonError` value describes the ways in which decoding could fail. This structure is used
- * to facilitate human-readable error messages during decoding failures.
- */
-sealed abstract class JsonError
-
-object JsonError {
-
-  def render(trace: List[JsonError]): String =
-    trace.reverse.map {
-      case Message(txt)        => s"($txt)"
-      case ArrayAccess(i)      => s"[$i]"
-      case ObjectAccess(field) => s".$field"
-      case SumType(cons)       => s"{$cons}"
-    }.mkString
-
-  final case class Message(txt: String) extends JsonError
-
-  final case class ArrayAccess(i: Int) extends JsonError
-
-  final case class ObjectAccess(field: String) extends JsonError
-
-  final case class SumType(cons: String) extends JsonError
-
-}
 
 /**
  * A `JsonDecoder[A]` instance has the ability to decode JSON to values of type `A`, potentially
@@ -244,8 +217,6 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority1 {
       }
     }
   }
-
-  implicit def fromCodec[A](codec: JsonCodec[A]): JsonDecoder[A] = codec.decoder
 
   implicit val string: JsonDecoder[String] = new JsonDecoder[String] {
 
@@ -634,7 +605,7 @@ private[json] trait DecoderLowPriority2 extends DecoderLowPriority3 {
 
 }
 
-private[json] trait DecoderLowPriority3 {
+private[json] trait DecoderLowPriority3 extends DecoderLowPriority4 {
   this: JsonDecoder.type =>
 
   import java.time.{ DateTimeException, _ }
@@ -686,6 +657,10 @@ private[json] trait DecoderLowPriority3 {
         case iae: IllegalArgumentException => Left(s"Invalid UUID: ${iae.getMessage}")
       }
     }
+}
+
+private[json] trait DecoderLowPriority4 {
+  implicit def fromCodec[A](implicit codec: JsonCodec[A]): JsonDecoder[A] = codec.decoder
 }
 
 /** When decoding a JSON Object, we only allow the keys that implement this interface. */

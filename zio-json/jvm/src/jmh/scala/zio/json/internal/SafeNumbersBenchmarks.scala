@@ -1,9 +1,7 @@
 package zio.json.internal
 
-import java.nio.charset.StandardCharsets.UTF_8
 import java.util.concurrent.TimeUnit
 
-import zio.json._
 import org.openjdk.jmh.annotations._
 
 @State(Scope.Thread)
@@ -22,9 +20,6 @@ class SafeNumbersBenchInt {
 
   @Setup
   def setup(): Unit = {
-    val safe: Int    = 999999999
-    val unsafe: Long = 9999999999L
-
     val r = new scala.util.Random(0L)
 
     invalids = Array.fill(size) {

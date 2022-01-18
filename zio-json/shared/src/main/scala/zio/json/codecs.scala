@@ -42,6 +42,10 @@ final case class JsonCodec[A](encoder: JsonEncoder[A], decoder: JsonDecoder[A]) 
 
   final def <*(that: => JsonCodec[Unit]): JsonCodec[A] = self.zipLeft(that)
 
+  final def decodeJson(str: CharSequence): Either[String, A] = decoder.decodeJson(str)
+
+  final def encodeJson(a: A, indent: Option[Int]): CharSequence = encoder.encodeJson(a, indent)
+
   final def orElse(that: => JsonCodec[A]): JsonCodec[A] =
     self.orElseEither[A](that).transform(_.merge, Right(_))
 
@@ -72,7 +76,7 @@ object JsonCodec extends GeneratedTupleCodecs with CodecLowPriority0 {
 
   private def orElseEither[A, B](A: JsonCodec[A], B: JsonCodec[B]): JsonCodec[Either[A, B]] =
     JsonCodec(
-      JsonEncoder.orElseEither[A, B](A, B),
+      JsonEncoder.orElseEither[A, B](A.encoder, B.encoder),
       A.decoder
         .map(x => Left(x): Either[A, B])
         .orElse(B.decoder.map(x => Right(x): Either[A, B]))
@@ -114,7 +118,7 @@ private[json] trait CodecLowPriority0 extends CodecLowPriority1 { this: JsonCode
     JsonCodec(JsonEncoder.hashSet[A], JsonDecoder.hashSet[A])
 
   implicit def hashMap[K: JsonFieldEncoder: JsonFieldDecoder, V: JsonEncoder: JsonDecoder]
-    : JsonEncoder[immutable.HashMap[K, V]] =
+    : JsonCodec[immutable.HashMap[K, V]] =
     JsonCodec(JsonEncoder.hashMap[K, V], JsonDecoder.hashMap[K, V])
 }
 
