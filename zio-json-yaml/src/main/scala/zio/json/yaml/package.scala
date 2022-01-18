@@ -65,13 +65,13 @@ package object yaml {
   }
 
   implicit final class DecoderYamlOps(private val raw: String) extends AnyVal {
-    def fromYaml[A](implicit A: JsonDecoder[A]): Either[String, A] =
+    def fromYaml[A](implicit decoder: JsonDecoder[A]): Either[String, A] =
       Try {
         val yaml = new Yaml().compose(new StringReader(raw))
         yamlToJson(yaml)
       }.toEither.left
         .map(_.getMessage)
-        .flatMap(A.fromJsonAST)
+        .flatMap(decoder.fromJsonAST(_))
   }
 
   private val multiline: Regex = "[\n\u0085\u2028\u2029]".r

@@ -8,9 +8,22 @@ import zio.test._
 import scala.collection.immutable
 
 object CodecSpec extends DefaultRunnableSpec {
+  case class RecursiveOption(i: Int, d: Double, s: List[String], o: Option[RecursiveOption])
+  object RecursiveOption {      
+    implicit lazy val codec: JsonCodec[RecursiveOption] = DeriveJsonCodec.gen[RecursiveOption]
+  }
 
   def spec: Spec[TestEnvironment, TestFailure[Any], TestSuccess] =
     suite("CodecSpec")(
+      suite("Codec regressions")(
+        test("option in recursive structure") {
+          val expected = RecursiveOption(100, 0.25, List("a", "b"), Some(RecursiveOption(200, 0, Nil, None)))
+
+          val decoded = JsonCodec[RecursiveOption].decoder.decodeJson("""{"i":100,"d":0.25,"s":["a","b"],"o":{"i":200,"d":0,"s":[]}}""")
+
+          assertTrue(decoded.right.get == expected)
+        }
+      ),
       suite("Decoding")(
         test("empty") {
           import exampleempty._

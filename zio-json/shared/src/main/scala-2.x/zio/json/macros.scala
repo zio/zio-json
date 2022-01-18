@@ -182,7 +182,14 @@ object DeriveJsonDecoder {
                   if (defaults(i).isDefined) {
                     ps(i) = defaults(i).get
                   } else {
-                    missing.add(names(i))
+                    val tc = tcs(i)
+                    try {
+                      // There is no default value, see if the type class decoder can handle it:
+                      ps(i) = tc.unsafeDecodeMissing(JsonError.ObjectAccess(names(i)) :: Nil)
+                    } catch {
+                      case JsonDecoder.UnsafeJson(trace) =>
+                        missing.add(names(i))
+                    }
                   }
                 }
                 i += 1

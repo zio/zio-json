@@ -6,7 +6,7 @@ import zio.test._
 
 object YamlDecoderSpec extends DefaultRunnableSpec {
   override def spec: ZSpec[TestEnvironment, Any] =
-    suite("Decoding from YAML")(
+    suite("YamlDecoderSpec")(
       test("object root") {
         assert(ex1Yaml.fromYaml[Example])(
           isRight(equalTo(ex1))

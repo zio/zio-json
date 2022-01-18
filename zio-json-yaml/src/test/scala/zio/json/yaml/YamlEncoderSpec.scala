@@ -8,14 +8,14 @@ import zio.test._
 
 object YamlEncoderSpec extends DefaultRunnableSpec {
   override def spec: ZSpec[TestEnvironment, Any] =
-    suite("Encoding to YAML")(
+    suite("YamlEncoderSpec")(
       test("object root") {
-        assert(ex1.toJsonAST.flatMap(_.toYaml()))(
+        assert(ex1.toJsonAST.flatMap(_.toYaml(YamlOptions.default.copy(lineBreak = LineBreak.UNIX))))(
           isRight(equalTo(ex1Yaml))
         )
       },
       test("object root, with extension method") {
-        assert(ex1.toYaml())(
+        assert(ex1.toYaml(YamlOptions.default.copy(lineBreak = LineBreak.UNIX)))(
           isRight(equalTo(ex1Yaml))
         )
       },
@@ -62,7 +62,7 @@ object YamlEncoderSpec extends DefaultRunnableSpec {
         )
       },
       test("sequence root") {
-        assert(Json.Arr(Json.Bool(true), Json.Bool(false), Json.Bool(true)).toYaml())(
+        assert(Json.Arr(Json.Bool(true), Json.Bool(false), Json.Bool(true)).toYaml(YamlOptions.default.copy(lineBreak = LineBreak.UNIX)))(
           isRight(equalTo("""  - true
                             |  - false
                             |  - true
@@ -75,7 +75,8 @@ object YamlEncoderSpec extends DefaultRunnableSpec {
             _.toYaml(
               YamlOptions.default.copy(
                 indentation = 4,
-                sequenceIndentation = 0
+                sequenceIndentation = 0,
+                lineBreak = LineBreak.UNIX
               )
             )
           )
@@ -88,7 +89,7 @@ object YamlEncoderSpec extends DefaultRunnableSpec {
   val ex1: Example =
     Example(
       i = 100,
-      d = 0.15,
+      d = 0.25,
       s = List("a", "b"),
       o = Some(
         Example(
@@ -102,7 +103,7 @@ object YamlEncoderSpec extends DefaultRunnableSpec {
 
   val ex1Yaml: String =
     """i: 100
-      |d: 0.15
+      |d: 0.25
       |s:
       |  - a
       |  - b
@@ -114,7 +115,7 @@ object YamlEncoderSpec extends DefaultRunnableSpec {
 
   val ex1Yaml2: String =
     """i: 100
-      |d: 0.15
+      |d: 0.25
       |s:
       |- a
       |- b
@@ -125,7 +126,7 @@ object YamlEncoderSpec extends DefaultRunnableSpec {
       |""".stripMargin
 
   case class Example(i: Int, d: Double, s: List[String], o: Option[Example])
-  object Example {
+  object Example {      
     implicit lazy val codec: JsonCodec[Example] = DeriveJsonCodec.gen[Example]
   }
 }
