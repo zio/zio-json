@@ -10,7 +10,7 @@ import scala.collection.immutable
 object CodecSpec extends DefaultRunnableSpec {
 
   def spec: Spec[TestEnvironment, TestFailure[Any], TestSuccess] =
-    suite("Codec")(
+    suite("CodecSpec")(
       suite("Decoding")(
         test("empty") {
           import exampleempty._

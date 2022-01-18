@@ -1,14 +1,11 @@
 package zio.json
 
 import java.util.Arrays
-import java.nio.charset.StandardCharsets.UTF_8
 import java.util.concurrent.TimeUnit
 
-import zio.json
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.github.plokhotnyuk.jsoniter_scala.macros._
 import io.circe
-import zio.json.GoogleMapsAPIBenchmarks._
 import testzio.json.TestUtils._
 import testzio.json.data.googlemaps._
 import org.openjdk.jmh.annotations._

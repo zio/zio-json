@@ -3,7 +3,6 @@ package zio.json
 import java.nio.charset.StandardCharsets._
 import java.util.concurrent.TimeUnit
 
-import zio.json
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.github.plokhotnyuk.jsoniter_scala.macros._
 import io.circe

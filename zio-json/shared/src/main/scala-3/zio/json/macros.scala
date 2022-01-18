@@ -95,13 +95,13 @@ object DeriveJsonDecoder extends Derivation[JsonDecoder] { self =>
     } else {
       new JsonDecoder[A] {
         val names: Array[String] =
-          ctx
+          IArray.genericWrapArray(ctx
           .params.map { p =>
             p
               .annotations
               .collectFirst { case jsonField(name) => name }
               .getOrElse(p.label)
-          }
+          })
           .toArray
 
         val len:    Int              = names.length
@@ -109,10 +109,10 @@ object DeriveJsonDecoder extends Derivation[JsonDecoder] { self =>
         val spans:  Array[JsonError] = names.map(JsonError.ObjectAccess(_))
 
         lazy val tcs: Array[JsonDecoder[Any]] =
-          ctx.params.map(_.typeclass).toArray.asInstanceOf[Array[JsonDecoder[Any]]]
+          IArray.genericWrapArray(ctx.params.map(_.typeclass)).toArray.asInstanceOf[Array[JsonDecoder[Any]]]
 
         lazy val defaults: Array[Option[Any]] =
-          ctx.params.map(_.default).toArray
+          IArray.genericWrapArray(ctx.params.map(_.default)).toArray
 
         lazy val namesMap: Map[String, Int] =
           names.zipWithIndex.toMap
@@ -218,16 +218,16 @@ object DeriveJsonDecoder extends Derivation[JsonDecoder] { self =>
   }
 
   def split[A](ctx: SealedTrait[JsonDecoder, A]): JsonDecoder[A] = {
-    val names: Array[String] = ctx.subtypes.map { p =>
+    val names: Array[String] = IArray.genericWrapArray(ctx.subtypes.map { p =>
       p.annotations.collectFirst { case jsonHint(name) =>
         name
       }.getOrElse(p.typeInfo.short)
-    }.toArray
+    }).toArray
 
     val matrix: StringMatrix = new StringMatrix(names)
 
     lazy val tcs: Array[JsonDecoder[Any]] =
-      ctx.subtypes.map(_.typeclass).toArray.asInstanceOf[Array[JsonDecoder[Any]]]
+      IArray.genericWrapArray(ctx.subtypes.map(_.typeclass)).toArray.asInstanceOf[Array[JsonDecoder[Any]]]
 
     lazy val namesMap: Map[String, Int] =
       names.zipWithIndex.toMap
@@ -365,17 +365,17 @@ object DeriveJsonEncoder extends Derivation[JsonEncoder] { self =>
           val len = params.length
 
           val names =
-            ctx
+            IArray.genericWrapArray(ctx
               .params
               .map { p =>
                 p.annotations.collectFirst {
                   case jsonField(name) => name
                 }.getOrElse(p.label)
-              }
+              })
               .toArray
 
           val tcs: Array[JsonEncoder[Any]] =
-            params.map(_.typeclass.asInstanceOf[JsonEncoder[Any]]).toArray
+            IArray.genericWrapArray(params.map(_.typeclass.asInstanceOf[JsonEncoder[Any]])).toArray
 
           out.write("{")
 
@@ -557,20 +557,11 @@ object DeriveJsonEncoder extends Derivation[JsonEncoder] { self =>
     }
 }
 
-object DeriveJsonCodec extends Derivation[JsonCodec] { self =>
-  def join[A](ctx: CaseClass[Typeclass, A]): JsonCodec[A] = {
-    val encoder = DeriveJsonEncoder.join(ctx.asInstanceOf[CaseClass[JsonEncoder, A]])
-    val decoder = DeriveJsonDecoder.join(ctx.asInstanceOf[CaseClass[JsonDecoder, A]])
+object DeriveJsonCodec {
+  inline def gen[A](using mirror: Mirror.Of[A]) = {
+    val encoder = DeriveJsonEncoder.gen[A]
+    val decoder = DeriveJsonDecoder.gen[A]
 
     JsonCodec(encoder, decoder)
   }
-
-  def split[A](ctx: SealedTrait[JsonCodec, A]): JsonCodec[A] = {
-    val encoder = DeriveJsonEncoder.split(ctx.asInstanceOf[SealedTrait[JsonEncoder, A]])
-    val decoder = DeriveJsonDecoder.split(ctx.asInstanceOf[SealedTrait[JsonDecoder, A]])
-
-    JsonCodec(encoder, decoder)
-  }
-
-  inline def gen[A](using mirror: Mirror.Of[A]) = self.derived[A]
 }

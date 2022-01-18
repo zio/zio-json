@@ -468,21 +468,16 @@ private[this] final class NestedWriter(out: Write, indent: Option[Int]) extends 
 }
 
 object DeriveJsonCodec {
-  def gen[A]: JsonCodec[A] = macro Magnolia.gen[A]
+  def gen[A]: JsonCodec[A] = macro genBoth[A]
 
-  type Typeclass[A] = JsonCodec[A]
+  import scala.reflect.macros._
 
-  def combine[A](ctx: CaseClass[JsonCodec, A]): JsonCodec[A] = {
-    val encoder = DeriveJsonEncoder.combine(ctx.asInstanceOf[CaseClass[JsonEncoder, A]])
-    val decoder = DeriveJsonDecoder.combine(ctx.asInstanceOf[CaseClass[JsonDecoder, A]])
+  def genBoth[T: c.WeakTypeTag](c: whitebox.Context): c.Tree = {
+    import c.universe._
 
-    JsonCodec(encoder, decoder)
-  }
+    val encoder = q"DeriveJsonEncoder.gen[${c.weakTypeOf[T]}]"
+    val decoder = q"DeriveJsonDecoder.gen[${c.weakTypeOf[T]}]"
 
-  def dispatch[A](ctx: SealedTrait[JsonCodec, A]): JsonCodec[A] = {
-    val encoder = DeriveJsonEncoder.dispatch(ctx.asInstanceOf[SealedTrait[JsonEncoder, A]])
-    val decoder = DeriveJsonDecoder.dispatch(ctx.asInstanceOf[SealedTrait[JsonDecoder, A]])
-
-    JsonCodec(encoder, decoder)
+    q"JsonCodec($encoder, $decoder)"
   }
 }
