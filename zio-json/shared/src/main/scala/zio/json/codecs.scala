@@ -36,6 +36,24 @@ trait JsonCodec[A] extends JsonDecoder[A] with JsonEncoder[A] { self =>
   def eraseEither[B](that: JsonCodec[B]): JsonCodec[Either[A, B]] =
     JsonCodec.eraseEither(self, that)
 
+  def orElse[A1 >: A](that: JsonCodec[A1]): JsonCodec[A1] = new JsonCodec[A1] {
+    def encoder = that.encoder
+    def decoder = self.decoder orElse that.decoder
+
+    override def unsafeEncode(a: A1, indent: Option[Int], out: Write) = encoder.unsafeEncode(a, indent, out)
+
+    override def unsafeDecode(trace: List[JsonError], in: RetractReader) = decoder.unsafeDecode(trace, in)
+  }
+
+  def orElseEither[B](that: JsonCodec[B]): JsonCodec[Either[A, B]] = new JsonCodec[Either[A, B]] {
+    def encoder: JsonEncoder[Either[A, B]] = self.encoder.either(that.encoder)
+    def decoder: JsonDecoder[Either[A, B]] = self.decoder.orElseEither(that.decoder)
+
+    override def unsafeEncode(a: Either[A, B], indent: Option[Int], out: Write) = encoder.unsafeEncode(a, indent, out)
+
+    override def unsafeDecode(trace: List[JsonError], in: RetractReader) = decoder.unsafeDecode(trace, in)
+  }
+
 }
 
 object JsonCodec extends GeneratedTupleCodecs with CodecLowPriority0 {
