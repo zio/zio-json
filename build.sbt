@@ -87,7 +87,7 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform)
       CrossVersion.partialVersion(scalaVersion.value) match {
         case Some((3, _)) =>
           Vector(
-            "com.softwaremill.magnolia1_3" %% "magnolia" % "1.0.0"
+            "com.softwaremill.magnolia1_3" %%% "magnolia" % "1.0.0"
           )
 
         case _ =>
@@ -96,8 +96,8 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform)
             "com.propensive"                        %%% "magnolia"              % "0.17.0",
             "io.circe"                              %%% "circe-generic-extras"  % circeVersion       % "test",
             "com.typesafe.play"                     %%% "play-json"             % "2.9.2"            % "test",
-            "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-core"   % "2.12.1"           % "test",
-            "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-macros" % "2.12.1"           % "test"
+            "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-core"   % "2.12.3"           % "test",
+            "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-macros" % "2.12.3"           % "test"
           )
       }
     },
