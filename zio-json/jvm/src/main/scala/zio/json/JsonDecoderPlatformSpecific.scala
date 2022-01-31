@@ -49,7 +49,7 @@ trait JsonDecoderPlatformSpecific[A] { self: JsonDecoder[A] =>
   final def decodeJsonPipeline(
     delimiter: JsonStreamDelimiter = JsonStreamDelimiter.Array
   ): ZPipeline[Any, Throwable, Char, A] =
-    fromManagedPush {
+    ZPipeline.fromPush {
       for {
         // format: off
       runtime    <- ZManaged.runtime[Any]

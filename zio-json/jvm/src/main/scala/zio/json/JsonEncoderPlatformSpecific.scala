@@ -17,7 +17,7 @@ trait JsonEncoderPlatformSpecific[A] { self: JsonEncoder[A] =>
     delimiter: Option[Char],
     endWith: Option[Char]
   ): ZPipeline[Any, Throwable, A, Char] =
-    fromManagedPush {
+    ZPipeline.fromPush {
       for {
         runtime     <- ZIO.runtime[Any].toManaged
         chunkBuffer <- Ref.makeManaged(Chunk.fromIterable(startWith.toList))
