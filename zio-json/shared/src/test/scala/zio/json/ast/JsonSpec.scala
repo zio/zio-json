@@ -117,6 +117,17 @@ object JsonSpec extends DefaultRunnableSpec {
         },
         test("empty != nonempty") {
           assertTrue(Json.Obj() != Json.Obj("id" -> Json.Num(6200)))
+        },
+        test("object keys should be tested for equality") {
+          val obj1 = Json.Obj(
+            "foo" -> Json.Str("1")
+          )
+
+          val obj2 = Json.Obj(
+            "bar" -> Json.Str("1")
+          )
+
+          assert(obj1)(not(equalTo(obj2)))
         }
       ),
       suite("hashCode")(

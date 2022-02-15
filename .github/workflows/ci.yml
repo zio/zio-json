@@ -69,7 +69,7 @@ jobs:
       fail-fast: false
       matrix:
         java: ['adopt@1.8', 'adopt@1.11']
-        scala: ['2.12.14', '2.13.6', '3.0.2']
+        scala: ['2.12.14', '2.13.6', '3.1.1']
         platform: ['JVM', 'JS']
     steps:
       - name: Checkout current branch
@@ -83,10 +83,10 @@ jobs:
       - name: Cache scala dependencies
         uses: coursier/cache-action@v6
       - name: Run tests
-        if: ${{ !startsWith(matrix.scala, '3.0.') }}
+        if: ${{ !startsWith(matrix.scala, '3.1.') }}
         run: sbt ++${{ matrix.scala }}! test${{ matrix.platform }}
       - name: Run Dotty tests
-        if: ${{ startsWith(matrix.scala, '3.0.') && matrix.platform == 'JVM' }}
+        if: ${{ startsWith(matrix.scala, '3.1.') && matrix.platform == 'JVM' }}
         run: sbt ++${{ matrix.scala }}! testJVMDotty
 
   ci:

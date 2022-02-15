@@ -2,7 +2,7 @@ package zio.json
 
 import zio.json.ast.Json
 import scala.annotation.*
-import magnolia.*
+import magnolia1.*
 import scala.deriving.Mirror
 import scala.compiletime.*
 import scala.reflect.*

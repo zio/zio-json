@@ -87,7 +87,7 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform)
       CrossVersion.partialVersion(scalaVersion.value) match {
         case Some((3, _)) =>
           Vector(
-            "com.softwaremill.magnolia" %%% "magnolia-core" % "2.0.0-M9"
+            "com.softwaremill.magnolia1_3" %%% "magnolia" % "1.0.0"
           )
 
         case _ =>
@@ -96,8 +96,8 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform)
             "com.propensive"                        %%% "magnolia"              % "0.17.0",
             "io.circe"                              %%% "circe-generic-extras"  % circeVersion       % "test",
             "com.typesafe.play"                     %%% "play-json"             % "2.9.2"            % "test",
-            "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-core"   % "2.12.0"           % "test",
-            "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-macros" % "2.12.0"           % "test"
+            "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-core"   % "2.12.3"           % "test",
+            "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-macros" % "2.12.3"           % "test"
           )
       }
     },
@@ -198,13 +198,13 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform)
       CrossVersion.partialVersion(scalaVersion.value) match {
         case Some((3, _)) =>
           Vector(
-            "org.typelevel" %% "jawn-ast" % "1.3.0" % "test"
+            "org.typelevel" %% "jawn-ast" % "1.3.2" % "test"
           )
 
         case _ =>
           Seq(
             "ai.x"          %% "play-json-extensions" % "0.42.0" % "test",
-            "org.typelevel" %% "jawn-ast"             % "1.3.0"  % "test"
+            "org.typelevel" %% "jawn-ast"             % "1.3.2"  % "test"
           )
       }
     }
@@ -226,7 +226,7 @@ lazy val zioJsonYaml = project
   .settings(buildInfoSettings("zio.json.yaml"))
   .settings(
     libraryDependencies ++= Seq(
-      "org.yaml" % "snakeyaml"    % "1.29",
+      "org.yaml" % "snakeyaml"    % "1.30",
       "dev.zio" %% "zio"          % zioVersion,
       "dev.zio" %% "zio-test"     % zioVersion % "test",
       "dev.zio" %% "zio-test-sbt" % zioVersion % "test"
@@ -242,7 +242,7 @@ lazy val zioJsonMacros = crossProject(JSPlatform, JVMPlatform)
   .settings(crossProjectSettings)
   .settings(macroExpansionSettings)
   .settings(
-    crossScalaVersions --= Vector("3.0.2"),
+    crossScalaVersions -= ScalaDotty,
     scalacOptions -= "-Xfatal-warnings", // not quite ready.
     libraryDependencies ++= Seq(
       "org.scala-lang" % "scala-reflect" % scalaVersion.value % Provided,
@@ -263,7 +263,7 @@ lazy val zioJsonInteropHttp4s = project
   .settings(stdSettings("zio-json-interop-http4s"))
   .settings(buildInfoSettings("zio.json.interop.http4s"))
   .settings(
-    crossScalaVersions --= Vector("3.0.2"),
+    crossScalaVersions -= ScalaDotty,
     libraryDependencies ++= Seq(
       "org.http4s"    %% "http4s-dsl"       % "0.21.31",
       "dev.zio"       %% "zio"              % zioVersion,
@@ -284,9 +284,9 @@ lazy val zioJsonInteropRefined = crossProject(JSPlatform, JVMPlatform)
   .settings(stdSettings("zio-json-interop-refined"))
   .settings(buildInfoSettings("zio.json.interop.refined"))
   .settings(
-    crossScalaVersions --= Vector("3.0.2"),
+    crossScalaVersions -= ScalaDotty,
     libraryDependencies ++= Seq(
-      "eu.timepit" %%% "refined"      % "0.9.27",
+      "eu.timepit" %%% "refined"      % "0.9.28",
       "dev.zio"    %%% "zio-test"     % zioVersion % "test",
       "dev.zio"    %%% "zio-test-sbt" % zioVersion % "test"
     ),
@@ -301,9 +301,9 @@ lazy val zioJsonInteropScalaz7x = crossProject(JSPlatform, JVMPlatform)
   .settings(stdSettings("zio-json-interop-scalaz7x"))
   .settings(buildInfoSettings("zio.json.interop.scalaz7x"))
   .settings(
-    crossScalaVersions --= Vector("3.0.2"),
+    crossScalaVersions -= ScalaDotty,
     libraryDependencies ++= Seq(
-      "org.scalaz" %%% "scalaz-core"  % "7.3.5",
+      "org.scalaz" %%% "scalaz-core"  % "7.3.6",
       "dev.zio"    %%% "zio-test"     % zioVersion % "test",
       "dev.zio"    %%% "zio-test-sbt" % zioVersion % "test"
     ),
@@ -322,7 +322,7 @@ lazy val docs = project
     zioJsonInteropScalaz7x.jvm
   )
   .settings(
-    crossScalaVersions --= Vector("3.0.2"),
+    crossScalaVersions -= ScalaDotty,
     publish / skip := true,
     mdocVariables := Map(
       "SNAPSHOT_VERSION" -> version.value,
