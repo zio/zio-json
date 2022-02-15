@@ -32,7 +32,8 @@ sealed abstract class Json { self =>
    */
   final def delete(cursor: JsonCursor[_, _]): Either[String, Json] = {
     val c = cursor.asInstanceOf[JsonCursor[_, Json]]
-    self.get(c).map(_ => self.transformOrDelete(c, true)(_ => Json.Null))
+
+    self.get(c).map(_ => transformOrDelete(c, delete = true)(_ => Json.Null))
   }
 
   override final def equals(that: Any): Boolean = {
@@ -233,7 +234,7 @@ sealed abstract class Json { self =>
    * @return Json with transformed node if node specified by cursor exists, error otherwise
    */
   final def transformAt[A <: Json](cursor: JsonCursor[_, A])(f: A => Json): Either[String, Json] =
-    self.get(cursor).map(_ => self.transformOrDelete(cursor, false)(f))
+    self.get(cursor).map(_ => transformOrDelete(cursor, delete = false)(f))
 
   final def transformDown(f: Json => Json): Json = {
     def loop(json: Json): Json =

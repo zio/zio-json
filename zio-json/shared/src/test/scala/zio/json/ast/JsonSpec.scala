@@ -103,21 +103,6 @@ object JsonSpec extends DefaultRunnableSpec {
 
           assert(obj1)(equalTo(obj2))
         },
-        test("object missing key") {
-          val left = Json.Obj(
-            "id"   -> Json.Num(6200),
-            "name" -> Json.Str("Twitter API")
-          )
-
-          val right = Json.Obj(
-            "id" -> Json.Num(6200)
-          )
-
-          assertTrue(right != left)
-        },
-        test("empty != nonempty") {
-          assertTrue(Json.Obj() != Json.Obj("id" -> Json.Num(6200)))
-        },
         test("object keys should be tested for equality") {
           val obj1 = Json.Obj(
             "foo" -> Json.Str("1")
@@ -463,13 +448,13 @@ object JsonSpec extends DefaultRunnableSpec {
           },
           test("failure - from") {
             val fromCursor = JsonCursor.field("user").isArray
-            val toCursor = JsonCursor.field("entities")
+            val toCursor   = JsonCursor.field("entities")
 
             assert(tweet.relocate(fromCursor, toCursor))(isLeft)
           },
           test("failure - to") {
             val fromCursor = JsonCursor.field("user").isObject
-            val toCursor = JsonCursor.field("entities").isBool
+            val toCursor   = JsonCursor.field("entities").isBool
 
             assert(tweet.relocate(fromCursor, toCursor))(isLeft)
           }
