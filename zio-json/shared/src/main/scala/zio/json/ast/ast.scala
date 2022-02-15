@@ -33,7 +33,7 @@ sealed abstract class Json { self =>
   final def delete(cursor: JsonCursor[_, _]): Either[String, Json] = {
     val c = cursor.asInstanceOf[JsonCursor[_, Json]]
 
-    self.get(c).map(_ => transformOrDelete(c, delete = true)(_ => Json.Null))
+    transformOrDelete(c, delete = true)(_ => Right(Json.Null))
   }
 
   override final def equals(that: Any): Boolean = {
@@ -234,7 +234,7 @@ sealed abstract class Json { self =>
    * @return Json with transformed node if node specified by cursor exists, error otherwise
    */
   final def transformAt[A <: Json](cursor: JsonCursor[_, A])(f: A => Json): Either[String, Json] =
-    self.get(cursor).map(_ => transformOrDelete(cursor, delete = false)(f))
+    transformOrDelete(cursor, delete = false)(x => Right(f(x)))
 
   final def transformDown(f: Json => Json): Json = {
     def loop(json: Json): Json =
@@ -255,38 +255,37 @@ sealed abstract class Json { self =>
   }
 
   @tailrec
-  private def transformOrDelete[A <: Json](cursor: JsonCursor[_, A], delete: Boolean)(f: A => Json): Json =
+  private def transformOrDelete[A <: Json](cursor: JsonCursor[_, A], delete: Boolean)(
+    f: A => Either[String, Json]
+  ): Either[String, Json] =
     cursor match {
       case JsonCursor.Identity => f(self)
 
-      case JsonCursor.DownField(parent, field) =>
+      case JsonCursor.DownField(parent, key) =>
         self.transformOrDelete(parent, false) { case Obj(fields) =>
-          Obj(
-            if (delete)
-              fields.filter(_._1 != field)
-            else
-              fields.map { case (name, json) =>
-                if (field == name) (name, f(json)) else (name, json)
-              }
-          )
+          val (left, right) = fields.splitWhere(_._1 == key)
+
+          if (right.isEmpty)
+            Left(s"No such field: '$key'")
+          else if (delete)
+            Right(Obj(left ++ right.takeRight(right.length - 1)))
+          else
+            f(right.head._2).map(value => Obj(left ++ Chunk(key -> value) ++ right.takeRight(right.length - 1)))
         }
 
-      case JsonCursor.DownElement(parent, element) =>
+      case JsonCursor.DownElement(parent, index) =>
         self.transformOrDelete(parent, false) { case Arr(elements) =>
-          Arr(
-            if (delete)
-              elements.zipWithIndex.filter(_._2 != element).map(_._1)
-            else
-              elements.zipWithIndex.map { case (json, index) =>
-                if (index == element)
-                  f(json)
-                else json
-              }
-          )
+          val (left, right) = elements.splitAt(index)
+          if (right.isEmpty)
+            Left(s"The array does not have index ${index}")
+          else if (delete)
+            Right(Arr(left ++ right.takeRight(right.length - 1)))
+          else
+            f(right.head).map(value => Arr(left ++ Chunk(value) ++ right.takeRight(right.length - 1)))
         }
 
       case JsonCursor.FilterType(parent, t @ jsonType) =>
-        self.transformOrDelete(parent, delete)(json => jsonType.get(json).map(f).getOrElse(json))
+        self.transformOrDelete(parent, delete)(json => jsonType.get(json).flatMap(f))
     }
 
   final def transformUp(f: Json => Json): Json = {
