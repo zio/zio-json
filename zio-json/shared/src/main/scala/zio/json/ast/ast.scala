@@ -26,14 +26,12 @@ import scala.annotation._
 sealed abstract class Json { self =>
   override final def equals(that: Any): Boolean = {
     def objEqual(left: Map[String, Json], right: Chunk[(String, Json)]): Boolean =
-      if (right.isEmpty) true
-      else
-        right.find { case (key, r) =>
-          left.get(key) match {
-            case Some(l) if l != r => true
-            case _                 => false
-          }
-        }.isEmpty
+      right.forall { case (key, r) =>
+        left.get(key) match {
+          case Some(l) if l == r => true
+          case _                 => false
+        }
+      }
 
     that match {
       case that: Json =>
