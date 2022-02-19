@@ -33,76 +33,132 @@ trait AsyncDecoder[+Value] {
   def unsafeNewDecoding(index: Int, registers: Registers): AsyncDecoding[Value]
 }
 object AsyncDecoder {
-  class LiteralDecoding(literal: Array[Char], errorMessage: Option[String] = None) extends AsyncDecoding[String] {
-    private var position: Int = 0
 
-    def reset(): Unit = position = 0
+  def decodeLiteral(
+    literal: Array[Char],
+    decodingPosition: Int,
+    chars: CharSequence,
+    errorMessage: String
+  ): Int = {
+    val seqLen     = chars.length()
+    val literalLen = literal.length
 
-    def feed(charSequence: CharSequence): Int = {
-      val seqLen = charSequence.length()
+    if (seqLen == 0) {
+      literalLen - decodingPosition
+    } else {
+      val len                       = Math.min(seqLen, literalLen - decodingPosition)
+      var charSequencePosition: Int = 0
 
-      if (seqLen == 0) {
-        seqLen - position
-      } else {
-        val literalLen                = literal.length
-        val len                       = Math.min(seqLen, literalLen - position)
-        var charSequencePosition: Int = 0
+      while (charSequencePosition < len) {
+        if (chars.charAt(charSequencePosition) != literal(charSequencePosition + decodingPosition))
+          throw AsyncDecodingError(errorMessage)
+        charSequencePosition += 1
+      }
 
-        while (charSequencePosition < len) {
-          if (charSequence.charAt(charSequencePosition) != literal(charSequencePosition + position))
-            throw AsyncDecodingError(errorMessage.getOrElse(s"""Expected "${new String(literal)}" literal"""))
-          charSequencePosition += 1
+      val newPosition = charSequencePosition + decodingPosition
+
+      if (newPosition < seqLen)
+        newPosition - seqLen
+      else
+        literalLen - newPosition
+    }
+  }
+
+  abstract class AnyOfLiterals[Value](literals: Array[Array[Char]], error: String) extends AsyncDecoding[Value] {
+    private var state = 0
+
+    private val BranchMask: Int = Integer.highestOneBit(literals.length) * 2 - 1
+    private val BranchBitLen: Int = (Math.log(literals.length + 1) /
+      Math.log(2) + 1).toInt
+
+    protected def branch(): Int = (state & BranchMask)
+    private def position(): Int = (state >> BranchBitLen)
+
+    private def setPosition(int: Int): Unit                       = state = (state & BranchMask) | (int << BranchBitLen)
+    private def setBranchAndPosition(branch: Int, pos: Int): Unit = state = branch | (pos << BranchBitLen)
+
+    override def reset(): Unit =
+      state = 0
+
+    private def indexOf(char: Char): Int = {
+      var i = 0
+      while (i < literals.length) {
+        if (char == literals(i)(0)) return i
+        i += 1
+      }
+      -1
+    }
+
+    override def feed(chars: CharSequence): Int =
+      if (chars.length() == 0) {
+        literals(branch() - 1).length - position()
+      } else
+        branch() match {
+          case 0 =>
+            val firstChar = chars.charAt(0)
+
+            val index = indexOf(firstChar)
+
+            if (index == -1)
+              throw AsyncDecodingError(error)
+
+            val literal = literals(index)
+
+            val curPos   = position()
+            val consumed = decodeLiteral(literal, curPos, chars, error)
+
+            if (consumed <= 0) {
+              setBranchAndPosition(index + 1, literal.length)
+              setRegister
+            } else
+              setBranchAndPosition(index + 1, literal.length - consumed)
+            consumed
+          case branch =>
+            val curPos  = position()
+            val literal = literals(branch - 1)
+
+            val consumed = decodeLiteral(literal, curPos, chars, error)
+            if (consumed <= 0) {
+              setPosition(literal.length)
+              setRegister
+            } else
+              setPosition(literal.length - consumed)
+
+            consumed
         }
 
-        position += charSequencePosition
+    def setRegister: Unit
 
-        if (position < seqLen)
-          position - seqLen
-        else
-          literalLen - position
-      }
-    }
   }
 
   val boolean: AsyncDecoder[Boolean] =
     (index: Int, registers: Registers) =>
-      new AsyncDecoding[Boolean] {
-        val trueDecoder: AsyncDecoding[String] =
-          new LiteralDecoding("true".toCharArray, Some("""Expected "true" or "false" boolean literal"""))
-        val falseDecoder: AsyncDecoding[String] =
-          new LiteralDecoding("false".toCharArray, Some("""Expected "true" or "false" boolean literal"""))
-
-        def reset(): Unit = {
-          trueDecoder.reset()
-          falseDecoder.reset()
-        }
-
-        def feed(chars: CharSequence): Int =
-          try {
-            consumeTrue(chars)
-          } catch {
-            case _: AsyncDecodingError =>
-              consumeFalse(chars)
+      new AnyOfLiterals[Boolean](
+        Array("true".toCharArray, "false".toCharArray),
+        """Expected "true" or "false" boolean literal"""
+      ) {
+        def setRegister: Unit =
+          branch() match {
+            case 1 => registers.registers(index) = true
+            case 2 => registers.registers(index) = false
+            case _ =>
           }
+      }
 
-        private def consumeTrue(chars: CharSequence): Int = {
-          val consumed = trueDecoder.feed(chars)
-
-          if (consumed <= 0)
-            registers.registers(index) = true
-
-          consumed
-        }
-
-        private def consumeFalse(chars: CharSequence): Int = {
-          val consumed = falseDecoder.feed(chars)
-
-          if (consumed <= 0)
-            registers.registers(index) = false
-
-          consumed
-        }
-
+  val any: AsyncDecoder[Any] =
+    (index: Int, registers: Registers) =>
+      new AnyOfLiterals[Any](
+        Array("true".toCharArray, "false".toCharArray, "null".toCharArray, "literal".toCharArray),
+        """Expected "true" or "false" boolean literal"""
+      ) {
+        def setRegister: Unit =
+          branch() match {
+            case 1 => registers.registers(index) = true
+            case 2 => registers.registers(index) = false
+            case 3 => registers.registers(index) = None
+            case 4 => registers.registers(index) = "literal"
+            case _ =>
+          }
       }
 
 }
