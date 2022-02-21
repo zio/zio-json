@@ -68,9 +68,7 @@ object AsyncDecoder {
     private var state = 0
 
     private val BranchMask: Int = Integer.highestOneBit(literals.length) * 2 - 1
-    private val BranchBitLen: Int = (Math.log(literals.length + 1) /
-      Math.log(2) + 1).toInt
-
+    private val BranchBitLen: Int = Integer.bitCount(Integer.highestOneBit(literals.length) * 2 - 1)
     protected def branch(): Int = (state & BranchMask)
     private def position(): Int = (state >> BranchBitLen)
 
