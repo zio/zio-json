@@ -24,16 +24,26 @@ import scala.annotation._
  * JsonValue / Json / JValue
  */
 sealed abstract class Json { self =>
+
+  /**
+   * Deletes json node specified by given cursor
+   * @param cursor Cursor which specifies node to delete
+   * @return Json without specified node if node specified by cursor exists, error otherwise
+   */
+  final def delete(cursor: JsonCursor[_, _]): Either[String, Json] = {
+    val c = cursor.asInstanceOf[JsonCursor[_, Json]]
+
+    transformOrDelete(c, delete = true)(_ => Right(Json.Null))
+  }
+
   override final def equals(that: Any): Boolean = {
     def objEqual(left: Map[String, Json], right: Chunk[(String, Json)]): Boolean =
-      if (right.isEmpty) true
-      else
-        right.find { case (key, r) =>
-          left.get(key) match {
-            case Some(l) if l != r => true
-            case _                 => false
-          }
-        }.isEmpty
+      right.forall { case (key, r) =>
+        left.get(key) match {
+          case Some(l) if l == r => true
+          case _                 => false
+        }
+      }
 
     that match {
       case that: Json =>
@@ -136,6 +146,21 @@ sealed abstract class Json { self =>
     }
 
   /**
+   * Intersects JSON values. If both values are `Obj` or `Arr` method returns intersections of its fields/elements, otherwise
+   * it returns error
+   * @param that
+   * @return Intersected json if type are compatible, error otherwise
+   */
+  final def intersect(that: Json): Either[String, Json] =
+    (self, that) match {
+      case (Obj(fields1), Obj(fields2)) =>
+        Right(Obj(fields1.intersect(fields2)))
+      case (Arr(fields1), Arr(fields2)) =>
+        Right(Arr(fields1.intersect(fields2)))
+      case _ => Left("Non compatible types")
+    }
+
+  /**
    * - merging objects results in a new objects with all pairs of both sides, with the right hand
    *   side being used on key conflicts
    *
@@ -187,6 +212,30 @@ sealed abstract class Json { self =>
         r
     }
 
+  /**
+   * Relocates Json node from location specified by `from` cursor to location specified by `to` cursor.
+   *
+   * @param from Cursor which specifies node to relocate
+   * @return Json without specified node if node specified by cursor exists, error otherwise
+   * @param to Cursor which specifies location where to relocate node
+   * @return Json with relocated node if node specified by cursors exist, error otherwise
+   */
+  final def relocate(from: JsonCursor[_, _], to: JsonCursor[_, _]): Either[String, Json] = {
+    val f = from.asInstanceOf[JsonCursor[_, Json]]
+    val t = to.asInstanceOf[JsonCursor[_, Json]]
+    self.get(f).flatMap(json => self.transformAt(t)(_ => json).flatMap(_.delete(f)))
+  }
+
+  /**
+   * Transforms json node specified by given cursor
+   * @param cursor Cursor which specifies node to transform
+   * @param f Function used to transform node
+   * @tparam A refined node type
+   * @return Json with transformed node if node specified by cursor exists, error otherwise
+   */
+  final def transformAt[A <: Json](cursor: JsonCursor[_, A])(f: A => Json): Either[String, Json] =
+    transformOrDelete(cursor, delete = false)(x => Right(f(x)))
+
   final def transformDown(f: Json => Json): Json = {
     def loop(json: Json): Json =
       f(json) match {
@@ -204,6 +253,40 @@ sealed abstract class Json { self =>
 
     self.transformDown(total)
   }
+
+  @tailrec
+  private def transformOrDelete[A <: Json](cursor: JsonCursor[_, A], delete: Boolean)(
+    f: A => Either[String, Json]
+  ): Either[String, Json] =
+    cursor match {
+      case JsonCursor.Identity => f(self)
+
+      case JsonCursor.DownField(parent, key) =>
+        self.transformOrDelete(parent, false) { case Obj(fields) =>
+          val (left, right) = fields.splitWhere(_._1 == key)
+
+          if (right.isEmpty)
+            Left(s"No such field: '$key'")
+          else if (delete)
+            Right(Obj(left ++ right.takeRight(right.length - 1)))
+          else
+            f(right.head._2).map(value => Obj(left ++ Chunk(key -> value) ++ right.takeRight(right.length - 1)))
+        }
+
+      case JsonCursor.DownElement(parent, index) =>
+        self.transformOrDelete(parent, false) { case Arr(elements) =>
+          val (left, right) = elements.splitAt(index)
+          if (right.isEmpty)
+            Left(s"The array does not have index ${index}")
+          else if (delete)
+            Right(Arr(left ++ right.takeRight(right.length - 1)))
+          else
+            f(right.head).map(value => Arr(left ++ Chunk(value) ++ right.takeRight(right.length - 1)))
+        }
+
+      case JsonCursor.FilterType(parent, t @ jsonType) =>
+        self.transformOrDelete(parent, delete)(json => jsonType.get(json).flatMap(f))
+    }
 
   final def transformUp(f: Json => Json): Json = {
     def loop(json: Json): Json =
