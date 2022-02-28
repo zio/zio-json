@@ -35,7 +35,7 @@ addCommandAlias(
 
 addCommandAlias("testJS", "zioJsonJS/test")
 
-val zioVersion = "1.0.12"
+val zioVersion = "1.0.13"
 
 lazy val root = project
   .in(file("."))
@@ -87,7 +87,7 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform)
       CrossVersion.partialVersion(scalaVersion.value) match {
         case Some((3, _)) =>
           Vector(
-            "com.softwaremill.magnolia1_3" %%% "magnolia" % "1.0.0"
+            "com.softwaremill.magnolia1_3" %%% "magnolia" % "1.1.0"
           )
 
         case _ =>
