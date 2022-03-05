@@ -24,6 +24,32 @@ import scala.annotation._
  * JsonValue / Json / JValue
  */
 sealed abstract class Json { self =>
+  def asNull: Option[Unit]         = None
+  def asBoolean: Option[Boolean]   = None
+  def asNumber: Option[Json.Num]   = None
+  def asString: Option[String]     = None
+  def asArray: Option[Chunk[Json]] = None
+  def asObject: Option[Json.Obj]   = None
+
+  def mapBoolean(@nowarn f: Boolean => Boolean): Json                          = self
+  def mapNumber(@nowarn f: java.math.BigDecimal => java.math.BigDecimal): Json = self
+  def mapString(@nowarn f: String => String): Json                             = self
+  def mapArray(@nowarn f: Chunk[Json] => Chunk[Json]): Json                    = self
+  def mapArrayValues(@nowarn f: Json => Json): Json                            = self
+  def mapObject(@nowarn f: Json.Obj => Json.Obj): Json                         = self
+  def mapObjectKeys(@nowarn f: String => String): Json                         = self
+  def mapObjectValues(@nowarn f: Json => Json): Json                           = self
+  def mapObjectEntries(@nowarn f: ((String, Json)) => (String, Json)): Json    = self
+
+  final def arrayOrObject[X](
+    or: => X,
+    jsonArray: Chunk[Json] => X,
+    jsonObject: Json.Obj => X
+  ): X = self match {
+    case Json.Arr(a) => jsonArray(a)
+    case o: Json.Obj => jsonObject(o)
+    case _           => or
+  }
 
   /**
    * Deletes json node specified by given cursor
@@ -170,46 +196,9 @@ sealed abstract class Json { self =>
    */
   final def merge(that: Json): Json =
     (self, that) match {
-      case (Obj(fields1), Obj(fields2)) =>
-        val leftMap  = fields1.toMap
-        val rightMap = fields2.toMap
-
-        val lookup =
-          (fields1 ++ fields2)
-            .foldLeft(Map.empty[String, Int] -> 0) { case ((map, nextIndex), (name, _)) =>
-              map.get(name) match {
-                case None    => map.updated(name, nextIndex) -> (nextIndex + 1)
-                case Some(_) => map                          -> nextIndex
-              }
-            }
-            ._1
-
-        val array = Array.ofDim[(String, Json)](lookup.size)
-
-        lookup.foreach { case (key, index) =>
-          array(index) = key -> {
-            (leftMap.get(key), rightMap.get(key)) match {
-              case (Some(l), Some(r)) => l.merge(r)
-              case (None, Some(r))    => r
-              case (Some(l), None)    => l
-              case (None, None)       => Json.Null // can’t happen
-            }
-          }
-        }
-
-        Obj(Chunk.fromArray(array))
-
-      case (Arr(elements1), Arr(elements2)) =>
-        val leftover =
-          if (elements1.length > elements2.length) elements1.drop(elements2.length)
-          else elements2.drop(elements1.length)
-
-        Arr(elements1.zip(elements2).map { case (left, right) =>
-          left.merge(right)
-        } ++ leftover)
-
-      case (_, r) =>
-        r
+      case (a: Obj, b: Obj) => a merge b
+      case (a: Arr, b: Arr) => a merge b
+      case (_, r)           => r
     }
 
   /**
@@ -312,7 +301,58 @@ sealed abstract class Json { self =>
 }
 
 object Json {
-  final case class Obj(fields: Chunk[(String, Json)]) extends Json
+  final case class Obj(fields: Chunk[(String, Json)]) extends Json {
+    def contains(key: String): Boolean                      = fields.exists(_._1 == key)
+    def get(key: String): Option[Json]                      = fields.find(_._1 == key).map(_._2)
+    def isEmpty: Boolean                                    = fields.isEmpty
+    def nonEmpty: Boolean                                   = !isEmpty
+    lazy val keys: Chunk[String]                            = fields.map(_._1)
+    lazy val values: Chunk[Json]                            = fields.map(_._2)
+    def toMap: Map[String, Json]                            = fields.toMap
+    def add(key: String, value: Json): Json.Obj             = merge(Json.Obj(key -> value))
+    def +:(entry: (String, Json)): Json.Obj                 = add(entry._1, entry._2)
+    def remove(key: String): Json.Obj                       = Json.Obj(fields.filterNot(_._1 == key))
+    def mapValues(f: Json => Json): Json.Obj                = Json.Obj(fields.map(e => e._1 -> f(e._2)))
+    def filter(pred: ((String, Json)) => Boolean): Json.Obj = Json.Obj(fields.filter(pred))
+    def filterKeys(pred: String => Boolean): Json.Obj       = Json.Obj(fields.filter(e => pred(e._1)))
+    def merge(that: Json.Obj): Json.Obj = {
+      val fields1  = this.fields
+      val fields2  = that.fields
+      val leftMap  = fields1.toMap
+      val rightMap = fields2.toMap
+
+      val lookup =
+        (fields1 ++ fields2)
+          .foldLeft(Map.empty[String, Int] -> 0) { case ((map, nextIndex), (name, _)) =>
+            map.get(name) match {
+              case None    => map.updated(name, nextIndex) -> (nextIndex + 1)
+              case Some(_) => map                          -> nextIndex
+            }
+          }
+          ._1
+
+      val array = Array.ofDim[(String, Json)](lookup.size)
+
+      lookup.foreach { case (key, index) =>
+        array(index) = key -> {
+          (leftMap.get(key), rightMap.get(key)) match {
+            case (Some(l), Some(r)) => l.merge(r)
+            case (None, Some(r))    => r
+            case (Some(l), None)    => l
+            case (None, None)       => Json.Null // can’t happen
+          }
+        }
+      }
+
+      Json.Obj(Chunk.fromArray(array))
+    }
+
+    override def asObject: Some[Json.Obj]                                          = Some(this)
+    override def mapObject(f: Json.Obj => Json.Obj): Json.Obj                      = f(this)
+    override def mapObjectKeys(f: String => String): Json.Obj                      = Json.Obj(fields.map(e => f(e._1) -> e._2))
+    override def mapObjectValues(f: Json => Json): Json.Obj                        = mapValues(f)
+    override def mapObjectEntries(f: ((String, Json)) => (String, Json)): Json.Obj = Json.Obj(fields.map(f))
+  }
   object Obj {
     def apply(fields: (String, Json)*): Obj = Obj(Chunk(fields: _*))
 
@@ -335,7 +375,27 @@ object Json {
       override final def toJsonAST(a: Obj): Either[String, Json] = Right(a)
     }
   }
-  final case class Arr(elements: Chunk[Json]) extends Json
+  final case class Arr(elements: Chunk[Json]) extends Json {
+    def isEmpty: Boolean  = elements.isEmpty
+    def nonEmpty: Boolean = !isEmpty
+
+    def merge(that: Json.Arr): Json.Arr = {
+      val elements1 = this.elements
+      val elements2 = that.elements
+
+      val leftover =
+        if (elements1.length > elements2.length) elements1.drop(elements2.length)
+        else elements2.drop(elements1.length)
+
+      Json.Arr(elements1.zip(elements2).map { case (left, right) =>
+        left.merge(right)
+      } ++ leftover)
+    }
+
+    override def asArray: Some[Chunk[Json]]                        = Some(elements)
+    override def mapArray(f: Chunk[Json] => Chunk[Json]): Json.Arr = Json.Arr(f(elements))
+    override def mapArrayValues(f: Json => Json): Json.Arr         = Json.Arr(elements.map(f))
+  }
   object Arr {
     def apply(elements: Json*): Arr = Arr(Chunk(elements: _*))
 
@@ -358,7 +418,10 @@ object Json {
       override final def toJsonAST(a: Arr): Either[String, Json] = Right(a)
     }
   }
-  final case class Bool(value: Boolean) extends Json
+  final case class Bool(value: Boolean) extends Json {
+    override def asBoolean: Some[Boolean]                     = Some(value)
+    override def mapBoolean(f: Boolean => Boolean): Json.Bool = Json.Bool(f(value))
+  }
 
   object Bool {
     val False: Bool = Bool(false)
@@ -381,7 +444,10 @@ object Json {
       override final def toJsonAST(a: Bool): Either[String, Json] = Right(a)
     }
   }
-  final case class Str(value: String) extends Json
+  final case class Str(value: String) extends Json {
+    override def asString: Some[String]                   = Some(value)
+    override def mapString(f: String => String): Json.Str = Json.Str(f(value))
+  }
   object Str {
     implicit val decoder: JsonDecoder[Str] = new JsonDecoder[Str] {
       def unsafeDecode(trace: List[JsonError], in: RetractReader): Str =
@@ -400,7 +466,10 @@ object Json {
       override final def toJsonAST(a: Str): Either[String, Json] = Right(a)
     }
   }
-  final case class Num(value: java.math.BigDecimal) extends Json
+  final case class Num(value: java.math.BigDecimal) extends Json {
+    override def asNumber: Some[Json.Num]                                             = Some(this)
+    override def mapNumber(f: java.math.BigDecimal => java.math.BigDecimal): Json.Num = Json.Num(f(value))
+  }
   object Num {
     def apply(value: Byte): Num       = Num(BigDecimal(value.toInt).bigDecimal)
     def apply(value: Short): Num      = Num(BigDecimal(value.toInt).bigDecimal)
@@ -448,6 +517,8 @@ object Json {
 
       override final def toJsonAST(a: Null.type): Either[String, Json] = Right(a)
     }
+
+    override def asNull: Some[Unit] = Some(())
   }
 
   implicit val decoder: JsonDecoder[Json] = new JsonDecoder[Json] {
