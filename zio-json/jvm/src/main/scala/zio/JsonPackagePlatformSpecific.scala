@@ -9,22 +9,22 @@ import java.nio.charset.StandardCharsets
 import java.nio.file.{ Path, Paths }
 
 trait JsonPackagePlatformSpecific {
-  def readJsonAs(file: File): ZStream[Any, Throwable, ast.Json] =
+  def readJsonAs(file: File): ZStream[Scope, Throwable, ast.Json] =
     readJsonLinesAs[ast.Json](file)
 
-  def readJsonAs(path: Path): ZStream[Any, Throwable, ast.Json] =
+  def readJsonAs(path: Path): ZStream[Scope, Throwable, ast.Json] =
     readJsonLinesAs[ast.Json](path)
 
-  def readJsonAs(path: String): ZStream[Any, Throwable, ast.Json] =
+  def readJsonAs(path: String): ZStream[Scope, Throwable, ast.Json] =
     readJsonLinesAs[ast.Json](path)
 
-  def readJsonAs(url: URL): ZStream[Any, Throwable, ast.Json] =
+  def readJsonAs(url: URL): ZStream[Scope, Throwable, ast.Json] =
     readJsonLinesAs[ast.Json](url)
 
-  def readJsonLinesAs[A: JsonDecoder](file: File): ZStream[Any, Throwable, A] =
+  def readJsonLinesAs[A: JsonDecoder](file: File): ZStream[Scope, Throwable, A] =
     readJsonLinesAs(file.toPath)
 
-  def readJsonLinesAs[A: JsonDecoder](path: Path): ZStream[Any, Throwable, A] =
+  def readJsonLinesAs[A: JsonDecoder](path: Path): ZStream[Scope, Throwable, A] =
     ZStream
       .fromPath(path)
       .via(
@@ -33,16 +33,16 @@ trait JsonPackagePlatformSpecific {
           JsonDecoder[A].decodeJsonPipeline(JsonStreamDelimiter.Newline)
       )
 
-  def readJsonLinesAs[A: JsonDecoder](path: String): ZStream[Any, Throwable, A] =
+  def readJsonLinesAs[A: JsonDecoder](path: String): ZStream[Scope, Throwable, A] =
     readJsonLinesAs(Paths.get(path))
 
-  def readJsonLinesAs[A: JsonDecoder](url: URL): ZStream[Any, Throwable, A] = {
-    val managed = ZManaged
+  def readJsonLinesAs[A: JsonDecoder](url: URL): ZStream[Scope, Throwable, A] = {
+    val scoped = ZIO
       .fromAutoCloseable(ZIO.attempt(url.openStream()))
       .refineToOrDie[IOException]
 
     ZStream
-      .fromInputStreamManaged(managed)
+      .fromInputStreamScoped(scoped)
       .via(
         ZPipeline.utf8Decode >>>
           stringToChars >>>
