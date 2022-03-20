@@ -91,12 +91,14 @@ object DecoderPlatformSpecificSpec extends ZIOSpecDefault {
         // impl is covered by the tests
 
         getResourceAsStringM("che-2.geo.json").flatMap { str =>
-          ZIO.fromAutoCloseable(ZIO.attempt(getResourceAsReader("che-2.geo.json"))).flatMap { reader =>
-            for {
-              circe <- ZIO.fromEither(circe.parser.decode[GeoJSON](str))
-              got   <- ZIO.attemptBlocking(JsonDecoder[GeoJSON].unsafeDecode(Nil, reader))
-            } yield {
-              assert(got)(equalTo(circe))
+          ZIO.scoped[TestEnvironment] {
+            ZIO.fromAutoCloseable(ZIO.attempt(getResourceAsReader("che-2.geo.json"))).flatMap { reader =>
+              for {
+                circe <- ZIO.fromEither(circe.parser.decode[GeoJSON](str))
+                got   <- ZIO.attemptBlocking(JsonDecoder[GeoJSON].unsafeDecode(Nil, reader))
+              } yield {
+                assert(got)(equalTo(circe))
+              }
             }
           }
         }

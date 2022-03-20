@@ -31,9 +31,14 @@ trait JsonDecoderPlatformSpecific[A] { self: JsonDecoder[A] =>
     stream: ZStream[R, Throwable, Byte],
     charset: Charset = StandardCharsets.UTF_8
   ): ZIO[R with Scope, Throwable, A] =
-    stream.toInputStream
-      .flatMap(is => ZIO.fromAutoCloseable(ZIO.succeed(new java.io.InputStreamReader(is, charset))))
-      .flatMap(readAll)
+    ZIO.scoped[R] {
+      stream.toInputStream
+        .flatMap(is =>
+          ZIO
+            .fromAutoCloseable(ZIO.succeed(new java.io.InputStreamReader(is, charset)))
+            .flatMap(readAll)
+        )
+    }
 
   /**
    * Attempts to decode a stream of characters into a single value of type `A`, but may fail with
@@ -44,7 +49,7 @@ trait JsonDecoderPlatformSpecific[A] { self: JsonDecoder[A] =>
    * @see also [[decodeJsonStreamInput]]
    */
   final def decodeJsonStream[R](stream: ZStream[R, Throwable, Char]): ZIO[R with Scope, Throwable, A] =
-    stream.toReader.flatMap(readAll)
+    ZIO.scoped[R](stream.toReader.flatMap(readAll))
 
   final def decodeJsonPipeline(
     delimiter: JsonStreamDelimiter = JsonStreamDelimiter.Array
