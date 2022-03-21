@@ -30,10 +30,15 @@ trait JsonDecoderPlatformSpecific[A] { self: JsonDecoder[A] =>
   final def decodeJsonStreamInput[R](
     stream: ZStream[R, Throwable, Byte],
     charset: Charset = StandardCharsets.UTF_8
-  ): ZIO[R, Throwable, A] =
-    stream.toInputStream
-      .flatMap(is => ZManaged.fromAutoCloseable(UIO(new java.io.InputStreamReader(is, charset))))
-      .use(readAll)
+  ): ZIO[R with Scope, Throwable, A] =
+    ZIO.scoped[R] {
+      stream.toInputStream
+        .flatMap(is =>
+          ZIO
+            .fromAutoCloseable(ZIO.succeed(new java.io.InputStreamReader(is, charset)))
+            .flatMap(readAll)
+        )
+    }
 
   /**
    * Attempts to decode a stream of characters into a single value of type `A`, but may fail with
@@ -43,8 +48,8 @@ trait JsonDecoderPlatformSpecific[A] { self: JsonDecoder[A] =>
    *
    * @see also [[decodeJsonStreamInput]]
    */
-  final def decodeJsonStream[R](stream: ZStream[R, Throwable, Char]): ZIO[R, Throwable, A] =
-    stream.toReader.use(readAll)
+  final def decodeJsonStream[R](stream: ZStream[R, Throwable, Char]): ZIO[R with Scope, Throwable, A] =
+    ZIO.scoped[R](stream.toReader.flatMap(readAll))
 
   final def decodeJsonPipeline(
     delimiter: JsonStreamDelimiter = JsonStreamDelimiter.Array
@@ -52,12 +57,12 @@ trait JsonDecoderPlatformSpecific[A] { self: JsonDecoder[A] =>
     ZPipeline.fromPush {
       for {
         // format: off
-      runtime    <- ZManaged.runtime[Any]
-      inQueue    <- Queue.unbounded[Take[Nothing, Char]].toManaged
-      outQueue   <- Queue.unbounded[Take[Throwable, A]].toManaged
-      ended      <- Ref.makeManaged(false)
-      reader     <- ZManaged.fromAutoCloseable {
-                      UIO {
+      runtime    <- ZIO.runtime[Any]
+      inQueue    <- Queue.unbounded[Take[Nothing, Char]]
+      outQueue   <- Queue.unbounded[Take[Throwable, A]]
+      ended      <- Ref.make(false)
+      reader     <- ZIO.fromAutoCloseable {
+                      ZIO.succeed {
                         def readPull: Iterator[Chunk[Char]] =
                           runtime.unsafeRun(inQueue.take)
                             .fold(
@@ -69,7 +74,7 @@ trait JsonDecoderPlatformSpecific[A] { self: JsonDecoder[A] =>
                         new zio.stream.internal.ZReader(Iterator.empty ++ readPull)
                       }
                     }
-      jsonReader <- ZManaged.fromAutoCloseable(UIO(new WithRetractReader(reader)))
+      jsonReader <- ZIO.fromAutoCloseable(ZIO.succeed(new WithRetractReader(reader)))
       process    <- ZIO.attemptBlockingInterrupt {
                       // Exceptions fall through and are pushed into the queue
                       @tailrec def loop(atBeginning: Boolean): Unit = {
@@ -131,7 +136,7 @@ trait JsonDecoderPlatformSpecific[A] { self: JsonDecoder[A] =>
                         outQueue.offer(Take.fail(t))
                     }
                     .interruptible
-                    .forkManaged
+                    .forkScoped
       push = { (is: Option[Chunk[Char]]) =>
         val pollElements: IO[Throwable, Chunk[A]] =
           outQueue

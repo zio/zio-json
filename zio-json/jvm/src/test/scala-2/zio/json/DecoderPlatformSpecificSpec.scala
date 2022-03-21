@@ -16,9 +16,9 @@ import zio.test._
 import java.nio.charset.StandardCharsets
 import java.nio.file.Paths
 
-object DecoderPlatformSpecificSpec extends DefaultRunnableSpec {
+object DecoderPlatformSpecificSpec extends ZIOSpecDefault {
 
-  def spec: Spec[TestEnvironment, TestFailure[Any], TestSuccess] =
+  def spec: Spec[TestEnvironment with Scope, TestFailure[Any], TestSuccess] =
     suite("Decoder")(
       test("excessively nested structures") {
         // JVM specific: getResourceAsString not yet supported
@@ -91,12 +91,14 @@ object DecoderPlatformSpecificSpec extends DefaultRunnableSpec {
         // impl is covered by the tests
 
         getResourceAsStringM("che-2.geo.json").flatMap { str =>
-          ZManaged.fromAutoCloseable(Task(getResourceAsReader("che-2.geo.json"))).use { reader =>
-            for {
-              circe <- ZIO.fromEither(circe.parser.decode[GeoJSON](str))
-              got   <- ZIO.attemptBlocking(JsonDecoder[GeoJSON].unsafeDecode(Nil, reader))
-            } yield {
-              assert(got)(equalTo(circe))
+          ZIO.scoped[TestEnvironment] {
+            ZIO.fromAutoCloseable(ZIO.attempt(getResourceAsReader("che-2.geo.json"))).flatMap { reader =>
+              for {
+                circe <- ZIO.fromEither(circe.parser.decode[GeoJSON](str))
+                got   <- ZIO.attemptBlocking(JsonDecoder[GeoJSON].unsafeDecode(Nil, reader))
+              } yield {
+                assert(got)(equalTo(circe))
+              }
             }
           }
         }

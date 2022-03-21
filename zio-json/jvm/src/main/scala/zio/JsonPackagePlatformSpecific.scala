@@ -37,12 +37,12 @@ trait JsonPackagePlatformSpecific {
     readJsonLinesAs(Paths.get(path))
 
   def readJsonLinesAs[A: JsonDecoder](url: URL): ZStream[Any, Throwable, A] = {
-    val managed = ZManaged
+    val scoped = ZIO
       .fromAutoCloseable(ZIO.attempt(url.openStream()))
       .refineToOrDie[IOException]
 
     ZStream
-      .fromInputStreamManaged(managed)
+      .fromInputStreamScoped(scoped)
       .via(
         ZPipeline.utf8Decode >>>
           stringToChars >>>
