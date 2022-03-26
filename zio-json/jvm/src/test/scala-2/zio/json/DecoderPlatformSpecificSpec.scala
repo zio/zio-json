@@ -18,7 +18,7 @@ import java.nio.file.Paths
 
 object DecoderPlatformSpecificSpec extends ZIOSpecDefault {
 
-  def spec: Spec[TestEnvironment with Scope, TestFailure[Any], TestSuccess] =
+  def spec: Spec[TestEnvironment, TestFailure[Any], TestSuccess] =
     suite("Decoder")(
       test("excessively nested structures") {
         // JVM specific: getResourceAsString not yet supported
