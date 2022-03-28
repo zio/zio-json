@@ -30,7 +30,7 @@ trait JsonDecoderPlatformSpecific[A] { self: JsonDecoder[A] =>
   final def decodeJsonStreamInput[R](
     stream: ZStream[R, Throwable, Byte],
     charset: Charset = StandardCharsets.UTF_8
-  ): ZIO[R with Scope, Throwable, A] =
+  ): ZIO[R, Throwable, A] =
     ZIO.scoped[R] {
       stream.toInputStream
         .flatMap(is =>
@@ -48,7 +48,7 @@ trait JsonDecoderPlatformSpecific[A] { self: JsonDecoder[A] =>
    *
    * @see also [[decodeJsonStreamInput]]
    */
-  final def decodeJsonStream[R](stream: ZStream[R, Throwable, Char]): ZIO[R with Scope, Throwable, A] =
+  final def decodeJsonStream[R](stream: ZStream[R, Throwable, Char]): ZIO[R, Throwable, A] =
     ZIO.scoped[R](stream.toReader.flatMap(readAll))
 
   final def decodeJsonPipeline(
