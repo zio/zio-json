@@ -12,6 +12,8 @@ object DerivedEncoderSpec extends DefaultRunnableSpec {
       assertM(typeCheck {
         """
           case class Foo(bar: String) derives JsonEncoder
+
+          Foo("bar").toJson
         """
       })(isRight(anything))
     },
@@ -22,6 +24,8 @@ object DerivedEncoderSpec extends DefaultRunnableSpec {
             case Bar
             case Baz(baz: String)
             case Qux(foo: Foo)
+
+          (Foo.Qux(Foo.Bar): Foo).toJson
         """
       })(isRight(anything))
     }

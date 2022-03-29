@@ -12,6 +12,8 @@ object DerivedCodecSpec extends DefaultRunnableSpec {
       assertM(typeCheck {
         """
           case class Foo(bar: String) derives JsonCodec
+
+          Foo("bar").toJson.fromJson[Foo]
         """
       })(isRight(anything))
     },
@@ -22,6 +24,8 @@ object DerivedCodecSpec extends DefaultRunnableSpec {
             case Bar
             case Baz(baz: String)
             case Qux(foo: Foo)
+
+          (Foo.Qux(Foo.Bar): Foo).toJson.fromJson[Foo]
         """
       })(isRight(anything))
     }

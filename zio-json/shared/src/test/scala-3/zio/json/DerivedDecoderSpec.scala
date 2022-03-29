@@ -13,6 +13,8 @@ object DerivedDecoderSpec extends DefaultRunnableSpec {
       assertM(typeCheck {
         """
           case class Foo(bar: String) derives JsonDecoder
+
+          "{\"bar\": \"hello\"}".fromJson[Foo]
         """
       })(isRight(anything))
     },
@@ -23,6 +25,8 @@ object DerivedDecoderSpec extends DefaultRunnableSpec {
             case Bar
             case Baz(baz: String)
             case Qux(foo: Foo)
+
+          "{\"Qux\":{\"foo\":{\"Bar\":{}}}}".fromJson[Foo]
         """
       })(isRight(anything))
     }

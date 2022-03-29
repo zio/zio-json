@@ -1,5 +1,5 @@
 package zio.json
 
 trait JsonCodecVersionSpecific {
-  inline def derived[a: deriving.Mirror.Of]: JsonCodec[a] = DeriveJsonCodec.gen[a]
+  inline def derived[A: deriving.Mirror.Of]: JsonCodec[A] = DeriveJsonCodec.gen[A]
 }
