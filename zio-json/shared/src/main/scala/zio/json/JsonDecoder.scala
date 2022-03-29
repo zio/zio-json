@@ -217,7 +217,7 @@ trait JsonDecoder[A] extends JsonDecoderPlatformSpecific[A] {
     decodeJson(Json.encoder.encodeJson(json, None))
 }
 
-object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority1 {
+object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority1 with JsonDecoderVersionSpecific {
   type JsonError = zio.json.JsonError
   val JsonError = zio.json.JsonError
 

@@ -113,7 +113,7 @@ trait JsonEncoder[A] extends JsonEncoderPlatformSpecific[A] {
   final def zipWith[B, C](that: => JsonEncoder[B])(f: C => (A, B)): JsonEncoder[C] = self.zip(that).contramap(f)
 }
 
-object JsonEncoder extends GeneratedTupleEncoders with EncoderLowPriority1 {
+object JsonEncoder extends GeneratedTupleEncoders with EncoderLowPriority1 with JsonEncoderVersionSpecific {
   def apply[A](implicit a: JsonEncoder[A]): JsonEncoder[A] = a
 
   implicit val string: JsonEncoder[String] = new JsonEncoder[String] {
