@@ -4,8 +4,9 @@ import zio.json.yaml.YamlEncoderSpec.{ Example, ex1, ex1Yaml, ex1Yaml2 }
 import zio.test.Assertion.{ equalTo, isRight }
 import zio.test._
 
-object YamlDecoderSpec extends DefaultRunnableSpec {
-  override def spec: ZSpec[TestEnvironment, Any] =
+object YamlDecoderSpec extends ZIOSpecDefault {
+
+  val spec: ZSpec[Environment, Failure] =
     suite("YamlDecoderSpec")(
       test("object root") {
         assert(ex1Yaml.fromYaml[Example])(

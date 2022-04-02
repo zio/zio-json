@@ -9,7 +9,7 @@ import zio.Chunk
 import zio.json.ast.Json
 import zio.stream.ZStream
 import zio.test.Assertion._
-import zio.test.{ ZIOSpecDefault, TestEnvironment, assert, _ }
+import zio.test.{ ZIOSpecDefault, assert, _ }
 
 import java.io.IOException
 import java.nio.file.Files
@@ -17,7 +17,7 @@ import java.nio.file.Files
 object EncoderPlatformSpecificSpec extends ZIOSpecDefault {
   import testzio.json.DecoderSpec.logEvent._
 
-  def spec: Spec[TestEnvironment, TestFailure[Any], TestSuccess] =
+  val spec =
     suite("Encoder")(
       suite("roundtrip")(
         testRoundTrip[DistanceMatrix]("google_maps_api_response"),

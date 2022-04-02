@@ -4,9 +4,9 @@ import zio.json._
 import zio.test.Assertion._
 import zio.test._
 
-object DeriveSpec extends DefaultRunnableSpec {
+object DeriveSpec extends ZIOSpecDefault {
 
-  def spec: Spec[TestEnvironment, TestFailure[Any], TestSuccess] =
+  val spec: ZSpec[Environment, Failure] =
     suite("DeriveCodec")(
       suite("Decoding")(
         test("parameterless products") {

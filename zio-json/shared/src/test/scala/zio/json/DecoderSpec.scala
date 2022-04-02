@@ -10,8 +10,9 @@ import java.time.{ Duration, OffsetDateTime, ZonedDateTime }
 import java.util.UUID
 import scala.collection.{ SortedMap, immutable, mutable }
 
-object DecoderSpec extends DefaultRunnableSpec {
-  def spec: Spec[Annotations, TestFailure[Any], TestSuccess] =
+object DecoderSpec extends ZIOSpecDefault {
+
+  val spec: ZSpec[Environment, Failure] =
     suite("Decoder")(
       suite("fromJson")(
         test("BigDecimal") {

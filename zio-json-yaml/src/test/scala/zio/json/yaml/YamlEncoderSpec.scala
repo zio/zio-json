@@ -6,8 +6,9 @@ import zio.json.ast.Json
 import zio.test.Assertion._
 import zio.test._
 
-object YamlEncoderSpec extends DefaultRunnableSpec {
-  override def spec: ZSpec[TestEnvironment, Any] =
+object YamlEncoderSpec extends ZIOSpecDefault {
+
+  val spec: ZSpec[Environment, Failure] =
     suite("YamlEncoderSpec")(
       test("object root") {
         assert(ex1.toJsonAST.flatMap(_.toYaml(YamlOptions.default.copy(lineBreak = LineBreak.UNIX))))(

@@ -8,12 +8,13 @@ import java.time._
 import java.time.format.DateTimeFormatter
 
 // zioJsonJVM/testOnly testzio.json.JavaTimeSpec
-object JavaTimeSpec extends DefaultRunnableSpec {
+object JavaTimeSpec extends ZIOSpecDefault {
+
   private def stringify(s: Any): String = s""" "${s.toString}" """
 
   private def equalToStringified(expected: String) = equalTo(s""""$expected"""")
 
-  def spec: Spec[Annotations, TestFailure[Any], TestSuccess] =
+  val spec: ZSpec[Environment, Failure] =
     suite("java.time")(
       suite("Encoder")(
         test("DayOfWeek") {

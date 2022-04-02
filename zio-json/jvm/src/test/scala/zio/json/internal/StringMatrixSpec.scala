@@ -1,12 +1,11 @@
 package testzio.json.internal
 
 import zio.json.internal._
-import zio.Random
 import zio.test.Assertion._
-import zio.test.{ DefaultRunnableSpec, _ }
+import zio.test._
 
-object StringMatrixSpec extends DefaultRunnableSpec {
-  def spec: ZSpec[Environment, Failure] = suite("StringMatrix")(
+object StringMatrixSpec extends ZIOSpecDefault {
+  val spec: ZSpec[Environment, Failure] = suite("StringMatrix")(
     test("positive succeeds") {
       // Watch out: TestStrings were passed
       check(genTestStrings) { xs =>
@@ -34,10 +33,10 @@ object StringMatrixSpec extends DefaultRunnableSpec {
     }
   )
 
-  val genNonEmptyString: Gen[Random with Sized, String] =
+  val genNonEmptyString =
     Gen.alphaNumericString.filter(_.nonEmpty)
 
-  val genTestStrings: Gen[Random with Sized, List[String]] =
+  val genTestStrings =
     for {
       n  <- Gen.int(1, 63)
       xs <- Gen.listOfN(n)(genNonEmptyString)

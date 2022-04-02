@@ -4,7 +4,7 @@ import zio.json._
 import zio.test.Assertion._
 import zio.test._
 
-object CarterSpec extends DefaultRunnableSpec {
+object CarterSpec extends ZIOSpecDefault {
 
   case class Union[A, B](extract: Either[A, B])
   object Union {
@@ -27,7 +27,7 @@ object CarterSpec extends DefaultRunnableSpec {
     implicit val decoder: JsonDecoder[Testing1] = DeriveJsonDecoder.gen
   }
 
-  def spec: ZSpec[Any, Any] =
+  val spec: ZSpec[Environment, Failure] =
     suite("Carter")(
       test("simple left") {
         type Data = Union[String, Int]

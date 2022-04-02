@@ -3,7 +3,8 @@ package zio.json.ast
 import zio.test.Assertion._
 import zio.test._
 
-object JsonSpec extends DefaultRunnableSpec {
+object JsonSpec extends ZIOSpecDefault {
+
   val spec: ZSpec[Environment, Failure] =
     suite("Json")(
       suite("equals")(

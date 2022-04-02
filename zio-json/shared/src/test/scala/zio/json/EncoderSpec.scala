@@ -10,9 +10,9 @@ import java.util.UUID
 import scala.collection.{ immutable, mutable }
 
 // zioJsonJVM/testOnly testzio.json.EncoderSpec
-object EncoderSpec extends DefaultRunnableSpec {
+object EncoderSpec extends ZIOSpecDefault {
 
-  def spec: Spec[Annotations, TestFailure[Any], TestSuccess] =
+  val spec: ZSpec[Environment, Failure] =
     suite("Encoder")(
       suite("toJson")(
         suite("primitives")(

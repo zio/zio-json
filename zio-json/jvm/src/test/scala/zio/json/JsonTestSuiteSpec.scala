@@ -8,9 +8,11 @@ import zio.test.Assertion._
 import zio.test.TestAspect._
 import zio.test._
 
-object JsonTestSuiteSpec extends DefaultRunnableSpec {
+import java.io.IOException
 
-  def spec: Spec[Annotations, TestFailure[Any], TestSuccess] = suite("JsonTestSuite")(
+object JsonTestSuiteSpec extends ZIOSpecDefault {
+
+  val spec: ZSpec[Environment, IOException] = suite("JsonTestSuite")(
     // Uses files from JSONTestSuite by Nicolas Seriot:
     //   https://github.com/nst/JSONTestSuite
     test("passes all tests") {

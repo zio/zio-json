@@ -3,16 +3,15 @@ package testzio.json
 import testzio.json.Gens._
 import zio.json._
 import zio.json.ast.Json
-import zio.Random
 import zio.test.Assertion._
 import zio.test.TestAspect._
 import zio.test._
 
 import java.time._
 
-object RoundTripSpec extends DefaultRunnableSpec {
+object RoundTripSpec extends ZIOSpecDefault {
 
-  def spec: ZSpec[Environment, Failure] =
+  val spec: ZSpec[Environment, Failure] =
     suite("RoundTrip")(
       test("booleans") {
         check(Gen.boolean)(assertRoundtrips[Boolean])
@@ -95,7 +94,7 @@ object RoundTripSpec extends DefaultRunnableSpec {
       )
     )
 
-  lazy val genAst: Gen[Random with Sized, Json] =
+  lazy val genAst: Gen[Sized, Json] =
     Gen.size.flatMap { size =>
       val entry = genUsAsciiString <*> genAst
       val sz    = 0 min (size - 1)
