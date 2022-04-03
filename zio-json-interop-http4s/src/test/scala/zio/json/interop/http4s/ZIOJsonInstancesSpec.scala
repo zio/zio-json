@@ -6,15 +6,16 @@ import zio.Task
 import zio.interop.catz._
 import zio.json._
 import zio.test.Assertion._
-import zio.test.{ DefaultRunnableSpec, _ }
+import zio.test._
 
 import java.nio.charset.StandardCharsets
 
-object ZIOJsonInstancesSpec extends DefaultRunnableSpec {
+object ZIOJsonInstancesSpec extends ZIOSpecDefault {
+
   final case class Test(string: String, int: Int)
   private implicit val decoder: JsonCodec[Test] = DeriveJsonCodec.gen[Test]
 
-  def spec: ZSpec[Environment, Failure] = suite("json instances")(
+  val spec = suite("json instances")(
     suite("jsonEncoderOf") {
       test("returns an EntityEncoder that can encode for the given effect and type") {
         check(Gen.string, Gen.int) { (s, i) =>

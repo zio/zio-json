@@ -3,10 +3,10 @@ package testzio.json.internal
 import testzio.json.Gens._
 import zio.json.internal._
 import zio.test.Assertion._
-import zio.test.{ DefaultRunnableSpec, _ }
+import zio.test._
 
-object SafeNumbersSpec extends DefaultRunnableSpec {
-  def spec: ZSpec[Environment, Failure] =
+object SafeNumbersSpec extends ZIOSpecDefault {
+  val spec =
     suite("SafeNumbers")(
       test("valid big decimals") {
         check(genBigDecimal)(i => assert(SafeNumbers.bigDecimal(i.toString, 2048))(isSome(equalTo(i))))

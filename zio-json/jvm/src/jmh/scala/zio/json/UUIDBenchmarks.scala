@@ -3,7 +3,6 @@ package zio.json
 import org.openjdk.jmh.annotations._
 import zio.Chunk
 import zio.json.uuid.UUIDParser
-import zio.Random
 import zio.test.Gen
 
 import java.util.UUID
@@ -22,7 +21,7 @@ class UUIDBenchmarks {
     val section234 = Gen.long(0x0L, 0xffffL).map(_.toHexString)
     val section5   = Gen.long(0x0L, 0xffffffffffffL).map(_.toHexString)
 
-    val gen: Gen[Random, String] = for {
+    val gen = for {
       s1 <- section1
       s2 <- section234
       s3 <- section234

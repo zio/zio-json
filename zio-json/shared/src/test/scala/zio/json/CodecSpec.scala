@@ -7,13 +7,14 @@ import zio.test._
 
 import scala.collection.immutable
 
-object CodecSpec extends DefaultRunnableSpec {
+object CodecSpec extends ZIOSpecDefault {
+
   case class RecursiveOption(i: Int, d: Double, s: List[String], o: Option[RecursiveOption])
   object RecursiveOption {
     implicit lazy val codec: JsonCodec[RecursiveOption] = DeriveJsonCodec.gen[RecursiveOption]
   }
 
-  def spec: Spec[TestEnvironment, TestFailure[Any], TestSuccess] =
+  val spec: ZSpec[Environment, Failure] =
     suite("CodecSpec")(
       suite("Codec regressions")(
         test("option in recursive structure") {

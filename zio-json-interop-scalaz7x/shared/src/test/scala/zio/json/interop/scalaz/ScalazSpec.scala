@@ -6,7 +6,7 @@ import zio.json.interop.scalaz7x._
 import zio.test.Assertion._
 import zio.test._
 
-object ScalazSpec extends DefaultRunnableSpec {
+object ScalazSpec extends ZIOSpecDefault {
   val spec: ZSpec[Environment, Failure] =
     suite("Scalaz")(
       test("scalaz.IList[A]") {

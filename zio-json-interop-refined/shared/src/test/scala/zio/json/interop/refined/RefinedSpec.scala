@@ -7,7 +7,7 @@ import zio.json._
 import zio.test.Assertion._
 import zio.test._
 
-object RefinedSpec extends DefaultRunnableSpec {
+object RefinedSpec extends ZIOSpecDefault {
   val spec: ZSpec[Environment, Failure] =
     suite("Refined")(
       test("Refined") {
