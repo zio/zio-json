@@ -8,7 +8,7 @@ import zio.test.Assertion._
 import zio.test._
 
 object RefinedSpec extends ZIOSpecDefault {
-  val spec: ZSpec[Environment, Failure] =
+  val spec: ZSpec[Environment, Any] =
     suite("Refined")(
       test("Refined") {
         assert("""{"name":""}""".fromJson[Person])(isLeft(equalTo(".name(Predicate isEmpty() did not fail.)"))) &&

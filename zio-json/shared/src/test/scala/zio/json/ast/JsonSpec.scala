@@ -5,7 +5,7 @@ import zio.test._
 
 object JsonSpec extends ZIOSpecDefault {
 
-  val spec: ZSpec[Environment, Failure] =
+  val spec: ZSpec[Environment, Any] =
     suite("Json")(
       suite("equals")(
         test("mismatched Json subtypes") {

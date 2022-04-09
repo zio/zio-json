@@ -14,7 +14,7 @@ object CodecSpec extends ZIOSpecDefault {
     implicit lazy val codec: JsonCodec[RecursiveOption] = DeriveJsonCodec.gen[RecursiveOption]
   }
 
-  val spec: ZSpec[Environment, Failure] =
+  val spec: ZSpec[Environment, Any] =
     suite("CodecSpec")(
       suite("Codec regressions")(
         test("option in recursive structure") {

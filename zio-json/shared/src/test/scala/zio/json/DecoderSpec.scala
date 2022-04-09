@@ -12,7 +12,7 @@ import scala.collection.{ SortedMap, immutable, mutable }
 
 object DecoderSpec extends ZIOSpecDefault {
 
-  val spec: ZSpec[Environment, Failure] =
+  val spec: ZSpec[Environment, Any] =
     suite("Decoder")(
       suite("fromJson")(
         test("BigDecimal") {

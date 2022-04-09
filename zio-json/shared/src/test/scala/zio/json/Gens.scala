@@ -1,9 +1,7 @@
 package testzio.json
 
-import zio.Random
-import zio.test.{ Gen, Sized }
+import zio.test.Gen
 
-import java.math.BigInteger
 import java.time._
 import scala.jdk.CollectionConverters._
 import scala.util.Try

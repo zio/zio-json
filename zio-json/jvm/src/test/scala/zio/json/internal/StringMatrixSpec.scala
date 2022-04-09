@@ -5,7 +5,7 @@ import zio.test.Assertion._
 import zio.test._
 
 object StringMatrixSpec extends ZIOSpecDefault {
-  val spec: ZSpec[Environment, Failure] = suite("StringMatrix")(
+  val spec: ZSpec[Environment, Any] = suite("StringMatrix")(
     test("positive succeeds") {
       // Watch out: TestStrings were passed
       check(genTestStrings) { xs =>
