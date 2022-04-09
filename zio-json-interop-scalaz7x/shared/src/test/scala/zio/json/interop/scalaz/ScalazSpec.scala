@@ -7,7 +7,7 @@ import zio.test.Assertion._
 import zio.test._
 
 object ScalazSpec extends ZIOSpecDefault {
-  val spec: ZSpec[Environment, Failure] =
+  val spec: ZSpec[Environment, Any] =
     suite("Scalaz")(
       test("scalaz.IList[A]") {
         assert(IList[Int]().toJson)(equalTo("[]")) &&

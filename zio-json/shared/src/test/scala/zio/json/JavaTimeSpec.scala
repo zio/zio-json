@@ -14,7 +14,7 @@ object JavaTimeSpec extends ZIOSpecDefault {
 
   private def equalToStringified(expected: String) = equalTo(s""""$expected"""")
 
-  val spec: ZSpec[Environment, Failure] =
+  val spec: ZSpec[Environment, Any] =
     suite("java.time")(
       suite("Encoder")(
         test("DayOfWeek") {

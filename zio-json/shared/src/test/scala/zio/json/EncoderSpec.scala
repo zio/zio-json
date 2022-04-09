@@ -12,7 +12,7 @@ import scala.collection.{ immutable, mutable }
 // zioJsonJVM/testOnly testzio.json.EncoderSpec
 object EncoderSpec extends ZIOSpecDefault {
 
-  val spec: ZSpec[Environment, Failure] =
+  val spec: ZSpec[Environment, Any] =
     suite("Encoder")(
       suite("toJson")(
         suite("primitives")(
