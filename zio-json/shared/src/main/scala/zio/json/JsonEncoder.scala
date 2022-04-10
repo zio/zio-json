@@ -116,17 +116,6 @@ trait JsonEncoder[A] extends JsonEncoderPlatformSpecific[A] {
 object JsonEncoder extends GeneratedTupleEncoders with EncoderLowPriority1 {
   def apply[A](implicit a: JsonEncoder[A]): JsonEncoder[A] = a
 
-  def defer[A](encoder0: => JsonEncoder[A]): JsonEncoder[A] =
-    new JsonEncoder[A] {
-      lazy val encoder = encoder0
-
-      override def unsafeEncode(a: A, indent: Option[Int], out: Write): Unit = encoder.unsafeEncode(a, indent, out)
-
-      override def isNothing(a: A): Boolean = encoder.isNothing(a)
-
-      override def toJsonAST(a: A): Either[String, Json] = encoder.toJsonAST(a)
-    }
-
   implicit val string: JsonEncoder[String] = new JsonEncoder[String] {
 
     override def unsafeEncode(a: String, indent: Option[Int], out: Write): Unit = {
@@ -190,6 +179,17 @@ object JsonEncoder extends GeneratedTupleEncoders with EncoderLowPriority1 {
     override final def toJsonAST(a: A): Either[String, Json] =
       Right(Json.Str(f(a)))
   }
+
+  def suspend[A](encoder0: => JsonEncoder[A]): JsonEncoder[A] =
+    new JsonEncoder[A] {
+      lazy val encoder = encoder0
+
+      override def unsafeEncode(a: A, indent: Option[Int], out: Write): Unit = encoder.unsafeEncode(a, indent, out)
+
+      override def isNothing(a: A): Boolean = encoder.isNothing(a)
+
+      override def toJsonAST(a: A): Either[String, Json] = encoder.toJsonAST(a)
+    }
 
   implicit val boolean: JsonEncoder[Boolean] = explicit(_.toString, Json.Bool.apply)
   implicit val symbol: JsonEncoder[Symbol]   = string.contramap(_.name)
