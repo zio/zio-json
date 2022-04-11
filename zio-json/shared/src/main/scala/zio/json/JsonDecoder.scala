@@ -204,18 +204,6 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority1 {
 
   def apply[A](implicit a: JsonDecoder[A]): JsonDecoder[A] = a
 
-  def defer[A](decoder0: => JsonDecoder[A]): JsonDecoder[A] =
-    new JsonDecoder[A] {
-      lazy val decoder = decoder0
-
-      override def unsafeDecode(trace: List[JsonError], in: RetractReader): A =
-        decoder.unsafeDecode(trace, in)
-
-      override def unsafeDecodeMissing(trace: List[JsonError]): A = decoder.unsafeDecodeMissing(trace)
-
-      override def fromJsonAST(json: Json): Either[String, A] = decoder.fromJsonAST(json)
-    }
-
   /**
    * Design note: we could require the position in the stream here to improve
    * debugging messages. But the cost would be that the RetractReader would need
@@ -238,6 +226,18 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority1 {
       }
     }
   }
+
+  def suspend[A](decoder0: => JsonDecoder[A]): JsonDecoder[A] =
+    new JsonDecoder[A] {
+      lazy val decoder = decoder0
+
+      override def unsafeDecode(trace: List[JsonError], in: RetractReader): A =
+        decoder.unsafeDecode(trace, in)
+
+      override def unsafeDecodeMissing(trace: List[JsonError]): A = decoder.unsafeDecodeMissing(trace)
+
+      override def fromJsonAST(json: Json): Either[String, A] = decoder.fromJsonAST(json)
+    }
 
   implicit val string: JsonDecoder[String] = new JsonDecoder[String] {
 
