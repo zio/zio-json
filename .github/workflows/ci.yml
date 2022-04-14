@@ -69,7 +69,7 @@ jobs:
       fail-fast: false
       matrix:
         java: ['adopt@1.8', 'adopt@1.11']
-        scala: ['2.12.14', '2.13.6', '3.1.1']
+        scala: ['2.12.14', '2.13.6', '3.1.2']
         platform: ['JVM', 'JS']
     steps:
       - name: Checkout current branch
