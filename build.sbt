@@ -35,7 +35,7 @@ addCommandAlias(
 
 addCommandAlias("testJS", "zioJsonJS/test")
 
-val zioVersion = "1.0.13"
+val zioVersion = "1.0.14"
 
 lazy val root = project
   .in(file("."))
@@ -75,7 +75,7 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform)
     libraryDependencies ++= Seq(
       "dev.zio"                %%% "zio"                     % zioVersion,
       "dev.zio"                %%% "zio-streams"             % zioVersion,
-      "org.scala-lang.modules" %%% "scala-collection-compat" % "2.5.0",
+      "org.scala-lang.modules" %%% "scala-collection-compat" % "2.7.0",
       "dev.zio"                %%% "zio-test"                % zioVersion   % "test",
       "dev.zio"                %%% "zio-test-sbt"            % zioVersion   % "test",
       "io.circe"               %%% "circe-core"              % circeVersion % "test",
@@ -87,7 +87,7 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform)
       CrossVersion.partialVersion(scalaVersion.value) match {
         case Some((3, _)) =>
           Vector(
-            "com.softwaremill.magnolia1_3" %%% "magnolia" % "1.1.0"
+            "com.softwaremill.magnolia1_3" %%% "magnolia" % "1.1.1"
           )
 
         case _ =>
@@ -265,7 +265,7 @@ lazy val zioJsonInteropHttp4s = project
   .settings(
     crossScalaVersions -= ScalaDotty,
     libraryDependencies ++= Seq(
-      "org.http4s"    %% "http4s-dsl"       % "0.21.32",
+      "org.http4s"    %% "http4s-dsl"       % "0.21.33",
       "dev.zio"       %% "zio"              % zioVersion,
       "org.typelevel" %% "cats-effect"      % "2.5.4",
       "dev.zio"       %% "zio-interop-cats" % "2.5.1.0"  % "test",
