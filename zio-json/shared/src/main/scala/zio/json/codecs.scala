@@ -38,7 +38,7 @@ trait JsonCodec[A] extends JsonDecoder[A] with JsonEncoder[A] { self =>
 
 }
 
-object JsonCodec extends GeneratedTupleCodecs with CodecLowPriority0 {
+object JsonCodec extends GeneratedTupleCodecs with CodecLowPriority0 with JsonCodecVersionSpecific {
   def apply[A](implicit jsonCodec: JsonCodec[A]): JsonCodec[A] = jsonCodec
 
   def eraseEither[A, B](A: JsonCodec[A], B: JsonCodec[B]): JsonCodec[Either[A, B]] =
