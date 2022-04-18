@@ -482,9 +482,9 @@ object DeriveJsonCodec {
   def genBoth[T: c.WeakTypeTag](c: whitebox.Context): c.Tree = {
     import c.universe._
 
-    val encoder = q"DeriveJsonEncoder.gen[${c.weakTypeOf[T]}]"
-    val decoder = q"DeriveJsonDecoder.gen[${c.weakTypeOf[T]}]"
+    val encoder = q"_root_.zio.json.DeriveJsonEncoder.gen[${c.weakTypeOf[T]}]"
+    val decoder = q"_root_.zio.json.DeriveJsonDecoder.gen[${c.weakTypeOf[T]}]"
 
-    q"JsonCodec($encoder, $decoder)"
+    q"_root_.zio.json.JsonCodec($encoder, $decoder)"
   }
 }
