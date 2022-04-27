@@ -44,6 +44,33 @@ object JsonSpec extends ZIOSpecDefault {
           )
 
           assert(obj1)(equalTo(obj2))
+        },
+        test("equality fails for different objects of the same size with different keys") {
+          val obj1 = Json.Obj(
+            "quux" -> Json.Str("1"),
+            "bar"  -> Json.Str("2")
+          )
+
+          val obj2 = Json.Obj(
+            "baz" -> Json.Arr(Json.Bool(true), Json.Num(2)),
+            "bar" -> Json.Str("2")
+          )
+
+          assertTrue(obj1 != obj2)
+        },
+        test("equality fails for different objects of different sizes") {
+          val obj1 = Json.Obj(
+            "quux" -> Json.Str("1"),
+            "bar"  -> Json.Str("2")
+          )
+
+          val obj2 = Json.Obj(
+            "quux" -> Json.Str("1"),
+            "bar"  -> Json.Str("2"),
+            "maux" -> Json.Str("3")
+          )
+
+          assertTrue(obj1 != obj2)
         }
       ),
       suite("hashCode")(

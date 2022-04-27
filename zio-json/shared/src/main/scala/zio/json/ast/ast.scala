@@ -26,7 +26,7 @@ import scala.annotation._
 /**
  * This AST of JSON is made available so that arbitrary JSON may be included as
  * part of a business object, it is not used as an intermediate representation,
- * unlike most other JSON libraries. It is not advised to `.map` or `.emap`
+ * unlike most other JSON libraries. It is not advised to `.map` or `.mapOrFail`
  * from these decoders, since a higher performance decoder is often available.
  *
  * Beware of the potential for DOS attacks, since an attacker can provide much
@@ -43,14 +43,12 @@ sealed abstract class Json { self =>
 
   override final def equals(that: Any): Boolean = {
     def objEqual(left: Map[String, Json], right: Chunk[(String, Json)]): Boolean =
-      if (right.isEmpty) true
-      else
-        right.find { case (key, r) =>
-          left.get(key) match {
-            case Some(l) if l != r => true
-            case _                 => false
-          }
-        }.isEmpty
+      right.forall { case (key, r) =>
+        left.get(key) match {
+          case Some(l) if l == r => true
+          case _                 => false
+        }
+      }
 
     that match {
       case that: Json =>
