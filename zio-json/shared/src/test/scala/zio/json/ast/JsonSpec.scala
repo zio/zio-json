@@ -23,12 +23,10 @@ object JsonSpec extends ZIOSpecDefault {
             "obj"  -> Json.Obj("more" -> str, "andMore" -> bool)
           )
 
-          assert(
-            List(nul, num, str, bool, arr, obj).combinations(2).forall {
-              case fst :: snd :: Nil => fst != snd
-              case _                 => false
-            }
-          )(equalTo(true))
+          assertTrue(List(nul, num, str, bool, arr, obj).combinations(2).forall {
+            case fst :: snd :: Nil => fst != snd
+            case _                 => false
+          })
         },
         test("object order does not matter for equality") {
           val obj1 = Json.Obj(
@@ -43,7 +41,7 @@ object JsonSpec extends ZIOSpecDefault {
             "foo" -> Json.Str("1")
           )
 
-          assert(obj1)(equalTo(obj2))
+          assertTrue(obj1 == obj2 && obj2 == obj1)
         },
         test("equality fails for different objects of the same size with different keys") {
           val obj1 = Json.Obj(
@@ -56,7 +54,7 @@ object JsonSpec extends ZIOSpecDefault {
             "bar" -> Json.Str("2")
           )
 
-          assertTrue(obj1 != obj2)
+          assertTrue(obj1 != obj2 && obj2 != obj1)
         },
         test("equality fails for different objects of different sizes") {
           val obj1 = Json.Obj(
@@ -70,7 +68,7 @@ object JsonSpec extends ZIOSpecDefault {
             "maux" -> Json.Str("3")
           )
 
-          assertTrue(obj1 != obj2)
+          assertTrue(obj1 != obj2 && obj2 != obj1)
         }
       ),
       suite("hashCode")(
@@ -87,7 +85,7 @@ object JsonSpec extends ZIOSpecDefault {
             "foo" -> Json.Str("1")
           )
 
-          assert(obj1.hashCode)(equalTo(obj2.hashCode))
+          assertTrue(obj1.hashCode == obj2.hashCode)
         }
       ),
       suite("foldUp")(
@@ -106,7 +104,7 @@ object JsonSpec extends ZIOSpecDefault {
               )
             )
           val result = obj.foldUp(Vector.empty[String])(collectObjKeysAndArrElements)
-          assert(result)(equalTo(Vector("eight", "seven", "six", "five", "four", "three", "two", "one")))
+          assertTrue(result == Vector("eight", "seven", "six", "five", "four", "three", "two", "one"))
         }
       ),
       suite("foldDown")(
@@ -125,18 +123,18 @@ object JsonSpec extends ZIOSpecDefault {
               )
             )
           val result = obj.foldDown(Vector.empty[String])(collectObjKeysAndArrElements)
-          assert(result)(equalTo(Vector("one", "two", "three", "four", "five", "six", "seven", "eight")))
+          assertTrue(result == Vector("one", "two", "three", "four", "five", "six", "seven", "eight"))
         }
       ),
       test("arrays with the same elements in a different order will not have the same hashCode") {
         val arr1 = Json.Arr(Json.Str("one"), Json.Obj("two" -> Json.Num(2)), Json.Num(3))
         val arr2 = Json.Arr(Json.Num(3), Json.Str("one"), Json.Obj("two" -> Json.Num(2)))
-        assert(arr1.hashCode)(not(equalTo(arr2.hashCode)))
+        assertTrue(arr1.hashCode != arr2.hashCode)
       },
       test("arrays with the same elements in the same order will have the same hashCode") {
         val arr1 = Json.Arr(Json.Str("one"), Json.Obj("two" -> Json.Num(2)), Json.Num(3))
         val arr2 = Json.Arr(Json.Str("one"), Json.Obj("two" -> Json.Num(2)), Json.Num(3))
-        assert(arr1.hashCode)(equalTo(arr2.hashCode))
+        assertTrue(arr1.hashCode == arr2.hashCode)
       },
       suite("get")(
         test("downField") {
