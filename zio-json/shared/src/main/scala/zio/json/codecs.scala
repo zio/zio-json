@@ -30,12 +30,15 @@ trait JsonCodec[A] extends JsonDecoder[A] with JsonEncoder[A] { self =>
   override def xmap[B](f: A => B, g: B => A): JsonCodec[B] =
     JsonCodec(encoder.contramap(g), decoder.map(f))
 
+  override def xmapOrFail[B](f: A => Either[String, B], g: B => A): JsonCodec[B] =
+    JsonCodec(encoder.contramap(g), decoder.mapOrFail(f))
+
   def eraseEither[B](that: JsonCodec[B]): JsonCodec[Either[A, B]] =
     JsonCodec.eraseEither(self, that)
 
 }
 
-object JsonCodec extends GeneratedTupleCodecs with CodecLowPriority0 {
+object JsonCodec extends GeneratedTupleCodecs with CodecLowPriority0 with JsonCodecVersionSpecific {
   def apply[A](implicit jsonCodec: JsonCodec[A]): JsonCodec[A] = jsonCodec
 
   def eraseEither[A, B](A: JsonCodec[A], B: JsonCodec[B]): JsonCodec[Either[A, B]] =

@@ -84,6 +84,9 @@ trait JsonEncoder[A] extends JsonEncoderPlatformSpecific[A] {
   @nowarn("msg=is never used")
   def xmap[B](f: A => B, g: B => A): JsonEncoder[B] = contramap(g)
 
+  @nowarn("msg=is never used")
+  def xmapOrFail[B](f: A => Either[String, B], g: B => A): JsonEncoder[B] = contramap(g)
+
   def unsafeEncode(a: A, indent: Option[Int], out: Write): Unit
 
   /**
@@ -102,7 +105,7 @@ trait JsonEncoder[A] extends JsonEncoderPlatformSpecific[A] {
   final def narrow[B <: A]: JsonEncoder[B] = self.asInstanceOf[JsonEncoder[B]]
 }
 
-object JsonEncoder extends GeneratedTupleEncoders with EncoderLowPriority1 {
+object JsonEncoder extends GeneratedTupleEncoders with EncoderLowPriority1 with JsonEncoderVersionSpecific {
   def apply[A](implicit a: JsonEncoder[A]): JsonEncoder[A] = a
 
   implicit val string: JsonEncoder[String] = new JsonEncoder[String] {
