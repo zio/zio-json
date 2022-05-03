@@ -29,7 +29,7 @@ class UUIDBenchmarks {
       s5 <- section5
     } yield s"$s1-$s2-$s3-$s4-$s5"
 
-    unparsedUUIDChunk = zio.Runtime.global.unsafeRun(gen.runCollectN(10000).map(Chunk.fromIterable))
+    unparsedUUIDChunk = zio.Runtime.default.unsafeRun(gen.runCollectN(10000).map(Chunk.fromIterable))
   }
 
   @Benchmark
