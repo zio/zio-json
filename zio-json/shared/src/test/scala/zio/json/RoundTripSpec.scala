@@ -11,7 +11,7 @@ import java.time._
 
 object RoundTripSpec extends ZIOSpecDefault {
 
-  val spec: ZSpec[Environment, Any] =
+  val spec: Spec[Environment, Any] =
     suite("RoundTrip")(
       test("booleans") {
         check(Gen.boolean)(assertRoundtrips[Boolean])

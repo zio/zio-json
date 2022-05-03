@@ -6,7 +6,7 @@ import zio.test._
 
 object DeriveSpec extends ZIOSpecDefault {
 
-  val spec: ZSpec[Environment, Any] =
+  val spec: Spec[Environment, Any] =
     suite("DeriveCodec")(
       suite("Decoding")(
         test("parameterless products") {

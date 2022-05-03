@@ -8,7 +8,7 @@ import zio.test._
 
 object YamlEncoderSpec extends ZIOSpecDefault {
 
-  val spec: ZSpec[Environment, Any] =
+  val spec: Spec[Environment, Any] =
     suite("YamlEncoderSpec")(
       test("object root") {
         assert(ex1.toJsonAST.flatMap(_.toYaml(YamlOptions.default.copy(lineBreak = LineBreak.UNIX))))(
