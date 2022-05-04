@@ -3,7 +3,7 @@ var toRoot = '../../../';</script></head><body><div id="search"><span id="doc-ti
 part of a business object, it is not used as an intermediate representation,
 unlike most other JSON libraries.</p><div class="fullcomment"><div class="comment cmt"><p>This AST of JSON is made available so that arbitrary JSON may be included as
 part of a business object, it is not used as an intermediate representation,
-unlike most other JSON libraries. It is not advised to <code>.map</code> or <code>.emap</code>
+unlike most other JSON libraries. It is not advised to <code>.map</code> or <code>.mapOrFail</code>
 from these decoders, since a higher performance decoder is often available.</p><p>Beware of the potential for DOS attacks, since an attacker can provide much
 more data than is perhaps needed.</p><p>Also beware of converting <code>Num</code> (a <code>BigDecimal</code>) into any other kind of
 number, since many of the stdlib functions are non-total or are known DOS
