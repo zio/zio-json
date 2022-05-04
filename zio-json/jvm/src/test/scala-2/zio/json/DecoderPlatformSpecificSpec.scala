@@ -339,11 +339,10 @@ object DecoderPlatformSpecificSpec extends ZIOSpecDefault {
   def matchesCirceDecoded[A](
     expected: String
   )(implicit cDecoder: circe.Decoder[A], eq: Eql[A, A]): Assertion[Either[String, A]] = {
-    import zio.test.Assertion.Render._
 
     val cDecoded = circe.parser.decode(expected).left.map(_.toString)
 
-    Assertion.assertion("matchesCirceDecoded")(param(cDecoded))(actual => actual == cDecoded)
+    Assertion.assertion("matchesCirceDecoded")(actual => actual == cDecoded)
   }
 
   object exampleproducts {

@@ -26,7 +26,7 @@ object ZIOJsonInstancesSpec extends ZIOSpecDefault {
             .toList
             .map(v => new String(v.toArray, StandardCharsets.UTF_8))
 
-          assertM(result)(equalTo(s"""{"string":"$s","int":$i}"""))
+          assertZIO(result)(equalTo(s"""{"string":"$s","int":$i}"""))
         }
       }
     },
@@ -37,7 +37,7 @@ object ZIOJsonInstancesSpec extends ZIOSpecDefault {
             .withEntity(s"""{"string":"$s","int":$i}""")
             .withHeaders(Header.Raw(ci"Content-Type", "application/json"))
 
-          assertM(jsonOf[Task, Test].decode(media, true).value)(isRight(equalTo(Test(s, i))))
+          assertZIO(jsonOf[Task, Test].decode(media, true).value)(isRight(equalTo(Test(s, i))))
         }
       ),
       test("returns MalformedMessageBodyFailure when json is empty") {
@@ -45,7 +45,7 @@ object ZIOJsonInstancesSpec extends ZIOSpecDefault {
           .withEntity("")
           .withHeaders(Header.Raw(ci"Content-Type", "application/json"))
 
-        assertM(jsonOf[Task, Test].decode(media, true).value)(
+        assertZIO(jsonOf[Task, Test].decode(media, true).value)(
           isLeft(equalTo(MalformedMessageBodyFailure("Invalid JSON: empty body")))
         )
       },
@@ -54,7 +54,7 @@ object ZIOJsonInstancesSpec extends ZIOSpecDefault {
           .withEntity("""{"bad" "json"}""")
           .withHeaders(Header.Raw(ci"Content-Type", "application/json"))
 
-        assertM(jsonOf[Task, Test].decode(media, true).value)(
+        assertZIO(jsonOf[Task, Test].decode(media, true).value)(
           isLeft(equalTo(MalformedMessageBodyFailure("(expected ':' got '\"')")))
         )
       },
@@ -63,7 +63,7 @@ object ZIOJsonInstancesSpec extends ZIOSpecDefault {
           .withEntity("not a json")
           .withHeaders(Header.Raw(ci"Content-Type", "text/plain"))
 
-        assertM(jsonOf[Task, Test].decode(media, true).value)(isLeft(isSubtype[MediaTypeMismatch](anything)))
+        assertZIO(jsonOf[Task, Test].decode(media, true).value)(isLeft(isSubtype[MediaTypeMismatch](anything)))
       }
     )
   )

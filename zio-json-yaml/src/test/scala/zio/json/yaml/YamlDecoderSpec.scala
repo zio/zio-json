@@ -6,7 +6,7 @@ import zio.test._
 
 object YamlDecoderSpec extends ZIOSpecDefault {
 
-  val spec: ZSpec[Environment, Any] =
+  val spec: Spec[Environment, Any] =
     suite("YamlDecoderSpec")(
       test("object root") {
         assert(ex1Yaml.fromYaml[Example])(

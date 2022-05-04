@@ -95,7 +95,7 @@ object EncoderPlatformSpecificSpec extends ZIOSpecDefault {
       )
     )
 
-  def testRoundTrip[A: circe.Decoder: JsonEncoder](label: String): ZSpec[Any, IOException] =
+  def testRoundTrip[A: circe.Decoder: JsonEncoder](label: String): Spec[Any, IOException] =
     test(label) {
       getResourceAsStringM(s"$label.json").map { input =>
         val circeDecoded  = circe.parser.decode[A](input)

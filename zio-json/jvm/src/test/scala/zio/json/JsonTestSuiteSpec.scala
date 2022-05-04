@@ -12,7 +12,7 @@ import java.io.IOException
 
 object JsonTestSuiteSpec extends ZIOSpecDefault {
 
-  val spec: ZSpec[Environment, IOException] = suite("JsonTestSuite")(
+  val spec: Spec[Environment, IOException] = suite("JsonTestSuite")(
     // Uses files from JSONTestSuite by Nicolas Seriot:
     //   https://github.com/nst/JSONTestSuite
     test("passes all tests") {

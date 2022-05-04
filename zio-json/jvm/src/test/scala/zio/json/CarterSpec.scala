@@ -27,7 +27,7 @@ object CarterSpec extends ZIOSpecDefault {
     implicit val decoder: JsonDecoder[Testing1] = DeriveJsonDecoder.gen
   }
 
-  val spec: ZSpec[Environment, Any] =
+  val spec: Spec[Environment, Any] =
     suite("Carter")(
       test("simple left") {
         type Data = Union[String, Int]
