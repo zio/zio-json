@@ -25,7 +25,7 @@ addCommandAlias("prepare", "fmt")
 
 addCommandAlias(
   "testJVM",
-  "zioJsonJVM/test; zioJsonYaml/test; zioJsonMacrosJVM/test; zioJsonInteropHttp4s/test; zioJsonInteropScalaz7xJVM/test; zioJsonInteropScalaz7xJS/test; zioJsonInteropRefinedJVM/test; zioJsonInteropRefinedJS/test"
+  "zioJsonJVM/test; zioJsonYaml/test; zioJsonGolden/test; zioJsonMacrosJVM/test; zioJsonInteropHttp4s/test; zioJsonInteropScalaz7xJVM/test; zioJsonInteropScalaz7xJS/test; zioJsonInteropRefinedJVM/test; zioJsonInteropRefinedJS/test"
 )
 
 addCommandAlias(
@@ -48,6 +48,7 @@ lazy val root = project
     zioJsonJVM,
     zioJsonJS,
     zioJsonYaml,
+    zioJsonGolden,
     zioJsonMacrosJVM,
     zioJsonMacrosJS,
     zioJsonInteropHttp4s,
@@ -220,6 +221,24 @@ lazy val zioJsonJS = zioJson.js
 
 lazy val zioJsonJVM = zioJson.jvm
 
+lazy val zioJsonGolden = project
+  .in(file("zio-json-golden"))
+  .settings(stdSettings("zio-json-golden"))
+  .settings(buildInfoSettings("zio.json.golden"))
+  .settings(
+    libraryDependencies ++= Seq(
+      "dev.zio"                      %% "zio"               % zioVersion,
+      "dev.zio"                      %% "zio-nio"           % "2.0.0-RC7",
+      "dev.zio"                      %% "zio-test"          % zioVersion,
+      "dev.zio"                      %% "zio-test-sbt"      % zioVersion,
+      "dev.zio"                      %% "zio-test-magnolia" % zioVersion,
+      "org.scala-lang"                % "scala-reflect"     % scalaVersion.value % Provided,
+    ),
+    testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework")
+  )
+  .dependsOn(zioJsonJVM)
+  .enablePlugins(BuildInfoPlugin)
+
 lazy val zioJsonYaml = project
   .in(file("zio-json-yaml"))
   .settings(stdSettings("zio-json-yaml"))
@@ -316,6 +335,7 @@ lazy val docs = project
   .dependsOn(
     zioJsonJVM,
     zioJsonYaml,
+    zioJsonGolden,
     zioJsonMacrosJVM,
     zioJsonInteropHttp4s,
     zioJsonInteropRefined.jvm,
@@ -340,6 +360,7 @@ lazy val docs = project
     ScalaUnidoc / unidoc / unidocProjectFilter := inProjects(
       zioJsonJVM,
       zioJsonYaml,
+      zioJsonGolden,
       zioJsonMacrosJVM,
       zioJsonInteropHttp4s,
       zioJsonInteropRefined.jvm,
