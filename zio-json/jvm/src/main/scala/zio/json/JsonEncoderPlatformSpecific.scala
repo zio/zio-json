@@ -2,7 +2,7 @@ package zio.json
 
 import zio.json.internal.WriteWriter
 import zio.stream._
-import zio.{ Chunk, Ref, ZIO }
+import zio.{Chunk, Ref, Unsafe, ZIO}
 
 trait JsonEncoderPlatformSpecific[A] { self: JsonEncoder[A] =>
 
@@ -22,22 +22,24 @@ trait JsonEncoderPlatformSpecific[A] { self: JsonEncoder[A] =>
         runtime     <- ZIO.runtime[Any]
         chunkBuffer <- Ref.make(Chunk.fromIterable(startWith.toList))
         writer <- ZIO.fromAutoCloseable {
-                    ZIO.succeed {
-                      new java.io.BufferedWriter(
-                        new java.io.Writer {
-                          override def write(buffer: Array[Char], offset: Int, len: Int): Unit = {
-                            val copy = new Array[Char](len)
-                            System.arraycopy(buffer, offset, copy, 0, len)
+                    Unsafe.unsafe { implicit u =>
+                      ZIO.succeed {
+                        new java.io.BufferedWriter(
+                          new java.io.Writer {
+                            override def write(buffer: Array[Char], offset: Int, len: Int): Unit = {
+                              val copy = new Array[Char](len)
+                              System.arraycopy(buffer, offset, copy, 0, len)
 
-                            val chunk = Chunk.fromArray(copy).drop(offset).take(len)
-                            runtime.unsafeRun(chunkBuffer.update(_ ++ chunk))
-                          }
+                              val chunk = Chunk.fromArray(copy).drop(offset).take(len)
+                              runtime.unsafe.run(chunkBuffer.update(_ ++ chunk)).getOrThrow()
+                            }
 
-                          override def close(): Unit = ()
-                          override def flush(): Unit = ()
-                        },
-                        ZStream.DefaultChunkSize
-                      )
+                            override def close(): Unit = ()
+                            override def flush(): Unit = ()
+                          },
+                          ZStream.DefaultChunkSize
+                        )
+                      }
                     }
                   }
         writeWriter <- ZIO.succeed(new WriteWriter(writer))

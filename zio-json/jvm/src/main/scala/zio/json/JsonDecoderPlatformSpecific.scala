@@ -62,16 +62,18 @@ trait JsonDecoderPlatformSpecific[A] { self: JsonDecoder[A] =>
       outQueue   <- Queue.unbounded[Take[Throwable, A]]
       ended      <- Ref.make(false)
       reader     <- ZIO.fromAutoCloseable {
-                      ZIO.succeed {
-                        def readPull: Iterator[Chunk[Char]] =
-                          runtime.unsafeRun(inQueue.take)
-                            .fold(
-                              end   = Iterator.empty,
-                              error = _ => Iterator.empty, // impossible
-                              value = v => Iterator.single(v) ++ readPull
-                            )
+                      Unsafe.unsafe { implicit u =>
+                        ZIO.succeed {
+                          def readPull: Iterator[Chunk[Char]] =
+                            runtime.unsafe.run(inQueue.take).getOrThrow()
+                              .fold(
+                                end   = Iterator.empty,
+                                error = _ =>  Iterator.empty, // impossible
+                                value = v => Iterator.single(v) ++ readPull
+                              )
 
-                        new zio.stream.internal.ZReader(Iterator.empty ++ readPull)
+                          new zio.stream.internal.ZReader(Iterator.empty ++ readPull)
+                        }
                       }
                     }
       jsonReader <- ZIO.fromAutoCloseable(ZIO.succeed(new WithRetractReader(reader)))
@@ -118,7 +120,9 @@ trait JsonDecoderPlatformSpecific[A] { self: JsonDecoder[A] =>
                             throw new Exception(JsonError.render(trace))
                         }
 
-                        runtime.unsafeRun(outQueue.offer(Take.single(nextElem)))
+                        Unsafe.unsafe { implicit u =>
+                          runtime.unsafe.run(outQueue.offer(Take.single(nextElem))).getOrThrow()
+                        }
 
                         loop(false)
                       }
