@@ -287,7 +287,7 @@ lazy val zioJsonInteropHttp4s = project
       "org.http4s"    %% "http4s-dsl"       % "0.23.7",
       "dev.zio"       %% "zio"              % zioVersion,
       "org.typelevel" %% "cats-effect"      % "3.3.0",
-      "dev.zio"       %% "zio-interop-cats" % "3.3.0-RC7" % "test",
+      "dev.zio"       %% "zio-interop-cats" % "3.3.0"     % "test",
       "dev.zio"       %% "zio-test"         % zioVersion  % "test",
       "dev.zio"       %% "zio-test-sbt"     % zioVersion  % "test"
     ),
