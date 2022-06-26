@@ -53,118 +53,127 @@ trait JsonDecoderPlatformSpecific[A] { self: JsonDecoder[A] =>
 
   final def decodeJsonPipeline(
     delimiter: JsonStreamDelimiter = JsonStreamDelimiter.Array
-  ): ZPipeline[Any, Throwable, Char, A] =
-    ZPipeline.fromPush {
-      for {
-        // format: off
-      runtime    <- ZIO.runtime[Any]
-      inQueue    <- Queue.unbounded[Take[Nothing, Char]]
-      outQueue   <- Queue.unbounded[Take[Throwable, A]]
-      ended      <- Ref.make(false)
-      reader     <- ZIO.fromAutoCloseable {
-                      ZIO.succeed {
-                        def readPull: Iterator[Chunk[Char]] =
-                          runtime.unsafeRun(inQueue.take)
-                            .fold(
-                              end   = Iterator.empty,
-                              error = _ => Iterator.empty, // impossible
-                              value = v => Iterator.single(v) ++ readPull
-                            )
+  ): ZPipeline[Any, Throwable, Char, A] = {
+    Unsafe.unsafeCompat { (u: Unsafe) =>
+      implicit val unsafe: Unsafe = u
 
-                        new zio.stream.internal.ZReader(Iterator.empty ++ readPull)
-                      }
-                    }
-      jsonReader <- ZIO.fromAutoCloseable(ZIO.succeed(new WithRetractReader(reader)))
-      process    <- ZIO.attemptBlockingInterrupt {
-                      // Exceptions fall through and are pushed into the queue
-                      @tailrec def loop(atBeginning: Boolean): Unit = {
-                        val nextElem = try {
-                          if (atBeginning && delimiter == JsonStreamDelimiter.Array)  {
-                            Lexer.char(Nil, jsonReader, '[')
+      ZPipeline.fromPush {
+        for {
+          // format: off
+          runtime    <- ZIO.runtime[Any]
+          inQueue    <- Queue.unbounded[Take[Nothing, Char]]
+          outQueue   <- Queue.unbounded[Take[Throwable, A]]
+          ended      <- Ref.make(false)
+          reader     <- ZIO.fromAutoCloseable {
+            ZIO.succeed {
+              def readPull: Iterator[Chunk[Char]] =
+                runtime.unsafe.run(inQueue.take).getOrThrow()
+                  .fold(
+                    end   = Iterator.empty,
+                    error = _ =>  Iterator.empty, // impossible
+                    value = v => Iterator.single(v) ++ readPull
+                  )
 
-                            jsonReader.nextNonWhitespace() match {
-                              case ']' =>
-                                // returning empty here instead of falling through, which would
-                                // attempt to decode a value that we know doesn’t exist.
-                                return ()
+              new zio.stream.internal.ZReader(Iterator.empty ++ readPull)
+            }
+          }
+          jsonReader <- ZIO.fromAutoCloseable(ZIO.succeed(new WithRetractReader(reader)))
+          process    <- ZIO.attemptBlockingInterrupt {
+            // Exceptions fall through and are pushed into the queue
+            @tailrec def loop(atBeginning: Boolean): Unit = {
+              val nextElem = try {
+                if (atBeginning && delimiter == JsonStreamDelimiter.Array)  {
+                  Lexer.char(Nil, jsonReader, '[')
 
-                              case _ =>
-                                jsonReader.retract()
-                            }
-                          } else {
-                            delimiter match {
-                              case JsonStreamDelimiter.Newline =>
-                                jsonReader.readChar() match {
-                                  case '\r' =>
-                                    jsonReader.readChar() match {
-                                      case '\n' => ()
-                                      case _    => jsonReader.retract()
-                                    }
-                                  case '\n' => ()
-                                  case _    => jsonReader.retract()
-                                }
+                  jsonReader.nextNonWhitespace() match {
+                    case ']' =>
+                      // returning empty here instead of falling through, which would
+                      // attempt to decode a value that we know doesn’t exist.
+                      return ()
 
-                             case JsonStreamDelimiter.Array =>
-                                jsonReader.nextNonWhitespace() match {
-                                  case ',' | ']' => ()
-                                  case _         => jsonReader.retract()
-                                }
-                            }
+                    case _ =>
+                      jsonReader.retract()
+                  }
+                } else {
+                  delimiter match {
+                    case JsonStreamDelimiter.Newline =>
+                      jsonReader.readChar() match {
+                        case '\r' =>
+                          jsonReader.readChar() match {
+                            case '\n' => ()
+                            case _    => jsonReader.retract()
                           }
-
-                          unsafeDecode(Nil, jsonReader)
-                        } catch {
-                          case t @ JsonDecoder.UnsafeJson(trace) =>
-                            throw new Exception(JsonError.render(trace))
-                        }
-
-                        runtime.unsafeRun(outQueue.offer(Take.single(nextElem)))
-
-                        loop(false)
+                        case '\n' => ()
+                        case _    => jsonReader.retract()
                       }
 
-                      loop(true)
-                    }
-                    .catchAll {
-                      case t: zio.json.internal.UnexpectedEnd =>
-                        // swallow if stream ended
-                        ZIO.unlessZIO(ended.get) {
-                          outQueue.offer(Take.fail(t))
-                        }
+                    case JsonStreamDelimiter.Array =>
+                      jsonReader.nextNonWhitespace() match {
+                        case ',' | ']' => ()
+                        case _         => jsonReader.retract()
+                      }
+                  }
+                }
 
-                      case t: Throwable =>
-                        outQueue.offer(Take.fail(t))
-                    }
-                    .interruptible
-                    .forkScoped
-      push = { (is: Option[Chunk[Char]]) =>
-        val pollElements: IO[Throwable, Chunk[A]] =
-          outQueue
-            .takeUpTo(ZStream.DefaultChunkSize)
-            .flatMap { takes =>
-              ZIO.foldLeft(takes)(Chunk[A]()) { case (acc, take) =>
-                take.fold(ZIO.succeedNow(acc), e => ZIO.fail(e.squash), c => ZIO.succeedNow(acc ++ c))
+                unsafeDecode(Nil, jsonReader)
+              } catch {
+                case t @ JsonDecoder.UnsafeJson(trace) =>
+                  throw new Exception(JsonError.render(trace))
               }
+
+              Unsafe.unsafeCompat { (u: Unsafe) =>
+                implicit val unsafe: Unsafe = u
+
+                runtime.unsafe.run(outQueue.offer(Take.single(nextElem))).getOrThrow()
+              }
+
+              loop(false)
             }
 
-        val pullRest =
-          outQueue
-            .takeAll
-            .flatMap { takes =>
-              ZIO.foldLeft(takes)(Chunk[A]()) { case (acc, take) =>
-                take.fold(ZIO.succeedNow(acc), e => ZIO.fail(e.squash), c => ZIO.succeedNow(acc ++ c))
-              }
+            loop(true)
+          }
+            .catchAll {
+              case t: zio.json.internal.UnexpectedEnd =>
+                // swallow if stream ended
+                ZIO.unlessZIO(ended.get) {
+                  outQueue.offer(Take.fail(t))
+                }
+
+              case t: Throwable =>
+                outQueue.offer(Take.fail(t))
             }
+            .interruptible
+            .forkScoped
+          push = { (is: Option[Chunk[Char]]) =>
+            val pollElements: IO[Throwable, Chunk[A]] =
+              outQueue
+                .takeUpTo(ZStream.DefaultChunkSize)
+                .flatMap { takes =>
+                  ZIO.foldLeft(takes)(Chunk[A]()) { case (acc, take) =>
+                    take.fold(ZIO.succeedNow(acc), e => ZIO.fail(e.squash), c => ZIO.succeedNow(acc ++ c))
+                  }
+                }
 
-        is match {
-          case Some(c) =>
-            inQueue.offer(Take.chunk(c)) *> pollElements
+            val pullRest =
+              outQueue
+                .takeAll
+                .flatMap { takes =>
+                  ZIO.foldLeft(takes)(Chunk[A]()) { case (acc, take) =>
+                    take.fold(ZIO.succeedNow(acc), e => ZIO.fail(e.squash), c => ZIO.succeedNow(acc ++ c))
+                  }
+                }
 
-          case None =>
-            ended.set(true) *> inQueue.offer(Take.end) *> process.join *> pullRest
-        }
+            is match {
+              case Some(c) =>
+                inQueue.offer(Take.chunk(c)) *> pollElements
+
+              case None =>
+                ended.set(true) *> inQueue.offer(Take.end) *> process.join *> pullRest
+            }
+          }
+        } yield push
+        // format: on
       }
-    } yield push
-    // format: on
     }
+  }
 }

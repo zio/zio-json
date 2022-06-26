@@ -2,7 +2,7 @@ package zio.json
 
 import zio.json.internal.WriteWriter
 import zio.stream._
-import zio.{ Chunk, Ref, ZIO }
+import zio.{ Chunk, Ref, Unsafe, ZIO }
 
 trait JsonEncoderPlatformSpecific[A] { self: JsonEncoder[A] =>
 
@@ -17,54 +17,58 @@ trait JsonEncoderPlatformSpecific[A] { self: JsonEncoder[A] =>
     delimiter: Option[Char],
     endWith: Option[Char]
   ): ZPipeline[Any, Throwable, A, Char] =
-    ZPipeline.fromPush {
-      for {
-        runtime     <- ZIO.runtime[Any]
-        chunkBuffer <- Ref.make(Chunk.fromIterable(startWith.toList))
-        writer <- ZIO.fromAutoCloseable {
-                    ZIO.succeed {
-                      new java.io.BufferedWriter(
-                        new java.io.Writer {
-                          override def write(buffer: Array[Char], offset: Int, len: Int): Unit = {
-                            val copy = new Array[Char](len)
-                            System.arraycopy(buffer, offset, copy, 0, len)
+    Unsafe.unsafeCompat { (u: Unsafe) =>
+      implicit val unsafe: Unsafe = u
 
-                            val chunk = Chunk.fromArray(copy).drop(offset).take(len)
-                            runtime.unsafeRun(chunkBuffer.update(_ ++ chunk))
-                          }
+      ZPipeline.fromPush {
+        for {
+          runtime     <- ZIO.runtime[Any]
+          chunkBuffer <- Ref.make(Chunk.fromIterable(startWith.toList))
+          writer <- ZIO.fromAutoCloseable {
+                      ZIO.succeed {
+                        new java.io.BufferedWriter(
+                          new java.io.Writer {
+                            override def write(buffer: Array[Char], offset: Int, len: Int): Unit = {
+                              val copy = new Array[Char](len)
+                              System.arraycopy(buffer, offset, copy, 0, len)
 
-                          override def close(): Unit = ()
-                          override def flush(): Unit = ()
-                        },
-                        ZStream.DefaultChunkSize
-                      )
+                              val chunk = Chunk.fromArray(copy).drop(offset).take(len)
+                              runtime.unsafe.run(chunkBuffer.update(_ ++ chunk)).getOrThrow()
+                            }
+
+                            override def close(): Unit = ()
+                            override def flush(): Unit = ()
+                          },
+                          ZStream.DefaultChunkSize
+                        )
+                      }
                     }
+          writeWriter <- ZIO.succeed(new WriteWriter(writer))
+          push = { (is: Option[Chunk[A]]) =>
+            val pushChars = chunkBuffer.getAndUpdate(c => if (c.isEmpty) c else Chunk())
+
+            is match {
+              case None =>
+                ZIO.attemptBlocking(writer.close()) *> pushChars.map { terminal =>
+                  endWith.fold(terminal) { last =>
+                    // Chop off terminal deliminator
+                    (if (delimiter.isDefined) terminal.dropRight(1) else terminal) :+ last
                   }
-        writeWriter <- ZIO.succeed(new WriteWriter(writer))
-        push = { (is: Option[Chunk[A]]) =>
-          val pushChars = chunkBuffer.getAndUpdate(c => if (c.isEmpty) c else Chunk())
-
-          is match {
-            case None =>
-              ZIO.attemptBlocking(writer.close()) *> pushChars.map { terminal =>
-                endWith.fold(terminal) { last =>
-                  // Chop off terminal deliminator
-                  (if (delimiter.isDefined) terminal.dropRight(1) else terminal) :+ last
                 }
-              }
 
-            case Some(xs) =>
-              ZIO.attemptBlocking {
-                for (x <- xs) {
-                  unsafeEncode(x, indent = None, writeWriter)
+              case Some(xs) =>
+                ZIO.attemptBlocking {
+                  for (x <- xs) {
+                    unsafeEncode(x, indent = None, writeWriter)
 
-                  for (s <- delimiter)
-                    writeWriter.write(s)
-                }
-              } *> pushChars
+                    for (s <- delimiter)
+                      writeWriter.write(s)
+                  }
+                } *> pushChars
+            }
           }
-        }
-      } yield push
+        } yield push
+      }
     }
 
   final val encodeJsonLinesPipeline: ZPipeline[Any, Throwable, A, Char] =
