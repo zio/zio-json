@@ -1,7 +1,7 @@
 package zio.json
 
 import org.openjdk.jmh.annotations._
-import zio.{Chunk, Unsafe}
+import zio.{ Chunk, Unsafe }
 import zio.json.uuid.UUIDParser
 import zio.test.Gen
 

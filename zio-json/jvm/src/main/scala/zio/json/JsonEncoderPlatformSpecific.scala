@@ -2,7 +2,7 @@ package zio.json
 
 import zio.json.internal.WriteWriter
 import zio.stream._
-import zio.{Chunk, Ref, Unsafe, ZIO}
+import zio.{ Chunk, Ref, Unsafe, ZIO }
 
 trait JsonEncoderPlatformSpecific[A] { self: JsonEncoder[A] =>
 
@@ -16,7 +16,7 @@ trait JsonEncoderPlatformSpecific[A] { self: JsonEncoder[A] =>
     startWith: Option[Char],
     delimiter: Option[Char],
     endWith: Option[Char]
-  ): ZPipeline[Any, Throwable, A, Char] = {
+  ): ZPipeline[Any, Throwable, A, Char] =
     Unsafe.unsafeCompat { (u: Unsafe) =>
       implicit val unsafe: Unsafe = u
 
@@ -25,24 +25,24 @@ trait JsonEncoderPlatformSpecific[A] { self: JsonEncoder[A] =>
           runtime     <- ZIO.runtime[Any]
           chunkBuffer <- Ref.make(Chunk.fromIterable(startWith.toList))
           writer <- ZIO.fromAutoCloseable {
-            ZIO.succeed {
-              new java.io.BufferedWriter(
-                new java.io.Writer {
-                  override def write(buffer: Array[Char], offset: Int, len: Int): Unit = {
-                    val copy = new Array[Char](len)
-                    System.arraycopy(buffer, offset, copy, 0, len)
+                      ZIO.succeed {
+                        new java.io.BufferedWriter(
+                          new java.io.Writer {
+                            override def write(buffer: Array[Char], offset: Int, len: Int): Unit = {
+                              val copy = new Array[Char](len)
+                              System.arraycopy(buffer, offset, copy, 0, len)
 
-                    val chunk = Chunk.fromArray(copy).drop(offset).take(len)
-                    runtime.unsafe.run(chunkBuffer.update(_ ++ chunk)).getOrThrow()
-                  }
+                              val chunk = Chunk.fromArray(copy).drop(offset).take(len)
+                              runtime.unsafe.run(chunkBuffer.update(_ ++ chunk)).getOrThrow()
+                            }
 
-                  override def close(): Unit = ()
-                  override def flush(): Unit = ()
-                },
-                ZStream.DefaultChunkSize
-              )
-            }
-          }
+                            override def close(): Unit = ()
+                            override def flush(): Unit = ()
+                          },
+                          ZStream.DefaultChunkSize
+                        )
+                      }
+                    }
           writeWriter <- ZIO.succeed(new WriteWriter(writer))
           push = { (is: Option[Chunk[A]]) =>
             val pushChars = chunkBuffer.getAndUpdate(c => if (c.isEmpty) c else Chunk())
@@ -70,7 +70,6 @@ trait JsonEncoderPlatformSpecific[A] { self: JsonEncoder[A] =>
         } yield push
       }
     }
-  }
 
   final val encodeJsonLinesPipeline: ZPipeline[Any, Throwable, A, Char] =
     encodeJsonDelimitedPipeline(None, Some('\n'), None)
