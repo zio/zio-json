@@ -1,7 +1,7 @@
 package zio.json
 
 import org.openjdk.jmh.annotations._
-import zio.Chunk
+import zio.{Chunk, Unsafe}
 import zio.json.uuid.UUIDParser
 import zio.test.Gen
 
@@ -29,7 +29,11 @@ class UUIDBenchmarks {
       s5 <- section5
     } yield s"$s1-$s2-$s3-$s4-$s5"
 
-    unparsedUUIDChunk = zio.Runtime.default.unsafeRun(gen.runCollectN(10000).map(Chunk.fromIterable))
+    unparsedUUIDChunk = {
+      Unsafe.unsafeCompat { implicit u =>
+        zio.Runtime.default.unsafe.run(gen.runCollectN(10000).map(Chunk.fromIterable)).getOrThrow()
+      }
+    }
   }
 
   @Benchmark
