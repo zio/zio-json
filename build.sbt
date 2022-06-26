@@ -25,7 +25,7 @@ addCommandAlias("prepare", "fmt")
 
 addCommandAlias(
   "testJVM",
-  "zioJsonJVM/test; zioJsonYaml/test; zioJsonGolden/test; zioJsonMacrosJVM/test; zioJsonInteropHttp4s/test; zioJsonInteropScalaz7xJVM/test; zioJsonInteropScalaz7xJS/test; zioJsonInteropRefinedJVM/test; zioJsonInteropRefinedJS/test"
+  "zioJsonJVM/test; zioJsonYaml/test; zioJsonMacrosJVM/test; zioJsonInteropHttp4s/test; zioJsonInteropScalaz7xJVM/test; zioJsonInteropScalaz7xJS/test; zioJsonInteropRefinedJVM/test; zioJsonInteropRefinedJS/test"
 )
 
 addCommandAlias(
@@ -48,7 +48,6 @@ lazy val root = project
     zioJsonJVM,
     zioJsonJS,
     zioJsonYaml,
-    zioJsonGolden,
     zioJsonMacrosJVM,
     zioJsonMacrosJS,
     zioJsonInteropHttp4s,
@@ -228,7 +227,7 @@ lazy val zioJsonGolden = project
   .settings(
     libraryDependencies ++= Seq(
       "dev.zio"                      %% "zio"               % zioVersion,
-      "dev.zio"                      %% "zio-nio"           % "2.0.0-RC7",
+      "dev.zio"                      %% "zio-nio"           % "2.0.0",
       "dev.zio"                      %% "zio-test"          % zioVersion,
       "dev.zio"                      %% "zio-test-sbt"      % zioVersion,
       "dev.zio"                      %% "zio-test-magnolia" % zioVersion,
