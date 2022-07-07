@@ -82,7 +82,7 @@ object DecoderSpec extends ZIOSpecDefault {
 
           assert("""{}""".fromJson[DefaultString])(isRight(equalTo(DefaultString("")))) &&
           assert("""{"s": null}""".fromJson[DefaultString])(isRight(equalTo(DefaultString(""))))
-        } @@ TestAspect.exceptScala3,
+        },
         test("sum encoding") {
           import examplesum._
 
@@ -273,7 +273,7 @@ object DecoderSpec extends ZIOSpecDefault {
 
           assert(Json.Obj().as[DefaultString])(isRight(equalTo(DefaultString("")))) &&
           assert(Json.Obj("s" -> Json.Null).as[DefaultString])(isRight(equalTo(DefaultString(""))))
-        } @@ TestAspect.exceptScala3,
+        },
         test("sum encoding") {
           import examplesum._
 

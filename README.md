@@ -65,6 +65,8 @@ object Banana {
 }
 ```
 
+_Note: If you’re using Scala 3 and your case class is defining default parameters, `-Yretain-trees` needs to be added to `scalacOptions`._
+
 Now we can parse JSON into our object
 
 ```
