@@ -71,7 +71,12 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform)
     // as per @fommil, optimization slows things down.
     scalacOptions -= "-opt:l:inline",
     scalacOptions -= "-opt-inline-from:zio.internal.**",
-    //scalaVersion := ScalaDotty,
+    Test / scalacOptions ++= {
+      if (scalaVersion.value == ScalaDotty)
+        Vector("-Yretain-trees")
+      else
+        Vector.empty
+    },
     libraryDependencies ++= Seq(
       "dev.zio"                %%% "zio"                     % zioVersion,
       "dev.zio"                %%% "zio-streams"             % zioVersion,
@@ -87,7 +92,7 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform)
       CrossVersion.partialVersion(scalaVersion.value) match {
         case Some((3, _)) =>
           Vector(
-            "com.softwaremill.magnolia1_3" %%% "magnolia" % "1.0.0"
+            "com.softwaremill.magnolia1_3" %%% "magnolia" % "1.1.2"
           )
 
         case _ =>
