@@ -80,6 +80,39 @@ object GeneratorSpec extends ZIOSpecDefault {
 
         assertTrue(result == expected)
       },
+      suite("parse types")(
+        test("parses LocalDate and LocalDateTime and ZonedDateTime") {
+          val json =
+            """{
+              |  "name": "John",
+              |  "age": 30,
+              |  "date": "2020-01-01",
+              |  "dateTime": "2011-04-14T16:00:49Z",
+              |  "dateTime2": "2020-01-01T00:00:00.000",
+              |  "uuid": "00000000-0000-0000-0000-000000008000"
+              |}
+                """.stripMargin
+
+          val expected =
+            """final case class RootObject(
+              |  name: String,
+              |  age: Int,
+              |  date: java.time.LocalDate,
+              |  dateTime: java.time.LocalDateTime,
+              |  dateTime2: java.time.LocalDateTime,
+              |  uuid: java.util.UUID
+              |)
+              |
+              |object RootObject {
+              |  implicit val codec: JsonCodec[RootObject] = DeriveJsonCodec.gen
+              |}
+              |""".stripMargin.trim
+
+          val result = Generator.generate(json.fromJson[ast.Json].toOption.get)
+
+          assertTrue(result == expected)
+        }
+      ),
       suite("unify types")(
         test("unify nulls and present keys to Option") {
           val json =

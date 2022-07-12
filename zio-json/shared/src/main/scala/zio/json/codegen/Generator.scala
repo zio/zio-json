@@ -6,7 +6,12 @@ import zio.json._
 import zio.json.codegen.Generator.pascalFormat
 import JsonType._
 
+import java.time.format.DateTimeFormatter
+import java.time.{ LocalDate, LocalDateTime }
+import java.util.UUID
+import scala.collection.immutable.ListMap
 import scala.math.BigDecimal.javaBigDecimal2bigDecimal
+import scala.util.Try
 
 object Generator {
 
@@ -107,6 +112,9 @@ private[codegen] sealed trait JsonType extends Product with Serializable { self 
     case JBigDecimal          => "BigDecimal"
     case JNull                => "null"
     case JBoolean             => "Boolean"
+    case JLocalDate           => "java.time.LocalDate"
+    case JLocalDateTime       => "java.time.LocalDateTime"
+    case JUUID                => "java.util.UUID"
     case JOption(value)       => s"Option[${value.typeName}]"
     case JArray(value)        => s"List[${value.typeName}]"
     case Alternatives(values) => s"Alternatives[${values.map(_.typeName).mkString(", ")}]"
@@ -119,9 +127,9 @@ private[codegen] sealed trait JsonType extends Product with Serializable { self 
   }
 
   def mergeFields(
-    lhs: Map[String, JsonType],
-    rhs: Map[String, JsonType]
-  ): Map[String, JsonType] = {
+    lhs: ListMap[String, JsonType],
+    rhs: ListMap[String, JsonType]
+  ): ListMap[String, JsonType] = {
     val result = lhs.foldLeft(rhs) { case (acc, (name, lhsValue)) =>
       //        if (name == "thumbnails") {
       //          println(s"lhs: ${lhsValue.toString} rhs: ${rhs.get(name)}")
@@ -147,17 +155,20 @@ object JsonType {
     def displayName = name
   }
 
-  final case class JObject(fields: Map[String, JsonType]) extends JsonType
-  case object JString                                     extends JsonType
-  case object JInt                                        extends JsonType
-  case object JLong                                       extends JsonType
-  case object JDouble                                     extends JsonType
-  case object JBigDecimal                                 extends JsonType
-  case object JNull                                       extends JsonType
-  case object JBoolean                                    extends JsonType
-  final case class JOption(value: JsonType)               extends JsonType
-  final case class JArray(value: JsonType)                extends JsonType
-  final case class Alternatives(values: Chunk[JsonType])  extends JsonType
+  final case class JObject(fields: ListMap[String, JsonType]) extends JsonType
+  case object JString                                         extends JsonType
+  case object JInt                                            extends JsonType
+  case object JLong                                           extends JsonType
+  case object JDouble                                         extends JsonType
+  case object JBigDecimal                                     extends JsonType
+  case object JNull                                           extends JsonType
+  case object JBoolean                                        extends JsonType
+  case object JLocalDate                                      extends JsonType
+  case object JLocalDateTime                                  extends JsonType
+  case object JUUID                                           extends JsonType
+  final case class JOption(value: JsonType)                   extends JsonType
+  final case class JArray(value: JsonType)                    extends JsonType
+  final case class Alternatives(values: Chunk[JsonType])      extends JsonType
 
   def render(jsonType: JsonType): String = {
     val caseClasses = flattenCaseClasses(jsonType).distinct
@@ -200,14 +211,19 @@ object ${clazz.name} {
       case Json.Arr(elements) =>
         JArray(elements.map(unifyTypes(_, key)).reduce(_ unify _))
       case Json.Bool(_) => JBoolean
-      case Json.Str(_)  => JString
+      case Json.Str(string) =>
+        val localDateTime =
+          Try(LocalDateTime.parse(string, DateTimeFormatter.ISO_DATE_TIME)).toOption.map(_ => JLocalDateTime)
+        lazy val localDate = Try(LocalDate.parse(string)).toOption.map(_ => JLocalDate)
+        lazy val uuid      = Try(UUID.fromString(string)).toOption.map(_ => JUUID)
+        localDateTime.orElse(localDate).orElse(uuid).getOrElse(JString)
       case Json.Num(bigDecimal) =>
         if (bigDecimal.isValidInt) JInt
         else if (bigDecimal.isValidLong) JLong
         else if (bigDecimal <= Double.MaxValue) JDouble
         else JBigDecimal
       case Json.Obj(fields) =>
-        val result = JObject(fields.toMap.map { case (name, value) =>
+        val result = JObject(ListMap.from(fields).map { case (name, value) =>
           name -> unifyTypes(value, Some(name))
         })
         key match {
