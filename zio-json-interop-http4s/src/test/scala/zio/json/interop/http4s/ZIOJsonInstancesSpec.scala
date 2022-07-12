@@ -8,6 +8,7 @@ import zio.test.Assertion._
 import zio.test.{ DefaultRunnableSpec, _ }
 
 import java.nio.charset.StandardCharsets
+import org.typelevel.ci._
 
 object ZIOJsonInstancesSpec extends DefaultRunnableSpec {
   final case class Test(string: String, int: Int)
@@ -33,7 +34,7 @@ object ZIOJsonInstancesSpec extends DefaultRunnableSpec {
         checkM(Gen.anyString, Gen.anyInt) { (s, i) =>
           val media = Request[Task]()
             .withEntity(s"""{"string":"$s","int":$i}""")
-            .withHeaders(Header("Content-Type", "application/json"))
+            .withHeaders(Header.Raw(ci"Content-Type", "application/json"))
 
           assertM(jsonOf[Task, Test].decode(media, true).value)(isRight(equalTo(Test(s, i))))
         }
@@ -41,7 +42,7 @@ object ZIOJsonInstancesSpec extends DefaultRunnableSpec {
       testM("returns MalformedMessageBodyFailure when json is empty") {
         val media = Request[Task]()
           .withEntity("")
-          .withHeaders(Header("Content-Type", "application/json"))
+          .withHeaders(Header.Raw(ci"Content-Type", "application/json"))
 
         assertM(jsonOf[Task, Test].decode(media, true).value)(
           isLeft(equalTo(MalformedMessageBodyFailure("Invalid JSON: empty body")))
@@ -50,7 +51,7 @@ object ZIOJsonInstancesSpec extends DefaultRunnableSpec {
       testM("returns MalformedMessageBodyFailure when json is invalid") {
         val media = Request[Task]()
           .withEntity("""{"bad" "json"}""")
-          .withHeaders(Header("Content-Type", "application/json"))
+          .withHeaders(Header.Raw(ci"Content-Type", "application/json"))
 
         assertM(jsonOf[Task, Test].decode(media, true).value)(
           isLeft(equalTo(MalformedMessageBodyFailure("(expected ':' got '\"')")))
@@ -59,7 +60,7 @@ object ZIOJsonInstancesSpec extends DefaultRunnableSpec {
       testM("returns MalformedMessageBodyFailure when message body is not a json") {
         val media = Request[Task]()
           .withEntity("not a json")
-          .withHeaders(Header("Content-Type", "text/plain"))
+          .withHeaders(Header.Raw(ci"Content-Type", "text/plain"))
 
         assertM(jsonOf[Task, Test].decode(media, true).value)(isLeft(isSubtype[MediaTypeMismatch](anything)))
       }
