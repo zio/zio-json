@@ -198,13 +198,13 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform)
       CrossVersion.partialVersion(scalaVersion.value) match {
         case Some((3, _)) =>
           Vector(
-            "org.typelevel" %% "jawn-ast" % "1.3.2" % "test"
+            "org.typelevel" %% "jawn-ast" % "1.4.0" % "test"
           )
 
         case _ =>
           Seq(
             "ai.x"          %% "play-json-extensions" % "0.42.0" % "test",
-            "org.typelevel" %% "jawn-ast"             % "1.3.2"  % "test"
+            "org.typelevel" %% "jawn-ast"             % "1.4.0"  % "test"
           )
       }
     }
