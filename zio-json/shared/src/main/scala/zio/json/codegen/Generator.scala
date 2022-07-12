@@ -1,13 +1,13 @@
 package zio.json.codegen
 
 import zio.Chunk
-import zio.json.ast.Json
 import zio.json._
+import zio.json.ast.Json
 import zio.json.codegen.Generator.pascalFormat
-import JsonType._
+import zio.json.codegen.JsonType._
 
-import java.time.format.DateTimeFormatter
 import java.time.{ LocalDate, LocalDateTime }
+import java.time.format.DateTimeFormatter
 import java.util.UUID
 import scala.collection.immutable.ListMap
 import scala.math.BigDecimal.javaBigDecimal2bigDecimal
@@ -223,9 +223,11 @@ object ${clazz.name} {
         else if (bigDecimal <= Double.MaxValue) JDouble
         else JBigDecimal
       case Json.Obj(fields) =>
-        val result = JObject(ListMap.from(fields).map { case (name, value) =>
-          name -> unifyTypes(value, Some(name))
-        })
+        val result = JObject {
+          fields.foldLeft(ListMap.empty[String, JsonType]) { case (acc, (name, value)) =>
+            acc + (name -> unifyTypes(value, Some(name)))
+          }
+        }
         key match {
           case Some(key) => CaseClass(pascalFormat(key), result)
           case None      => CaseClass("RootObject", result)
