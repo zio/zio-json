@@ -189,8 +189,8 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform)
   .settings(testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework"))
   .jsSettings(
     libraryDependencies ++= Seq(
-      "io.github.cquiroz" %%% "scala-java-time"      % "2.3.0",
-      "io.github.cquiroz" %%% "scala-java-time-tzdb" % "2.3.0"
+      "io.github.cquiroz" %%% "scala-java-time"      % "2.4.0",
+      "io.github.cquiroz" %%% "scala-java-time-tzdb" % "2.4.0"
     )
   )
   .jvmSettings(
