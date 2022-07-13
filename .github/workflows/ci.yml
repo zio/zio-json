@@ -18,49 +18,59 @@ jobs:
     timeout-minutes: 30
     steps:
       - name: Checkout current branch
-        uses: actions/checkout@v2.4.0
+        uses: actions/checkout@v3.0.2
         with:
           fetch-depth: 0
-      - name: Setup Scala and Java
-        uses: olafurpg/setup-scala@v13
+      - name: Setup Java
+        uses: actions/setup-java@v3.4.1
+        with:
+          distribution: temurin
+          java-version: 11
+          check-latest: true
       - name: Cache scala dependencies
         uses: coursier/cache-action@v6
       - name: Lint code
-        run: sbt ++2.13.6 check
+        run: ./sbt check
 
   benchmarks:
     runs-on: ubuntu-20.04
     strategy:
       fail-fast: false
       matrix:
-        java: ['adopt@1.8', 'adopt@1.11']
+        java: ['8', '11']
         scala: ['2.13.6']
     steps:
       - name: Checkout current branch
-        uses: actions/checkout@v2.4.0
+        uses: actions/checkout@v3.0.2
         with:
           fetch-depth: 0
-      - name: Setup Scala and Java
-        uses: olafurpg/setup-scala@v13
+      - name: Setup Java
+        uses: actions/setup-java@v3.4.1
         with:
+          distribution: temurin
           java-version: ${{ matrix.java }}
+          check-latest: true
       - name: Cache scala dependencies
         uses: coursier/cache-action@v6
       - name: Compile benchmarks
-        run: sbt ++${{ matrix.scala }}! jmh:compile
+        run: ./sbt ++${{ matrix.scala }}! jmh:compile
 
   mdoc:
     runs-on: ubuntu-20.04
     timeout-minutes: 60
     steps:
       - name: Checkout current branch
-        uses: actions/checkout@v2.4.0
-      - name: Setup Scala and Java
-        uses: olafurpg/setup-scala@v13
+        uses: actions/checkout@v3.0.2
+      - name: Setup Java
+        uses: actions/setup-java@v3.4.1
+        with:
+          distribution: temurin
+          java-version: 8
+          check-latest: true
       - name: Cache scala dependencies
         uses: coursier/cache-action@v6
       - name: Check Document Generation
-        run: sbt ++2.13.6 docs/docusaurusCreateSite
+        run: ./sbt docs/docusaurusCreateSite
 
   test:
     runs-on: ubuntu-20.04
@@ -68,18 +78,20 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        java: ['adopt@1.8', 'adopt@1.11']
-        scala: ['2.12.14', '2.13.6', '3.1.1']
+        java: ['8', '11']
+        scala: ['2.12.14', '2.13.6', '3.1.3']
         platform: ['JVM', 'JS']
     steps:
       - name: Checkout current branch
-        uses: actions/checkout@v2.4.0
+        uses: actions/checkout@v3.0.2
         with:
           fetch-depth: 0
-      - name: Setup Scala and Java
-        uses: olafurpg/setup-scala@v13
+      - name: Setup Java
+        uses: actions/setup-java@v3.4.1
         with:
+          distribution: temurin
           java-version: ${{ matrix.java }}
+          check-latest: true
       - name: Cache scala dependencies
         uses: coursier/cache-action@v6
       - name: Run tests
@@ -98,20 +110,22 @@ jobs:
 
   publish:
     runs-on: ubuntu-20.04
-    timeout-minutes: 30
+    timeout-minutes: 60
     needs: [ci]
     if: github.event_name != 'pull_request'
     steps:
       - name: Checkout current branch
-        uses: actions/checkout@v2.4.0
+        uses: actions/checkout@v3.0.2
         with:
           fetch-depth: 0
-      - name: Setup Scala and Java
-        uses: olafurpg/setup-scala@v13
-      - name: Cache scala dependencies
-        uses: coursier/cache-action@v6
-      - name: Release artifacts
-        run: sbt ++2.13.6 ci-release
+      - name: Setup Java
+        uses: actions/setup-java@v3.4.1
+        with:
+          distribution: temurin
+          java-version: 8
+          check-latest: true
+      - name: Release
+        run: ./sbt ci-release
         env:
           PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
           PGP_SECRET: ${{ secrets.PGP_SECRET }}
