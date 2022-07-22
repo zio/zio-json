@@ -159,10 +159,12 @@ object JavaTimeSpec extends ZIOSpecDefault {
           )
         },
         test("Instant") {
-          val n = Instant.now()
+          val n = OffsetDateTime.now()
+          val p = n.toInstant
           assert(stringify("1970-01-01T00:00:00Z").fromJson[Instant])(isRight(equalTo(Instant.EPOCH))) &&
           assert(stringify("1970-01-01T00:00:00.Z").fromJson[Instant])(isRight(equalTo(Instant.EPOCH))) &&
-          assert(stringify(n).fromJson[Instant])(isRight(equalTo(n)))
+          assert(stringify(p).fromJson[Instant])(isRight(equalTo(p))) &&
+          assert(stringify(n).fromJson[Instant])(isRight(equalTo(p)))
         },
         test("LocalDate") {
           val n = LocalDate.now()
@@ -631,7 +633,9 @@ object JavaTimeSpec extends ZIOSpecDefault {
           ) &&
           assert(stringify("2020-01-01T01:01X").fromJson[Instant])(
             isLeft(
-              equalTo("(2020-01-01T01:01X is not a valid ISO-8601 format, expected ':' or 'Z' at index 16)")
+              equalTo(
+                "(2020-01-01T01:01X is not a valid ISO-8601 format, expected ':' or '+' or '-' or 'Z' at index 16)"
+              )
             )
           ) &&
           assert(stringify("2020-01-01T01:01:0").fromJson[Instant])(
@@ -656,22 +660,110 @@ object JavaTimeSpec extends ZIOSpecDefault {
           ) &&
           assert(stringify("2020-01-01T01:01:012").fromJson[Instant])(
             isLeft(
-              equalTo("(2020-01-01T01:01:012 is not a valid ISO-8601 format, expected '.' or 'Z' at index 19)")
+              equalTo(
+                "(2020-01-01T01:01:012 is not a valid ISO-8601 format, expected '.' or '+' or '-' or 'Z' at index 19)"
+              )
             )
           ) &&
           assert(stringify("2020-01-01T01:01:01.X").fromJson[Instant])(
             isLeft(
-              equalTo("(2020-01-01T01:01:01.X is not a valid ISO-8601 format, expected digit or 'Z' at index 20)")
+              equalTo(
+                "(2020-01-01T01:01:01.X is not a valid ISO-8601 format, expected digit or '+' or '-' or 'Z' at index 20)"
+              )
             )
           ) &&
           assert(stringify("2020-01-01T01:01:01.123456789X").fromJson[Instant])(
             isLeft(
-              equalTo("(2020-01-01T01:01:01.123456789X is not a valid ISO-8601 format, expected 'Z' at index 29)")
+              equalTo(
+                "(2020-01-01T01:01:01.123456789X is not a valid ISO-8601 format, expected '+' or '-' or 'Z' at index 29)"
+              )
             )
           ) &&
           assert(stringify("2020-01-01T01:01:01ZX").fromJson[Instant])(
             isLeft(
               equalTo("(2020-01-01T01:01:01ZX is not a valid ISO-8601 format, illegal instant at index 20)")
+            )
+          ) &&
+          assert(stringify("2020-01-01T01:01:01+X1:01:01").fromJson[Instant])(
+            isLeft(
+              equalTo("(2020-01-01T01:01:01+X1:01:01 is not a valid ISO-8601 format, expected digit at index 20)")
+            )
+          ) &&
+          assert(stringify("2020-01-01T01:01:01+0").fromJson[Instant])(
+            isLeft(
+              equalTo("(2020-01-01T01:01:01+0 is not a valid ISO-8601 format, illegal instant at index 20)")
+            )
+          ) &&
+          assert(stringify("2020-01-01T01:01:01+0X:01:01").fromJson[Instant])(
+            isLeft(
+              equalTo("(2020-01-01T01:01:01+0X:01:01 is not a valid ISO-8601 format, expected digit at index 21)")
+            )
+          ) &&
+          assert(stringify("2020-01-01T01:01:01+19:01:01").fromJson[Instant])(
+            isLeft(
+              equalTo(
+                "(2020-01-01T01:01:01+19:01:01 is not a valid ISO-8601 format, illegal timezone offset hour at index 21)"
+              )
+            )
+          ) &&
+          assert(stringify("2020-01-01T01:01:01+01X01:01").fromJson[Instant])(
+            isLeft(
+              equalTo(
+                "(2020-01-01T01:01:01+01X01:01 is not a valid ISO-8601 format, illegal instant at index 23)"
+              )
+            )
+          ) &&
+          assert(stringify("2020-01-01T01:01:01+01:0").fromJson[Instant])(
+            isLeft(
+              equalTo("(2020-01-01T01:01:01+01:0 is not a valid ISO-8601 format, illegal instant at index 23)")
+            )
+          ) &&
+          assert(stringify("2020-01-01T01:01:01+01:X1:01").fromJson[Instant])(
+            isLeft(
+              equalTo("(2020-01-01T01:01:01+01:X1:01 is not a valid ISO-8601 format, expected digit at index 23)")
+            )
+          ) &&
+          assert(stringify("2020-01-01T01:01:01+01:0X:01").fromJson[Instant])(
+            isLeft(
+              equalTo("(2020-01-01T01:01:01+01:0X:01 is not a valid ISO-8601 format, expected digit at index 24)")
+            )
+          ) &&
+          assert(stringify("2020-01-01T01:01:01+01:60:01").fromJson[Instant])(
+            isLeft(
+              equalTo(
+                "(2020-01-01T01:01:01+01:60:01 is not a valid ISO-8601 format, illegal timezone offset minute at index 24)"
+              )
+            )
+          ) &&
+          assert(stringify("2020-01-01T01:01:01+01:01X01").fromJson[Instant])(
+            isLeft(
+              equalTo(
+                "(2020-01-01T01:01:01+01:01X01 is not a valid ISO-8601 format, illegal instant at index 26)"
+              )
+            )
+          ) &&
+          assert(stringify("2020-01-01T01:01:01+01:01:0").fromJson[Instant])(
+            isLeft(
+              equalTo(
+                "(2020-01-01T01:01:01+01:01:0 is not a valid ISO-8601 format, illegal instant at index 26)"
+              )
+            )
+          ) &&
+          assert(stringify("2020-01-01T01:01:01+01:01:X1").fromJson[Instant])(
+            isLeft(
+              equalTo("(2020-01-01T01:01:01+01:01:X1 is not a valid ISO-8601 format, expected digit at index 26)")
+            )
+          ) &&
+          assert(stringify("2020-01-01T01:01:01+01:01:0X").fromJson[Instant])(
+            isLeft(
+              equalTo("(2020-01-01T01:01:01+01:01:0X is not a valid ISO-8601 format, expected digit at index 27)")
+            )
+          ) &&
+          assert(stringify("2020-01-01T01:01:01+01:01:60").fromJson[Instant])(
+            isLeft(
+              equalTo(
+                "(2020-01-01T01:01:01+01:01:60 is not a valid ISO-8601 format, illegal timezone offset second at index 27)"
+              )
             )
           ) &&
           assert(stringify("+X0000-01-01T01:01Z").fromJson[Instant])(

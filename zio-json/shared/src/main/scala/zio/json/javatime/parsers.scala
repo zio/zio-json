@@ -217,7 +217,9 @@ private[json] object parsers {
       pos += 3
       day
     }
-    val hour = {
+    val epochDay =
+      epochDayForYear(year) + (dayOfYearForYearMonth(year, month) + day - 719529) // 719528 == days 0000 to 1970
+    var epochSecond = {
       if (pos + 2 >= len) instantError(pos)
       val ch0  = input.charAt(pos)
       val ch1  = input.charAt(pos + 1)
@@ -228,9 +230,9 @@ private[json] object parsers {
       if (hour > 23) hourError(pos + 1)
       if (ch2 != ':') charError(':', pos + 2)
       pos += 3
-      hour
+      hour * 3600
     }
-    val minute = {
+    epochSecond += {
       if (pos + 1 >= len) instantError(pos)
       val ch0 = input.charAt(pos)
       val ch1 = input.charAt(pos + 1)
@@ -238,17 +240,17 @@ private[json] object parsers {
       if (ch1 < '0' || ch1 > '9') digitError(pos + 1)
       if (ch0 > '5') minuteError(pos + 1)
       pos += 2
-      ch0 * 10 + ch1 - 528 // 528 == '0' * 11
+      (ch0 * 10 + ch1 - 528) * 60 // 528 == '0' * 11
     }
     var nanoDigitWeight = -1
-    var second, nano    = 0
+    var nano            = 0
     var ch              = (0: Char)
     if (pos < len) {
       ch = input.charAt(pos)
       pos += 1
       if (ch == ':') {
         nanoDigitWeight = -2
-        second = {
+        epochSecond += {
           if (pos + 1 >= len) instantError(pos)
           val ch0 = input.charAt(pos)
           val ch1 = input.charAt(pos + 1)
@@ -277,12 +279,62 @@ private[json] object parsers {
         }
       }
     }
-    if (ch != 'Z') instantError(nanoDigitWeight, pos - 1)
+    var offsetTotal = 0
+    if (ch != 'Z') {
+      val offsetNeg = ch == '-' || (ch != '+' && timezoneSignError(nanoDigitWeight, pos - 1))
+      offsetTotal = {
+        if (pos + 1 >= len) instantError(pos)
+        val ch0        = input.charAt(pos)
+        val ch1        = input.charAt(pos + 1)
+        val offsetHour = ch0 * 10 + ch1 - 528 // 528 == '0' * 11
+        if (ch0 < '0' || ch0 > '9') digitError(pos)
+        if (ch1 < '0' || ch1 > '9') digitError(pos + 1)
+        if (offsetHour > 18) timezoneOffsetHourError(pos + 1)
+        pos += 2
+        offsetHour * 3600
+      }
+      if (
+        pos < len && {
+          ch = input.charAt(pos)
+          pos += 1
+          ch == ':'
+        }
+      ) {
+        offsetTotal += {
+          if (pos + 1 >= len) instantError(pos)
+          val ch0 = input.charAt(pos)
+          val ch1 = input.charAt(pos + 1)
+          if (ch0 < '0' || ch0 > '9') digitError(pos)
+          if (ch1 < '0' || ch1 > '9') digitError(pos + 1)
+          if (ch0 > '5') timezoneOffsetMinuteError(pos + 1)
+          pos += 2
+          (ch0 * 10 + ch1 - 528) * 60 // 528 == '0' * 11
+        }
+        if (
+          pos < len && {
+            ch = input.charAt(pos)
+            pos += 1
+            ch == ':'
+          }
+        ) {
+          offsetTotal += {
+            if (pos + 1 >= len) instantError(pos)
+            val ch0 = input.charAt(pos)
+            val ch1 = input.charAt(pos + 1)
+            if (ch0 < '0' || ch0 > '9') digitError(pos)
+            if (ch1 < '0' || ch1 > '9') digitError(pos + 1)
+            if (ch0 > '5') timezoneOffsetSecondError(pos + 1)
+            pos += 2
+            ch0 * 10 + ch1 - 528 // 528 == '0' * 11
+          }
+        }
+      }
+      if (offsetTotal > 64800) zoneOffsetError(pos) // 64800 == 18 * 60 * 60
+      if (offsetNeg) offsetTotal = -offsetTotal
+    }
     if (pos != len) instantError(pos)
-    val epochDay =
-      epochDayForYear(year) + (dayOfYearForYearMonth(year, month) + day - 719529) // 719528 == days 0000 to 1970
     Instant.ofEpochSecond(
-      epochDay * 86400 + (hour * 3600 + minute * 60 + second),
+      epochDay * 86400 + (epochSecond - offsetTotal),
       nano.toLong
     ) // 86400 == seconds per day
   }
@@ -1444,14 +1496,6 @@ private[json] object parsers {
     )
 
   private[this] def durationError(pos: Int) = error("illegal duration", pos)
-
-  private[this] def instantError(nanoDigitWeight: Int, pos: Int) = error(
-    if (nanoDigitWeight == -1) "expected ':' or 'Z'"
-    else if (nanoDigitWeight == -2) "expected '.' or 'Z'"
-    else if (nanoDigitWeight == 0) "expected 'Z'"
-    else "expected digit or 'Z'",
-    pos
-  )
 
   private[this] def timezoneSignError(nanoDigitWeight: Int, pos: Int) =
     error(
