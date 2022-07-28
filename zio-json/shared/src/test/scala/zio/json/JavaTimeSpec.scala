@@ -34,7 +34,7 @@ object JavaTimeSpec extends ZIOSpecDefault {
           assert(Duration.ofSeconds(Long.MaxValue, 999999999L).toJson)(
             equalToStringified("PT2562047788015215H30M7.999999999S")
           ) &&
-          assert(""""PT-0.5S"""".fromJson[Duration].map(_.toString))(isRight(equalTo("PT-0.5S")))
+          assert(""""PT-0.5S"""".fromJson[Duration].map(_.toString))(isRight(equalTo("PT-0.5S"))) &&
           assert(""""-PT0.5S"""".fromJson[Duration].map(_.toString))(isRight(equalTo("PT-0.5S")))
         },
         test("Instant") {
@@ -142,12 +142,8 @@ object JavaTimeSpec extends ZIOSpecDefault {
           assert(stringify("FRIDAY").fromJson[DayOfWeek])(isRight(equalTo(DayOfWeek.FRIDAY))) &&
           assert(stringify("SATURDAY").fromJson[DayOfWeek])(isRight(equalTo(DayOfWeek.SATURDAY))) &&
           assert(stringify("SUNDAY").fromJson[DayOfWeek])(isRight(equalTo(DayOfWeek.SUNDAY))) &&
-          assert(stringify("monday").fromJson[DayOfWeek])(
-            isRight(equalTo(DayOfWeek.MONDAY))
-          ) &&
-          assert(stringify("MonDay").fromJson[DayOfWeek])(
-            isRight(equalTo(DayOfWeek.MONDAY))
-          )
+          assert(stringify("monday").fromJson[DayOfWeek])(isRight(equalTo(DayOfWeek.MONDAY))) &&
+          assert(stringify("MonDay").fromJson[DayOfWeek])(isRight(equalTo(DayOfWeek.MONDAY)))
         },
         test("Duration") {
           assert(stringify("PT24H").fromJson[Duration])(isRight(equalTo(Duration.ofHours(24)))) &&
@@ -174,14 +170,14 @@ object JavaTimeSpec extends ZIOSpecDefault {
           val n = LocalDateTime.now()
           val p = LocalDateTime.of(2020, 1, 1, 12, 36, 0)
           assert(stringify(n).fromJson[LocalDateTime])(isRight(equalTo(n))) &&
-          assert(stringify("2020-01-01T12:36").fromJson[LocalDateTime])(isRight(equalTo(p)))
+          assert(stringify("2020-01-01T12:36").fromJson[LocalDateTime])(isRight(equalTo(p))) &&
           assert(stringify("2020-01-01T12:36:00.").fromJson[LocalDateTime])(isRight(equalTo(p)))
         },
         test("LocalTime") {
           val n = LocalTime.now()
           val p = LocalTime.of(12, 36, 0)
           assert(stringify(n).fromJson[LocalTime])(isRight(equalTo(n))) &&
-          assert(stringify("12:36").fromJson[LocalTime])(isRight(equalTo(p)))
+          assert(stringify("12:36").fromJson[LocalTime])(isRight(equalTo(p))) &&
           assert(stringify("12:36:00.").fromJson[LocalTime])(isRight(equalTo(p)))
         },
         test("Month") {
@@ -210,14 +206,14 @@ object JavaTimeSpec extends ZIOSpecDefault {
           val n = OffsetDateTime.now()
           val p = OffsetDateTime.of(2020, 1, 1, 12, 36, 12, 0, ZoneOffset.UTC)
           assert(stringify(n).fromJson[OffsetDateTime])(isRight(equalTo(n))) &&
-          assert(stringify("2020-01-01T12:36:12Z").fromJson[OffsetDateTime])(isRight(equalTo(p)))
+          assert(stringify("2020-01-01T12:36:12Z").fromJson[OffsetDateTime])(isRight(equalTo(p))) &&
           assert(stringify("2020-01-01T12:36:12.Z").fromJson[OffsetDateTime])(isRight(equalTo(p)))
         },
         test("OffsetTime") {
           val n = OffsetTime.now()
           val p = OffsetTime.of(12, 36, 12, 0, ZoneOffset.ofHours(-4))
           assert(stringify(n).fromJson[OffsetTime])(isRight(equalTo(n))) &&
-          assert(stringify("12:36:12-04:00").fromJson[OffsetTime])(isRight(equalTo(p)))
+          assert(stringify("12:36:12-04:00").fromJson[OffsetTime])(isRight(equalTo(p))) &&
           assert(stringify("12:36:12.-04:00").fromJson[OffsetTime])(isRight(equalTo(p)))
         },
         test("Period") {
