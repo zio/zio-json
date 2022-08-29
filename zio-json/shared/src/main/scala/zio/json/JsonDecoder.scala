@@ -117,6 +117,13 @@ trait JsonDecoder[A] extends JsonDecoderPlatformSpecific[A] {
           case Left(_)           => that.fromJsonAST(json)
           case result @ Right(_) => result
         }
+
+      override def unsafeDecodeMissing(trace: List[JsonError]): A1 =
+        try self.unsafeDecodeMissing(trace)
+        catch {
+          case _: Throwable => that.unsafeDecodeMissing(trace)
+        }
+
     }
 
   /**
@@ -129,7 +136,7 @@ trait JsonDecoder[A] extends JsonDecoderPlatformSpecific[A] {
   /**
    * Returns a new codec whose decoded values will be mapped by the specified function.
    */
-  def map[B](f: A => B): JsonDecoder[B] =
+  final def map[B](f: A => B): JsonDecoder[B] =
     new JsonDecoder[B] {
 
       def unsafeDecode(trace: List[JsonError], in: RetractReader): B =
@@ -137,6 +144,10 @@ trait JsonDecoder[A] extends JsonDecoderPlatformSpecific[A] {
 
       override final def fromJsonAST(json: Json): Either[String, B] =
         self.fromJsonAST(json).map(f)
+
+      override def unsafeDecodeMissing(trace: List[JsonError]): B =
+        f(self.unsafeDecodeMissing(trace))
+
     }
 
   /**
@@ -155,6 +166,14 @@ trait JsonDecoder[A] extends JsonDecoderPlatformSpecific[A] {
 
       override final def fromJsonAST(json: Json): Either[String, B] =
         self.fromJsonAST(json).flatMap(f)
+
+      override def unsafeDecodeMissing(trace: List[JsonError]): B =
+        f(self.unsafeDecodeMissing(trace)) match {
+          case Left(err) =>
+            throw JsonDecoder.UnsafeJson(JsonError.Message(err) :: trace)
+          case Right(b) => b
+        }
+
     }
 
   /**
@@ -338,20 +357,6 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority1 {
           case _ =>
             in.retract()
             Some(A.unsafeDecode(trace, in))
-        }
-
-      // overridden here to pass `None` to the new Decoder instead of throwing
-      // when called from a derived decoder
-      override def map[B](f: Option[A] => B): JsonDecoder[B] =
-        new JsonDecoder[B] {
-          override def unsafeDecodeMissing(trace: List[JsonError]): B =
-            f(None)
-
-          def unsafeDecode(trace: List[JsonError], in: RetractReader): B =
-            f(self.unsafeDecode(trace, in))
-
-          override final def fromJsonAST(json: Json): Either[String, B] =
-            self.fromJsonAST(json).map(f)
         }
 
       override final def fromJsonAST(json: Json): Either[String, Option[A]] =
