@@ -90,7 +90,7 @@ object ZioValueEnumSpec extends ZIOSpecDefault {
 }
 
 sealed abstract class ZIOContentType(val value: Long, name: String) extends LongEnumEntry {
-  def getName:String = name
+  def getName: String = name
 }
 
 case object ZIOContentType extends LongEnum[ZIOContentType] with LongZIOEnum[ZIOContentType] {
@@ -104,9 +104,8 @@ case object ZIOContentType extends LongEnum[ZIOContentType] with LongZIOEnum[ZIO
 
 }
 
-sealed abstract class ZIODrinks(val value: Short, name: String) extends ShortEnumEntry
-{
-  def getName:String=name
+sealed abstract class ZIODrinks(val value: Short, name: String) extends ShortEnumEntry {
+  def getName: String = name
 }
 
 case object ZIODrinks extends ShortEnum[ZIODrinks] with ShortZIOEnum[ZIODrinks] {
