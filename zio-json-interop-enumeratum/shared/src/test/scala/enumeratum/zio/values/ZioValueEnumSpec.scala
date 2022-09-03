@@ -70,17 +70,16 @@ object ZioValueEnumSpec extends ZIOSpecDefault {
   ) =
     suite(s"$enumKind as Key")(
       test("to JSON should work") {
-        val map = enum.values.toStream.zip(Stream.from(1)).toMap
+        val map = enum.values.zip(LazyList.from(1)).toMap
         assert(map.toJsonAST.flatMap(_.as[Map[EntryType, Int]]))(isRight(equalTo(map)))
       },
       test("from JSON should fail to parse random JSON into a map") {
         val invalidJsonMap =
-          Stream
+          LazyList
             .from(1)
             .map(_.toString)
             .take(10)
-            .toStream
-            .zip(Stream.from(1))
+            .zip(LazyList.from(1))
             .toMap
             .toJsonAST
             .flatMap(_.as[Map[EntryType, Int]])
@@ -90,7 +89,9 @@ object ZioValueEnumSpec extends ZIOSpecDefault {
 
 }
 
-sealed abstract class ZIOContentType(val value: Long, name: String) extends LongEnumEntry
+sealed abstract class ZIOContentType(val value: Long, name: String) extends LongEnumEntry {
+  def getName:String = name
+}
 
 case object ZIOContentType extends LongEnum[ZIOContentType] with LongZIOEnum[ZIOContentType] {
 
@@ -104,6 +105,9 @@ case object ZIOContentType extends LongEnum[ZIOContentType] with LongZIOEnum[ZIO
 }
 
 sealed abstract class ZIODrinks(val value: Short, name: String) extends ShortEnumEntry
+{
+  def getName:String=name
+}
 
 case object ZIODrinks extends ShortEnum[ZIODrinks] with ShortZIOEnum[ZIODrinks] {
 
