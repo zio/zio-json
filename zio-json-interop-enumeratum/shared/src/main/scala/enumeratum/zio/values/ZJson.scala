@@ -10,8 +10,10 @@ object ZJson {
    */
   def encoder[ValueType: JsonEncoder, EntryType <: ValueEnumEntry[ValueType]](
     enum: ValueEnum[ValueType, EntryType]
-  ): JsonEncoder[EntryType] =
+  ): JsonEncoder[EntryType] = {
+    enum.values // to remove warning and prevent issues scala typing resolution
     implicitly[JsonEncoder[ValueType]].contramap[EntryType](_.value)
+  }
 
   /**
    * Returns a JsonDecoder for the provided ValueEnum
@@ -31,8 +33,10 @@ object ZJson {
 
   def keyJsonEncoder[EntryType <: ValueEnumEntry[String]](
     enum: ValueEnum[String, EntryType]
-  ): JsonFieldEncoder[EntryType] =
+  ): JsonFieldEncoder[EntryType] = {
+    enum.values // to remove warning and prevent issues scala typing resolution
     JsonFieldEncoder.string.contramap(_.value)
+  }
 
   def keyJsonDecoder[EntryType <: ValueEnumEntry[String]](
     enum: ValueEnum[String, EntryType]
