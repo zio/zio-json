@@ -100,7 +100,7 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform)
             "org.scala-lang"                          % "scala-reflect"         % scalaVersion.value % Provided,
             "com.propensive"                        %%% "magnolia"              % "0.17.0",
             "io.circe"                              %%% "circe-generic-extras"  % circeVersion       % "test",
-            "com.typesafe.play"                     %%% "play-json"             % "2.9.2"            % "test",
+            "com.typesafe.play"                     %%% "play-json"             % "2.9.3"            % "test",
             "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-core"   % "2.17.1"           % "test",
             "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-macros" % "2.17.1"           % "test"
           )
