@@ -43,22 +43,6 @@ object ZioValueEnumSpec extends ZIOSpecDefault {
 
       }
     )
-  //      describe("from Json") {
-//
-//
-//
-//        it("should fail to parse random JSON to members") {
-//          val failures =
-//            Seq(Json.fromString("GOBBLYGOOKITY"), Json.fromInt(Int.MaxValue)).map(_.as[EntryType])
-//          failures.foreach { f =>
-//            f.isLeft shouldBe true
-//            f.leftMap(_.history shouldBe Nil)
-//          }
-//        }
-//
-//      }
-
-//    }
 
   private def testZIOKeyEnum[EntryType <: ValueEnumEntry[String]: JsonFieldEncoder: JsonFieldDecoder](
     enumKind: String,

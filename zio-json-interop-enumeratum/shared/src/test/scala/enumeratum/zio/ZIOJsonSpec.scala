@@ -61,11 +61,6 @@ object ZIOJsonSpec extends ZIOSpecDefault {
           )
         }.foldLeft(assertCompletes) { case (a, b) => a && b }
       ),
-//      test("JsonEncoder/Decoder should fail to parse random JSON to members")(
-//        Seq(Json.Str("123"), Json.Num(Int.MaxValue)).map { case entry =>
-//          assert(entry.as[ShirtSize](ZIOJson.decoder(ShirtSize)))(isLeft(equalTo(s"'$entry' is not a member of enum ShirtSize")))
-//        }.foldLeft(assertCompletes) { case (a, b) => a && b }
-//      ),
       test("JsonDecoder should fail to parse mixed but not upper case")(
         Seq("Small", "Medium", "Large").map { case entry =>
           assert(Json.Str(entry).as[ShirtSize](ZIOJson.decoderUppercaseOnly(ShirtSize)))(
