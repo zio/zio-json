@@ -232,14 +232,14 @@ lazy val zioJsonGolden = project
   .settings(buildInfoSettings("zio.json.golden"))
   .settings(
     scalacOptions -= "-Xfatal-warnings",
+
     libraryDependencies ++= Seq(
       "dev.zio"       %% "zio"               % zioVersion,
-      "dev.zio"       %% "zio-nio"           % "2.0.0",
       "dev.zio"       %% "zio-test"          % zioVersion,
       "dev.zio"       %% "zio-test-sbt"      % zioVersion,
       "dev.zio"       %% "zio-test-magnolia" % zioVersion,
-      "org.scala-lang" % "scala-reflect"     % scalaVersion.value % Provided
     ),
+
     testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework")
   )
   .dependsOn(zioJsonJVM)

@@ -1,15 +1,15 @@
 package zio.json
 
 import scala.annotation.nowarn
-import scala.reflect.runtime.universe.TypeTag
 
+import zio.Tag
 import zio.{ test => _, _ }
 import zio.json.golden.filehelpers._
-import zio.nio.file._
 import zio.stacktracer.TracingImplicits.disableAutoTrace
 import zio.test._
 import zio.test.diff._
 import zio.test.diff.Diff._
+import java.nio.file.{ Paths, Path, Files }
 
 import zio.json._
 import zio.json.ast._
@@ -31,7 +31,7 @@ package object golden {
   @nowarn implicit private lazy val diff: Diff[GoldenSample] = (x: GoldenSample, y: GoldenSample) =>
     Diff[Json].diff(x.samples, y.samples)
 
-  def goldenTest[A: TypeTag: JsonEncoder](
+  def goldenTest[A: Tag: JsonEncoder](
     gen: Gen[Sized, A]
   )(implicit
     trace: Trace,
@@ -44,9 +44,9 @@ package object golden {
       val lowerCasedName = name.toLowerCase
       for {
         resourceDir <- createGoldenDirectory(s"src/test/resources/golden/$relativePath")
-        fileName     = Path(s"$lowerCasedName.json")
-        filePath     = resourceDir / fileName
-        assertion <- ZIO.ifZIO(Files.exists(filePath))(
+        fileName     = Paths.get(s"$lowerCasedName.json")
+        filePath     = resourceDir.resolve(fileName)
+        assertion <- ZIO.ifZIO(ZIO.attemptBlocking(Files.exists(filePath)))(
                        validateTest(resourceDir, name, gen, sampleSize),
                        createNewTest(resourceDir, name, gen, sampleSize)
                      )
@@ -60,16 +60,17 @@ package object golden {
     gen: Gen[Sized, A],
     sampleSize: Int
   )(implicit trace: Trace): ZIO[Sized, Throwable, TestResult] = {
-    val fileName = Path(s"$name.json")
-    val filePath = resourceDir / fileName
+    val fileName = Paths.get(s"$name.json")
+    val filePath = resourceDir.resolve(fileName)
+
     for {
       currentSample <- readSampleFromFile(filePath)
       sample        <- generateSample(gen, sampleSize)
       assertion <- if (sample == currentSample) {
                      ZIO.succeed(assertTrue(sample == currentSample))
                    } else {
-                     val diffFileName = Path(s"${name}_changed.json")
-                     val diffFilePath = resourceDir / diffFileName
+                     val diffFileName = Paths.get(s"${name}_changed.json")
+                     val diffFilePath = resourceDir.resolve(diffFileName)
                      writeSampleToFile(diffFilePath, sample) *>
                        ZIO.succeed(assertTrue(sample == currentSample))
                    }
@@ -83,14 +84,14 @@ package object golden {
     sampleSize: Int
   )(implicit trace: Trace): ZIO[Sized, Throwable, TestResult] = {
     val fileName = s"${name}_new.json"
-    val filePath = resourceDir / Path(fileName)
+    val filePath = resourceDir.resolve(fileName)
 
     val failureString =
-      s"No existing golden test for ${resourceDir / Path(s"$name.json")}. Remove _new from the suffix and re-run the test."
+      s"No existing golden test for ${resourceDir.resolve("$name.json")}. Remove _new from the suffix and re-run the test."
 
     for {
       sample   <- generateSample(gen, sampleSize)
-      _        <- ZIO.ifZIO(Files.exists(filePath))(ZIO.unit, Files.createFile(filePath))
+      _        <- ZIO.ifZIO(ZIO.attemptBlocking(Files.exists(filePath)))(ZIO.unit, ZIO.attemptBlocking(Files.createFile(filePath)))
       _        <- writeSampleToFile(filePath, sample)
       assertion = TestArrow.make((_: Any) => TestTrace.fail(failureString).withLocation(Some(trace.toString)))
     } yield TestResult(assertion)
@@ -113,7 +114,6 @@ package object golden {
       .runHead
       .someOrFailException
 
-  private def getName[A](implicit typeTag: TypeTag[A]): String =
-    typeTag.tpe.typeSymbol.name.decodedName.toString
-
+  private def getName[A](implicit tag: Tag[A]): String =
+    tag.tag.shortName
 }
