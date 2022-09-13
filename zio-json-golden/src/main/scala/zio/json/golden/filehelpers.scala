@@ -1,8 +1,8 @@
 package zio.json.golden
 
-import java.io.{File, IOException}
-import java.nio.file.{Path}
-import zio.{test => _, _}
+import java.io.{ File, IOException }
+import java.nio.file.{ Path }
+import zio.{ test => _, _ }
 import zio.json._
 
 import zio.stacktracer.TracingImplicits.disableAutoTrace
@@ -30,11 +30,9 @@ object filehelpers {
   def writeSampleToFile(path: Path, sample: GoldenSample)(implicit trace: Trace): IO[IOException, Unit] = {
     val jsonString = sample.toJsonPretty
 
-    ZIO
-      .attemptBlockingIO {
-        Files.write(path, jsonString.getBytes("UTF-8"))
-      }
-      .unit
+    ZIO.attemptBlockingIO {
+      Files.write(path, jsonString.getBytes("UTF-8"))
+    }.unit
   }
 
   def readSampleFromFile(path: Path)(implicit trace: Trace): Task[GoldenSample] =
