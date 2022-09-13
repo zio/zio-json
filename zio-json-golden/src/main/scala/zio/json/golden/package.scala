@@ -90,8 +90,10 @@ package object golden {
       s"No existing golden test for ${resourceDir.resolve("$name.json")}. Remove _new from the suffix and re-run the test."
 
     for {
-      sample   <- generateSample(gen, sampleSize)
-      _        <- ZIO.ifZIO(ZIO.attemptBlocking(Files.exists(filePath)))(ZIO.unit, ZIO.attemptBlocking(Files.createFile(filePath)))
+      sample <- generateSample(gen, sampleSize)
+      _ <-
+        ZIO
+          .ifZIO(ZIO.attemptBlocking(Files.exists(filePath)))(ZIO.unit, ZIO.attemptBlocking(Files.createFile(filePath)))
       _        <- writeSampleToFile(filePath, sample)
       assertion = TestArrow.make((_: Any) => TestTrace.fail(failureString).withLocation(Some(trace.toString)))
     } yield TestResult(assertion)
