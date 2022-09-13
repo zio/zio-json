@@ -1,13 +1,12 @@
 package zio.json.golden
 
-import java.io.File
-import java.nio.file.{ Path, Paths }
-
-import zio.{ test => _, _ }
-
+import java.io.{File, IOException}
+import java.nio.file.{Path}
+import zio.{test => _, _}
 import zio.json._
-import zio.json.golden.GoldenSample
+
 import zio.stacktracer.TracingImplicits.disableAutoTrace
+
 import java.nio.file.Files
 
 object filehelpers {
@@ -28,12 +27,14 @@ object filehelpers {
     } yield path
   }
 
-  def writeSampleToFile(path: Path, sample: GoldenSample)(implicit trace: Trace): Task[Unit] = {
+  def writeSampleToFile(path: Path, sample: GoldenSample)(implicit trace: Trace): IO[IOException, Unit] = {
     val jsonString = sample.toJsonPretty
 
-    ZIO.attemptBlocking {
-      Files.write(path, jsonString.getBytes("UTF-8"))
-    }
+    ZIO
+      .attemptBlockingIO {
+        Files.write(path, jsonString.getBytes("UTF-8"))
+      }
+      .unit
   }
 
   def readSampleFromFile(path: Path)(implicit trace: Trace): Task[GoldenSample] =

@@ -11,7 +11,6 @@ import zio.test.diff._
 import zio.test.diff.Diff._
 import java.nio.file.{ Paths, Path, Files }
 
-import zio.json._
 import zio.json.ast._
 
 package object golden {

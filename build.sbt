@@ -231,7 +231,6 @@ lazy val zioJsonGolden = project
   .settings(stdSettings("zio-json-golden"))
   .settings(buildInfoSettings("zio.json.golden"))
   .settings(
-    scalacOptions -= "-Xfatal-warnings",
     libraryDependencies ++= Seq(
       "dev.zio" %% "zio"               % zioVersion,
       "dev.zio" %% "zio-test"          % zioVersion,
