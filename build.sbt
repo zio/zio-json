@@ -35,7 +35,7 @@ addCommandAlias(
 
 addCommandAlias("testJS", "zioJsonJS/test")
 
-val zioVersion       = "2.0.0"
+val zioVersion       = "2.0.2"
 val enumratumVersion = "1.7.0"
 
 lazy val root = project
@@ -57,7 +57,8 @@ lazy val root = project
     zioJsonInteropRefined.js,
     zioJsonInteropRefined.jvm,
     zioJsonInteropScalaz7x.js,
-    zioJsonInteropScalaz7x.jvm
+    zioJsonInteropScalaz7x.jvm,
+    zioJsonGolden
   )
 
 val circeVersion = "0.14.2"
@@ -103,9 +104,9 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform)
             "org.scala-lang"                          % "scala-reflect"         % scalaVersion.value % Provided,
             "com.propensive"                        %%% "magnolia"              % "0.17.0",
             "io.circe"                              %%% "circe-generic-extras"  % circeVersion       % "test",
-            "com.typesafe.play"                     %%% "play-json"             % "2.9.2"            % "test",
-            "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-core"   % "2.17.0"           % "test",
-            "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-macros" % "2.17.0"           % "test"
+            "com.typesafe.play"                     %%% "play-json"             % "2.9.3"            % "test",
+            "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-core"   % "2.17.3"           % "test",
+            "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-macros" % "2.17.3"           % "test"
           )
       }
     },
@@ -234,12 +235,10 @@ lazy val zioJsonGolden = project
   .settings(buildInfoSettings("zio.json.golden"))
   .settings(
     libraryDependencies ++= Seq(
-      "dev.zio"       %% "zio"               % zioVersion,
-      "dev.zio"       %% "zio-nio"           % "2.0.0",
-      "dev.zio"       %% "zio-test"          % zioVersion,
-      "dev.zio"       %% "zio-test-sbt"      % zioVersion,
-      "dev.zio"       %% "zio-test-magnolia" % zioVersion,
-      "org.scala-lang" % "scala-reflect"     % scalaVersion.value % Provided
+      "dev.zio" %% "zio"               % zioVersion,
+      "dev.zio" %% "zio-test"          % zioVersion,
+      "dev.zio" %% "zio-test-sbt"      % zioVersion,
+      "dev.zio" %% "zio-test-magnolia" % zioVersion
     ),
     testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework")
   )
@@ -309,7 +308,7 @@ lazy val zioJsonInteropHttp4s = project
   .settings(
     crossScalaVersions -= ScalaDotty,
     libraryDependencies ++= Seq(
-      "org.http4s"    %% "http4s-dsl"       % "0.23.14",
+      "org.http4s"    %% "http4s-dsl"       % "0.23.15",
       "dev.zio"       %% "zio"              % zioVersion,
       "org.typelevel" %% "cats-effect"      % "3.3.14",
       "dev.zio"       %% "zio-interop-cats" % "3.3.0"    % "test",
