@@ -50,7 +50,7 @@ object CarterSpec extends ZIOSpecDefault {
         //
         // 1. the RecordingReader should .retract the underlying thing when it's
         //    "caught up" (which is problematic because the thing underneath is
-        //    not neceassarilly capable of retracting... abstraction bug)
+        //    not necessarily capable of retracting... abstraction bug)
         //
         // 2. or (uuugh) the caller should always check if a recording reader is
         //    all caught up before returning control back to the underlying
