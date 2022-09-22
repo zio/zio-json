@@ -188,7 +188,7 @@ import zio.json._
 case class Watermelon(pips: Int)
 
 object Watermelon {
-  implicit val encorder: JsonEncoder[Watermelon] =
+  implicit val encoder: JsonEncoder[Watermelon] =
     DeriveJsonEncoder.gen[Watermelon]
 }
 ```
