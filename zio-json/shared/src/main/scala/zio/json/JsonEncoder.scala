@@ -77,7 +77,7 @@ trait JsonEncoder[A] extends JsonEncoderPlatformSpecific[A] {
   }
 
   /**
-   * This default may be overriden when this value may be missing within a JSON object and still
+   * This default may be overridden when this value may be missing within a JSON object and still
    * be encoded.
    */
   @nowarn("msg=is never used")
