@@ -339,7 +339,7 @@ object Json {
     def apply(value: Int): Num        = Num(BigDecimal(value).bigDecimal)
     def apply(value: Long): Num       = Num(BigDecimal(value).bigDecimal)
     def apply(value: BigDecimal): Num = Num(value.bigDecimal)
-    def apply(value: Float): Num      = Num(BigDecimal(value.toDouble).bigDecimal)
+    def apply(value: Float): Num      = Num(BigDecimal(value).bigDecimal)
     def apply(value: Double): Num     = Num(BigDecimal(value).bigDecimal)
 
     implicit val decoder: JsonDecoder[Num] = new JsonDecoder[Num] {

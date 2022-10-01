@@ -332,8 +332,8 @@ object EncoderSpec extends ZIOSpecDefault {
             assert((1: Int).toJsonAST)(isRight(equalTo(Json.Num(1)))) &&
             assert(1L.toJsonAST)(isRight(equalTo(Json.Num(1)))) &&
             assert(new java.math.BigInteger("1").toJsonAST)(isRight(equalTo(Json.Num(1)))) &&
-            assert(1.0f.toJsonAST)(isRight(equalTo(Json.Num(1)))) &&
-            assert(1.0d.toJsonAST)(isRight(equalTo(Json.Num(1))))
+            assert(1.0f.toJsonAST)(isRight(equalTo(Json.Num(1.0f)))) &&
+            assert(1.0d.toJsonAST)(isRight(equalTo(Json.Num(1.0))))
           }
         ),
         test("options") {
@@ -379,7 +379,7 @@ object EncoderSpec extends ZIOSpecDefault {
 
           assert(OnlyString("foo").toJsonAST)(isRight(equalTo(Json.Obj("s" -> Json.Str("foo"))))) &&
           assert(CoupleOfThings(-1, Some(10.0f), false).toJsonAST)(
-            isRight(equalTo(Json.Obj("j" -> Json.Num(-1), "f" -> Json.Num(10), "b" -> Json.Bool(false))))
+            isRight(equalTo(Json.Obj("j" -> Json.Num(-1), "f" -> Json.Num(10.0f), "b" -> Json.Bool(false))))
           ) &&
           assert(CoupleOfThings(0, None, true).toJsonAST)(
             isRight(equalTo(Json.Obj("j" -> Json.Num(0), "b" -> Json.Bool(true))))
