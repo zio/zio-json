@@ -395,6 +395,38 @@ object DecoderSpec extends ZIOSpecDefault {
           assert(bad5.as[UUID])(isLeft(containsString("Invalid UUID: 64d7c38d-2afd-XXXX-9832-4e70afe4b0f8"))) &&
           assert(bad6.as[UUID])(isLeft(containsString("Invalid UUID: 64d7c38d-2afd-X-9832-4e70afe4b0f8"))) &&
           assert(bad7.as[UUID])(isLeft(containsString("Invalid UUID: 0-0-0-0-00000000000000000")))
+        },
+        test("missing values consistency") {
+          case class C(
+            v1: String,
+            v2: String,
+            v3: String
+          )
+
+          object C {
+            implicit val cDecoder: JsonDecoder[C] = DeriveJsonDecoder.gen[C]
+          }
+
+          case class B(c: C)
+
+          object B {
+            implicit val bDecoder: JsonDecoder[B] = DeriveJsonDecoder.gen[B]
+          }
+
+          case class A(b: B)
+
+          object A {
+            implicit val aDecoder: JsonDecoder[A] = DeriveJsonDecoder.gen[A]
+          }
+
+          val jsonString = Json.Obj("b" -> Json.Obj("c" -> Json.Obj("v1" -> Json.Str("value")))).toJson
+
+          val decoder = JsonDecoder[A]
+
+          assert(decoder.decodeJson(jsonString))(isLeft(equalTo(".b.c.v2(missing)"))) &&
+          assert(decoder.fromJsonAST(jsonString.fromJson[Json].getOrElse(Json.Null)))(
+            isLeft(equalTo("Missing fields: v2, v3"))
+          )
         }
       )
     )
