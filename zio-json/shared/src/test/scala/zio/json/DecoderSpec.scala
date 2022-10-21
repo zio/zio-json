@@ -427,6 +427,36 @@ object DecoderSpec extends ZIOSpecDefault {
           assert(decoder.fromJsonAST(jsonString.fromJson[Json].getOrElse(Json.Null)))(
             isLeft(equalTo("Missing fields: v2, v3"))
           )
+        },
+        test("invalid type consistency") {
+          case class C(
+            v1: String
+          )
+
+          object C {
+            implicit val cDecoder: JsonDecoder[C] = DeriveJsonDecoder.gen[C]
+          }
+
+          case class B(c: C)
+
+          object B {
+            implicit val bDecoder: JsonDecoder[B] = DeriveJsonDecoder.gen[B]
+          }
+
+          case class A(b: B)
+
+          object A {
+            implicit val aDecoder: JsonDecoder[A] = DeriveJsonDecoder.gen[A]
+          }
+
+          val jsonString = Json.Obj("b" -> Json.Obj("c" -> Json.Obj("v1" -> Json.Num(15)))).toJson
+
+          val decoder = JsonDecoder[A]
+
+          assert(decoder.decodeJson(jsonString))(isLeft(equalTo(".b.c.v1(expected '\"' got '1')"))) &&
+          assert(decoder.fromJsonAST(jsonString.fromJson[Json].getOrElse(Json.Null)))(
+            isLeft(equalTo("Not a string value"))
+          )
         }
       )
     )
