@@ -66,6 +66,11 @@ final class jsonNoExtraFields extends Annotation
  */
 final class jsonExclude extends Annotation
 
+extension (decoderObject: JsonDecoder.type) {
+
+  inline def derived[A](using mirror: Mirror.Of[A]): JsonDecoder[A] = DeriveJsonDecoder.gen[A]
+}
+
 object DeriveJsonDecoder extends Derivation[JsonDecoder] { self =>
   def join[A](ctx: CaseClass[Typeclass, A]): JsonDecoder[A] = {
     val no_extra = ctx.annotations.collectFirst {
@@ -338,6 +343,11 @@ object DeriveJsonDecoder extends Derivation[JsonDecoder] { self =>
   }
 }
 
+extension (encoderObject: JsonEncoder.type) {
+
+  inline def derived[A](using mirror: Mirror.Of[A]): JsonEncoder[A] = DeriveJsonEncoder.gen[A]
+}
+
 object DeriveJsonEncoder extends Derivation[JsonEncoder] { self =>
   def join[A](ctx: CaseClass[Typeclass, A]): JsonEncoder[A] =
     if (ctx.params.isEmpty) {
@@ -555,6 +565,11 @@ object DeriveJsonEncoder extends Derivation[JsonEncoder] { self =>
         }
       } else out.write(s)
     }
+}
+
+extension (decoderObject: JsonCodec.type) {
+
+  inline def derived[A](using mirror: Mirror.Of[A]): JsonCodec[A] = DeriveJsonCodec.gen[A]
 }
 
 object DeriveJsonCodec {
