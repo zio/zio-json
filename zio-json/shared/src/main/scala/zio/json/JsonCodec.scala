@@ -84,7 +84,7 @@ final case class JsonCodec[A](encoder: JsonEncoder[A], decoder: JsonDecoder[A]) 
 
 }
 
-object JsonCodec extends GeneratedTupleCodecs with CodecLowPriority0 {
+object JsonCodec extends GeneratedTupleCodecs with CodecLowPriority0 with JsonCodecVersionSpecific {
   def apply[A](implicit jsonCodec: JsonCodec[A]): JsonCodec[A] = jsonCodec
 
   def apply[A](encoder: JsonEncoder[A], decoder: JsonDecoder[A]): JsonCodec[A] = new JsonCodec(encoder, decoder)
