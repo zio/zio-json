@@ -40,10 +40,9 @@ package object golden {
     val name = getName[A]
     test(s"golden test for $name") {
       import config.{ relativePath, sampleSize }
-      val lowerCasedName = name.toLowerCase
       for {
         resourceDir <- createGoldenDirectory(s"src/test/resources/golden/$relativePath")
-        fileName     = Paths.get(s"$lowerCasedName.json")
+        fileName     = Paths.get(s"$name.json")
         filePath     = resourceDir.resolve(fileName)
         assertion <- ZIO.ifZIO(ZIO.attemptBlocking(Files.exists(filePath)))(
                        validateTest(resourceDir, name, gen, sampleSize),
@@ -86,7 +85,7 @@ package object golden {
     val filePath = resourceDir.resolve(fileName)
 
     val failureString =
-      s"No existing golden test for ${resourceDir.resolve("$name.json")}. Remove _new from the suffix and re-run the test."
+      s"No existing golden test for ${resourceDir.resolve(s"$name.json")}. Remove _new from the suffix and re-run the test."
 
     for {
       sample <- generateSample(gen, sampleSize)
