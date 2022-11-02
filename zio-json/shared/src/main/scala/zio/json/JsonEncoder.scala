@@ -70,7 +70,7 @@ trait JsonEncoder[A] extends JsonEncoderPlatformSpecific[A] {
   /**
    * Encodes the specified value into a JSON string, with the specified indentation level.
    */
-  final def encodeJson(a: A, indent: Option[Int]): CharSequence = {
+  final def encodeJson(a: A, indent: Option[Int] = None): CharSequence = {
     val writer = new FastStringWrite(64)
     unsafeEncode(a, indent, writer)
     writer.buffer
