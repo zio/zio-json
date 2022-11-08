@@ -288,6 +288,7 @@ In fact, we do not need to provide `decodeName` for each `Refined` data type; `z
 Integrations are provided several popular libraries, which are published as separate artifacts:
 
 - Akka Http
+- Enumeratum
 - HTTP4s
 - Refined
 - Scalaz 7

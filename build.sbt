@@ -35,7 +35,8 @@ addCommandAlias(
 
 addCommandAlias("testJS", "zioJsonJS/test")
 
-val zioVersion = "2.0.2"
+val zioVersion       = "2.0.2"
+val enumratumVersion = "1.7.0"
 
 lazy val root = project
   .in(file("."))
@@ -50,6 +51,8 @@ lazy val root = project
     zioJsonYaml,
     zioJsonMacrosJVM,
     zioJsonMacrosJS,
+    zioJsonInteropEnumeratum.js,
+    zioJsonInteropEnumeratum.jvm,
     zioJsonInteropHttp4s,
     zioJsonInteropRefined.js,
     zioJsonInteropRefined.jvm,
@@ -280,6 +283,24 @@ lazy val zioJsonMacrosJS = zioJsonMacros.js
   .settings(coverageEnabled := false)
   .dependsOn(zioJsonJS)
 
+lazy val zioJsonInteropEnumeratum = crossProject(JSPlatform, JVMPlatform)
+  .in(file("zio-json-interop-enumeratum"))
+  .settings(stdSettings("zio-json-interop-enumeratum"))
+  .settings(crossProjectSettings)
+  .enablePlugins(NeoJmhPlugin)
+  .settings(
+    crossScalaVersions -= ScalaDotty,
+    libraryDependencies ++= Seq(
+      "com.beachape" %%% "enumeratum"   % enumratumVersion,
+      "org.scalatest" %% "scalatest"    % "3.2.13"   % "test", // for reuse tests
+      "dev.zio"      %%% "zio-test"     % zioVersion % "test",
+      "dev.zio"      %%% "zio-test-sbt" % zioVersion % "test"
+    ),
+    testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework")
+  )
+  .dependsOn(zioJson)
+  .enablePlugins(BuildInfoPlugin)
+
 lazy val zioJsonInteropHttp4s = project
   .in(file("zio-json-interop-http4s"))
   .settings(stdSettings("zio-json-interop-http4s"))
@@ -364,6 +385,7 @@ lazy val docs = project
       zioJsonYaml,
       zioJsonGolden,
       zioJsonMacrosJVM,
+      zioJsonInteropEnumeratum.jvm,
       zioJsonInteropHttp4s,
       zioJsonInteropRefined.jvm,
       zioJsonInteropScalaz7x.jvm
