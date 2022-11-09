@@ -1,5 +1,5 @@
 ---
-id: overview_encoding
+id: encoding
 title: "Encoding"
 ---
 
