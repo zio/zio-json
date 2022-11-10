@@ -1,5 +1,5 @@
 ---
-id: interop_scalaz_7x
+id: scalaz-7x
 title: "Scalaz 7.x Interop"
 ---
 
@@ -7,7 +7,7 @@ title: "Scalaz 7.x Interop"
 
 ```scala
 libraryDependencies ++= Seq(
-  "@ORG@" % "zio-json-interop-scalaz" % "@RELEASE_VERSION@"
+  "dev.zio" % "zio-json-interop-scalaz" % "@VERSION@"
 )
 ```
 

@@ -5,7 +5,7 @@ import sbtcrossproject.CrossPlugin.autoImport.crossProject
 inThisBuild(
   List(
     organization := "dev.zio",
-    homepage := Some(url("https://zio.github.io/zio-json/")),
+    homepage := Some(url("https://zio.dev/zio-json/")),
     licenses := List("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0")),
     developers := List(
       Developer(
@@ -346,31 +346,9 @@ lazy val docs = project
   .settings(
     crossScalaVersions -= ScalaDotty,
     publish / skip := true,
-    mdocVariables := Map(
-      "SNAPSHOT_VERSION" -> version.value,
-      "RELEASE_VERSION"  -> previousStableVersion.value.getOrElse("can't find release"),
-      "ORG"              -> organization.value,
-      "NAME"             -> (zioJsonJVM / name).value,
-      "CROSS_VERSIONS"   -> (zioJsonJVM / crossScalaVersions).value.mkString(", ")
-    ),
     moduleName := "zio-json-docs",
     scalacOptions -= "-Yno-imports",
     scalacOptions -= "-Xfatal-warnings",
-    libraryDependencies ++= Seq(
-      "dev.zio" %% "zio" % zioVersion
-    ),
-    ScalaUnidoc / unidoc / unidocProjectFilter := inProjects(
-      zioJsonJVM,
-      zioJsonYaml,
-      zioJsonGolden,
-      zioJsonMacrosJVM,
-      zioJsonInteropHttp4s,
-      zioJsonInteropRefined.jvm,
-      zioJsonInteropScalaz7x.jvm
-    ),
-    ScalaUnidoc / unidoc / target := (LocalRootProject / baseDirectory).value / "website" / "static" / "api",
-    cleanFiles += (ScalaUnidoc / unidoc / target).value,
-    docusaurusCreateSite := docusaurusCreateSite.dependsOn(Compile / unidoc).value,
-    docusaurusPublishGhpages := docusaurusPublishGhpages.dependsOn(Compile / unidoc).value
+    libraryDependencies ++= Seq("dev.zio" %% "zio" % zioVersion)
   )
-  .enablePlugins(MdocPlugin, DocusaurusPlugin, ScalaUnidocPlugin)
+  .enablePlugins(WebsitePlugin)
