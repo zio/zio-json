@@ -1,7 +1,10 @@
 ---
-id: about_index
-title:  "About zio-json"
+id: index
+title: "Getting Started with ZIO Json"
+sidebar_label: "Getting Started"
 ---
+
+## Introduction
 
 The goal of this project is to create the best all-round JSON library for Scala:
 
@@ -12,3 +15,18 @@ The goal of this project is to create the best all-round JSON library for Scala:
 - **Simple** small codebase, short and concise documentation that covers everything.
 - **Helpful errors** are readable by humans and machines.
 - **ZIO Integration** so nothing more is required.
+
+## Installation
+
+For the latest snapshot use:
+
+```scala
+resolvers ++= Seq("public", "snapshots", "releases").map(Resolver.sonatypeRepo)
+libraryDependencies += "dev.zio" % "zio-json" % "@SNAPSHOT_VERSION@"
+```
+
+For the latest stable release use:
+
+```scala
+libraryDependencies += "dev.zio" % "zio-json" % "@RELEASE_VERSION@"
+```

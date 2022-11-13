@@ -1,5 +1,5 @@
 ---
-id: interop_http4s
+id: http4s
 title: "HTTP4s Interop"
 ---
 
@@ -9,7 +9,7 @@ An interop module is provided for [HTTP4s v0.21](https://http4s.org/v0.21)
 
 ```scala
 libraryDependencies ++= Seq(
-  "@ORG@" % "zio-json-interop-http4s" % "@RELEASE_VERSION@"
+  "dev.zio" % "zio-json-interop-http4s" % "@RELEASE_VERSION@"
 )
 ```
 

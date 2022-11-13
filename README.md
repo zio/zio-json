@@ -292,7 +292,7 @@ Integrations are provided several popular libraries, which are published as sepa
 - Refined
 - Scalaz 7
 
-[Complete list of interop modules](https://zio.github.io/zio-json/docs/interop/interop_index)
+[Complete list of interop modules](https://zio.dev/zio-json/interop/)
 
 # Performance
 
@@ -458,14 +458,7 @@ If `zio-json` isn't fast enough for you, then try out [jsoniter-scala](https://g
 JSON is an inefficient transport format and everybody would benefit from a port of this library to msgpack or protobuf. For legacy services, a port supporting XML is also be possible.
 
 # Documentation
-[zio-json Microsite](https://zio.github.io/zio-json/)
-
-# Contributing
-[Documentation for contributors](https://zio.github.io/zio-json/docs/about/about_contributing)
-
-## Code of Conduct
-
-See the [Code of Conduct](https://zio.github.io/zio-json/docs/about/about_coc)
+[zio-json Microsite](https://zio.dev/zio-json/)
 
 ## Support
 

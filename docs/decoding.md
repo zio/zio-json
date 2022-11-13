@@ -1,5 +1,5 @@
 ---
-id: overview_decoding
+id: decoding
 title: "Decoding"
 ---
 

@@ -77,6 +77,15 @@ object DecoderSpec extends ZIOSpecDefault {
           assert("""{ "id": 1, "opt": 42 }""".fromJson[WithOpt])(isRight(equalTo(WithOpt(1, Some(42))))) &&
           assert("""{ "id": 1 }""".fromJson[WithOpt])(isRight(equalTo(WithOpt(1, None))))
         },
+        test("option - fromJsonAST") {
+          case class WithOpt(id: Int, opt: Option[Int])
+          implicit val decoder: JsonDecoder[WithOpt] = DeriveJsonDecoder.gen
+
+          assert("""{ "id": 1, "opt": 42 }""".fromJson[Json].flatMap(decoder.fromJsonAST))(
+            isRight(equalTo(WithOpt(1, Some(42))))
+          ) &&
+          assert("""{ "id": 1 }""".fromJson[Json].flatMap(decoder.fromJsonAST))(isRight(equalTo(WithOpt(1, None))))
+        },
         test("default field value") {
           import exampleproducts._
 
