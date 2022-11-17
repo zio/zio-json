@@ -58,7 +58,7 @@ lazy val root = project
     zioJsonGolden
   )
 
-val circeVersion = "0.14.2"
+val circeVersion = "0.14.3"
 
 lazy val zioJson = crossProject(JSPlatform, JVMPlatform)
   .in(file("zio-json"))
@@ -102,8 +102,8 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform)
             "com.propensive"                        %%% "magnolia"              % "0.17.0",
             "io.circe"                              %%% "circe-generic-extras"  % circeVersion       % "test",
             "com.typesafe.play"                     %%% "play-json"             % "2.9.3"            % "test",
-            "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-core"   % "2.17.5"           % "test",
-            "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-macros" % "2.17.5"           % "test"
+            "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-core"   % "2.17.9"           % "test",
+            "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-macros" % "2.17.9"           % "test"
           )
       }
     },
