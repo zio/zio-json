@@ -35,7 +35,7 @@ addCommandAlias(
 
 addCommandAlias("testJS", "zioJsonJS/test")
 
-val zioVersion = "2.0.2"
+val zioVersion = "2.0.4"
 
 lazy val root = project
   .in(file("."))
