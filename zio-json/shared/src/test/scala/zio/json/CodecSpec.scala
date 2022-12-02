@@ -80,6 +80,28 @@ object CodecSpec extends ZIOSpecDefault {
           assert("""{"hint":"Samson"}""".fromJson[Parent])(isLeft(equalTo("(invalid disambiguator)"))) &&
           assert("""{"Cain":{}}""".fromJson[Parent])(isLeft(equalTo("(missing hint 'hint')")))
         },
+        test("key transformation") {
+          import exampletransformkeys._
+          val kebabed      = """{"shish-kebab":""}"""
+          val snaked       = """{"indiana_jones":""}"""
+          val pascaled     = """{"AndersHejlsberg":""}"""
+          val cameled      = """{"smallTalk":""}"""
+          val indianaJones = """{"wHATcASEiStHIS":""}"""
+          val overrides    = """{"not_modified":"","but-this-should-be":0}"""
+
+          assert(kebabed.fromJson[Kebabed])(isRight(equalTo(Kebabed("")))) &&
+          assert(snaked.fromJson[Snaked])(isRight(equalTo(Snaked("")))) &&
+          assert(pascaled.fromJson[Pascaled])(isRight(equalTo(Pascaled("")))) &&
+          assert(cameled.fromJson[Cameled])(isRight(equalTo(Cameled("")))) &&
+          assert(indianaJones.fromJson[Custom])(isRight(equalTo(Custom("")))) &&
+          assert(overrides.fromJson[OverridesAlsoWork])(isRight(equalTo(OverridesAlsoWork("", 0)))) &&
+          assertTrue(Kebabed("").toJson == kebabed) &&
+          assertTrue(Snaked("").toJson == snaked) &&
+          assertTrue(Pascaled("").toJson == pascaled) &&
+          assertTrue(Cameled("").toJson == cameled) &&
+          assertTrue(Custom("").toJson == indianaJones) &&
+          assertTrue(OverridesAlsoWork("", 0).toJson == overrides)
+        },
         test("unicode") {
           assert(""""€🐵🥰"""".fromJson[String])(isRight(equalTo("€🐵🥰")))
         },
@@ -205,6 +227,50 @@ object CodecSpec extends ZIOSpecDefault {
 
     @jsonHint("Abel")
     case class Child2() extends Parent
+  }
+
+  object exampletransformkeys {
+    @jsonMemberNames(KebabCase)
+    case class Kebabed(shishKebab: String)
+    object Kebabed {
+      implicit val codec: JsonCodec[Kebabed] = DeriveJsonCodec.gen[Kebabed]
+    }
+
+    @jsonMemberNames(SnakeCase)
+    case class Snaked(indianaJones: String)
+    object Snaked {
+      implicit val codec: JsonCodec[Snaked] = DeriveJsonCodec.gen[Snaked]
+    }
+
+    @jsonMemberNames(PascalCase)
+    case class Pascaled(andersHejlsberg: String)
+    object Pascaled {
+      implicit val codec: JsonCodec[Pascaled] = DeriveJsonCodec.gen[Pascaled]
+    }
+
+    @jsonMemberNames(CamelCase)
+    case class Cameled(small_talk: String)
+    object Cameled {
+      implicit val codec: JsonCodec[Cameled] = DeriveJsonCodec.gen[Cameled]
+    }
+
+    @jsonMemberNames(CustomCase(Custom.indianaJonesCase))
+    case class Custom(whatCaseIsThis: String)
+    object Custom {
+      def indianaJonesCase(str: String): String =
+        str
+          .split("(?=\\p{Upper})")
+          .map(part => s"${part.head.toLower}${part.substring(1, part.length).toUpperCase}")
+          .mkString
+
+      implicit val codec: JsonCodec[Custom] = DeriveJsonCodec.gen[Custom]
+    }
+
+    @jsonMemberNames(KebabCase)
+    case class OverridesAlsoWork(@jsonField("not_modified") notModified: String, butThisShouldBe: Int)
+    object OverridesAlsoWork {
+      implicit val codec: JsonCodec[OverridesAlsoWork] = DeriveJsonCodec.gen[OverridesAlsoWork]
+    }
   }
 
   object logEvent {
