@@ -274,7 +274,14 @@ object DecoderSpec extends ZIOSpecDefault {
 
           assert(Json.Obj("s" -> Json.Str("")).as[OnlyString])(isRight(equalTo(OnlyString("")))) &&
           assert(Json.Obj("s" -> Json.Str(""), "t" -> Json.Str("")).as[OnlyString])(
-            isLeft(equalTo("Invalid extra field"))
+            isLeft(equalTo("(invalid extra field)"))
+          )
+        },
+        test("preserve error path") {
+          import exampleproducts._
+
+          assert(Json.Obj("is" -> Json.Arr(Json.Obj("str" -> Json.Num(1)))).as[Outer])(
+            isLeft(equalTo(".is[0].str(Not a string value)"))
           )
         },
         test("default field value") {
@@ -288,15 +295,15 @@ object DecoderSpec extends ZIOSpecDefault {
 
           assert(Json.Obj("Child1" -> Json.Obj()).as[Parent])(isRight(equalTo(Child1()))) &&
           assert(Json.Obj("Child2" -> Json.Obj()).as[Parent])(isRight(equalTo(Child2()))) &&
-          assert(Json.Obj("type" -> Json.Str("Child1")).as[Parent])(isLeft(equalTo("Invalid disambiguator")))
+          assert(Json.Obj("type" -> Json.Str("Child1")).as[Parent])(isLeft(equalTo("(Invalid disambiguator)")))
         },
         test("sum alternative encoding") {
           import examplealtsum._
 
           assert(Json.Obj("hint" -> Json.Str("Cain")).as[Parent])(isRight(equalTo(Child1()))) &&
           assert(Json.Obj("hint" -> Json.Str("Abel")).as[Parent])(isRight(equalTo(Child2()))) &&
-          assert(Json.Obj("hint" -> Json.Str("Samson")).as[Parent])(isLeft(equalTo("Invalid disambiguator"))) &&
-          assert(Json.Obj("Cain" -> Json.Obj()).as[Parent])(isLeft(equalTo("Missing hint 'hint'")))
+          assert(Json.Obj("hint" -> Json.Str("Samson")).as[Parent])(isLeft(equalTo("(Invalid disambiguator)"))) &&
+          assert(Json.Obj("Cain" -> Json.Obj()).as[Parent])(isLeft(equalTo("(Missing hint 'hint')")))
         },
         test("Seq") {
           val json     = Json.Arr(Json.Str("5XL"), Json.Str("2XL"), Json.Str("XL"))
@@ -435,6 +442,17 @@ object DecoderSpec extends ZIOSpecDefault {
         DeriveJsonDecoder.gen[DefaultString]
     }
 
+    case class Inner(str: String)
+
+    object Inner {
+      implicit val decoder: JsonDecoder[Inner] = DeriveJsonDecoder.gen
+    }
+
+    case class Outer(is: Chunk[Inner])
+
+    object Outer {
+      implicit val decoder: JsonDecoder[Outer] = DeriveJsonDecoder.gen
+    }
   }
 
   object examplesum {

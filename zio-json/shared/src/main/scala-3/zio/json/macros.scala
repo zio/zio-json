@@ -177,11 +177,11 @@ object DeriveJsonDecoder extends Derivation[JsonDecoder] { self =>
           ctx.rawConstruct(Nil)
         }
 
-        override final def fromJsonAST(json: Json): Either[String, A] =
+        override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): A =
           json match {
-            case Json.Obj(_) => Right(ctx.rawConstruct(Nil))
-            case Json.Null   => Right(ctx.rawConstruct(Nil))
-            case _           => Left("Not an object")
+            case Json.Obj(_) => ctx.rawConstruct(Nil)
+            case Json.Null   => ctx.rawConstruct(Nil)
+            case _           => throw UnsafeJson(JsonError.Message("Not an object") :: trace)
           }
       }
     } else {
@@ -254,62 +254,45 @@ object DeriveJsonDecoder extends Derivation[JsonDecoder] { self =>
           ctx.rawConstruct(new ArraySeq(ps))
         }
 
-        override final def fromJsonAST(json: Json): Either[String, A] = {
+        override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): A = {
           json match {
             case Json.Obj(fields) =>
               val ps: Array[Any]           = Array.ofDim(len)
-              var hasInvalidExtra: Boolean = false
-              val failures                 = new mutable.LinkedHashSet[String]
 
               for ((key, value) <- fields) {
                 namesMap.get(key) match {
                   case Some(field) =>
+                    val trace_ = JsonError.ObjectAccess(key) :: trace
                     if (defaults(field).isDefined) {
-                      val opt = JsonDecoder.option(tcs(field)).fromJsonAST(value)
-                      ps(field) = opt.flatMap(_.toRight(Left(""))).getOrElse(defaults(field).get)
+                      val opt = JsonDecoder.option(tcs(field)).unsafeFromJsonAST(trace_, value)
+                      ps(field) = opt.getOrElse(defaults(field).get)
                     } else {
-                      ps(field) = tcs(field).fromJsonAST(value) match {
-                        case Left(error)  => failures += error; null
-                        case Right(value) => value
-                      }
+                      ps(field) = tcs(field).unsafeFromJsonAST(trace_, value)
                     }
                   case None =>
                     if (no_extra) {
-                      hasInvalidExtra = true
+                      throw UnsafeJson(
+                        JsonError.Message(s"invalid extra field") :: trace
+                      )
                     }
                 }
               }
 
               var i       = 0
-              val missing = new mutable.LinkedHashSet[String]
               while (i < len) {
                 if (ps(i) == null) {
                   if (defaults(i).isDefined) {
                     ps(i) = defaults(i).get
                   } else {
-                    val tc = tcs(i)
-                    try {
-                      // There is no default value, see if the type class decoder can handle it:
-                      ps(i) = tc.unsafeDecodeMissing(JsonError.ObjectAccess(names(i)) :: Nil)
-                    } catch {
-                      case JsonDecoder.UnsafeJson(trace) =>
-                        missing.add(names(i))
-                    }
+                    ps(i) = tcs(i).unsafeDecodeMissing(JsonError.ObjectAccess(names(i)) :: trace)
                   }
                 }
                 i += 1
               }
 
-              if (hasInvalidExtra)
-                Left("Invalid extra field")
-              else if (failures.nonEmpty)
-                Left(failures.mkString(", "))
-              else if (missing.nonEmpty)
-                Left(s"Missing fields: ${missing.mkString(", ")}")
-              else
-                Right(ctx.rawConstruct(new ArraySeq(ps)))
+              ctx.rawConstruct(new ArraySeq(ps))
 
-            case _ => Left("Not an object")
+            case _ => throw UnsafeJson(JsonError.Message("Not an object") :: trace)
           }
         }
       }
@@ -359,16 +342,16 @@ object DeriveJsonDecoder extends Derivation[JsonDecoder] { self =>
             )
         }
 
-        override final def fromJsonAST(json: Json): Either[String, A] = {
+        override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): A = {
           json match {
             case Json.Obj(chunk) if chunk.size == 1 =>
               val (key, inner) = chunk.head
               namesMap.get(key) match {
-                case Some(idx) => tcs(idx).fromJsonAST(inner).map(_.asInstanceOf[A])
-                case None      => Left("Invalid disambiguator")
+                case Some(idx) => tcs(idx).unsafeFromJsonAST(JsonError.ObjectAccess(key) :: trace, inner).asInstanceOf[A]
+                case None      => throw UnsafeJson(JsonError.Message("Invalid disambiguator") :: trace)
               }
-            case Json.Obj(_) => Left("Not an object with a single field")
-            case _           => Left("Not an object")
+            case Json.Obj(_) => throw UnsafeJson(JsonError.Message("Not an object with a single field") :: trace)
+            case _           => throw UnsafeJson(JsonError.Message("Not an object") :: trace)
           }
         }
       }
@@ -407,21 +390,21 @@ object DeriveJsonDecoder extends Derivation[JsonDecoder] { self =>
           throw UnsafeJson(JsonError.Message(s"missing hint '$hintfield'") :: trace)
         }
 
-        override final def fromJsonAST(json: Json): Either[String, A] = {
+        override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): A = {
           json match {
             case Json.Obj(fields) =>
               fields.find { case (k, _) => k == hintfield } match {
                 case Some((_, Json.Str(name))) =>
                   namesMap.get(name) match {
-                    case Some(idx) => tcs(idx).fromJsonAST(json).map(_.asInstanceOf[A])
-                    case None      => Left("Invalid disambiguator")
+                    case Some(idx) => tcs(idx).unsafeFromJsonAST(JsonError.ObjectAccess(name) :: trace, json).asInstanceOf[A]
+                    case None      => throw UnsafeJson(JsonError.Message("Invalid disambiguator") :: trace)
                   }
                 case Some(_) =>
-                  Left(s"Non-string hint '$hintfield'")
+                  throw UnsafeJson(JsonError.Message(s"Non-string hint '$hintfield'") :: trace)
                 case None =>
-                  Left(s"Missing hint '$hintfield'")
+                  throw UnsafeJson(JsonError.Message(s"Missing hint '$hintfield'") :: trace)
               }
-            case _ => Left("Not an object")
+            case _ => throw UnsafeJson(JsonError.Message("Not an object") :: trace)
           }
         }
       }

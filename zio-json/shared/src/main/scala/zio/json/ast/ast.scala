@@ -253,10 +253,10 @@ object Json {
       def unsafeDecode(trace: List[JsonError], in: RetractReader): Obj =
         Obj(objd.unsafeDecode(trace, in))
 
-      override final def fromJsonAST(json: Json): Either[String, Obj] =
+      override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): Obj =
         json match {
-          case obj @ Obj(_) => Right(obj)
-          case _            => Left(s"Not an object")
+          case obj @ Obj(_) => obj
+          case _            => throw UnsafeJson(JsonError.Message(s"Not an object") :: trace)
         }
     }
     private lazy val obje = JsonEncoder.keyValueChunk[String, Json]
@@ -276,10 +276,10 @@ object Json {
       def unsafeDecode(trace: List[JsonError], in: RetractReader): Arr =
         Arr(arrd.unsafeDecode(trace, in))
 
-      override final def fromJsonAST(json: Json): Either[String, Arr] =
+      override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): Arr =
         json match {
-          case arr @ Arr(_) => Right(arr)
-          case _            => Left(s"Not an array")
+          case arr @ Arr(_) => arr
+          case _            => throw UnsafeJson(JsonError.Message(s"Not an array") :: trace)
         }
     }
     private lazy val arre = JsonEncoder.chunk[Json]
@@ -300,10 +300,10 @@ object Json {
       def unsafeDecode(trace: List[JsonError], in: RetractReader): Bool =
         Bool(JsonDecoder.boolean.unsafeDecode(trace, in))
 
-      override final def fromJsonAST(json: Json): Either[String, Bool] =
+      override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): Bool =
         json match {
-          case b @ Bool(_) => Right(b)
-          case _           => Left(s"Not a bool value")
+          case b @ Bool(_) => b
+          case _           => throw UnsafeJson(JsonError.Message(s"Not a bool value") :: trace)
         }
     }
     implicit val encoder: JsonEncoder[Bool] = new JsonEncoder[Bool] {
@@ -319,10 +319,10 @@ object Json {
       def unsafeDecode(trace: List[JsonError], in: RetractReader): Str =
         Str(JsonDecoder.string.unsafeDecode(trace, in))
 
-      override final def fromJsonAST(json: Json): Either[String, Str] =
+      override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): Str =
         json match {
-          case s @ Str(_) => Right(s)
-          case _          => Left(s"Not a string value")
+          case s @ Str(_) => s
+          case _          => throw UnsafeJson(JsonError.Message(s"Not a string value") :: trace)
         }
     }
     implicit val encoder: JsonEncoder[Str] = new JsonEncoder[Str] {
@@ -346,10 +346,10 @@ object Json {
       def unsafeDecode(trace: List[JsonError], in: RetractReader): Num =
         Num(JsonDecoder.bigDecimal.unsafeDecode(trace, in))
 
-      override final def fromJsonAST(json: Json): Either[String, Num] =
+      override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): Num =
         json match {
-          case n @ Num(_) => Right(n)
-          case _          => Left(s"Not a number")
+          case n @ Num(_) => n
+          case _          => throw UnsafeJson(JsonError.Message(s"Not a number") :: trace)
         }
     }
     implicit val encoder: JsonEncoder[Num] = new JsonEncoder[Num] {
@@ -368,10 +368,10 @@ object Json {
         Null
       }
 
-      override final def fromJsonAST(json: Json): Either[String, Null.type] =
+      override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): Null.type =
         json match {
-          case Null => Right(Null)
-          case _    => Left(s"Not null")
+          case Null => Null
+          case _    => throw UnsafeJson(JsonError.Message(s"Not null") :: trace)
         }
     }
     implicit val encoder: JsonEncoder[Null.type] = new JsonEncoder[Null.type] {
@@ -399,8 +399,8 @@ object Json {
       }
     }
 
-    override final def fromJsonAST(json: Json): Either[String, Json] =
-      Right(json)
+    override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): Json =
+      json
   }
   implicit val encoder: JsonEncoder[Json] = new JsonEncoder[Json] {
     def unsafeEncode(a: Json, indent: Option[Int], out: Write): Unit =
