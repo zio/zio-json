@@ -1,6 +1,6 @@
 package zio.json
 
-import magnolia._
+import magnolia1._
 import zio.Chunk
 import zio.json.JsonDecoder.{ JsonError, UnsafeJson }
 import zio.json.ast.Json
@@ -151,7 +151,7 @@ final class jsonExclude extends Annotation
 object DeriveJsonDecoder {
   type Typeclass[A] = JsonDecoder[A]
 
-  def combine[A](ctx: CaseClass[JsonDecoder, A]): JsonDecoder[A] = {
+  def join[A](ctx: CaseClass[JsonDecoder, A]): JsonDecoder[A] = {
     val (transformNames, nameTransform): (Boolean, String => String) =
       ctx.annotations.collectFirst { case jsonMemberNames(format) => format }
         .map(true -> _)
@@ -303,7 +303,7 @@ object DeriveJsonDecoder {
       }
   }
 
-  def dispatch[A](ctx: SealedTrait[JsonDecoder, A]): JsonDecoder[A] = {
+  def split[A](ctx: SealedTrait[JsonDecoder, A]): JsonDecoder[A] = {
     val names: Array[String] = ctx.subtypes.map { p =>
       p.annotations.collectFirst { case jsonHint(name) =>
         name
@@ -404,7 +404,7 @@ object DeriveJsonDecoder {
 object DeriveJsonEncoder {
   type Typeclass[A] = JsonEncoder[A]
 
-  def combine[A](ctx: CaseClass[JsonEncoder, A]): JsonEncoder[A] =
+  def join[A](ctx: CaseClass[JsonEncoder, A]): JsonEncoder[A] =
     if (ctx.parameters.isEmpty)
       new JsonEncoder[A] {
         def unsafeEncode(a: A, indent: Option[Int], out: Write): Unit = out.write("{}")
@@ -477,7 +477,7 @@ object DeriveJsonEncoder {
             .map(Json.Obj.apply)
       }
 
-  def dispatch[A](ctx: SealedTrait[JsonEncoder, A]): JsonEncoder[A] = {
+  def split[A](ctx: SealedTrait[JsonEncoder, A]): JsonEncoder[A] = {
     val names: Array[String] = ctx.subtypes.map { p =>
       p.annotations.collectFirst { case jsonHint(name) =>
         name
@@ -486,7 +486,7 @@ object DeriveJsonEncoder {
     def discrim = ctx.annotations.collectFirst { case jsonDiscriminator(n) => n }
     if (discrim.isEmpty)
       new JsonEncoder[A] {
-        def unsafeEncode(a: A, indent: Option[Int], out: Write): Unit = ctx.dispatch(a) { sub =>
+        def unsafeEncode(a: A, indent: Option[Int], out: Write): Unit = ctx.split(a) { sub =>
           out.write("{")
           val indent_ = JsonEncoder.bump(indent)
           JsonEncoder.pad(indent_, out)
@@ -499,7 +499,7 @@ object DeriveJsonEncoder {
         }
 
         override def toJsonAST(a: A): Either[String, Json] =
-          ctx.dispatch(a) { sub =>
+          ctx.split(a) { sub =>
             sub.typeclass.toJsonAST(sub.cast(a)).map { inner =>
               Json.Obj(
                 Chunk(
@@ -512,7 +512,7 @@ object DeriveJsonEncoder {
     else
       new JsonEncoder[A] {
         val hintfield = discrim.get
-        def unsafeEncode(a: A, indent: Option[Int], out: Write): Unit = ctx.dispatch(a) { sub =>
+        def unsafeEncode(a: A, indent: Option[Int], out: Write): Unit = ctx.split(a) { sub =>
           out.write("{")
           val indent_ = JsonEncoder.bump(indent)
           JsonEncoder.pad(indent_, out)
@@ -527,7 +527,7 @@ object DeriveJsonEncoder {
         }
 
         override def toJsonAST(a: A): Either[String, Json] =
-          ctx.dispatch(a) { sub =>
+          ctx.split(a) { sub =>
             sub.typeclass.toJsonAST(sub.cast(a)).flatMap {
               case Json.Obj(fields) => Right(Json.Obj(fields :+ hintfield -> Json.Str(names(sub.index))))
               case _                => Left("Subtype is not encoded as an object")
