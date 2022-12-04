@@ -153,6 +153,7 @@ final class jsonNoExtraFields extends Annotation
  */
 final class jsonExclude extends Annotation
 
+// TODO: implement same configuration as for Scala 2 once this issue is resolved: https://github.com/softwaremill/magnolia/issues/296
 object DeriveJsonDecoder extends Derivation[JsonDecoder] { self =>
   def join[A](ctx: CaseClass[Typeclass, A]): JsonDecoder[A] = {
     val (transformNames, nameTransform): (Boolean, String => String) =
