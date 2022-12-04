@@ -2,6 +2,8 @@ package zio.json
 
 import magnolia1._
 import zio.Chunk
+import zio.json.JsonCodecConfiguration.SumTypeHandling
+import zio.json.JsonCodecConfiguration.SumTypeHandling.WrapperWithClassNameField
 import zio.json.JsonDecoder.{ JsonError, UnsafeJson }
 import zio.json.ast.Json
 import zio.json.internal.{ Lexer, RetractReader, StringMatrix, Write }
@@ -53,6 +55,9 @@ case object PascalCase extends JsonMemberFormat {
 }
 case object KebabCase extends JsonMemberFormat {
   override def apply(memberName: String): String = jsonMemberNames.enforceSnakeOrKebabCase(memberName, '-')
+}
+case object IdentityFormat extends JsonMemberFormat {
+  override def apply(memberName: String): String = memberName
 }
 
 /**
@@ -148,18 +153,70 @@ final class jsonNoExtraFields extends Annotation
  */
 final class jsonExclude extends Annotation
 
+// TODO: implement same configuration for Scala 3 once this issue is resolved: https://github.com/softwaremill/magnolia/issues/296
+/**
+ * Implicit codec derivation configuration.
+ *
+ * @param sumTypeHandling see [[jsonDiscriminator]]
+ * @param fieldNameMapping see [[jsonMemberNames]]
+ * @param allowExtraFields see [[jsonNoExtraFields]]
+ */
+final case class JsonCodecConfiguration(
+  sumTypeHandling: SumTypeHandling = WrapperWithClassNameField,
+  fieldNameMapping: JsonMemberFormat = IdentityFormat,
+  allowExtraFields: Boolean = true
+)
+
+object JsonCodecConfiguration {
+  implicit val default: JsonCodecConfiguration = JsonCodecConfiguration()
+
+  sealed trait SumTypeHandling {
+    def discriminatorField: Option[String]
+  }
+
+  object SumTypeHandling {
+
+    /**
+     * Use an object with a single key that is the class name.
+     */
+    case object WrapperWithClassNameField extends SumTypeHandling {
+      override def discriminatorField: Option[String] = None
+    }
+
+    /**
+     * For sealed classes, will determine the name of the field for
+     * disambiguating classes.
+     *
+     * The default is to not use a typehint field and instead
+     * have an object with a single key that is the class name.
+     * See [[WrapperWithClassNameField]].
+     *
+     * Note that using a discriminator is less performant, uses more memory, and may
+     * be prone to DOS attacks that are impossible with the default encoding. In
+     * addition, there is slightly less type safety when using custom product
+     * encoders (which must write an unenforced object type). Only use this option
+     * if you must model an externally defined schema.
+     */
+    final case class DiscriminatorField(name: String) extends SumTypeHandling {
+      override def discriminatorField: Option[String] = Some(name)
+    }
+  }
+}
+
 object DeriveJsonDecoder {
   type Typeclass[A] = JsonDecoder[A]
 
-  def join[A](ctx: CaseClass[JsonDecoder, A]): JsonDecoder[A] = {
+  def join[A](ctx: CaseClass[JsonDecoder, A])(implicit config: JsonCodecConfiguration): JsonDecoder[A] = {
     val (transformNames, nameTransform): (Boolean, String => String) =
       ctx.annotations.collectFirst { case jsonMemberNames(format) => format }
+        .orElse(Some(config.fieldNameMapping))
+        .filter(_ != IdentityFormat)
         .map(true -> _)
         .getOrElse(false -> identity _)
 
     val no_extra = ctx.annotations.collectFirst { case _: jsonNoExtraFields =>
       ()
-    }.isDefined
+    }.isDefined || !config.allowExtraFields
 
     if (ctx.parameters.isEmpty)
       new JsonDecoder[A] {
@@ -303,7 +360,7 @@ object DeriveJsonDecoder {
       }
   }
 
-  def split[A](ctx: SealedTrait[JsonDecoder, A]): JsonDecoder[A] = {
+  def split[A](ctx: SealedTrait[JsonDecoder, A])(implicit config: JsonCodecConfiguration): JsonDecoder[A] = {
     val names: Array[String] = ctx.subtypes.map { p =>
       p.annotations.collectFirst { case jsonHint(name) =>
         name
@@ -314,7 +371,8 @@ object DeriveJsonDecoder {
       ctx.subtypes.map(_.typeclass).toArray.asInstanceOf[Array[JsonDecoder[Any]]]
     lazy val namesMap: Map[String, Int] = names.zipWithIndex.toMap
 
-    def discrim = ctx.annotations.collectFirst { case jsonDiscriminator(n) => n }
+    def discrim =
+      ctx.annotations.collectFirst { case jsonDiscriminator(n) => n }.orElse(config.sumTypeHandling.discriminatorField)
     if (discrim.isEmpty)
       new JsonDecoder[A] {
         val spans: Array[JsonError] = names.map(JsonError.ObjectAccess(_))
@@ -404,7 +462,7 @@ object DeriveJsonDecoder {
 object DeriveJsonEncoder {
   type Typeclass[A] = JsonEncoder[A]
 
-  def join[A](ctx: CaseClass[JsonEncoder, A]): JsonEncoder[A] =
+  def join[A](ctx: CaseClass[JsonEncoder, A])(implicit config: JsonCodecConfiguration): JsonEncoder[A] =
     if (ctx.parameters.isEmpty)
       new JsonEncoder[A] {
         def unsafeEncode(a: A, indent: Option[Int], out: Write): Unit = out.write("{}")
@@ -416,6 +474,8 @@ object DeriveJsonEncoder {
       new JsonEncoder[A] {
         val (transformNames, nameTransform): (Boolean, String => String) =
           ctx.annotations.collectFirst { case jsonMemberNames(format) => format }
+            .orElse(Some(config.fieldNameMapping))
+            .filter(_ != IdentityFormat)
             .map(true -> _)
             .getOrElse(false -> identity)
 
@@ -477,13 +537,14 @@ object DeriveJsonEncoder {
             .map(Json.Obj.apply)
       }
 
-  def split[A](ctx: SealedTrait[JsonEncoder, A]): JsonEncoder[A] = {
+  def split[A](ctx: SealedTrait[JsonEncoder, A])(implicit config: JsonCodecConfiguration): JsonEncoder[A] = {
     val names: Array[String] = ctx.subtypes.map { p =>
       p.annotations.collectFirst { case jsonHint(name) =>
         name
       }.getOrElse(p.typeName.short)
     }.toArray
-    def discrim = ctx.annotations.collectFirst { case jsonDiscriminator(n) => n }
+    def discrim =
+      ctx.annotations.collectFirst { case jsonDiscriminator(n) => n }.orElse(config.sumTypeHandling.discriminatorField)
     if (discrim.isEmpty)
       new JsonEncoder[A] {
         def unsafeEncode(a: A, indent: Option[Int], out: Write): Unit = ctx.split(a) { sub =>
