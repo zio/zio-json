@@ -2,6 +2,7 @@ package testzio.json
 
 import zio._
 import zio.json._
+import zio.json.ast.Json
 import zio.test.Assertion._
 import zio.test._
 
@@ -96,10 +97,15 @@ object CodecSpec extends ZIOSpecDefault {
           assert(indianaJones.fromJson[Custom])(isRight(equalTo(Custom("")))) &&
           assert(overrides.fromJson[OverridesAlsoWork])(isRight(equalTo(OverridesAlsoWork("", 0)))) &&
           assertTrue(Kebabed("").toJson == kebabed) &&
+          assertTrue(Kebabed("").toJsonAST.toOption.get == kebabed.fromJson[Json].toOption.get) &&
           assertTrue(Snaked("").toJson == snaked) &&
+          assertTrue(Snaked("").toJsonAST.toOption.get == snaked.fromJson[Json].toOption.get) &&
           assertTrue(Pascaled("").toJson == pascaled) &&
+          assertTrue(Pascaled("").toJsonAST.toOption.get == pascaled.fromJson[Json].toOption.get) &&
           assertTrue(Cameled("").toJson == cameled) &&
+          assertTrue(Cameled("").toJsonAST.toOption.get == cameled.fromJson[Json].toOption.get) &&
           assertTrue(Custom("").toJson == indianaJones) &&
+          assertTrue(Custom("").toJsonAST.toOption.get == indianaJones.fromJson[Json].toOption.get) &&
           assertTrue(OverridesAlsoWork("", 0).toJson == overrides)
         },
         test("unicode") {

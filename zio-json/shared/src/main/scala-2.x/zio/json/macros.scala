@@ -510,7 +510,7 @@ object DeriveJsonEncoder {
             .foldLeft[Either[String, Chunk[(String, Json)]]](Right(Chunk.empty)) { case (c, param) =>
               val name = param.annotations.collectFirst { case jsonField(name) =>
                 name
-              }.getOrElse(param.label)
+              }.getOrElse(nameTransform(param.label))
               c.flatMap { chunk =>
                 param.typeclass.toJsonAST(param.dereference(a)).map { value =>
                   if (value == Json.Null) chunk
