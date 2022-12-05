@@ -83,23 +83,31 @@ object CodecSpec extends ZIOSpecDefault {
         },
         test("key transformation") {
           import exampletransformkeys._
-          val kebabed      = """{"shish-kebab":""}"""
-          val snaked       = """{"indiana_jones":""}"""
-          val pascaled     = """{"AndersHejlsberg":""}"""
-          val cameled      = """{"smallTalk":""}"""
-          val indianaJones = """{"wHATcASEiStHIS":""}"""
-          val overrides    = """{"not_modified":"","but-this-should-be":0}"""
+          val kebabed       = """{"shish123-kebab":""}"""
+          val snaked        = """{"indiana123_jones":""}"""
+          val pascaled      = """{"Anders123Hejlsberg":""}"""
+          val cameled       = """{"small123Talk":""}"""
+          val indianaJones  = """{"wHATcASEiStHIS":""}"""
+          val overrides     = """{"not_modified":"","but-this-should-be":0}"""
+          val kebabedLegacy = """{"shish-123-kebab":""}"""
+          val snakedLegacy  = """{"indiana_123_jones":""}"""
 
           assert(kebabed.fromJson[Kebabed])(isRight(equalTo(Kebabed("")))) &&
+          assert(kebabedLegacy.fromJson[legacy.Kebabed])(isRight(equalTo(legacy.Kebabed("")))) &&
           assert(snaked.fromJson[Snaked])(isRight(equalTo(Snaked("")))) &&
+          assert(snakedLegacy.fromJson[legacy.Snaked])(isRight(equalTo(legacy.Snaked("")))) &&
           assert(pascaled.fromJson[Pascaled])(isRight(equalTo(Pascaled("")))) &&
           assert(cameled.fromJson[Cameled])(isRight(equalTo(Cameled("")))) &&
           assert(indianaJones.fromJson[Custom])(isRight(equalTo(Custom("")))) &&
           assert(overrides.fromJson[OverridesAlsoWork])(isRight(equalTo(OverridesAlsoWork("", 0)))) &&
           assertTrue(Kebabed("").toJson == kebabed) &&
           assertTrue(Kebabed("").toJsonAST.toOption.get == kebabed.fromJson[Json].toOption.get) &&
+          assertTrue(legacy.Kebabed("").toJson == kebabedLegacy) &&
+          assertTrue(legacy.Kebabed("").toJsonAST.toOption.get == kebabedLegacy.fromJson[Json].toOption.get) &&
           assertTrue(Snaked("").toJson == snaked) &&
           assertTrue(Snaked("").toJsonAST.toOption.get == snaked.fromJson[Json].toOption.get) &&
+          assertTrue(legacy.Snaked("").toJson == snakedLegacy) &&
+          assertTrue(legacy.Snaked("").toJsonAST.toOption.get == snakedLegacy.fromJson[Json].toOption.get) &&
           assertTrue(Pascaled("").toJson == pascaled) &&
           assertTrue(Pascaled("").toJsonAST.toOption.get == pascaled.fromJson[Json].toOption.get) &&
           assertTrue(Cameled("").toJson == cameled) &&
@@ -237,25 +245,25 @@ object CodecSpec extends ZIOSpecDefault {
 
   object exampletransformkeys {
     @jsonMemberNames(KebabCase)
-    case class Kebabed(shishKebab: String)
+    case class Kebabed(shish123Kebab: String)
     object Kebabed {
       implicit val codec: JsonCodec[Kebabed] = DeriveJsonCodec.gen[Kebabed]
     }
 
     @jsonMemberNames(SnakeCase)
-    case class Snaked(indianaJones: String)
+    case class Snaked(indiana123Jones: String)
     object Snaked {
       implicit val codec: JsonCodec[Snaked] = DeriveJsonCodec.gen[Snaked]
     }
 
     @jsonMemberNames(PascalCase)
-    case class Pascaled(andersHejlsberg: String)
+    case class Pascaled(anders123Hejlsberg: String)
     object Pascaled {
       implicit val codec: JsonCodec[Pascaled] = DeriveJsonCodec.gen[Pascaled]
     }
 
     @jsonMemberNames(CamelCase)
-    case class Cameled(small_talk: String)
+    case class Cameled(small123_talk: String)
     object Cameled {
       implicit val codec: JsonCodec[Cameled] = DeriveJsonCodec.gen[Cameled]
     }
@@ -276,6 +284,23 @@ object CodecSpec extends ZIOSpecDefault {
     case class OverridesAlsoWork(@jsonField("not_modified") notModified: String, butThisShouldBe: Int)
     object OverridesAlsoWork {
       implicit val codec: JsonCodec[OverridesAlsoWork] = DeriveJsonCodec.gen[OverridesAlsoWork]
+    }
+
+    object legacy {
+      @jsonMemberNames(ziojson_03.KebabCase)
+      case class Kebabed(shish123Kebab: String)
+
+      object Kebabed {
+        implicit val codec: JsonCodec[Kebabed] = DeriveJsonCodec.gen[Kebabed]
+      }
+
+      @jsonMemberNames(ziojson_03.SnakeCase)
+      case class Snaked(indiana123Jones: String)
+
+      object Snaked {
+        implicit val codec: JsonCodec[Snaked] = DeriveJsonCodec.gen[Snaked]
+      }
+
     }
   }
 

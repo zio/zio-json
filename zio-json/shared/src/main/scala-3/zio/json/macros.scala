@@ -60,6 +60,18 @@ case object KebabCase extends JsonMemberFormat {
   override def apply(memberName: String): String = jsonMemberNames.enforceSnakeOrKebabCase(memberName, '-')
 }
 
+/** zio-json version 0.3.0 formats. abc123Def -> abc_123_def */
+object ziojson_03 {
+  case object SnakeCase extends JsonMemberFormat {
+    override def apply(memberName: String): String =
+      jsonMemberNames.enforceSnakeOrKebabCaseSeparateNumbers(memberName, '_')
+  }
+  case object KebabCase extends JsonMemberFormat {
+    override def apply(memberName: String): String =
+      jsonMemberNames.enforceSnakeOrKebabCaseSeparateNumbers(memberName, '-')
+  }
+}
+
 /**
  * If used on a case class, determines the strategy of member names
  * transformation during serialization and deserialization. Four common
@@ -108,6 +120,29 @@ private[json] object jsonMemberNames {
     val len                   = s.length
     val sb                    = new StringBuilder(len << 1)
     var i                     = 0
+    var isPrecedingNotUpperCased = false
+    while (i < len) isPrecedingNotUpperCased = {
+      val ch = s.charAt(i)
+      i += 1
+      if (ch == '_' || ch == '-') {
+        sb.append(separator)
+        false
+      } else if (!isUpperCase(ch)) {
+        sb.append(ch)
+        true
+      } else {
+        if (isPrecedingNotUpperCased || i > 1 && i < len && !isUpperCase(s.charAt(i))) sb.append(separator)
+        sb.append(toLowerCase(ch))
+        false
+      }
+    }
+    sb.toString
+  }
+
+  def enforceSnakeOrKebabCaseSeparateNumbers(s: String, separator: Char): String = {
+    val len = s.length
+    val sb = new StringBuilder(len << 1)
+    var i = 0
     var isPrecedingLowerCased = false
     while (i < len) isPrecedingLowerCased = {
       val ch = s.charAt(i)

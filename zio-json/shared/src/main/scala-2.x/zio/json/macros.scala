@@ -50,6 +50,7 @@ case object CamelCase extends JsonMemberFormat {
   override def apply(memberName: String): String =
     jsonMemberNames.enforceCamelOrPascalCase(memberName, toPascal = false)
 }
+
 case object PascalCase extends JsonMemberFormat {
   override def apply(memberName: String): String = jsonMemberNames.enforceCamelOrPascalCase(memberName, toPascal = true)
 }
@@ -58,6 +59,18 @@ case object KebabCase extends JsonMemberFormat {
 }
 case object IdentityFormat extends JsonMemberFormat {
   override def apply(memberName: String): String = memberName
+}
+
+/** zio-json version 0.3.0 formats. abc123Def -> abc_123_def */
+object ziojson_03 {
+  case object SnakeCase extends JsonMemberFormat {
+    override def apply(memberName: String): String =
+      jsonMemberNames.enforceSnakeOrKebabCaseSeparateNumbers(memberName, '_')
+  }
+  case object KebabCase extends JsonMemberFormat {
+    override def apply(memberName: String): String =
+      jsonMemberNames.enforceSnakeOrKebabCaseSeparateNumbers(memberName, '-')
+  }
 }
 
 /**
@@ -105,6 +118,29 @@ private[json] object jsonMemberNames {
     }
 
   def enforceSnakeOrKebabCase(s: String, separator: Char): String = {
+    val len                      = s.length
+    val sb                       = new StringBuilder(len << 1)
+    var i                        = 0
+    var isPrecedingNotUpperCased = false
+    while (i < len) isPrecedingNotUpperCased = {
+      val ch = s.charAt(i)
+      i += 1
+      if (ch == '_' || ch == '-') {
+        sb.append(separator)
+        false
+      } else if (!isUpperCase(ch)) {
+        sb.append(ch)
+        true
+      } else {
+        if (isPrecedingNotUpperCased || i > 1 && i < len && !isUpperCase(s.charAt(i))) sb.append(separator)
+        sb.append(toLowerCase(ch))
+        false
+      }
+    }
+    sb.toString
+  }
+
+  def enforceSnakeOrKebabCaseSeparateNumbers(s: String, separator: Char): String = {
     val len                   = s.length
     val sb                    = new StringBuilder(len << 1)
     var i                     = 0
