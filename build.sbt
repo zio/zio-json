@@ -347,8 +347,19 @@ lazy val docs = project
     crossScalaVersions -= ScalaDotty,
     publish / skip := true,
     moduleName := "zio-json-docs",
-    scalacOptions -= "-Yno-imports",
-    scalacOptions -= "-Xfatal-warnings",
-    libraryDependencies ++= Seq("dev.zio" %% "zio" % zioVersion)
+    scalacOptions += "-Ymacro-annotations",
+    projectName := "ZIO JSON",
+    badgeInfo := Some(
+      BadgeInfo(
+        artifact = "zio-json_2.12",
+        projectStage = ProjectStage.ProductionReady
+      )
+    ),
+    docsPublishBranch := "series/2.x",
+    readmeAcknowledgement :=
+      """|- Uses [JsonTestSuite](https://github.com/nst/JSONTestSuite) to test parsing. (c) 2016 Nicolas Seriot)
+         |
+         |- Uses [YourKit Java Profiler](https://www.yourkit.com/java/profiler/) for performance optimisation. ![YourKit Logo](https://www.yourkit.com/images/yklogo.png)
+         |""".stripMargin
   )
   .enablePlugins(WebsitePlugin)
