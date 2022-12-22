@@ -42,6 +42,128 @@ final case class jsonDiscriminator(name: String) extends Annotation
 // does not provide a mechanism for obtaining the CaseClass associated to the
 // Subtype.
 
+sealed trait JsonMemberFormat extends (String => String)
+case class CustomCase(f: String => String) extends JsonMemberFormat {
+  override def apply(memberName: String): String = f(memberName)
+}
+case object SnakeCase extends JsonMemberFormat {
+  override def apply(memberName: String): String = jsonMemberNames.enforceSnakeOrKebabCase(memberName, '_')
+}
+case object CamelCase extends JsonMemberFormat {
+  override def apply(memberName: String): String =
+    jsonMemberNames.enforceCamelOrPascalCase(memberName, toPascal = false)
+}
+case object PascalCase extends JsonMemberFormat {
+  override def apply(memberName: String): String = jsonMemberNames.enforceCamelOrPascalCase(memberName, toPascal = true)
+}
+case object KebabCase extends JsonMemberFormat {
+  override def apply(memberName: String): String = jsonMemberNames.enforceSnakeOrKebabCase(memberName, '-')
+}
+
+/** zio-json version 0.3.0 formats. abc123Def -> abc_123_def */
+object ziojson_03 {
+  case object SnakeCase extends JsonMemberFormat {
+    override def apply(memberName: String): String =
+      jsonMemberNames.enforceSnakeOrKebabCaseSeparateNumbers(memberName, '_')
+  }
+  case object KebabCase extends JsonMemberFormat {
+    override def apply(memberName: String): String =
+      jsonMemberNames.enforceSnakeOrKebabCaseSeparateNumbers(memberName, '-')
+  }
+}
+
+/**
+ * If used on a case class, determines the strategy of member names
+ * transformation during serialization and deserialization. Four common
+ * strategies are provided above and a custom one to support specific use cases.
+ */
+final case class jsonMemberNames(format: JsonMemberFormat) extends Annotation
+private[json] object jsonMemberNames {
+
+  /**
+   * ~~Stolen~~ Borrowed from jsoniter-scala by Andriy Plokhotnyuk
+   * (he even granted permission for this, imagine that!)
+   */
+
+  import java.lang.Character._
+
+  def enforceCamelOrPascalCase(s: String, toPascal: Boolean): String =
+    if (s.indexOf('_') == -1 && s.indexOf('-') == -1) {
+      if (s.isEmpty) s
+      else {
+        val ch = s.charAt(0)
+        val fixedCh =
+          if (toPascal) toUpperCase(ch)
+          else toLowerCase(ch)
+        s"$fixedCh${s.substring(1)}"
+      }
+    } else {
+      val len             = s.length
+      val sb              = new StringBuilder(len)
+      var i               = 0
+      var isPrecedingDash = toPascal
+      while (i < len) isPrecedingDash = {
+        val ch = s.charAt(i)
+        i += 1
+        (ch == '_' || ch == '-') || {
+          val fixedCh =
+            if (isPrecedingDash) toUpperCase(ch)
+            else toLowerCase(ch)
+          sb.append(fixedCh)
+          false
+        }
+      }
+      sb.toString
+    }
+
+  def enforceSnakeOrKebabCase(s: String, separator: Char): String = {
+    val len                   = s.length
+    val sb                    = new StringBuilder(len << 1)
+    var i                     = 0
+    var isPrecedingNotUpperCased = false
+    while (i < len) isPrecedingNotUpperCased = {
+      val ch = s.charAt(i)
+      i += 1
+      if (ch == '_' || ch == '-') {
+        sb.append(separator)
+        false
+      } else if (!isUpperCase(ch)) {
+        sb.append(ch)
+        true
+      } else {
+        if (isPrecedingNotUpperCased || i > 1 && i < len && !isUpperCase(s.charAt(i))) sb.append(separator)
+        sb.append(toLowerCase(ch))
+        false
+      }
+    }
+    sb.toString
+  }
+
+  def enforceSnakeOrKebabCaseSeparateNumbers(s: String, separator: Char): String = {
+    val len = s.length
+    val sb = new StringBuilder(len << 1)
+    var i = 0
+    var isPrecedingLowerCased = false
+    while (i < len) isPrecedingLowerCased = {
+      val ch = s.charAt(i)
+      i += 1
+      if (ch == '_' || ch == '-') {
+        sb.append(separator)
+        false
+      } else if (isLowerCase(ch)) {
+        sb.append(ch)
+        true
+      } else {
+        if (isPrecedingLowerCased || i > 1 && i < len && isLowerCase(s.charAt(i))) sb.append(separator)
+        sb.append(toLowerCase(ch))
+        false
+      }
+    }
+    sb.toString
+  }
+
+}
+
 /**
  * If used on a case class will determine the type hint value for disambiguating
  * sealed traits. Defaults to the short type name.
@@ -66,8 +188,14 @@ final class jsonNoExtraFields extends Annotation
  */
 final class jsonExclude extends Annotation
 
+// TODO: implement same configuration as for Scala 2 once this issue is resolved: https://github.com/softwaremill/magnolia/issues/296
 object DeriveJsonDecoder extends Derivation[JsonDecoder] { self =>
   def join[A](ctx: CaseClass[Typeclass, A]): JsonDecoder[A] = {
+    val (transformNames, nameTransform): (Boolean, String => String) =
+      ctx.annotations.collectFirst { case jsonMemberNames(format) => format }
+        .map(true -> _)
+        .getOrElse(false -> identity)
+
     val no_extra = ctx.annotations.collectFirst {
       case _: jsonNoExtraFields => ()
     }.isDefined
@@ -85,11 +213,11 @@ object DeriveJsonDecoder extends Derivation[JsonDecoder] { self =>
           ctx.rawConstruct(Nil)
         }
 
-        override final def fromJsonAST(json: Json): Either[String, A] =
+        override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): A =
           json match {
-            case Json.Obj(_) => Right(ctx.rawConstruct(Nil))
-            case Json.Null   => Right(ctx.rawConstruct(Nil))
-            case _           => Left("Not an object")
+            case Json.Obj(_) => ctx.rawConstruct(Nil)
+            case Json.Null   => ctx.rawConstruct(Nil)
+            case _           => throw UnsafeJson(JsonError.Message("Not an object") :: trace)
           }
       }
     } else {
@@ -100,7 +228,7 @@ object DeriveJsonDecoder extends Derivation[JsonDecoder] { self =>
             p
               .annotations
               .collectFirst { case jsonField(name) => name }
-              .getOrElse(p.label)
+              .getOrElse(if (transformNames) nameTransform(p.label) else p.label)
           })
           .toArray
 
@@ -162,55 +290,45 @@ object DeriveJsonDecoder extends Derivation[JsonDecoder] { self =>
           ctx.rawConstruct(new ArraySeq(ps))
         }
 
-        override final def fromJsonAST(json: Json): Either[String, A] = {
+        override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): A = {
           json match {
             case Json.Obj(fields) =>
               val ps: Array[Any]           = Array.ofDim(len)
-              var hasInvalidExtra: Boolean = false
-              val failures                 = new mutable.LinkedHashSet[String]
 
               for ((key, value) <- fields) {
                 namesMap.get(key) match {
                   case Some(field) =>
+                    val trace_ = JsonError.ObjectAccess(key) :: trace
                     if (defaults(field).isDefined) {
-                      val opt = JsonDecoder.option(tcs(field)).fromJsonAST(value)
-                      ps(field) = opt.flatMap(_.toRight(Left(""))).getOrElse(defaults(field).get)
+                      val opt = JsonDecoder.option(tcs(field)).unsafeFromJsonAST(trace_, value)
+                      ps(field) = opt.getOrElse(defaults(field).get)
                     } else {
-                      ps(field) = tcs(field).fromJsonAST(value) match {
-                        case Left(error)  => failures += error; null
-                        case Right(value) => value
-                      }
+                      ps(field) = tcs(field).unsafeFromJsonAST(trace_, value)
                     }
                   case None =>
                     if (no_extra) {
-                      hasInvalidExtra = true
+                      throw UnsafeJson(
+                        JsonError.Message(s"invalid extra field") :: trace
+                      )
                     }
                 }
               }
 
               var i       = 0
-              val missing = new mutable.LinkedHashSet[String]
               while (i < len) {
                 if (ps(i) == null) {
                   if (defaults(i).isDefined) {
                     ps(i) = defaults(i).get
                   } else {
-                    missing.add(names(i))
+                    ps(i) = tcs(i).unsafeDecodeMissing(JsonError.ObjectAccess(names(i)) :: trace)
                   }
                 }
                 i += 1
               }
 
-              if (hasInvalidExtra)
-                Left("Invalid extra field")
-              else if (failures.nonEmpty)
-                Left(failures.mkString(", "))
-              else if (missing.nonEmpty)
-                Left(s"Missing fields: ${missing.mkString(", ")}")
-              else
-                Right(ctx.rawConstruct(new ArraySeq(ps)))
+              ctx.rawConstruct(new ArraySeq(ps))
 
-            case _ => Left("Not an object")
+            case _ => throw UnsafeJson(JsonError.Message("Not an object") :: trace)
           }
         }
       }
@@ -260,16 +378,16 @@ object DeriveJsonDecoder extends Derivation[JsonDecoder] { self =>
             )
         }
 
-        override final def fromJsonAST(json: Json): Either[String, A] = {
+        override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): A = {
           json match {
             case Json.Obj(chunk) if chunk.size == 1 =>
               val (key, inner) = chunk.head
               namesMap.get(key) match {
-                case Some(idx) => tcs(idx).fromJsonAST(inner).map(_.asInstanceOf[A])
-                case None      => Left("Invalid disambiguator")
+                case Some(idx) => tcs(idx).unsafeFromJsonAST(JsonError.ObjectAccess(key) :: trace, inner).asInstanceOf[A]
+                case None      => throw UnsafeJson(JsonError.Message("Invalid disambiguator") :: trace)
               }
-            case Json.Obj(_) => Left("Not an object with a single field")
-            case _           => Left("Not an object")
+            case Json.Obj(_) => throw UnsafeJson(JsonError.Message("Not an object with a single field") :: trace)
+            case _           => throw UnsafeJson(JsonError.Message("Not an object") :: trace)
           }
         }
       }
@@ -308,21 +426,21 @@ object DeriveJsonDecoder extends Derivation[JsonDecoder] { self =>
           throw UnsafeJson(JsonError.Message(s"missing hint '$hintfield'") :: trace)
         }
 
-        override final def fromJsonAST(json: Json): Either[String, A] = {
+        override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): A = {
           json match {
             case Json.Obj(fields) =>
               fields.find { case (k, _) => k == hintfield } match {
                 case Some((_, Json.Str(name))) =>
                   namesMap.get(name) match {
-                    case Some(idx) => tcs(idx).fromJsonAST(json).map(_.asInstanceOf[A])
-                    case None      => Left("Invalid disambiguator")
+                    case Some(idx) => tcs(idx).unsafeFromJsonAST(JsonError.ObjectAccess(name) :: trace, json).asInstanceOf[A]
+                    case None      => throw UnsafeJson(JsonError.Message("Invalid disambiguator") :: trace)
                   }
                 case Some(_) =>
-                  Left(s"Non-string hint '$hintfield'")
+                  throw UnsafeJson(JsonError.Message(s"Non-string hint '$hintfield'") :: trace)
                 case None =>
-                  Left(s"Missing hint '$hintfield'")
+                  throw UnsafeJson(JsonError.Message(s"Missing hint '$hintfield'") :: trace)
               }
-            case _ => Left("Not an object")
+            case _ => throw UnsafeJson(JsonError.Message("Not an object") :: trace)
           }
         }
       }
@@ -350,33 +468,38 @@ object DeriveJsonEncoder extends Derivation[JsonEncoder] { self =>
       }
     } else {
       new JsonEncoder[A] {
-        def unsafeEncode(a: A, indent: Option[Int], out: Write): Unit = {
-          val params = ctx
+        val (transformNames, nameTransform): (Boolean, String => String) =
+          ctx.annotations.collectFirst { case jsonMemberNames(format) => format }
+            .map(true -> _)
+            .getOrElse(false -> identity)
+
+        val params = ctx
+          .params
+          .filterNot { param =>
+            param
+              .annotations
+              .collectFirst {
+                case _: jsonExclude => ()
+              }
+              .isDefined
+          }
+
+        val len = params.length
+
+        val names =
+          IArray.genericWrapArray(ctx
             .params
-            .filterNot { param =>
-              param
-                .annotations
-                .collectFirst {
-                  case _: jsonExclude => ()
-                }
-                .isDefined
-            }
+            .map { p =>
+              p.annotations.collectFirst {
+                case jsonField(name) => name
+              }.getOrElse(if (transformNames) nameTransform(p.label) else p.label)
+            })
+            .toArray
 
-          val len = params.length
-
-          val names =
-            IArray.genericWrapArray(ctx
-              .params
-              .map { p =>
-                p.annotations.collectFirst {
-                  case jsonField(name) => name
-                }.getOrElse(p.label)
-              })
-              .toArray
-
-          val tcs: Array[JsonEncoder[Any]] =
+        lazy val tcs: Array[JsonEncoder[Any]] =
             IArray.genericWrapArray(params.map(_.typeclass.asInstanceOf[JsonEncoder[Any]])).toArray
 
+        def unsafeEncode(a: A, indent: Option[Int], out: Write): Unit = {
           out.write("{")
 
           var indent_ = JsonEncoder.bump(indent)
@@ -424,7 +547,7 @@ object DeriveJsonEncoder extends Derivation[JsonEncoder] { self =>
             .foldLeft[Either[String, Chunk[(String, Json)]]](Right(Chunk.empty)) { case (c, param) =>
               val name = param.annotations.collectFirst { case jsonField(name) =>
                 name
-              }.getOrElse(param.label)
+              }.getOrElse(nameTransform(param.label))
               c.flatMap { chunk =>
                 param.typeclass.toJsonAST(param.deref(a)).map { value =>
                   if (value == Json.Null) chunk

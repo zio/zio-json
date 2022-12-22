@@ -112,10 +112,10 @@ trait JsonDecoder[A] extends JsonDecoderPlatformSpecific[A] {
         }
       }
 
-      override final def fromJsonAST(json: Json): Either[String, A1] =
-        self.fromJsonAST(json) match {
-          case Left(_)           => that.fromJsonAST(json)
-          case result @ Right(_) => result
+      override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): A1 =
+        try self.unsafeFromJsonAST(trace, json)
+        catch {
+          case JsonDecoder.UnsafeJson(_) | _: UnexpectedEnd => that.unsafeFromJsonAST(trace, json)
         }
 
       override def unsafeDecodeMissing(trace: List[JsonError]): A1 =
@@ -142,8 +142,8 @@ trait JsonDecoder[A] extends JsonDecoderPlatformSpecific[A] {
       def unsafeDecode(trace: List[JsonError], in: RetractReader): B =
         f(self.unsafeDecode(trace, in))
 
-      override final def fromJsonAST(json: Json): Either[String, B] =
-        self.fromJsonAST(json).map(f)
+      override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): B =
+        f(self.unsafeFromJsonAST(trace, json))
 
       override def unsafeDecodeMissing(trace: List[JsonError]): B =
         f(self.unsafeDecodeMissing(trace))
@@ -164,8 +164,11 @@ trait JsonDecoder[A] extends JsonDecoderPlatformSpecific[A] {
           case Right(b) => b
         }
 
-      override final def fromJsonAST(json: Json): Either[String, B] =
-        self.fromJsonAST(json).flatMap(f)
+      override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): B =
+        f(self.unsafeFromJsonAST(trace, json)) match {
+          case Left(err) => throw JsonDecoder.UnsafeJson(JsonError.Message(err) :: trace)
+          case Right(b)  => b
+        }
 
       override def unsafeDecodeMissing(trace: List[JsonError]): B =
         f(self.unsafeDecodeMissing(trace)) match {
@@ -207,17 +210,26 @@ trait JsonDecoder[A] extends JsonDecoderPlatformSpecific[A] {
    */
   def unsafeDecode(trace: List[JsonError], in: RetractReader): A
 
+  def unsafeFromJsonAST(trace: List[JsonError], json: Json): A =
+    unsafeDecode(trace, new FastStringReader(Json.encoder.encodeJson(json, None)))
+
   /**
    * Decode a value from an already parsed Json AST.
    *
    * The default implementation encodes the Json to a byte stream and uses decode to parse that.
    * Override to provide a more performant implementation.
    */
-  def fromJsonAST(json: Json): Either[String, A] =
-    decodeJson(Json.encoder.encodeJson(json, None))
+  final def fromJsonAST(json: Json): Either[String, A] =
+    try Right(unsafeFromJsonAST(Nil, json))
+    catch {
+      case JsonDecoder.UnsafeJson(trace) => Left(JsonError.render(trace))
+      case _: UnexpectedEnd              => Left("Unexpected end of input")
+      case _: StackOverflowError         => Left("Unexpected structure")
+    }
+
 }
 
-object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority1 {
+object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority1 with JsonDecoderVersionSpecific {
   type JsonError = zio.json.JsonError
   val JsonError = zio.json.JsonError
 
@@ -255,7 +267,7 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority1 {
 
       override def unsafeDecodeMissing(trace: List[JsonError]): A = decoder.unsafeDecodeMissing(trace)
 
-      override def fromJsonAST(json: Json): Either[String, A] = decoder.fromJsonAST(json)
+      override def unsafeFromJsonAST(trace: List[JsonError], json: Json): A = decoder.unsafeFromJsonAST(trace, json)
     }
 
   implicit val string: JsonDecoder[String] = new JsonDecoder[String] {
@@ -263,10 +275,10 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority1 {
     def unsafeDecode(trace: List[JsonError], in: RetractReader): String =
       Lexer.string(trace, in).toString
 
-    override final def fromJsonAST(json: Json): Either[String, String] =
+    override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): String =
       json match {
-        case Json.Str(value) => Right(value)
-        case _               => Left("Not a string value")
+        case Json.Str(value) => value
+        case _               => throw UnsafeJson(JsonError.Message("Not a string value") :: trace)
       }
   }
 
@@ -275,10 +287,10 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority1 {
     def unsafeDecode(trace: List[JsonError], in: RetractReader): Boolean =
       Lexer.boolean(trace, in)
 
-    override final def fromJsonAST(json: Json): Either[String, Boolean] =
+    override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): Boolean =
       json match {
-        case Json.Bool(value) => Right(value)
-        case _                => Left("Not a bool value")
+        case Json.Bool(value) => value
+        case _                => throw UnsafeJson(JsonError.Message("Not a bool value") :: trace)
       }
   }
 
@@ -317,24 +329,18 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority1 {
             f(trace, in)
         }
 
-      override final def fromJsonAST(json: Json): Either[String, A] =
+      override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): A =
         json match {
           case Json.Num(value) =>
-            try Right(fromBigDecimal(value))
+            try fromBigDecimal(value)
             catch {
-              case exception: ArithmeticException => Left(exception.getMessage)
+              case exception: ArithmeticException => throw UnsafeJson(JsonError.Message(exception.getMessage) :: trace)
             }
           case Json.Str(value) =>
             val reader = new FastStringReader(value)
-            val result =
-              try Right(f(List.empty, reader))
-              catch {
-                case JsonDecoder.UnsafeJson(trace) => Left(JsonError.render(trace))
-                case _: UnexpectedEnd              => Left("Unexpected end of input")
-                case _: StackOverflowError         => Left("Unexpected structure")
-              } finally reader.close()
-            result
-          case _ => Left("Not a number or a string")
+            try f(List.empty, reader)
+            finally reader.close()
+          case _ => throw UnsafeJson(JsonError.Message("Not a number or a string") :: trace)
         }
     }
 
@@ -359,10 +365,10 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority1 {
             Some(A.unsafeDecode(trace, in))
         }
 
-      override final def fromJsonAST(json: Json): Either[String, Option[A]] =
+      override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): Option[A] =
         json match {
-          case Json.Null => Right(None)
-          case _         => A.fromJsonAST(json).map(Some.apply)
+          case Json.Null => None
+          case _         => Some(A.unsafeFromJsonAST(trace, json))
         }
     }
 
@@ -465,8 +471,11 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority1 {
           case Right(value) => value
         }
 
-      override def fromJsonAST(json: Json): Either[String, A] =
-        string.fromJsonAST(json).flatMap(f)
+      override def unsafeFromJsonAST(trace: List[JsonError], json: Json): A =
+        f(string.unsafeFromJsonAST(trace, json)) match {
+          case Left(err)    => throw UnsafeJson(JsonError.Message(err) :: trace)
+          case Right(value) => value
+        }
     }
 }
 
@@ -490,17 +499,13 @@ private[json] trait DecoderLowPriority1 extends DecoderLowPriority2 {
     def unsafeDecode(trace: List[JsonError], in: RetractReader): Chunk[A] =
       builder(trace, in, zio.ChunkBuilder.make[A]())
 
-    override final def fromJsonAST(json: Json): Either[String, Chunk[A]] =
+    override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): Chunk[A] =
       json match {
         case Json.Arr(elements) =>
-          elements.foldLeft[Either[String, Chunk[A]]](Right(Chunk.empty)) { (s, item) =>
-            s.flatMap(chunk =>
-              decoder.fromJsonAST(item).map { a =>
-                chunk :+ a
-              }
-            )
+          elements.zipWithIndex.map { case (json, i) =>
+            decoder.unsafeFromJsonAST(JsonError.ArrayAccess(i) :: trace, json)
           }
-        case _ => Left("Not an array")
+        case _ => throw UnsafeJson(JsonError.Message("Not an array") :: trace)
       }
   }
 

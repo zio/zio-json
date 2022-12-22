@@ -130,7 +130,38 @@ Almost all of the standard library data types are supported as fields on the cas
 
 ## Configuration
 
-By default the field names of a case class are used as the JSON fields, but it is easy to override this with an annotation `@jsonField`.
+By default, the field names of a case class are used as the JSON fields, but it is easy to override this with an annotation `@jsonField`. 
+Moreover, you can also mark a whole case class with a member name transformation that will be applied to all members using `@jsonMemberNames`
+annotation. It takes an argument of type `JsonMemberFormat` which encodes the transformation that will be applied to member names. 
+Four most popular transformations are already provided: KebabCase, SnakeCase, PascalCase and CamelCase. If you require something more
+specific you can also use CustomCase which takes a function of shape `String => String` as an argument and can be used to perform
+any arbitrary transformation. `@jsonField` annotation takes priority over the transformation defined by `@jsonMemberNames`.
+
+Here's an example json with most fields snake_cased and one kebab-cased:
+```json
+{
+  "passion_fruit": true,
+  "granny_smith": true,
+  "dragon_fruit": true,
+  "blood-orange": false
+}
+```
+
+And here's the target case class:
+
+```scala
+@jsonMemberNames(SnakeCase)
+case class FruitBasket(
+  passionFruit: Boolean, 
+  grannySmith: Boolean, 
+  dragonFruit: Boolean, 
+  @jsonField("blood-orange") bloodOrange: Boolean
+)
+```
+
+Notice that all fields are camelCased in Scala and will be both encoded and decoded correctly to snake_case in JSON 
+except `bloodOrange` field that is annotated with a `@jsonField` override that will force it to become `"blood-orange"` 
+after serialization.
 
 It is also possible to change the type hint that is used to discriminate case classes with `@jsonHint`.
 
@@ -292,7 +323,7 @@ Integrations are provided several popular libraries, which are published as sepa
 - Refined
 - Scalaz 7
 
-[Complete list of interop modules](https://zio.github.io/zio-json/docs/interop/interop_index)
+[Complete list of interop modules](https://zio.dev/zio-json/interop/)
 
 # Performance
 
@@ -458,14 +489,7 @@ If `zio-json` isn't fast enough for you, then try out [jsoniter-scala](https://g
 JSON is an inefficient transport format and everybody would benefit from a port of this library to msgpack or protobuf. For legacy services, a port supporting XML is also be possible.
 
 # Documentation
-[zio-json Microsite](https://zio.github.io/zio-json/)
-
-# Contributing
-[Documentation for contributors](https://zio.github.io/zio-json/docs/about/about_contributing)
-
-## Code of Conduct
-
-See the [Code of Conduct](https://zio.github.io/zio-json/docs/about/about_coc)
+[zio-json Microsite](https://zio.dev/zio-json/)
 
 ## Support
 

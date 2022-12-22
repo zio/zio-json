@@ -1,7 +1,9 @@
 package zio.json
 
-import magnolia._
+import magnolia1._
 import zio.Chunk
+import zio.json.JsonCodecConfiguration.SumTypeHandling
+import zio.json.JsonCodecConfiguration.SumTypeHandling.WrapperWithClassNameField
 import zio.json.JsonDecoder.{ JsonError, UnsafeJson }
 import zio.json.ast.Json
 import zio.json.internal.{ Lexer, RetractReader, StringMatrix, Write }
@@ -36,6 +38,133 @@ final case class jsonDiscriminator(name: String) extends Annotation
 // does not provide a mechanism for obtaining the CaseClass associated to the
 // Subtype.
 
+sealed trait JsonMemberFormat extends (String => String)
+
+case class CustomCase(f: String => String) extends JsonMemberFormat {
+  override def apply(memberName: String): String = f(memberName)
+}
+case object SnakeCase extends JsonMemberFormat {
+  override def apply(memberName: String): String = jsonMemberNames.enforceSnakeOrKebabCase(memberName, '_')
+}
+case object CamelCase extends JsonMemberFormat {
+  override def apply(memberName: String): String =
+    jsonMemberNames.enforceCamelOrPascalCase(memberName, toPascal = false)
+}
+
+case object PascalCase extends JsonMemberFormat {
+  override def apply(memberName: String): String = jsonMemberNames.enforceCamelOrPascalCase(memberName, toPascal = true)
+}
+case object KebabCase extends JsonMemberFormat {
+  override def apply(memberName: String): String = jsonMemberNames.enforceSnakeOrKebabCase(memberName, '-')
+}
+case object IdentityFormat extends JsonMemberFormat {
+  override def apply(memberName: String): String = memberName
+}
+
+/** zio-json version 0.3.0 formats. abc123Def -> abc_123_def */
+object ziojson_03 {
+  case object SnakeCase extends JsonMemberFormat {
+    override def apply(memberName: String): String =
+      jsonMemberNames.enforceSnakeOrKebabCaseSeparateNumbers(memberName, '_')
+  }
+  case object KebabCase extends JsonMemberFormat {
+    override def apply(memberName: String): String =
+      jsonMemberNames.enforceSnakeOrKebabCaseSeparateNumbers(memberName, '-')
+  }
+}
+
+/**
+ * If used on a case class, determines the strategy of member names
+ * transformation during serialization and deserialization. Four common
+ * strategies are provided above and a custom one to support specific use cases.
+ */
+final case class jsonMemberNames(format: JsonMemberFormat) extends Annotation
+private[json] object jsonMemberNames {
+
+  /**
+   * ~~Stolen~~ Borrowed from jsoniter-scala by Andriy Plokhotnyuk
+   * (he even granted permission for this, imagine that!)
+   */
+
+  import java.lang.Character._
+
+  def enforceCamelOrPascalCase(s: String, toPascal: Boolean): String =
+    if (s.indexOf('_') == -1 && s.indexOf('-') == -1) {
+      if (s.isEmpty) s
+      else {
+        val ch = s.charAt(0)
+        val fixedCh =
+          if (toPascal) toUpperCase(ch)
+          else toLowerCase(ch)
+        s"$fixedCh${s.substring(1)}"
+      }
+    } else {
+      val len             = s.length
+      val sb              = new StringBuilder(len)
+      var i               = 0
+      var isPrecedingDash = toPascal
+      while (i < len) isPrecedingDash = {
+        val ch = s.charAt(i)
+        i += 1
+        (ch == '_' || ch == '-') || {
+          val fixedCh =
+            if (isPrecedingDash) toUpperCase(ch)
+            else toLowerCase(ch)
+          sb.append(fixedCh)
+          false
+        }
+      }
+      sb.toString
+    }
+
+  def enforceSnakeOrKebabCase(s: String, separator: Char): String = {
+    val len                      = s.length
+    val sb                       = new StringBuilder(len << 1)
+    var i                        = 0
+    var isPrecedingNotUpperCased = false
+    while (i < len) isPrecedingNotUpperCased = {
+      val ch = s.charAt(i)
+      i += 1
+      if (ch == '_' || ch == '-') {
+        sb.append(separator)
+        false
+      } else if (!isUpperCase(ch)) {
+        sb.append(ch)
+        true
+      } else {
+        if (isPrecedingNotUpperCased || i > 1 && i < len && !isUpperCase(s.charAt(i))) sb.append(separator)
+        sb.append(toLowerCase(ch))
+        false
+      }
+    }
+    sb.toString
+  }
+
+  def enforceSnakeOrKebabCaseSeparateNumbers(s: String, separator: Char): String = {
+    val len                   = s.length
+    val sb                    = new StringBuilder(len << 1)
+    var i                     = 0
+    var isPrecedingLowerCased = false
+    while (i < len) isPrecedingLowerCased = {
+      val ch = s.charAt(i)
+      i += 1
+      if (ch == '_' || ch == '-') {
+        sb.append(separator)
+        false
+      } else if (isLowerCase(ch)) {
+        sb.append(ch)
+        true
+      } else {
+        if (isPrecedingLowerCased || i > 1 && i < len && isLowerCase(s.charAt(i))) sb.append(separator)
+        sb.append(toLowerCase(ch))
+        false
+      }
+    }
+    sb.toString
+  }
+
+}
+
 /**
  * If used on a case class will determine the type hint value for disambiguating
  * sealed traits. Defaults to the short type name.
@@ -60,13 +189,71 @@ final class jsonNoExtraFields extends Annotation
  */
 final class jsonExclude extends Annotation
 
+// TODO: implement same configuration for Scala 3 once this issue is resolved: https://github.com/softwaremill/magnolia/issues/296
+/**
+ * Implicit codec derivation configuration.
+ *
+ * @param sumTypeHandling see [[jsonDiscriminator]]
+ * @param fieldNameMapping see [[jsonMemberNames]]
+ * @param allowExtraFields see [[jsonNoExtraFields]]
+ */
+final case class JsonCodecConfiguration(
+  sumTypeHandling: SumTypeHandling = WrapperWithClassNameField,
+  fieldNameMapping: JsonMemberFormat = IdentityFormat,
+  allowExtraFields: Boolean = true
+)
+
+object JsonCodecConfiguration {
+  implicit val default: JsonCodecConfiguration = JsonCodecConfiguration()
+
+  sealed trait SumTypeHandling {
+    def discriminatorField: Option[String]
+  }
+
+  object SumTypeHandling {
+
+    /**
+     * Use an object with a single key that is the class name.
+     */
+    case object WrapperWithClassNameField extends SumTypeHandling {
+      override def discriminatorField: Option[String] = None
+    }
+
+    /**
+     * For sealed classes, will determine the name of the field for
+     * disambiguating classes.
+     *
+     * The default is to not use a typehint field and instead
+     * have an object with a single key that is the class name.
+     * See [[WrapperWithClassNameField]].
+     *
+     * Note that using a discriminator is less performant, uses more memory, and may
+     * be prone to DOS attacks that are impossible with the default encoding. In
+     * addition, there is slightly less type safety when using custom product
+     * encoders (which must write an unenforced object type). Only use this option
+     * if you must model an externally defined schema.
+     */
+    final case class DiscriminatorField(name: String) extends SumTypeHandling {
+      override def discriminatorField: Option[String] = Some(name)
+    }
+  }
+}
+
 object DeriveJsonDecoder {
   type Typeclass[A] = JsonDecoder[A]
 
-  def combine[A](ctx: CaseClass[JsonDecoder, A]): JsonDecoder[A] = {
+  def join[A](ctx: CaseClass[JsonDecoder, A])(implicit config: JsonCodecConfiguration): JsonDecoder[A] = {
+    val (transformNames, nameTransform): (Boolean, String => String) =
+      ctx.annotations.collectFirst { case jsonMemberNames(format) => format }
+        .orElse(Some(config.fieldNameMapping))
+        .filter(_ != IdentityFormat)
+        .map(true -> _)
+        .getOrElse(false -> identity _)
+
     val no_extra = ctx.annotations.collectFirst { case _: jsonNoExtraFields =>
       ()
-    }.isDefined
+    }.isDefined || !config.allowExtraFields
+
     if (ctx.parameters.isEmpty)
       new JsonDecoder[A] {
         def unsafeDecode(trace: List[JsonError], in: RetractReader): A = {
@@ -79,11 +266,11 @@ object DeriveJsonDecoder {
           ctx.rawConstruct(Nil)
         }
 
-        override final def fromJsonAST(json: Json): Either[String, A] =
+        override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): A =
           json match {
-            case Json.Obj(_) => Right(ctx.rawConstruct(Nil))
-            case Json.Null   => Right(ctx.rawConstruct(Nil))
-            case _           => Left("Not an object")
+            case Json.Obj(_) => ctx.rawConstruct(Nil)
+            case Json.Null   => ctx.rawConstruct(Nil)
+            case _           => throw UnsafeJson(JsonError.Message("Not an object") :: trace)
           }
       }
     else
@@ -91,7 +278,7 @@ object DeriveJsonDecoder {
         val names: Array[String] = ctx.parameters.map { p =>
           p.annotations.collectFirst { case jsonField(name) =>
             name
-          }.getOrElse(p.label)
+          }.getOrElse(if (transformNames) nameTransform(p.label) else p.label)
         }.toArray
         val len: Int                = names.length
         val matrix: StringMatrix    = new StringMatrix(names)
@@ -149,67 +336,50 @@ object DeriveJsonDecoder {
           ctx.rawConstruct(new ArraySeq(ps))
         }
 
-        override final def fromJsonAST(json: Json): Either[String, A] =
+        override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): A =
           json match {
             case Json.Obj(fields) =>
-              val ps: Array[Any]           = Array.ofDim(len)
-              var hasInvalidExtra: Boolean = false
-              val failures                 = new mutable.LinkedHashSet[String]
+              val ps: Array[Any] = Array.ofDim(len)
 
               for ((key, value) <- fields) {
                 namesMap.get(key) match {
                   case Some(field) =>
+                    val trace_ = JsonError.ObjectAccess(key) :: trace
                     if (defaults(field).isDefined) {
-                      val opt = JsonDecoder.option(tcs(field)).fromJsonAST(value)
-                      ps(field) = opt.flatMap(_.toRight(Left(""))).getOrElse(defaults(field).get)
+                      val opt = JsonDecoder.option(tcs(field)).unsafeFromJsonAST(trace_, value)
+                      ps(field) = opt.getOrElse(defaults(field).get)
                     } else {
-                      ps(field) = tcs(field).fromJsonAST(value) match {
-                        case Left(error)  => failures += error; null
-                        case Right(value) => value
-                      }
+                      ps(field) = tcs(field).unsafeFromJsonAST(trace_, value)
                     }
                   case None =>
                     if (no_extra) {
-                      hasInvalidExtra = true
+                      throw UnsafeJson(
+                        JsonError.Message(s"invalid extra field") :: trace
+                      )
                     }
                 }
               }
 
-              var i       = 0
-              val missing = new mutable.LinkedHashSet[String]
+              var i = 0
               while (i < len) {
                 if (ps(i) == null) {
                   if (defaults(i).isDefined) {
                     ps(i) = defaults(i).get
                   } else {
-                    val tc = tcs(i)
-                    try {
-                      // There is no default value, see if the type class decoder can handle it:
-                      ps(i) = tc.unsafeDecodeMissing(JsonError.ObjectAccess(names(i)) :: Nil)
-                    } catch {
-                      case JsonDecoder.UnsafeJson(trace) =>
-                        missing.add(names(i))
-                    }
+                    ps(i) = tcs(i).unsafeDecodeMissing(JsonError.ObjectAccess(names(i)) :: trace)
                   }
                 }
                 i += 1
               }
 
-              if (hasInvalidExtra)
-                Left("Invalid extra field")
-              else if (failures.nonEmpty)
-                Left(failures.mkString(", "))
-              else if (missing.nonEmpty)
-                Left(s"Missing fields: ${missing.mkString(", ")}")
-              else
-                Right(ctx.rawConstruct(new ArraySeq(ps)))
+              ctx.rawConstruct(new ArraySeq(ps))
 
-            case _ => Left("Not an object")
+            case _ => throw UnsafeJson(JsonError.Message("Not an object") :: trace)
           }
       }
   }
 
-  def dispatch[A](ctx: SealedTrait[JsonDecoder, A]): JsonDecoder[A] = {
+  def split[A](ctx: SealedTrait[JsonDecoder, A])(implicit config: JsonCodecConfiguration): JsonDecoder[A] = {
     val names: Array[String] = ctx.subtypes.map { p =>
       p.annotations.collectFirst { case jsonHint(name) =>
         name
@@ -220,7 +390,8 @@ object DeriveJsonDecoder {
       ctx.subtypes.map(_.typeclass).toArray.asInstanceOf[Array[JsonDecoder[Any]]]
     lazy val namesMap: Map[String, Int] = names.zipWithIndex.toMap
 
-    def discrim = ctx.annotations.collectFirst { case jsonDiscriminator(n) => n }
+    def discrim =
+      ctx.annotations.collectFirst { case jsonDiscriminator(n) => n }.orElse(config.sumTypeHandling.discriminatorField)
     if (discrim.isEmpty)
       new JsonDecoder[A] {
         val spans: Array[JsonError] = names.map(JsonError.ObjectAccess(_))
@@ -244,16 +415,17 @@ object DeriveJsonDecoder {
             )
         }
 
-        override final def fromJsonAST(json: Json): Either[String, A] =
+        override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): A =
           json match {
             case Json.Obj(chunk) if chunk.size == 1 =>
               val (key, inner) = chunk.head
               namesMap.get(key) match {
-                case Some(idx) => tcs(idx).fromJsonAST(inner).map(_.asInstanceOf[A])
-                case None      => Left("Invalid disambiguator")
+                case Some(idx) =>
+                  tcs(idx).unsafeFromJsonAST(JsonError.ObjectAccess(key) :: trace, inner).asInstanceOf[A]
+                case None => throw UnsafeJson(JsonError.Message("Invalid disambiguator") :: trace)
               }
-            case Json.Obj(_) => Left("Not an object with a single field")
-            case _           => Left("Not an object")
+            case Json.Obj(_) => throw UnsafeJson(JsonError.Message("Not an object with a single field") :: trace)
+            case _           => throw UnsafeJson(JsonError.Message("Not an object") :: trace)
           }
       }
     else
@@ -285,21 +457,21 @@ object DeriveJsonDecoder {
           )
         }
 
-        override final def fromJsonAST(json: Json): Either[String, A] =
+        override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): A =
           json match {
             case Json.Obj(fields) =>
               fields.find { case (k, _) => k == hintfield } match {
                 case Some((_, Json.Str(name))) =>
                   namesMap.get(name) match {
-                    case Some(idx) => tcs(idx).fromJsonAST(json).map(_.asInstanceOf[A])
-                    case None      => Left("Invalid disambiguator")
+                    case Some(idx) => tcs(idx).unsafeFromJsonAST(trace, json).asInstanceOf[A]
+                    case None      => throw UnsafeJson(JsonError.Message("Invalid disambiguator") :: trace)
                   }
                 case Some(_) =>
-                  Left(s"Non-string hint '$hintfield'")
+                  throw UnsafeJson(JsonError.Message(s"Non-string hint '$hintfield'") :: trace)
                 case None =>
-                  Left(s"Missing hint '$hintfield'")
+                  throw UnsafeJson(JsonError.Message(s"Missing hint '$hintfield'") :: trace)
               }
-            case _ => Left("Not an object")
+            case _ => throw UnsafeJson(JsonError.Message("Not an object") :: trace)
           }
       }
   }
@@ -310,7 +482,7 @@ object DeriveJsonDecoder {
 object DeriveJsonEncoder {
   type Typeclass[A] = JsonEncoder[A]
 
-  def combine[A](ctx: CaseClass[JsonEncoder, A]): JsonEncoder[A] =
+  def join[A](ctx: CaseClass[JsonEncoder, A])(implicit config: JsonCodecConfiguration): JsonEncoder[A] =
     if (ctx.parameters.isEmpty)
       new JsonEncoder[A] {
         def unsafeEncode(a: A, indent: Option[Int], out: Write): Unit = out.write("{}")
@@ -320,14 +492,21 @@ object DeriveJsonEncoder {
       }
     else
       new JsonEncoder[A] {
+        val (transformNames, nameTransform): (Boolean, String => String) =
+          ctx.annotations.collectFirst { case jsonMemberNames(format) => format }
+            .orElse(Some(config.fieldNameMapping))
+            .filter(_ != IdentityFormat)
+            .map(true -> _)
+            .getOrElse(false -> identity)
+
         val params = ctx.parameters
-          .filter(p => p.annotations.collectFirst { case _: jsonExclude => () }.isDefined == false)
+          .filter(p => p.annotations.collectFirst { case _: jsonExclude => () }.isEmpty)
           .toArray
 
         val names: Array[String] = params.map { p =>
           p.annotations.collectFirst { case jsonField(name) =>
             name
-          }.getOrElse(p.label)
+          }.getOrElse(if (transformNames) nameTransform(p.label) else p.label)
         }
         lazy val tcs: Array[JsonEncoder[Any]] = params.map(p => p.typeclass.asInstanceOf[JsonEncoder[Any]])
         val len: Int                          = params.length
@@ -367,7 +546,7 @@ object DeriveJsonEncoder {
             .foldLeft[Either[String, Chunk[(String, Json)]]](Right(Chunk.empty)) { case (c, param) =>
               val name = param.annotations.collectFirst { case jsonField(name) =>
                 name
-              }.getOrElse(param.label)
+              }.getOrElse(nameTransform(param.label))
               c.flatMap { chunk =>
                 param.typeclass.toJsonAST(param.dereference(a)).map { value =>
                   if (value == Json.Null) chunk
@@ -378,16 +557,17 @@ object DeriveJsonEncoder {
             .map(Json.Obj.apply)
       }
 
-  def dispatch[A](ctx: SealedTrait[JsonEncoder, A]): JsonEncoder[A] = {
+  def split[A](ctx: SealedTrait[JsonEncoder, A])(implicit config: JsonCodecConfiguration): JsonEncoder[A] = {
     val names: Array[String] = ctx.subtypes.map { p =>
       p.annotations.collectFirst { case jsonHint(name) =>
         name
       }.getOrElse(p.typeName.short)
     }.toArray
-    def discrim = ctx.annotations.collectFirst { case jsonDiscriminator(n) => n }
+    def discrim =
+      ctx.annotations.collectFirst { case jsonDiscriminator(n) => n }.orElse(config.sumTypeHandling.discriminatorField)
     if (discrim.isEmpty)
       new JsonEncoder[A] {
-        def unsafeEncode(a: A, indent: Option[Int], out: Write): Unit = ctx.dispatch(a) { sub =>
+        def unsafeEncode(a: A, indent: Option[Int], out: Write): Unit = ctx.split(a) { sub =>
           out.write("{")
           val indent_ = JsonEncoder.bump(indent)
           JsonEncoder.pad(indent_, out)
@@ -400,7 +580,7 @@ object DeriveJsonEncoder {
         }
 
         override def toJsonAST(a: A): Either[String, Json] =
-          ctx.dispatch(a) { sub =>
+          ctx.split(a) { sub =>
             sub.typeclass.toJsonAST(sub.cast(a)).map { inner =>
               Json.Obj(
                 Chunk(
@@ -413,7 +593,7 @@ object DeriveJsonEncoder {
     else
       new JsonEncoder[A] {
         val hintfield = discrim.get
-        def unsafeEncode(a: A, indent: Option[Int], out: Write): Unit = ctx.dispatch(a) { sub =>
+        def unsafeEncode(a: A, indent: Option[Int], out: Write): Unit = ctx.split(a) { sub =>
           out.write("{")
           val indent_ = JsonEncoder.bump(indent)
           JsonEncoder.pad(indent_, out)
@@ -428,7 +608,7 @@ object DeriveJsonEncoder {
         }
 
         override def toJsonAST(a: A): Either[String, Json] =
-          ctx.dispatch(a) { sub =>
+          ctx.split(a) { sub =>
             sub.typeclass.toJsonAST(sub.cast(a)).flatMap {
               case Json.Obj(fields) => Right(Json.Obj(fields :+ hintfield -> Json.Str(names(sub.index))))
               case _                => Left("Subtype is not encoded as an object")

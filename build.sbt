@@ -5,7 +5,7 @@ import sbtcrossproject.CrossPlugin.autoImport.crossProject
 inThisBuild(
   List(
     organization := "dev.zio",
-    homepage := Some(url("https://zio.github.io/zio-json/")),
+    homepage := Some(url("https://zio.dev/zio-json/")),
     licenses := List("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0")),
     developers := List(
       Developer(
@@ -25,7 +25,7 @@ addCommandAlias("prepare", "fmt")
 
 addCommandAlias(
   "testJVM",
-  "zioJsonJVM/test; zioJsonYaml/test; zioJsonMacrosJVM/test; zioJsonInteropHttp4s/test; zioJsonInteropScalaz7xJVM/test; zioJsonInteropScalaz7xJS/test; zioJsonInteropRefinedJVM/test; zioJsonInteropRefinedJS/test"
+  "zioJsonJVM/test; zioJsonYaml/test; zioJsonMacrosJVM/test; zioJsonInteropHttp4s/test; zioJsonInteropScalaz7xJVM/test; zioJsonGolden/test; zioJsonInteropScalaz7xJS/test; zioJsonInteropRefinedJVM/test; zioJsonInteropRefinedJS/test"
 )
 
 addCommandAlias(
@@ -35,7 +35,7 @@ addCommandAlias(
 
 addCommandAlias("testJS", "zioJsonJS/test")
 
-val zioVersion = "2.0.2"
+val zioVersion = "2.0.5"
 
 lazy val root = project
   .in(file("."))
@@ -58,7 +58,7 @@ lazy val root = project
     zioJsonGolden
   )
 
-val circeVersion = "0.14.2"
+val circeVersion = "0.14.3"
 
 lazy val zioJson = crossProject(JSPlatform, JVMPlatform)
   .in(file("zio-json"))
@@ -99,11 +99,11 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform)
         case _ =>
           Vector(
             "org.scala-lang"                          % "scala-reflect"         % scalaVersion.value % Provided,
-            "com.propensive"                        %%% "magnolia"              % "0.17.0",
+            "com.softwaremill.magnolia1_2"          %%% "magnolia"              % "1.1.2",
             "io.circe"                              %%% "circe-generic-extras"  % circeVersion       % "test",
             "com.typesafe.play"                     %%% "play-json"             % "2.9.3"            % "test",
-            "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-core"   % "2.17.3"           % "test",
-            "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-macros" % "2.17.3"           % "test"
+            "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-core"   % "2.19.1"           % "test",
+            "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-macros" % "2.19.1"           % "test"
           )
       }
     },
@@ -290,7 +290,7 @@ lazy val zioJsonInteropHttp4s = project
       "org.http4s"    %% "http4s-dsl"       % "0.23.15",
       "dev.zio"       %% "zio"              % zioVersion,
       "org.typelevel" %% "cats-effect"      % "3.3.14",
-      "dev.zio"       %% "zio-interop-cats" % "3.3.0"    % "test",
+      "dev.zio"       %% "zio-interop-cats" % "23.0.0.0" % "test",
       "dev.zio"       %% "zio-test"         % zioVersion % "test",
       "dev.zio"       %% "zio-test-sbt"     % zioVersion % "test"
     ),
@@ -306,7 +306,6 @@ lazy val zioJsonInteropRefined = crossProject(JSPlatform, JVMPlatform)
   .settings(stdSettings("zio-json-interop-refined"))
   .settings(buildInfoSettings("zio.json.interop.refined"))
   .settings(
-    crossScalaVersions -= ScalaDotty,
     libraryDependencies ++= Seq(
       "eu.timepit" %%% "refined"      % "0.10.1",
       "dev.zio"    %%% "zio-test"     % zioVersion % "test",
@@ -347,31 +346,20 @@ lazy val docs = project
   .settings(
     crossScalaVersions -= ScalaDotty,
     publish / skip := true,
-    mdocVariables := Map(
-      "SNAPSHOT_VERSION" -> version.value,
-      "RELEASE_VERSION"  -> previousStableVersion.value.getOrElse("can't find release"),
-      "ORG"              -> organization.value,
-      "NAME"             -> (zioJsonJVM / name).value,
-      "CROSS_VERSIONS"   -> (zioJsonJVM / crossScalaVersions).value.mkString(", ")
-    ),
     moduleName := "zio-json-docs",
-    scalacOptions -= "-Yno-imports",
-    scalacOptions -= "-Xfatal-warnings",
-    libraryDependencies ++= Seq(
-      "dev.zio" %% "zio" % zioVersion
+    scalacOptions += "-Ymacro-annotations",
+    projectName := "ZIO JSON",
+    badgeInfo := Some(
+      BadgeInfo(
+        artifact = "zio-json_2.12",
+        projectStage = ProjectStage.ProductionReady
+      )
     ),
-    ScalaUnidoc / unidoc / unidocProjectFilter := inProjects(
-      zioJsonJVM,
-      zioJsonYaml,
-      zioJsonGolden,
-      zioJsonMacrosJVM,
-      zioJsonInteropHttp4s,
-      zioJsonInteropRefined.jvm,
-      zioJsonInteropScalaz7x.jvm
-    ),
-    ScalaUnidoc / unidoc / target := (LocalRootProject / baseDirectory).value / "website" / "static" / "api",
-    cleanFiles += (ScalaUnidoc / unidoc / target).value,
-    docusaurusCreateSite := docusaurusCreateSite.dependsOn(Compile / unidoc).value,
-    docusaurusPublishGhpages := docusaurusPublishGhpages.dependsOn(Compile / unidoc).value
+    docsPublishBranch := "series/2.x",
+    readmeAcknowledgement :=
+      """|- Uses [JsonTestSuite](https://github.com/nst/JSONTestSuite) to test parsing. (c) 2016 Nicolas Seriot)
+         |
+         |- Uses [YourKit Java Profiler](https://www.yourkit.com/java/profiler/) for performance optimisation. ![YourKit Logo](https://www.yourkit.com/images/yklogo.png)
+         |""".stripMargin
   )
-  .enablePlugins(MdocPlugin, DocusaurusPlugin, ScalaUnidocPlugin)
+  .enablePlugins(WebsitePlugin)
