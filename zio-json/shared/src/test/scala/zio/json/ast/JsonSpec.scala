@@ -7,6 +7,65 @@ object JsonSpec extends ZIOSpecDefault {
 
   val spec: Spec[Environment, Any] =
     suite("Json")(
+      suite("delete")(
+        suite("scalar")(
+          test("success") {
+            assert(Json.Str("str").delete(JsonCursor.Identity.isString))(isRight(equalTo(Json.Null)))
+          },
+          test("failure") {
+            assert(Json.Str("str").delete(JsonCursor.Identity.isNumber))(isLeft)
+          }
+        ),
+        suite("nested")(
+          test("success") {
+            val downHashTags = JsonCursor.field("entities").isObject.field("hashtags").isArray
+
+            val firstRoleCursor = downHashTags.element(0).filterType(JsonType.Str)
+            val userIdCursor    = JsonCursor.field("user").isObject.field("id").filterType(JsonType.Num)
+
+            assert(tweet.delete(firstRoleCursor))(
+              isRight(
+                equalTo(
+                  Json.Obj(
+                    "id" -> Json.Num(8500),
+                    "user" -> Json.Obj(
+                      "id"   -> Json.Num(6200),
+                      "name" -> Json.Str("Twitter API")
+                    ),
+                    "entities" -> Json.Obj(
+                      "hashtags" -> Json.Arr(
+                        Json.Str("developer")
+                      )
+                    )
+                  )
+                )
+              )
+            ) &&
+            assert(tweet.delete(userIdCursor))(
+              isRight(
+                equalTo(
+                  Json.Obj(
+                    "id" -> Json.Num(8500),
+                    "user" -> Json.Obj(
+                      "name" -> Json.Str("Twitter API")
+                    ),
+                    "entities" -> Json.Obj(
+                      "hashtags" -> Json.Arr(
+                        Json.Str("twitter"),
+                        Json.Str("developer")
+                      )
+                    )
+                  )
+                )
+              )
+            )
+          },
+          test("failure") {
+            val missingElement = JsonCursor.field("entities").isObject.field("hashtags").isArray.element(2)
+            assert(tweet.delete(missingElement))(isLeft)
+          }
+        )
+      ),
       suite("equals")(
         test("mismatched Json subtypes") {
           val nul: Json  = Json.Null
@@ -186,6 +245,122 @@ object JsonSpec extends ZIOSpecDefault {
           )
         }
       ),
+      suite("intersect")(
+        test("object + object") {
+          val left = Json.Obj(
+            "a" -> Json.Num(1),
+            "b" -> Json.Num(2)
+          )
+
+          val right = Json.Obj(
+            "a" -> Json.Num(2),
+            "b" -> Json.Num(2),
+            "c" -> Json.Num(4)
+          )
+
+          assert(left.intersect(right))(
+            isRight(
+              equalTo(
+                Json.Obj(
+                  "b" -> Json.Num(2)
+                )
+              )
+            )
+          )
+        },
+        test("object, deep") {
+          val intersected = tweet.intersect(
+            Json.Obj(
+              "id" -> Json.Num(8501),
+              "user" -> Json.Obj(
+                "id"   -> Json.Num(6200),
+                "name" -> Json.Str("Twitter API")
+              )
+            )
+          )
+
+          assert(intersected)(
+            isRight(
+              equalTo(
+                Json.Obj(
+                  "user" -> Json.Obj(
+                    "id"   -> Json.Num(6200),
+                    "name" -> Json.Str("Twitter API")
+                  )
+                )
+              )
+            )
+          )
+        },
+        test("array") {
+          val left = Json.Arr(
+            Json.Obj("id"            -> Json.Num(1), "authenticated" -> Json.Bool(true)),
+            Json.Obj("authenticated" -> Json.Bool(true)),
+            Json.Obj("id"            -> Json.Num(1), "authenticated" -> Json.Bool(true))
+          )
+
+          val right = Json.Arr(
+            Json.Obj("id"            -> Json.Num(1), "authenticated" -> Json.Bool(false)),
+            Json.Obj("authenticated" -> Json.Bool(true))
+          )
+
+          val intersected = left.intersect(right)
+
+          assert(intersected)(
+            isRight(
+              equalTo(
+                Json.Arr(
+                  Json.Obj(
+                    "authenticated" -> Json.Bool.True
+                  )
+                )
+              )
+            )
+          )
+        },
+        test("array - duplicates") {
+          val left = Json.Arr(
+            Json.Str("a"),
+            Json.Str("a"),
+            Json.Str("b"),
+            Json.Str("b"),
+            Json.Str("b"),
+            Json.Str("c")
+          )
+
+          val right = Json.Arr(
+            Json.Str("a"),
+            Json.Str("b"),
+            Json.Str("b"),
+            Json.Str("b"),
+            Json.Str("c"),
+            Json.Str("c")
+          )
+
+          val intersected = left.intersect(right)
+
+          assert(intersected)(
+            isRight(
+              equalTo(
+                Json.Arr(
+                  Json.Str("a"),
+                  Json.Str("b"),
+                  Json.Str("b"),
+                  Json.Str("b"),
+                  Json.Str("c")
+                )
+              )
+            )
+          )
+        },
+        test("scalar") {
+          assert(Json.Null.intersect(Json.Bool.True))(isLeft(equalTo("Non compatible types"))) && assert(
+            Json.Num(1).intersect(Json.Arr(Json.Num(1)))
+          )(isLeft(equalTo("Non compatible types"))) && assert(Json.Str("1").intersect(Json.Arr(Json.Str("1"))))(
+            isLeft(equalTo("Non compatible types"))
+          ) && assert(Json.Num(1).intersect(Json.Arr(Json.Num(1))))(isLeft(equalTo("Non compatible types")))
+        }
+      ),
       suite("merge")(
         test("object + object") {
           val left = Json.Obj(
@@ -265,6 +440,103 @@ object JsonSpec extends ZIOSpecDefault {
             )
           )
         }
+      ),
+      suite("relocate") {
+        suite("nested")(
+          test("success") {
+            val userCursor     = JsonCursor.field("user").isObject
+            val entitiesCursor = JsonCursor.field("entities")
+
+            assert(tweet.relocate(userCursor, entitiesCursor))(
+              isRight(
+                equalTo(
+                  Json.Obj(
+                    "id" -> Json.Num(8500),
+                    "entities" -> Json.Obj(
+                      "id"   -> Json.Num(6200),
+                      "name" -> Json.Str("Twitter API")
+                    )
+                  )
+                )
+              )
+            )
+          },
+          test("failure - from") {
+            val fromCursor = JsonCursor.field("user").isArray
+            val toCursor   = JsonCursor.field("entities")
+
+            assert(tweet.relocate(fromCursor, toCursor))(isLeft)
+          },
+          test("failure - to") {
+            val fromCursor = JsonCursor.field("user").isObject
+            val toCursor   = JsonCursor.field("entities").isBool
+
+            assert(tweet.relocate(fromCursor, toCursor))(isLeft)
+          }
+        )
+      },
+      suite("transformAt")(
+        suite("scalar")(
+          test("success") {
+            assert(Json.Str("str").transformAt(JsonCursor.Identity.isString) { str =>
+              Json.Str(str.value + ("1"))
+            })(isRight(equalTo(Json.Str("str1"))))
+          },
+          test("failure") {
+            assert(Json.Str("str").transformAt(JsonCursor.Identity.isNumber)(identity))(isLeft)
+          }
+        ),
+        suite("nested")(
+          test("success") {
+            val downHashTags = JsonCursor.field("entities").isObject.field("hashtags").isArray
+
+            val firstRoleCursor = downHashTags.element(0).filterType(JsonType.Str)
+            val userIdCursor    = JsonCursor.field("user").isObject.field("id").filterType(JsonType.Num)
+
+            assert(tweet.transformAt(firstRoleCursor)(jstr => Json.Str(jstr.value.capitalize)))(
+              isRight(
+                equalTo(
+                  Json.Obj(
+                    "id" -> Json.Num(8500),
+                    "user" -> Json.Obj(
+                      "id"   -> Json.Num(6200),
+                      "name" -> Json.Str("Twitter API")
+                    ),
+                    "entities" -> Json.Obj(
+                      "hashtags" -> Json.Arr(
+                        Json.Str("Twitter"),
+                        Json.Str("developer")
+                      )
+                    )
+                  )
+                )
+              )
+            ) &&
+            assert(tweet.transformAt(userIdCursor)(json => Json.Num(json.value.intValue() + 1)))(
+              isRight(
+                equalTo(
+                  Json.Obj(
+                    "id" -> Json.Num(8500),
+                    "user" -> Json.Obj(
+                      "id"   -> Json.Num(6201),
+                      "name" -> Json.Str("Twitter API")
+                    ),
+                    "entities" -> Json.Obj(
+                      "hashtags" -> Json.Arr(
+                        Json.Str("twitter"),
+                        Json.Str("developer")
+                      )
+                    )
+                  )
+                )
+              )
+            )
+          },
+          test("failure") {
+            val missingElement = JsonCursor.field("entities").isObject.field("hashtags").isArray.element(2)
+            assert(tweet.transformAt(missingElement)(identity))(isLeft)
+          }
+        )
       )
     )
 
