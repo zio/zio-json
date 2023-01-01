@@ -571,4 +571,6 @@ object Json {
 
     override final def toJsonAST(a: Json): Either[String, Json] = Right(a)
   }
+  
+  def apply(fields: (String, Json)*): Json = Json.Obj(Chunk(fields: _*))
 }
