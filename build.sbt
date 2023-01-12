@@ -345,15 +345,19 @@ lazy val docs = project
   )
   .settings(
     crossScalaVersions -= ScalaDotty,
-    publish / skip := true,
     moduleName := "zio-json-docs",
     scalacOptions += "-Ymacro-annotations",
     projectName := "ZIO JSON",
-    badgeInfo := Some(
-      BadgeInfo(
-        artifact = "zio-json_2.12",
-        projectStage = ProjectStage.ProductionReady
-      )
+    mainModuleName := (zioJsonJVM / moduleName).value,
+    projectStage := ProjectStage.ProductionReady,
+    ScalaUnidoc / unidoc / unidocProjectFilter := inProjects(
+      zioJsonJVM,
+      zioJsonYaml,
+      zioJsonMacrosJVM,
+      zioJsonInteropHttp4s,
+      zioJsonInteropRefined.jvm,
+      zioJsonInteropScalaz7x.jvm,
+      zioJsonGolden
     ),
     docsPublishBranch := "series/2.x",
     readmeAcknowledgement :=
