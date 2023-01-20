@@ -102,8 +102,8 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform)
             "com.softwaremill.magnolia1_2"          %%% "magnolia"              % "1.1.2",
             "io.circe"                              %%% "circe-generic-extras"  % circeVersion       % "test",
             "com.typesafe.play"                     %%% "play-json"             % "2.9.3"            % "test",
-            "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-core"   % "2.20.2"           % "test",
-            "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-macros" % "2.20.2"           % "test"
+            "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-core"   % "2.20.3"           % "test",
+            "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-macros" % "2.20.3"           % "test"
           )
       }
     },
@@ -290,7 +290,7 @@ lazy val zioJsonInteropHttp4s = project
       "org.http4s"    %% "http4s-dsl"       % "0.23.15",
       "dev.zio"       %% "zio"              % zioVersion,
       "org.typelevel" %% "cats-effect"      % "3.3.14",
-      "dev.zio"       %% "zio-interop-cats" % "23.0.0.0" % "test",
+      "dev.zio"       %% "zio-interop-cats" % "23.0.0.1" % "test",
       "dev.zio"       %% "zio-test"         % zioVersion % "test",
       "dev.zio"       %% "zio-test-sbt"     % zioVersion % "test"
     ),
@@ -345,15 +345,19 @@ lazy val docs = project
   )
   .settings(
     crossScalaVersions -= ScalaDotty,
-    publish / skip := true,
     moduleName := "zio-json-docs",
     scalacOptions += "-Ymacro-annotations",
     projectName := "ZIO JSON",
-    badgeInfo := Some(
-      BadgeInfo(
-        artifact = "zio-json_2.12",
-        projectStage = ProjectStage.ProductionReady
-      )
+    mainModuleName := (zioJsonJVM / moduleName).value,
+    projectStage := ProjectStage.ProductionReady,
+    ScalaUnidoc / unidoc / unidocProjectFilter := inProjects(
+      zioJsonJVM,
+      zioJsonYaml,
+      zioJsonMacrosJVM,
+      zioJsonInteropHttp4s,
+      zioJsonInteropRefined.jvm,
+      zioJsonInteropScalaz7x.jvm,
+      zioJsonGolden
     ),
     docsPublishBranch := "series/2.x",
     readmeAcknowledgement :=
