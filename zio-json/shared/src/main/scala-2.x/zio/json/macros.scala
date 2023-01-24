@@ -19,6 +19,11 @@ import scala.language.experimental.macros
 final case class jsonField(name: String) extends Annotation
 
 /**
+ * If used on a case class field, determines the alternative names of the JSON field.
+ */
+final case class jsonAliases(name: String*) extends Annotation
+
+/**
  * If used on a sealed class, will determine the name of the field for
  * disambiguating classes.
  *
@@ -275,13 +280,23 @@ object DeriveJsonDecoder {
       }
     else
       new JsonDecoder[A] {
-        val names: Array[String] = ctx.parameters.map { p =>
-          p.annotations.collectFirst { case jsonField(name) =>
-            name
-          }.getOrElse(if (transformNames) nameTransform(p.label) else p.label)
-        }.toArray
+        val (names, aliases): (Array[String], Array[(String, Int)]) = {
+          val names = Array.ofDim[String](ctx.parameters.size)
+          val aliases = Array.newBuilder[(String, Int)]
+          ctx.parameters.zipWithIndex.foreach { case (p, i) =>
+            names(i) = p.annotations.collectFirst { case jsonField(name) =>
+              name
+            }.getOrElse(if (transformNames) nameTransform(p.label) else p.label)
+            aliases ++= p.annotations.flatMap {
+              case jsonAliases(aliases@_*) => aliases.map(_ -> i)
+              case _ => Seq.empty
+            }
+          }
+          (names, aliases.result())
+        }
+
         val len: Int                = names.length
-        val matrix: StringMatrix    = new StringMatrix(names)
+        val matrix: StringMatrix    = new StringMatrix(names, aliases)
         val spans: Array[JsonError] = names.map(JsonError.ObjectAccess(_))
         lazy val tcs: Array[JsonDecoder[Any]] =
           ctx.parameters.map(_.typeclass).toArray.asInstanceOf[Array[JsonDecoder[Any]]]
