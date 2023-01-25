@@ -281,15 +281,15 @@ object DeriveJsonDecoder {
     else
       new JsonDecoder[A] {
         val (names, aliases): (Array[String], Array[(String, Int)]) = {
-          val names = Array.ofDim[String](ctx.parameters.size)
+          val names   = Array.ofDim[String](ctx.parameters.size)
           val aliases = Array.newBuilder[(String, Int)]
           ctx.parameters.zipWithIndex.foreach { case (p, i) =>
             names(i) = p.annotations.collectFirst { case jsonField(name) =>
               name
             }.getOrElse(if (transformNames) nameTransform(p.label) else p.label)
             aliases ++= p.annotations.flatMap {
-              case jsonAliases(aliases@_*) => aliases.map(_ -> i)
-              case _ => Seq.empty
+              case jsonAliases(aliases @ _*) => aliases.map(_ -> i)
+              case _                         => Seq.empty
             }
           }
           (names, aliases.result())
