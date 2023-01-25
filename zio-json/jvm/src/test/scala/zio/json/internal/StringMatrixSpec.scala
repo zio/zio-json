@@ -7,11 +7,11 @@ import zio.test._
 object StringMatrixSpec extends ZIOSpecDefault {
   val spec: Spec[Environment, Any] = suite("StringMatrix")(
     test("basic positive succeeds") {
-      val names = List("a", "b")
+      val names   = List("a", "b")
       val aliases = List("c" -> 0, "d" -> 1)
       val asserts =
         names.map(s => matcher(names, aliases, s).contains(s)) ++
-        aliases.map(a => matcher(names, aliases, a._1).contains(a._1))
+          aliases.map(a => matcher(names, aliases, a._1).contains(a._1))
       assert(asserts)(forall(isTrue))
     },
     test("positive succeeds") {
@@ -45,7 +45,7 @@ object StringMatrixSpec extends ZIOSpecDefault {
       check(genTestStringsAndAliases) { case (xs, aliases) =>
         val asserts =
           xs.map(s => matcher(xs, List.empty, s).contains(s)) ++
-          aliases.map(alias => matcher(xs, aliases, alias._1).contains(alias._1))
+            aliases.map(alias => matcher(xs, aliases, alias._1).contains(alias._1))
 
         assert(asserts)(forall(isTrue))
       }
@@ -67,7 +67,9 @@ object StringMatrixSpec extends ZIOSpecDefault {
       }
     },
     test("alias trivial") {
-      check(genNonEmptyString.filterNot(_.startsWith("wibble")))(s => assert(matcher(List("wibble"), List(s -> 0), s))(equalTo(List(s))))
+      check(genNonEmptyString.filterNot(_.startsWith("wibble")))(s =>
+        assert(matcher(List("wibble"), List(s -> 0), s))(equalTo(List(s)))
+      )
     },
     test("alias exact match is a substring") {
       assert(
