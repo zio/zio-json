@@ -70,6 +70,17 @@ object DecoderSpec extends ZIOSpecDefault {
           assert("""{"s":""}""".fromJson[OnlyString])(isRight(equalTo(OnlyString("")))) &&
           assert("""{"s":"","t":""}""".fromJson[OnlyString])(isLeft(equalTo("(invalid extra field)")))
         },
+        test("aliases") {
+          case class Apple(@jsonAliases("ripeness", "old") ripe: Boolean, taste: Double)
+          implicit val decoder: JsonDecoder[Apple] = DeriveJsonDecoder.gen
+
+          val expected = Apple(ripe = true, taste = 7)
+          assert("""{"taste":7,"ripe":true}""".fromJson[Apple])(isRight(equalTo(expected))) &&
+          assert("""{"taste":7,"ripeness":true}""".fromJson[Apple])(isRight(equalTo(expected))) &&
+          assert("""{"taste":7,"old":true}""".fromJson[Apple])(isRight(equalTo(expected))) &&
+          assert("""{"taste":1,"ripe":true,"old":true}""".fromJson[Apple])(isLeft(equalTo("(duplicate)"))) &&
+          assert("""{"taste":1,"ripeness":true,"old":true}""".fromJson[Apple])(isLeft(equalTo("(duplicate)")))
+        },
         test("option") {
           case class WithOpt(id: Int, opt: Option[Int])
           implicit val decoder: JsonDecoder[WithOpt] = DeriveJsonDecoder.gen
@@ -290,6 +301,17 @@ object DecoderSpec extends ZIOSpecDefault {
           assert(Json.Obj().as[DefaultString])(isRight(equalTo(DefaultString("")))) &&
           assert(Json.Obj("s" -> Json.Null).as[DefaultString])(isRight(equalTo(DefaultString(""))))
         },
+// NOT YET IMPLEMENTED
+//        test("aliases") {
+//          import exampleproducts._
+//
+//          val expected = Aliases(a = 7, d = 15)
+//          assert(Json.Obj("a" -> Json.Num(7), "d" -> Json.Num(15)).as[Aliases])(isRight(equalTo(expected))) &&
+//            assert(Json.Obj("b" -> Json.Num(7), "d" -> Json.Num(15)).as[Aliases])(isRight(equalTo(expected))) &&
+//            assert(Json.Obj("c" -> Json.Num(7), "d" -> Json.Num(15)).as[Aliases])(isRight(equalTo(expected)))&&
+//            assert(Json.Obj("a" -> Json.Num(7), "b" -> Json.Num(7), "d" -> Json.Num(15)).as[Aliases])(isLeft(equalTo("(duplicate)"))) &&
+//            assert(Json.Obj("b" -> Json.Num(7), "c" -> Json.Num(7), "d" -> Json.Num(15)).as[Aliases])(isLeft(equalTo("(duplicate)")))
+//        },
         test("sum encoding") {
           import examplesum._
 
@@ -453,6 +475,13 @@ object DecoderSpec extends ZIOSpecDefault {
     object Outer {
       implicit val decoder: JsonDecoder[Outer] = DeriveJsonDecoder.gen
     }
+
+    case class Aliases(@jsonAliases("b", "c") a: Int, d: Int)
+
+    object Aliases {
+      implicit val decoder: JsonDecoder[Aliases] = DeriveJsonDecoder.gen
+    }
+
   }
 
   object examplesum {
