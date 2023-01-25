@@ -422,7 +422,7 @@ final class StringMatrix(val xs: Array[String], aliases: Array[(String, Int)] = 
     val m           = Array.fill[Int](width * height)(-1)
     var string: Int = 0
     while (string < width) {
-      val s         = xs(string)
+      val s         = if (string < xs.length) xs(string) else aliases(string - xs.length)._1
       val len       = s.length
       var char: Int = 0
       while (char < len) {
