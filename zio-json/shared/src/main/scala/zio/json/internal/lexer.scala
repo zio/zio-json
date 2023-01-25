@@ -406,7 +406,7 @@ private final class EscapedString(trace: List[JsonError], in: OneCharReader) ext
 // A data structure encoding a simple algorithm for Trie pruning: Given a list
 // of strings, and a sequence of incoming characters, find the strings that
 // match, by manually maintaining a bitset. Empty strings are not allowed.
-final class StringMatrix(val xs: Array[String], aliases: Array[(String, Int)]) {
+final class StringMatrix(val xs: Array[String], aliases: Array[(String, Int)] = Array.empty) {
   require(xs.forall(_.nonEmpty))
   require(xs.nonEmpty)
   require(xs.length + aliases.length < 64)
@@ -414,7 +414,7 @@ final class StringMatrix(val xs: Array[String], aliases: Array[(String, Int)]) {
   require(aliases.forall(p => p._2 >= 0 && p._2 < xs.length))
 
   val width               = xs.length + aliases.length
-  val height: Int         = xs.map(_.length).max max aliases.map(_._1.length).max
+  val height: Int         = xs.map(_.length).max max aliases.map(_._1.length).maxOption.getOrElse(Int.MinValue)
   val lengths: Array[Int] = xs.map(_.length) ++ aliases.map(_._1.length)
   val initial: Long       = (0 until width).foldLeft(0L)((bs, r) => bs | (1L << r))
 
