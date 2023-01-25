@@ -301,17 +301,20 @@ object DecoderSpec extends ZIOSpecDefault {
           assert(Json.Obj().as[DefaultString])(isRight(equalTo(DefaultString("")))) &&
           assert(Json.Obj("s" -> Json.Null).as[DefaultString])(isRight(equalTo(DefaultString(""))))
         },
-// NOT YET IMPLEMENTED
-//        test("aliases") {
-//          import exampleproducts._
-//
-//          val expected = Aliases(a = 7, d = 15)
-//          assert(Json.Obj("a" -> Json.Num(7), "d" -> Json.Num(15)).as[Aliases])(isRight(equalTo(expected))) &&
-//            assert(Json.Obj("b" -> Json.Num(7), "d" -> Json.Num(15)).as[Aliases])(isRight(equalTo(expected))) &&
-//            assert(Json.Obj("c" -> Json.Num(7), "d" -> Json.Num(15)).as[Aliases])(isRight(equalTo(expected)))&&
-//            assert(Json.Obj("a" -> Json.Num(7), "b" -> Json.Num(7), "d" -> Json.Num(15)).as[Aliases])(isLeft(equalTo("(duplicate)"))) &&
-//            assert(Json.Obj("b" -> Json.Num(7), "c" -> Json.Num(7), "d" -> Json.Num(15)).as[Aliases])(isLeft(equalTo("(duplicate)")))
-//        },
+        test("aliases") {
+          import exampleproducts._
+
+          val expected = Aliases(a = 7, d = 15)
+          assert(Json.Obj("a" -> Json.Num(7), "d" -> Json.Num(15)).as[Aliases])(isRight(equalTo(expected))) &&
+          assert(Json.Obj("b" -> Json.Num(7), "d" -> Json.Num(15)).as[Aliases])(isRight(equalTo(expected))) &&
+          assert(Json.Obj("c" -> Json.Num(7), "d" -> Json.Num(15)).as[Aliases])(isRight(equalTo(expected))) &&
+          assert(Json.Obj("a" -> Json.Num(7), "b" -> Json.Num(7), "d" -> Json.Num(15)).as[Aliases])(
+            isLeft(equalTo("(duplicate)"))
+          ) &&
+          assert(Json.Obj("b" -> Json.Num(7), "c" -> Json.Num(7), "d" -> Json.Num(15)).as[Aliases])(
+            isLeft(equalTo("(duplicate)"))
+          )
+        },
         test("sum encoding") {
           import examplesum._
 

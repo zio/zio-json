@@ -302,7 +302,7 @@ object DeriveJsonDecoder {
           ctx.parameters.map(_.typeclass).toArray.asInstanceOf[Array[JsonDecoder[Any]]]
         lazy val defaults: Array[Option[Any]] =
           ctx.parameters.map(_.default).toArray
-        lazy val namesMap: Map[String, Int] = names.zipWithIndex.toMap
+        lazy val namesMap: Map[String, Int] = (names.zipWithIndex ++ aliases).toMap
 
         def unsafeDecode(trace: List[JsonError], in: RetractReader): A = {
           Lexer.char(trace, in, '{')
@@ -355,6 +355,15 @@ object DeriveJsonDecoder {
           json match {
             case Json.Obj(fields) =>
               val ps: Array[Any] = Array.ofDim(len)
+
+              if (aliases.nonEmpty) {
+                val present = fields.map { case (key, _) => namesMap(key) }
+                if (present.distinct.size != present.size) {
+                  throw UnsafeJson(
+                    JsonError.Message("duplicate") :: trace
+                  )
+                }
+              }
 
               for ((key, value) <- fields) {
                 namesMap.get(key) match {
