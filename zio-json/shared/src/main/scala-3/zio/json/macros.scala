@@ -23,6 +23,11 @@ import scala.language.experimental.macros
 final case class jsonField(name: String) extends Annotation
 
 /**
+ * If used on a case class field, determines the alternative names of the JSON field.
+ */
+final case class jsonAliases(alias: String, aliases: String*) extends Annotation
+
+/**
  * If used on a sealed class, will determine the name of the field for
  * disambiguating classes.
  *
@@ -196,9 +201,10 @@ object DeriveJsonDecoder extends Derivation[JsonDecoder] { self =>
         .map(true -> _)
         .getOrElse(false -> identity)
 
-    val no_extra = ctx.annotations.collectFirst {
-      case _: jsonNoExtraFields => ()
-    }.isDefined
+    val no_extra = ctx
+      .annotations
+      .collectFirst { case _: jsonNoExtraFields => () }
+      .isDefined
 
     if (ctx.params.isEmpty) {
       new JsonDecoder[A] {
@@ -209,7 +215,6 @@ object DeriveJsonDecoder extends Derivation[JsonDecoder] { self =>
           } else {
             Lexer.skipValue(trace, in)
           }
-
           ctx.rawConstruct(Nil)
         }
 
@@ -222,15 +227,29 @@ object DeriveJsonDecoder extends Derivation[JsonDecoder] { self =>
       }
     } else {
       new JsonDecoder[A] {
-        val names: Array[String] =
-          IArray.genericWrapArray(ctx
-          .params.map { p =>
-            p
+        val (names, aliases): (Array[String], Array[(String, Int)]) = {
+          val names = Array.ofDim[String](ctx.params.size)
+          val aliasesBuilder = Array.newBuilder[(String, Int)]
+          ctx.params.zipWithIndex.foreach { (p, i) =>
+            names(i) = p
               .annotations
               .collectFirst { case jsonField(name) => name }
               .getOrElse(if (transformNames) nameTransform(p.label) else p.label)
-          })
-          .toArray
+            aliasesBuilder ++= p
+              .annotations
+              .flatMap {
+                case jsonAliases(alias, aliases*) => (alias +: aliases).map(_ -> i)
+                case _ => Seq.empty
+              }
+          }
+          val aliases = aliasesBuilder.result()
+
+          val allFieldNames = names ++ aliases.map(_._1)
+          if (allFieldNames.length != allFieldNames.distinct.length)
+            throw new RuntimeException("Field names and aliases must all be distinct")
+
+          (names, aliases)
+        }
 
         val len:    Int              = names.length
         val matrix: StringMatrix     = new StringMatrix(names)
@@ -243,7 +262,7 @@ object DeriveJsonDecoder extends Derivation[JsonDecoder] { self =>
           IArray.genericWrapArray(ctx.params.map(_.default)).toArray
 
         lazy val namesMap: Map[String, Int] =
-          names.zipWithIndex.toMap
+          (names.zipWithIndex ++ aliases).toMap
 
         def unsafeDecode(trace: List[JsonError], in: RetractReader): A = {
           Lexer.char(trace, in, '{')
@@ -283,7 +302,6 @@ object DeriveJsonDecoder extends Derivation[JsonDecoder] { self =>
                 ps(i) = tcs(i).unsafeDecodeMissing(spans(i) :: trace)
               }
             }
-
             i += 1
           }
 
@@ -293,7 +311,16 @@ object DeriveJsonDecoder extends Derivation[JsonDecoder] { self =>
         override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): A = {
           json match {
             case Json.Obj(fields) =>
-              val ps: Array[Any]           = Array.ofDim(len)
+              val ps: Array[Any] = Array.ofDim(len)
+
+              if (aliases.nonEmpty) {
+                val present = fields.map { case (key, _) => namesMap(key) }
+                if (present.distinct.size != present.size) {
+                  throw UnsafeJson(
+                    JsonError.Message("duplicate") :: trace
+                  )
+                }
+              }
 
               for ((key, value) <- fields) {
                 namesMap.get(key) match {
@@ -314,7 +341,7 @@ object DeriveJsonDecoder extends Derivation[JsonDecoder] { self =>
                 }
               }
 
-              var i       = 0
+              var i = 0
               while (i < len) {
                 if (ps(i) == null) {
                   if (defaults(i).isDefined) {

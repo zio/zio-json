@@ -414,7 +414,7 @@ final class StringMatrix(val xs: Array[String], aliases: Array[(String, Int)] = 
   require(aliases.forall(p => p._2 >= 0 && p._2 < xs.length))
 
   val width               = xs.length + aliases.length
-  val height: Int         = xs.map(_.length).max max aliases.map(_._1.length).maxOption.getOrElse(Int.MinValue)
+  val height: Int         = xs.map(_.length).max max (if (aliases.isEmpty) 0 else aliases.map(_._1.length).max)
   val lengths: Array[Int] = xs.map(_.length) ++ aliases.map(_._1.length)
   val initial: Long       = (0 until width).foldLeft(0L)((bs, r) => bs | (1L << r))
 

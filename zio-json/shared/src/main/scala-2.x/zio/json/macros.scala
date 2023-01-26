@@ -284,9 +284,8 @@ object DeriveJsonDecoder {
           val names          = Array.ofDim[String](ctx.parameters.size)
           val aliasesBuilder = Array.newBuilder[(String, Int)]
           ctx.parameters.zipWithIndex.foreach { case (p, i) =>
-            names(i) = p.annotations.collectFirst { case jsonField(name) =>
-              name
-            }.getOrElse(if (transformNames) nameTransform(p.label) else p.label)
+            names(i) = p.annotations.collectFirst { case jsonField(name) => name }
+              .getOrElse(if (transformNames) nameTransform(p.label) else p.label)
             aliasesBuilder ++= p.annotations.flatMap {
               case jsonAliases(alias, aliases @ _*) => (alias +: aliases).map(_ -> i)
               case _                                => Seq.empty
@@ -308,7 +307,8 @@ object DeriveJsonDecoder {
           ctx.parameters.map(_.typeclass).toArray.asInstanceOf[Array[JsonDecoder[Any]]]
         lazy val defaults: Array[Option[Any]] =
           ctx.parameters.map(_.default).toArray
-        lazy val namesMap: Map[String, Int] = (names.zipWithIndex ++ aliases).toMap
+        lazy val namesMap: Map[String, Int] =
+          (names.zipWithIndex ++ aliases).toMap
 
         def unsafeDecode(trace: List[JsonError], in: RetractReader): A = {
           Lexer.char(trace, in, '{')
