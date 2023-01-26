@@ -21,7 +21,7 @@ final case class jsonField(name: String) extends Annotation
 /**
  * If used on a case class field, determines the alternative names of the JSON field.
  */
-final case class jsonAliases(name: String*) extends Annotation
+final case class jsonAliases(alias: String, aliases: String*) extends Annotation
 
 /**
  * If used on a sealed class, will determine the name of the field for
@@ -281,18 +281,24 @@ object DeriveJsonDecoder {
     else
       new JsonDecoder[A] {
         val (names, aliases): (Array[String], Array[(String, Int)]) = {
-          val names   = Array.ofDim[String](ctx.parameters.size)
-          val aliases = Array.newBuilder[(String, Int)]
+          val names          = Array.ofDim[String](ctx.parameters.size)
+          val aliasesBuilder = Array.newBuilder[(String, Int)]
           ctx.parameters.zipWithIndex.foreach { case (p, i) =>
             names(i) = p.annotations.collectFirst { case jsonField(name) =>
               name
             }.getOrElse(if (transformNames) nameTransform(p.label) else p.label)
-            aliases ++= p.annotations.flatMap {
-              case jsonAliases(aliases @ _*) => aliases.map(_ -> i)
-              case _                         => Seq.empty
+            aliasesBuilder ++= p.annotations.flatMap {
+              case jsonAliases(alias, aliases @ _*) => (alias +: aliases).map(_ -> i)
+              case _                                => Seq.empty
             }
           }
-          (names, aliases.result())
+          val aliases = aliasesBuilder.result()
+
+          val allFieldNames = names ++ aliases.map(_._1)
+          if (allFieldNames.length != allFieldNames.distinct.length)
+            throw new RuntimeException("Field names and aliases must all be distinct")
+
+          (names, aliases)
         }
 
         val len: Int                = names.length

@@ -40,6 +40,20 @@ object StringMatrixSpec extends ZIOSpecDefault {
         )
       )(equalTo(List("retweeted")))
     },
+    test("first resolves to field index") {
+      check(genTestStrings) { xs =>
+        val m = new StringMatrix(xs.toArray)
+        val asserts = xs.indices.map { i =>
+          val test = xs(i)
+          var bs = test.zipWithIndex.foldLeft(m.initial) { case (bs, (c, i)) =>
+            m.update(bs, i, c.toInt)
+          }
+          bs = m.exact(bs, test.length)
+          m.first(bs) == i
+        }
+        assert(asserts)(forall(isTrue))
+      }
+    },
     test("alias positive succeeds") {
       // Watch out: TestStrings were passed
       check(genTestStringsAndAliases) { case (xs, aliases) =>
@@ -79,6 +93,20 @@ object StringMatrixSpec extends ZIOSpecDefault {
           "retweeted"
         )
       )(equalTo(List("retweeted")))
+    },
+    test("alias first resolves to aliased field index") {
+      check(genTestStringsAndAliases) { case (xs, aliases) =>
+        val m = new StringMatrix(xs.toArray, aliases.toArray)
+        val asserts = aliases.indices.map { i =>
+          val test = aliases(i)._1
+          var bs = test.zipWithIndex.foldLeft(m.initial) { case (bs, (c, i)) =>
+            m.update(bs, i, c.toInt)
+          }
+          bs = m.exact(bs, test.length)
+          m.first(bs) == aliases(i)._2
+        }
+        assert(asserts)(forall(isTrue))
+      }
     }
   )
 
@@ -88,16 +116,17 @@ object StringMatrixSpec extends ZIOSpecDefault {
   val genTestStrings =
     for {
       n  <- Gen.int(1, 63)
-      xs <- Gen.listOfN(n)(genNonEmptyString)
-    } yield xs
+      xs <- Gen.setOfN(n)(genNonEmptyString)
+    } yield xs.toList
 
   val genTestStringsAndAliases =
     for {
-      xsn     <- Gen.int(1, 63)
-      xs      <- Gen.listOfN(xsn)(genNonEmptyString)
-      an      <- Gen.int(0, 63 - xsn)
-      aliases <- Gen.listOfN(an)(genNonEmptyString.filter(x => !xs.contains(x)) <*> Gen.int(0, xsn - 1))
-    } yield (xs, aliases)
+      xsn    <- Gen.int(1, 63)
+      xs     <- Gen.setOfN(xsn)(genNonEmptyString)
+      an     <- Gen.int(0, 63 - xsn)
+      aliasF <- Gen.setOfN(an)(genNonEmptyString.filter(a => !xs.contains(a))).map(_.toList)
+      aliasN <- Gen.listOfN(an)(Gen.int(0, xsn - 1))
+    } yield (xs.toList, aliasF zip aliasN)
 
   private def matcher(xs: List[String], aliases: List[(String, Int)], test: String): List[String] = {
     val m = new StringMatrix(xs.toArray, aliases.toArray)
