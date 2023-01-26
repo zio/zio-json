@@ -5,7 +5,7 @@ title: "Configuration"
 
 ## Field naming
 
-By default the field names of a case class are used as the JSON fields, but it is easy to override this with an annotation `@jsonField`.
+By default, the field names of a case class are used as the JSON fields, but it is easy to override this with an annotation `@jsonField`.
 
 Moreover, you can also mark a whole case class with a member name transformation that will be applied to all members using `@jsonMemberNames` annotation. It takes an argument of type `JsonMemberFormat` which encodes the transformation that will be applied to member names.
 
@@ -117,6 +117,31 @@ object Watermelon {
 ```scala mdoc
 """{ "pips": 32, "color": "yellow" }""".fromJson[Watermelon]
 ```
+
+## Aliases
+
+    Since zio-json 0.4.3.
+
+After a case class field has changed name, you may still want to read JSON documents that use the old name. This is supported by the `@jsonAliases` annotation.
+
+```scala mdoc
+case class Strawberry(
+  @jsonAliases("seeds") seedCount: Int
+)
+
+object Strawberry {
+  implicit val decoder: JsonDecoder[Strawberry] =
+    DeriveJsonDecoder.gen[Strawberry]
+}
+```
+
+The following two expressions result in an equal value:
+```scala mdoc
+"""{ "seeds": 32 }""".fromJson[Strawberry]
+"""{ "seedCount": 32 }""".fromJson[Strawberry]
+```
+
+The `@jsonAliases` annotation supports multiple aliases. The annotation has no effect on encoding.
 
 ## @jsonDerive
 
