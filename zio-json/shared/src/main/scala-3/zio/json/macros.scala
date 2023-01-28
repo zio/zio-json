@@ -252,7 +252,7 @@ object DeriveJsonDecoder extends Derivation[JsonDecoder] { self =>
         }
 
         val len:    Int              = names.length
-        val matrix: StringMatrix     = new StringMatrix(names)
+        val matrix: StringMatrix     = new StringMatrix(names, aliases)
         val spans:  Array[JsonError] = names.map(JsonError.ObjectAccess(_))
 
         lazy val tcs: Array[JsonDecoder[Any]] =
