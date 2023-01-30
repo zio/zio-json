@@ -250,7 +250,7 @@ object DeriveJsonDecoder extends Derivation[JsonDecoder] { self =>
             val collisions = aliasNames
               .filter(alias => names.contains(alias) || aliases.count { case (a, _) => a == alias } > 1)
               .distinct
-            val msg = s"Field names and aliases in case class ${ctx.typeName.full} must be distinct, " +
+            val msg = s"Field names and aliases in case class ${ctx.typeInfo.full} must be distinct, " +
               s"alias(es) ${collisions.mkString(",")} collide with a field or another alias"
             throw new AssertionError(msg)
           }
