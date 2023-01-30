@@ -140,7 +140,7 @@ private[codegen] sealed trait JsonType extends Product with Serializable { self 
       }
     }
 
-    println((rhs.keySet -- result.keySet) ++ (result.keySet -- rhs.keySet))
+    // println((rhs.keySet -- result.keySet) ++ (result.keySet -- rhs.keySet))
 
     (rhs.keySet -- lhs.keySet).foldLeft(result) { case (acc, name) =>
       acc + (name -> makeOptional(rhs(name)))

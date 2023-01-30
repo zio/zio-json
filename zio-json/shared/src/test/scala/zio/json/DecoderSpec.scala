@@ -81,6 +81,36 @@ object DecoderSpec extends ZIOSpecDefault {
           assert("""{"taste":1,"ripe":true,"old":true}""".fromJson[Apple])(isLeft(equalTo("(duplicate)"))) &&
           assert("""{"taste":1,"ripeness":true,"old":true}""".fromJson[Apple])(isLeft(equalTo("(duplicate)")))
         },
+        test("aliases - alias collides with field name") {
+          for {
+            error <- ZIO.attempt {
+                       case class Mango(@jsonAliases("r") roundness: Int, @jsonAliases("radius") r: Int)
+                       DeriveJsonDecoder.gen[Mango]
+                     }.flip
+          } yield assertTrue(
+            error.getMessage == "Field names and aliases in case class testzio.json.DecoderSpec.spec.Mango must be distinct, alias(es) r collide with a field or another alias"
+          )
+        },
+        test("aliases - alias collides with another alias") {
+          for {
+            error <- ZIO.attempt {
+                       case class Mango(@jsonAliases("r") roundness: Int, @jsonAliases("r") radius: Int)
+                       DeriveJsonDecoder.gen[Mango]
+                     }.flip
+          } yield assertTrue(
+            error.getMessage == "Field names and aliases in case class testzio.json.DecoderSpec.spec.Mango must be distinct, alias(es) r collide with a field or another alias"
+          )
+        },
+        test("aliases - double alias") {
+          for {
+            error <- ZIO.attempt {
+                       case class Mango(@jsonAliases("r", "r") roundness: Int, radius: Int)
+                       DeriveJsonDecoder.gen[Mango]
+                     }.flip
+          } yield assertTrue(
+            error.getMessage == "Field names and aliases in case class testzio.json.DecoderSpec.spec.Mango must be distinct, alias(es) r collide with a field or another alias"
+          )
+        },
         test("option") {
           case class WithOpt(id: Int, opt: Option[Int])
           implicit val decoder: JsonDecoder[WithOpt] = DeriveJsonDecoder.gen

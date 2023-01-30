@@ -28,45 +28,6 @@ object DerivedDecoderSpec extends ZIOSpecDefault {
           "{\"Qux\":{\"foo\":{\"Bar\":{}}}}".fromJson[Foo]
         """
       })(isRight(anything))
-    },
-    test("Derives with alias") {
-      assertZIO(typeCheck {
-        """
-          import zio.json._
-          case class Mango(@jsonAliases("r") roundness: Int, radius: Int) derives JsonDecoder
-          "{\"roundness\":0,\"radius\":0}".fromJson[Mango]
-        """
-      })(isRight(anything))
     }
-//
-// These tests don't work for a reason I do not yet understand.
-//
-//    test("Fails to derive when field names are not distinct - alias same as field") {
-//      assertZIO(typeCheck {
-//        """
-//          import zio.json._
-//          case class Mango(@jsonAliases("r") roundness: Int, @jsonAliases("radius") r: Int) derives JsonDecoder
-//          "{\"roundness\":0,\"radius\":0}".fromJson[Mango]
-//        """
-//      })(isLeft(anything))
-//    },
-//    test("Fails to derive when field names are not distinct - double alias") {
-//      assertZIO(typeCheck {
-//        """
-//          import zio.json._
-//          case class Mango(@jsonAliases("r", "r") roundness: Int, radius: Int) derives JsonDecoder
-//          "{\"roundness\":0,\"radius\":0}".fromJson[Mango]
-//        """
-//      })(isLeft(anything))
-//    },
-//    test("Fails to derive when field names are not distinct - alias same as alias") {
-//      assertZIO(typeCheck {
-//        """
-//          import zio.json._
-//          case class Mango(@jsonAliases("r") roundness: Int, @jsonAliases("r") radius: Int) derives JsonDecoder
-//          "{\"roundness\":0,\"radius\":0}".fromJson[Mango]
-//        """
-//      })(isLeft(anything))
-//    }
   )
 }

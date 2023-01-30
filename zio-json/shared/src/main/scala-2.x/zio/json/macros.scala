@@ -294,8 +294,15 @@ object DeriveJsonDecoder {
           val aliases = aliasesBuilder.result()
 
           val allFieldNames = names ++ aliases.map(_._1)
-          if (allFieldNames.length != allFieldNames.distinct.length)
-            throw new RuntimeException("Field names and aliases must all be distinct")
+          if (allFieldNames.length != allFieldNames.distinct.length) {
+            val aliasNames = aliases.map(_._1)
+            val collisions = aliasNames
+              .filter(alias => names.contains(alias) || aliases.count { case (a, _) => a == alias } > 1)
+              .distinct
+            val msg = s"Field names and aliases in case class ${ctx.typeName.full} must be distinct, " +
+              s"alias(es) ${collisions.mkString(",")} collide with a field or another alias"
+            throw new AssertionError(msg)
+          }
 
           (names, aliases)
         }
