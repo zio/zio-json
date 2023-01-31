@@ -88,7 +88,9 @@ object DecoderSpec extends ZIOSpecDefault {
                        DeriveJsonDecoder.gen[Mango]
                      }.flip
           } yield assertTrue(
-            error.getMessage == "Field names and aliases in case class testzio.json.DecoderSpec.spec.Mango must be distinct, alias(es) r collide with a field or another alias"
+            // Class name in Scala 2: testzio.json.DecoderSpec.spec.Mango
+            // Class name in Scala 3: testzio.json.DecoderSpec.spec.$anonfun.Mango
+            error.getMessage.matches("Field names and aliases in case class testzio.json.DecoderSpec.spec(.\\$anonfun)?.Mango must be distinct, alias\\(es\\) r collide with a field or another alias")
           )
         },
         test("aliases - alias collides with another alias") {
@@ -98,7 +100,7 @@ object DecoderSpec extends ZIOSpecDefault {
                        DeriveJsonDecoder.gen[Mango]
                      }.flip
           } yield assertTrue(
-            error.getMessage == "Field names and aliases in case class testzio.json.DecoderSpec.spec.Mango must be distinct, alias(es) r collide with a field or another alias"
+            error.getMessage.matches("Field names and aliases in case class testzio.json.DecoderSpec.spec(.\\$anonfun)?.Mango must be distinct, alias\\(es\\) r collide with a field or another alias")
           )
         },
         test("aliases - double alias") {
@@ -108,7 +110,7 @@ object DecoderSpec extends ZIOSpecDefault {
                        DeriveJsonDecoder.gen[Mango]
                      }.flip
           } yield assertTrue(
-            error.getMessage == "Field names and aliases in case class testzio.json.DecoderSpec.spec.Mango must be distinct, alias(es) r collide with a field or another alias"
+            error.getMessage.matches("Field names and aliases in case class testzio.json.DecoderSpec.spec(.\\$anonfun)?.Mango must be distinct, alias\\(es\\) r collide with a field or another alias")
           )
         },
         test("option") {
