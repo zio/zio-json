@@ -312,6 +312,10 @@ object EncoderSpec extends ZIOSpecDefault {
         test("exclude fields") {
           import exampleexcludefield._
           assert(Person("Peter", 20).toJson)(equalTo("""{"name":"Peter"}"""))
+        },
+        test("aliases") {
+          import exampleproducts._
+          assert(Aliases(-1, "a").toJson)(equalTo("""{"i":-1,"f":"a"}"""))
         }
       ),
       suite("toJsonAST")(
@@ -400,6 +404,13 @@ object EncoderSpec extends ZIOSpecDefault {
           assert((Child2(Some("hello")): Parent).toJsonAST)(
             (isRight(equalTo(Json.Obj("s" -> Json.Str("hello"), "hint" -> Json.Str("Abel")))))
           )
+        },
+        test("alias") {
+          import exampleproducts._
+
+          assert(Aliases(-1, "a").toJsonAST)(
+            isRight(equalTo(Json.Obj("i" -> Json.Num(-1), "f" -> Json.Str("a"))))
+          )
         }
       )
     )
@@ -436,6 +447,14 @@ object EncoderSpec extends ZIOSpecDefault {
 
       implicit val encoder: JsonEncoder[OptionalAndRequired] =
         DeriveJsonEncoder.gen[OptionalAndRequired]
+    }
+
+    case class Aliases(@jsonAliases("j", "k") i: Int, f: String)
+
+    object Aliases {
+
+      implicit val encoder: JsonEncoder[Aliases] =
+        DeriveJsonEncoder.gen[Aliases]
     }
 
   }
