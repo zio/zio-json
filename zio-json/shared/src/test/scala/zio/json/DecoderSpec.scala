@@ -70,6 +70,55 @@ object DecoderSpec extends ZIOSpecDefault {
           assert("""{"s":""}""".fromJson[OnlyString])(isRight(equalTo(OnlyString("")))) &&
           assert("""{"s":"","t":""}""".fromJson[OnlyString])(isLeft(equalTo("(invalid extra field)")))
         },
+        test("aliases") {
+          case class Apple(@jsonAliases("ripeness", "old") ripe: Boolean, taste: Double)
+          implicit val decoder: JsonDecoder[Apple] = DeriveJsonDecoder.gen
+
+          val expected = Apple(ripe = true, taste = 7)
+          assert("""{"taste":7,"ripe":true}""".fromJson[Apple])(isRight(equalTo(expected))) &&
+          assert("""{"taste":7,"ripeness":true}""".fromJson[Apple])(isRight(equalTo(expected))) &&
+          assert("""{"taste":7,"old":true}""".fromJson[Apple])(isRight(equalTo(expected))) &&
+          assert("""{"taste":1,"ripe":true,"old":true}""".fromJson[Apple])(isLeft(equalTo("(duplicate)"))) &&
+          assert("""{"taste":1,"ripeness":true,"old":true}""".fromJson[Apple])(isLeft(equalTo("(duplicate)")))
+        },
+        test("aliases - alias collides with field name") {
+          for {
+            error <- ZIO.attempt {
+                       case class Mango(@jsonAliases("r") roundness: Int, @jsonAliases("radius") r: Int)
+                       DeriveJsonDecoder.gen[Mango]
+                     }.flip
+          } yield assertTrue(
+            // Class name in Scala 2: testzio.json.DecoderSpec.spec.Mango
+            // Class name in Scala 3: testzio.json.DecoderSpec.spec.$anonfun.Mango
+            error.getMessage.matches(
+              "Field names and aliases in case class testzio.json.DecoderSpec.spec(.\\$anonfun)?.Mango must be distinct, alias\\(es\\) r collide with a field or another alias"
+            )
+          )
+        },
+        test("aliases - alias collides with another alias") {
+          for {
+            error <- ZIO.attempt {
+                       case class Mango(@jsonAliases("r") roundness: Int, @jsonAliases("r") radius: Int)
+                       DeriveJsonDecoder.gen[Mango]
+                     }.flip
+          } yield assertTrue(
+            error.getMessage.matches(
+              "Field names and aliases in case class testzio.json.DecoderSpec.spec(.\\$anonfun)?.Mango must be distinct, alias\\(es\\) r collide with a field or another alias"
+            )
+          )
+        },
+        test("aliases - double alias") {
+          for {
+            error <- ZIO.attempt {
+                       case class Mango(@jsonAliases("r", "r") roundness: Int, radius: Int)
+                       DeriveJsonDecoder.gen[Mango]
+                     }.flip
+          } yield assertTrue(
+            error.getMessage.matches(
+              "Field names and aliases in case class testzio.json.DecoderSpec.spec(.\\$anonfun)?.Mango must be distinct, alias\\(es\\) r collide with a field or another alias"
+            )
+          )
+        },
         test("option") {
           case class WithOpt(id: Int, opt: Option[Int])
           implicit val decoder: JsonDecoder[WithOpt] = DeriveJsonDecoder.gen
@@ -290,6 +339,20 @@ object DecoderSpec extends ZIOSpecDefault {
           assert(Json.Obj().as[DefaultString])(isRight(equalTo(DefaultString("")))) &&
           assert(Json.Obj("s" -> Json.Null).as[DefaultString])(isRight(equalTo(DefaultString(""))))
         },
+        test("aliases") {
+          import exampleproducts._
+
+          val expected = Aliases(a = 7, d = 15)
+          assert(Json.Obj("a" -> Json.Num(7), "d" -> Json.Num(15)).as[Aliases])(isRight(equalTo(expected))) &&
+          assert(Json.Obj("b" -> Json.Num(7), "d" -> Json.Num(15)).as[Aliases])(isRight(equalTo(expected))) &&
+          assert(Json.Obj("c" -> Json.Num(7), "d" -> Json.Num(15)).as[Aliases])(isRight(equalTo(expected))) &&
+          assert(Json.Obj("a" -> Json.Num(7), "b" -> Json.Num(7), "d" -> Json.Num(15)).as[Aliases])(
+            isLeft(equalTo("(duplicate)"))
+          ) &&
+          assert(Json.Obj("b" -> Json.Num(7), "c" -> Json.Num(7), "d" -> Json.Num(15)).as[Aliases])(
+            isLeft(equalTo("(duplicate)"))
+          )
+        },
         test("sum encoding") {
           import examplesum._
 
@@ -453,6 +516,13 @@ object DecoderSpec extends ZIOSpecDefault {
     object Outer {
       implicit val decoder: JsonDecoder[Outer] = DeriveJsonDecoder.gen
     }
+
+    case class Aliases(@jsonAliases("b", "c") a: Int, d: Int)
+
+    object Aliases {
+      implicit val decoder: JsonDecoder[Aliases] = DeriveJsonDecoder.gen
+    }
+
   }
 
   object examplesum {
