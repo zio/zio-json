@@ -19,6 +19,11 @@ import scala.language.experimental.macros
 final case class jsonField(name: String) extends Annotation
 
 /**
+ * If used on a case class field, determines the alternative names of the JSON field.
+ */
+final case class jsonAliases(alias: String, aliases: String*) extends Annotation
+
+/**
  * If used on a sealed class, will determine the name of the field for
  * disambiguating classes.
  *
@@ -275,19 +280,42 @@ object DeriveJsonDecoder {
       }
     else
       new JsonDecoder[A] {
-        val names: Array[String] = ctx.parameters.map { p =>
-          p.annotations.collectFirst { case jsonField(name) =>
-            name
-          }.getOrElse(if (transformNames) nameTransform(p.label) else p.label)
-        }.toArray
+        val (names, aliases): (Array[String], Array[(String, Int)]) = {
+          val names          = Array.ofDim[String](ctx.parameters.size)
+          val aliasesBuilder = Array.newBuilder[(String, Int)]
+          ctx.parameters.zipWithIndex.foreach { case (p, i) =>
+            names(i) = p.annotations.collectFirst { case jsonField(name) => name }
+              .getOrElse(if (transformNames) nameTransform(p.label) else p.label)
+            aliasesBuilder ++= p.annotations.flatMap {
+              case jsonAliases(alias, aliases @ _*) => (alias +: aliases).map(_ -> i)
+              case _                                => Seq.empty
+            }
+          }
+          val aliases = aliasesBuilder.result()
+
+          val allFieldNames = names ++ aliases.map(_._1)
+          if (allFieldNames.length != allFieldNames.distinct.length) {
+            val aliasNames = aliases.map(_._1)
+            val collisions = aliasNames
+              .filter(alias => names.contains(alias) || aliases.count { case (a, _) => a == alias } > 1)
+              .distinct
+            val msg = s"Field names and aliases in case class ${ctx.typeName.full} must be distinct, " +
+              s"alias(es) ${collisions.mkString(",")} collide with a field or another alias"
+            throw new AssertionError(msg)
+          }
+
+          (names, aliases)
+        }
+
         val len: Int                = names.length
-        val matrix: StringMatrix    = new StringMatrix(names)
+        val matrix: StringMatrix    = new StringMatrix(names, aliases)
         val spans: Array[JsonError] = names.map(JsonError.ObjectAccess(_))
         lazy val tcs: Array[JsonDecoder[Any]] =
           ctx.parameters.map(_.typeclass).toArray.asInstanceOf[Array[JsonDecoder[Any]]]
         lazy val defaults: Array[Option[Any]] =
           ctx.parameters.map(_.default).toArray
-        lazy val namesMap: Map[String, Int] = names.zipWithIndex.toMap
+        lazy val namesMap: Map[String, Int] =
+          (names.zipWithIndex ++ aliases).toMap
 
         def unsafeDecode(trace: List[JsonError], in: RetractReader): A = {
           Lexer.char(trace, in, '{')
@@ -340,6 +368,15 @@ object DeriveJsonDecoder {
           json match {
             case Json.Obj(fields) =>
               val ps: Array[Any] = Array.ofDim(len)
+
+              if (aliases.nonEmpty) {
+                val present = fields.map { case (key, _) => namesMap(key) }
+                if (present.distinct.size != present.size) {
+                  throw UnsafeJson(
+                    JsonError.Message("duplicate") :: trace
+                  )
+                }
+              }
 
               for ((key, value) <- fields) {
                 namesMap.get(key) match {
