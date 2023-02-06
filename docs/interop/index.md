@@ -3,7 +3,7 @@ id: index
 title: "Interop modules"
 ---
 
-## List of Interop modules
+Integrations are provided several popular libraries, which are published as separate artifacts:
 
 * [Akka Http](akka-http.md)
 * [HTTP4s](http4s.md)

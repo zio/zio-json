@@ -35,7 +35,7 @@ addCommandAlias(
 
 addCommandAlias("testJS", "zioJsonJS/test")
 
-val zioVersion = "2.0.2"
+val zioVersion = "2.0.6"
 
 lazy val root = project
   .in(file("."))
@@ -81,7 +81,7 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform)
     libraryDependencies ++= Seq(
       "dev.zio"                %%% "zio"                     % zioVersion,
       "dev.zio"                %%% "zio-streams"             % zioVersion,
-      "org.scala-lang.modules" %%% "scala-collection-compat" % "2.8.1",
+      "org.scala-lang.modules" %%% "scala-collection-compat" % "2.9.0",
       "dev.zio"                %%% "zio-test"                % zioVersion   % "test",
       "dev.zio"                %%% "zio-test-sbt"            % zioVersion   % "test",
       "io.circe"               %%% "circe-core"              % circeVersion % "test",
@@ -99,11 +99,11 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform)
         case _ =>
           Vector(
             "org.scala-lang"                          % "scala-reflect"         % scalaVersion.value % Provided,
-            "com.softwaremill.magnolia1_2"          %%% "magnolia"              % "1.1.2",
+            "com.softwaremill.magnolia1_2"          %%% "magnolia"              % "1.1.3",
             "io.circe"                              %%% "circe-generic-extras"  % circeVersion       % "test",
             "com.typesafe.play"                     %%% "play-json"             % "2.9.3"            % "test",
-            "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-core"   % "2.18.0"           % "test",
-            "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-macros" % "2.18.0"           % "test"
+            "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-core"   % "2.20.3"           % "test",
+            "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-macros" % "2.20.3"           % "test"
           )
       }
     },
@@ -195,8 +195,8 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform)
   .settings(testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework"))
   .jsSettings(
     libraryDependencies ++= Seq(
-      "io.github.cquiroz" %%% "scala-java-time"      % "2.4.0",
-      "io.github.cquiroz" %%% "scala-java-time-tzdb" % "2.4.0"
+      "io.github.cquiroz" %%% "scala-java-time"      % "2.5.0",
+      "io.github.cquiroz" %%% "scala-java-time-tzdb" % "2.5.0"
     )
   )
   .jvmSettings(
@@ -290,7 +290,7 @@ lazy val zioJsonInteropHttp4s = project
       "org.http4s"    %% "http4s-dsl"       % "0.23.15",
       "dev.zio"       %% "zio"              % zioVersion,
       "org.typelevel" %% "cats-effect"      % "3.3.14",
-      "dev.zio"       %% "zio-interop-cats" % "3.3.0"    % "test",
+      "dev.zio"       %% "zio-interop-cats" % "23.0.0.1" % "test",
       "dev.zio"       %% "zio-test"         % zioVersion % "test",
       "dev.zio"       %% "zio-test-sbt"     % zioVersion % "test"
     ),
@@ -345,10 +345,25 @@ lazy val docs = project
   )
   .settings(
     crossScalaVersions -= ScalaDotty,
-    publish / skip := true,
     moduleName := "zio-json-docs",
-    scalacOptions -= "-Yno-imports",
-    scalacOptions -= "-Xfatal-warnings",
-    libraryDependencies ++= Seq("dev.zio" %% "zio" % zioVersion)
+    scalacOptions += "-Ymacro-annotations",
+    projectName := "ZIO JSON",
+    mainModuleName := (zioJsonJVM / moduleName).value,
+    projectStage := ProjectStage.ProductionReady,
+    ScalaUnidoc / unidoc / unidocProjectFilter := inProjects(
+      zioJsonJVM,
+      zioJsonYaml,
+      zioJsonMacrosJVM,
+      zioJsonInteropHttp4s,
+      zioJsonInteropRefined.jvm,
+      zioJsonInteropScalaz7x.jvm,
+      zioJsonGolden
+    ),
+    docsPublishBranch := "series/2.x",
+    readmeAcknowledgement :=
+      """|- Uses [JsonTestSuite](https://github.com/nst/JSONTestSuite) to test parsing. (c) 2016 Nicolas Seriot)
+         |
+         |- Uses [YourKit Java Profiler](https://www.yourkit.com/java/profiler/) for performance optimisation. ![YourKit Logo](https://www.yourkit.com/images/yklogo.png)
+         |""".stripMargin
   )
   .enablePlugins(WebsitePlugin)
