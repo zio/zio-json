@@ -150,7 +150,7 @@ trait JsonDecoderPlatformSpecific[A] { self: JsonDecoder[A] =>
                 .takeUpTo(ZStream.DefaultChunkSize)
                 .flatMap { takes =>
                   ZIO.foldLeft(takes)(Chunk[A]()) { case (acc, take) =>
-                    take.fold(ZIO.succeedNow(acc), e => ZIO.fail(e.squash), c => ZIO.succeedNow(acc ++ c))
+                    take.fold(ZIO.succeed(acc), e => ZIO.fail(e.squash), c => ZIO.succeed(acc ++ c))
                   }
                 }
 
@@ -159,7 +159,7 @@ trait JsonDecoderPlatformSpecific[A] { self: JsonDecoder[A] =>
                 .takeAll
                 .flatMap { takes =>
                   ZIO.foldLeft(takes)(Chunk[A]()) { case (acc, take) =>
-                    take.fold(ZIO.succeedNow(acc), e => ZIO.fail(e.squash), c => ZIO.succeedNow(acc ++ c))
+                    take.fold(ZIO.succeed(acc), e => ZIO.fail(e.squash), c => ZIO.succeed(acc ++ c))
                   }
                 }
 
