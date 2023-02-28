@@ -93,7 +93,7 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform)
       CrossVersion.partialVersion(scalaVersion.value) match {
         case Some((3, _)) =>
           Vector(
-            "com.softwaremill.magnolia1_3" %%% "magnolia" % "1.2.6"
+            "com.softwaremill.magnolia1_3" %%% "magnolia" % "1.2.7"
           )
 
         case _ =>
@@ -102,8 +102,8 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform)
             "com.softwaremill.magnolia1_2"          %%% "magnolia"              % "1.1.3",
             "io.circe"                              %%% "circe-generic-extras"  % circeVersion       % "test",
             "com.typesafe.play"                     %%% "play-json"             % "2.9.4"            % "test",
-            "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-core"   % "2.20.7"           % "test",
-            "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-macros" % "2.20.7"           % "test"
+            "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-core"   % "2.21.2"           % "test",
+            "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-macros" % "2.21.2"           % "test"
           )
       }
     },
@@ -290,7 +290,7 @@ lazy val zioJsonInteropHttp4s = project
       "org.http4s"    %% "http4s-dsl"       % "0.23.18",
       "dev.zio"       %% "zio"              % zioVersion,
       "org.typelevel" %% "cats-effect"      % "3.4.6",
-      "dev.zio"       %% "zio-interop-cats" % "23.0.0.1" % "test",
+      "dev.zio"       %% "zio-interop-cats" % "23.0.0.2" % "test",
       "dev.zio"       %% "zio-test"         % zioVersion % "test",
       "dev.zio"       %% "zio-test-sbt"     % zioVersion % "test"
     ),
