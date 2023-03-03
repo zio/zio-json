@@ -295,7 +295,7 @@ object DecoderSpec extends ZIOSpecDefault {
             )
           )
         },
-        test("ith") {
+        test("newZip") {
           final case class Foo(a: Int)
           final case class Bar(b: String)
 
