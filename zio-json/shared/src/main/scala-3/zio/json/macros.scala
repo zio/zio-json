@@ -14,7 +14,10 @@ import zio.json.internal.{ Lexer, RetractReader, StringMatrix, Write }
 
 import scala.annotation._
 import scala.collection.mutable
+import scala.compiletime.*
 import scala.language.experimental.macros
+import scala.quoted.*
+import scala.reflect.*
 
 /**
  * If used on a case class field, determines the name of the JSON field.
@@ -90,7 +93,7 @@ private[json] object jsonMemberNames {
    * (he even granted permission for this, imagine that!)
    */
 
-  import java.lang.Character._
+  import java.lang.Character.*
 
   def enforceCamelOrPascalCase(s: String, toPascal: Boolean): String =
     if (s.indexOf('_') == -1 && s.indexOf('-') == -1) {
@@ -490,201 +493,256 @@ object DeriveJsonDecoder extends Derivation[JsonDecoder] { self =>
   }
 }
 
-object DeriveJsonEncoder extends Derivation[JsonEncoder] { self =>
-  def join[A](ctx: CaseClass[Typeclass, A]): JsonEncoder[A] =
-    if (ctx.params.isEmpty) {
-      new JsonEncoder[A] {
-        def unsafeEncode(a: A, indent: Option[Int], out: Write): Unit =
-          out.write("{}")
+object DeriveJsonEncoder { self =>
+  private inline def derive[A]: JsonEncoder[A] =${ deriveEncoder[A] }
 
-        override final def toJsonAST(a: A): Either[String, Json] =
-          Right(Json.Obj(Chunk.empty))
+  private def deriveEncoder[A: Type](using Quotes): Expr[JsonEncoder[A]] = {
+    import quotes.reflect.*, quotes.*
+    val symbol = TypeRepr.of[A].typeSymbol
+    def encoder(tpe: Type[?]): Expr[JsonEncoder[?]] =
+      tpe match { case '[t] => Expr.summon[JsonEncoder[t]].getOrElse(deriveEncoder[t]) }
+
+    def leafTypes(of: Symbol): List[Symbol] =
+      of.children.flatMap { child =>
+        if   child.flags.is(Flags.Case)
+        then List(child)
+        else leafTypes(child)
       }
-    } else {
-      new JsonEncoder[A] {
-        val (transformNames, nameTransform): (Boolean, String => String) =
-          ctx.annotations.collectFirst { case jsonMemberNames(format) => format }
-            .map(true -> _)
-            .getOrElse(false -> identity)
 
-        val params = ctx
-          .params
-          .filterNot { param =>
-            param
-              .annotations
-              .collectFirst {
-                case _: jsonExclude => ()
-              }
-              .isDefined
+    def deriveSumEncoder = {
+
+      val discrim = symbol.annotations.collectFirst { case jsonDiscriminator(n) => n }
+      val subTypes = leafTypes(symbol).map(_.tree).map {
+        case cls: ClassDef => cls.constructor.returnTpt.tpe
+        case ValDef(_, tpt, _) => tpt.tpe
+      }
+
+      // creates a match expression
+      def fromSubClassTo[T: Type](value: Expr[A], rhs: TypeRepr => Expr[T]): Expr[T] =
+        Match(
+          value.asTerm,
+          subTypes.map { subclassType =>
+            val sym = Symbol.newBind(Symbol.spliceOwner, "x", Flags.EmptyFlags, subclassType)
+            val pattern = Bind(sym, Typed(Ref(sym), TypeIdent(subclassType.typeSymbol)))
+            CaseDef(pattern, None, rhs(subclassType).asTerm)
           }
+        ).asExprOf[T]
 
-        val len = params.length
+      def encoderFor(value: Expr[A]): Expr[JsonEncoder[_ <: A]] =
+        fromSubClassTo(value, subclassType => encoder(subclassType.asType).asExprOf[JsonEncoder[_ <: A]])
 
-        val names =
-          IArray.genericWrapArray(ctx
-            .params
-            .map { p =>
-              p.annotations.collectFirst {
-                case jsonField(name) => name
-              }.getOrElse(if (transformNames) nameTransform(p.label) else p.label)
-            })
-            .toArray
-
-        lazy val tcs: Array[JsonEncoder[Any]] =
-            IArray.genericWrapArray(params.map(_.typeclass.asInstanceOf[JsonEncoder[Any]])).toArray
-
-        def unsafeEncode(a: A, indent: Option[Int], out: Write): Unit = {
-          out.write("{")
-
-          var indent_ = JsonEncoder.bump(indent)
-          JsonEncoder.pad(indent_, out)
-
-          var i = 0
-          var prevFields = false
-
-          while (i < len) {
-            val tc = tcs(i)
-            val p  = params(i).deref(a)
-
-            if (! tc.isNothing(p)) {
-              // if we have at least one field already, we need a comma
-              if (prevFields) {
-                if (indent.isEmpty) {
-                  out.write(",")
-                } else {
-                  out.write(",")
-                  JsonEncoder.pad(indent_, out)
-                }
-              }
-
-              JsonEncoder.string.unsafeEncode(names(i), indent_, out)
-
-              if (indent.isEmpty) {
-                out.write(":")
-              } else {
-                out.write(" : ")
-              }
-
-              tc.unsafeEncode(p, indent_, out)
-              prevFields = true // at least one field so far
+      def nameFor(value: Expr[A]): Expr[String] =
+        fromSubClassTo(
+          value,
+          subclassType => Expr {
+            subclassType.typeSymbol.annotations.collectFirst { case jsonHint(name) => name }
+            .getOrElse {
+              if   subclassType.typeSymbol.flags.is(Flags.Module)
+              then subclassType.typeSymbol.companionModule.name
+              else subclassType.typeSymbol.name
             }
-
-            i += 1
           }
+        )
 
-          JsonEncoder.pad(indent, out)
-          out.write("}")
-        }
-
-        override final def toJsonAST(a: A): Either[String, Json] = {
-          ctx.params
-            .foldLeft[Either[String, Chunk[(String, Json)]]](Right(Chunk.empty)) { case (c, param) =>
-              val name = param.annotations.collectFirst { case jsonField(name) =>
-                name
-              }.getOrElse(nameTransform(param.label))
-              c.flatMap { chunk =>
-                param.typeclass.toJsonAST(param.deref(a)).map { value =>
-                  if (value == Json.Null) chunk
-                  else chunk :+ name -> value
-                }
-              }
-            }
-            .map(Json.Obj.apply)
-        }
-      }
-    }
-
-  def split[A](ctx: SealedTrait[JsonEncoder, A]): JsonEncoder[A] = {
-    val discrim = ctx
-      .annotations
-      .collectFirst {
-        case jsonDiscriminator(n) => n
-      }
-
-    if (discrim.isEmpty) {
-      new JsonEncoder[A] {
-        def unsafeEncode(a: A, indent: Option[Int], out: Write): Unit = {
-          ctx.choose(a) { sub =>
-            val name = sub
-              .annotations
-              .collectFirst {
-                case jsonHint(name) => name
-              }.getOrElse(sub.typeInfo.short)
+      if (discrim.isEmpty) {
+        '{ new JsonEncoder[A] {
+          def unsafeEncode(a: A, indent: Option[Int], out: Write): Unit = {
+            val encoder = ${ encoderFor('{ a }) }
+            val name = ${ nameFor('{ a }) }
 
             out.write("{")
             val indent_ = JsonEncoder.bump(indent)
             JsonEncoder.pad(indent_, out)
             JsonEncoder.string.unsafeEncode(name, indent_, out)
 
-            if (indent.isEmpty) {
-              out.write(":")
-            } else {
-              out.write(" : ")
-            }
+            if   indent.isEmpty
+            then out.write(":")
+            else out.write(" : ")
 
-            sub.typeclass.unsafeEncode(sub.cast(a), indent_, out)
+            encoder.unsafeEncode(a.asInstanceOf, indent_, out)
             JsonEncoder.pad(indent, out)
 
             out.write("}")
           }
-        }
 
-        final override def toJsonAST(a: A): Either[String, Json] = {
-          ctx.choose(a) { sub =>
-            sub.typeclass.toJsonAST(sub.cast(a)).map { inner =>
-              val name = sub
-                .annotations
-                .collectFirst {
-                  case jsonHint(name) => name
-                }.getOrElse(sub.typeInfo.short)
-
+          final override def toJsonAST(a: A): Either[String, Json] = {
+            val encoder = ${ encoderFor('{ a }) }
+            val name = ${ nameFor('{ a }) }
+            encoder.toJsonAST(a.asInstanceOf).map { inner =>
               Json.Obj(
                 Chunk(
                   name -> inner
+                  )
                 )
-              )
             }
           }
-        }
-      }
-    } else {
-      val hintField = discrim.get
+        } }
+      } else {
+        val hintField: Expr[String] = Expr(discrim.get)
 
-      def getName(annotations: Iterable[_], default: => String): String =
-        annotations
-          .collectFirst { case jsonHint(name) => name }
-          .getOrElse(default)
-
-      new JsonEncoder[A] {
-        def unsafeEncode(a: A, indent: Option[Int], out: Write): Unit = {
-          ctx.choose(a) { sub =>
+        '{ new JsonEncoder[A] {
+          def unsafeEncode(a: A, indent: Option[Int], out: Write): Unit = {
+            val encoder = ${ encoderFor('{ a }) }
+            val name = ${ nameFor('{ a }) }
             out.write("{")
             val indent_ = JsonEncoder.bump(indent)
             JsonEncoder.pad(indent_, out)
-            JsonEncoder.string.unsafeEncode(hintField, indent_, out)
-            if (indent.isEmpty) out.write(":")
+            JsonEncoder.string.unsafeEncode(${ hintField }, indent_, out)
+            if indent.isEmpty
+            then out.write(":")
             else out.write(" : ")
-            JsonEncoder.string.unsafeEncode(getName(sub.annotations, sub.typeInfo.short), indent_, out)
+            JsonEncoder.string.unsafeEncode(name, indent_, out)
 
             // whitespace is always off by 2 spaces at the end, probably not worth fixing
             val intermediate = new NestedWriter(out, indent_)
-            sub.typeclass.unsafeEncode(sub.cast(a), indent, intermediate)
+            encoder.unsafeEncode(a.asInstanceOf, indent, intermediate)
           }
-        }
 
-        override final def toJsonAST(a: A): Either[String, Json] = {
-          ctx.choose(a) { sub =>
-            sub.typeclass.toJsonAST(sub.cast(a)).flatMap {
-              case Json.Obj(fields) => Right(Json.Obj(fields :+ hintField -> Json.Str(getName(sub.annotations, sub.typeInfo.short))))
+          override final def toJsonAST(a: A): Either[String, Json] = {
+            val encoder = ${ encoderFor('{ a }) }
+            val name = ${ nameFor('{ a }) }
+            val hintName: String = ${ hintField }
+            encoder.toJsonAST(a.asInstanceOf).flatMap {
+              case Json.Obj(fields) => Right(Json.Obj(fields :+ hintName -> Json.Str(name)))
               case _                => Left("Subtype is not encoded as an object")
             }
           }
         }
+        }
       }
     }
+
+    def deriveProductEncoder = {
+
+      val caseFields = symbol.caseFields
+      if (caseFields.isEmpty) {
+        '{ new JsonEncoder[A] {
+          def unsafeEncode(a: A, indent: Option[Int], out: Write): Unit =
+            out.write("{}")
+
+          override final def toJsonAST(a: A): Either[String, Json] =
+            Right(Json.Obj(Chunk.empty))
+        } }
+      } else {
+        val (transformNames, nameTransform): (Boolean, String => String) =
+          TypeTree.of[A].symbol.annotations.collectFirst { case jsonMemberNames(format) => format }
+            .map(true -> _)
+            .getOrElse(false -> identity)
+
+        val caseFields = TypeTree.of[A].symbol.caseFields
+          .filterNot(_.annotations.collectFirst { case _: jsonExclude => () }.isDefined)
+
+        val fieldTypes = caseFields.map(_.tree).map { case ValDef(_, tpe, _) => tpe.tpe.asType }
+
+        val names: List[String] =
+          caseFields.map { p =>
+            p.annotations.collectFirst { case jsonField(name) => name }
+             .getOrElse {
+               if   transformNames
+               then nameTransform(p.name)
+               else p.name
+             }
+          }
+
+        def selectFieldByName(field: Symbol): Expr[A => Any] =
+          '{ (a: A) => ${ Select('{ a }.asTerm, field).asExprOf[Any] } }
+
+        val selectedFields: List[Expr[A => Any]]      = caseFields.map(selectFieldByName)
+        val fieldEncoders: List[Expr[JsonEncoder[?]]] = fieldTypes.map(encoder)
+
+        def fieldType(param: Symbol) = param.tree match { case ValDef(_, tpe, _) => tpe.tpe.asType }
+
+        val toAstExpr: Expr[A => Either[String, Json]] = {
+          '{ (a: A) =>
+            ${
+              caseFields
+                .foldLeft[Expr[Either[String, Chunk[(String, Json)]]]]('{ Right(Chunk.empty) }) { case (accExpr, param) =>
+                  val name =
+                    param.annotations.collectFirst { case jsonField(name) => name }
+                      .getOrElse(nameTransform(param.name))
+
+                  '{
+                    ${ accExpr }.flatMap { chunk =>
+                      ${ val tpe = fieldType(param)
+                        tpe match {
+                          case '[t] =>
+                            '{ ${ encoder(tpe) }.asInstanceOf[JsonEncoder[t]]
+                              .toJsonAST(${ Select('{ a }.asTerm, param).asExprOf[t] })
+                              .map { value =>
+                                if   value == Json.Null
+                                then chunk
+                                else chunk :+ ${ Expr(name) } -> value
+                              }
+                            }
+                        }
+                      }
+                    }
+                  }
+                }
+            }.map(Json.Obj.apply)
+          }
+        }
+
+
+        '{ new JsonEncoder[A] {
+          def unsafeEncode(a: A, indent: Option[Int], out: Write): Unit = {
+            out.write("{")
+
+            var indent_ = JsonEncoder.bump(indent)
+            JsonEncoder.pad(indent_, out)
+
+            var i = 0
+            var prevFields = false
+            val encoders: List[JsonEncoder[?]] = ${ Expr.ofList(fieldEncoders) }
+            val fieldValues: List[A => Any] = ${ Expr.ofList(selectedFields) }
+
+            while (i < encoders.size) {
+              val encoder = encoders(i)
+              val p = fieldValues.apply(i).apply(a)
+
+              if (!encoder.isNothing(p.asInstanceOf)) {
+                // if we have at least one field already, we need a comma
+                if (prevFields) {
+                  if (indent.isEmpty) {
+                    out.write(",")
+                  } else {
+                    out.write(",")
+                    JsonEncoder.pad(indent_, out)
+                  }
+                }
+
+                JsonEncoder.string.unsafeEncode(${ Expr(names) }.apply(i), indent_, out)
+
+                if (indent.isEmpty) {
+                  out.write(":")
+                } else {
+                  out.write(" : ")
+                }
+
+                encoder.unsafeEncode(p.asInstanceOf, indent_, out)
+                prevFields = true // at least one field so far
+              }
+
+              i += 1
+            }
+
+            JsonEncoder.pad(indent, out)
+            out.write("}")
+          }
+
+          override final def toJsonAST(a: A): Either[String, Json] = ${ toAstExpr }.apply(a)
+        }
+        }
+      }
+
+    }
+
+    if (symbol.flags.is(Flags.Trait) && symbol.flags.is(Flags.Sealed)) || symbol.flags.is(Flags.Enum)
+    then deriveSumEncoder
+    else deriveProductEncoder
   }
 
-  inline def gen[A](using mirror: Mirror.Of[A]) = self.derived[A]
+  inline def gen[A](using mirror: Mirror.Of[A]) = self.derive[A]
 
   // intercepts the first `{` of a nested writer and discards it. We also need to
   // inject a `,` unless an empty object `{}` has been written.
