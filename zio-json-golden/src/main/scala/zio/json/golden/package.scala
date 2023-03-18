@@ -104,7 +104,6 @@ package object golden {
     Gen
       .listOfN(sampleSize)(gen)
       .sample
-      .collectSome
       .map(_.value)
       .map { elements =>
         val jsonElements = elements.map(_.toJsonAST).collect { case Right(a) => a }

@@ -35,7 +35,7 @@ addCommandAlias(
 
 addCommandAlias("testJS", "zioJsonJS/test")
 
-val zioVersion = "2.0.8"
+val zioVersion = "2.0.10"
 
 lazy val root = project
   .in(file("."))
@@ -248,7 +248,7 @@ lazy val zioJsonYaml = project
   .settings(buildInfoSettings("zio.json.yaml"))
   .settings(
     libraryDependencies ++= Seq(
-      "org.yaml" % "snakeyaml"    % "1.32",
+      "org.yaml" % "snakeyaml"    % "1.33",
       "dev.zio" %% "zio"          % zioVersion,
       "dev.zio" %% "zio-test"     % zioVersion % "test",
       "dev.zio" %% "zio-test-sbt" % zioVersion % "test"
@@ -324,7 +324,7 @@ lazy val zioJsonInteropScalaz7x = crossProject(JSPlatform, JVMPlatform)
   .settings(
     crossScalaVersions -= ScalaDotty,
     libraryDependencies ++= Seq(
-      "org.scalaz" %%% "scalaz-core"  % "7.3.6",
+      "org.scalaz" %%% "scalaz-core"  % "7.3.7",
       "dev.zio"    %%% "zio-test"     % zioVersion % "test",
       "dev.zio"    %%% "zio-test-sbt" % zioVersion % "test"
     ),
