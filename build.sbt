@@ -88,7 +88,7 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform)
       "io.circe"               %%% "circe-generic"           % circeVersion % "test",
       "io.circe"               %%% "circe-parser"            % circeVersion % "test"
     ),
-    // scala version specific depenendies
+    // scala version specific dependencies
     libraryDependencies ++= {
       CrossVersion.partialVersion(scalaVersion.value) match {
         case Some((3, _)) =>

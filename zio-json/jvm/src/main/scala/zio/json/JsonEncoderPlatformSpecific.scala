@@ -51,7 +51,7 @@ trait JsonEncoderPlatformSpecific[A] { self: JsonEncoder[A] =>
               case None =>
                 ZIO.attemptBlocking(writer.close()) *> pushChars.map { terminal =>
                   endWith.fold(terminal) { last =>
-                    // Chop off terminal deliminator
+                    // Chop off terminal delimiter
                     (if (delimiter.isDefined) terminal.dropRight(1) else terminal) :+ last
                   }
                 }

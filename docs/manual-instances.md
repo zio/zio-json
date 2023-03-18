@@ -57,7 +57,7 @@ object FruitCount {
 }
 ```
 
-Another usecase is if we want to encode a `case class` as an array of values, rather than an object with named fields. Such an encoding is very efficient because the messages are smaller and require less processing, but are very strict schemas that cannot be upgraded.
+Another use case is if we want to encode a `case class` as an array of values, rather than an object with named fields. Such an encoding is very efficient because the messages are smaller and require less processing, but are very strict schemas that cannot be upgraded.
 
 ```scala
 case class Things(s: String, i: Int, b: Boolean)

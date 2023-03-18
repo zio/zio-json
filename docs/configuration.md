@@ -91,7 +91,7 @@ A popular alternative way to encode sealed traits:
 {"type":"omena", "bad":false}
 ```
 
-is discouraged for performance reasons. However, if we have no choice in the matter, it may be accomodated with the `@jsonDiscriminator` annotation
+is discouraged for performance reasons. However, if we have no choice in the matter, it may be accommodated with the `@jsonDiscriminator` annotation
 
 ```scala mdoc:compile-only
 @jsonDiscriminator("type") sealed trait Fruit
@@ -188,7 +188,7 @@ import zio.json._
 case class Watermelon(pips: Int)
 
 object Watermelon {
-  implicit val encorder: JsonEncoder[Watermelon] =
+  implicit val encoder: JsonEncoder[Watermelon] =
     DeriveJsonEncoder.gen[Watermelon]
 }
 ```

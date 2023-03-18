@@ -335,7 +335,7 @@ object DecoderPlatformSpecificSpec extends ZIOSpecDefault {
       case other            => other
     }
 
-  // Helper function because Circe and Zio-JSON’s Left differ, making tests unnecessarly verbose
+  // Helper function because Circe and Zio-JSON’s Left differ, making tests unnecessary verbose
   def matchesCirceDecoded[A](
     expected: String
   )(implicit cDecoder: circe.Decoder[A], eq: Eql[A, A]): Assertion[Either[String, A]] = {
