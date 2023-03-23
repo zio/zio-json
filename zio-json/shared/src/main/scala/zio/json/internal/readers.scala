@@ -161,7 +161,7 @@ final class WithRetractReader(in: java.io.Reader) extends RetractReader with Aut
 private[zio] sealed trait RecordingReader extends RetractReader {
   def rewind(): Unit
 }
-private[zio] object RecordingReader {
+object RecordingReader {
   def apply(in: OneCharReader): RecordingReader =
     new WithRecordingReader(in, 64)
 }
