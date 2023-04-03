@@ -694,24 +694,22 @@ object DeriveJsonEncoder extends Derivation[JsonEncoder] { self =>
     def write(c: Char): Unit = write(c.toString) // could be optimised
 
     def write(s: String): Unit =
-      if (first || second) {
-        var i = 0
-        while (i < s.length) {
-          val c = s.charAt(i)
-          if (c == ' ' || c == '\n') {} else if (first && c == '{') {
-            first = false
-          } else if (second) {
-            second = false
-            if (c != '}') {
-              out.write(',')
-              JsonEncoder.pad(indent, out)
-            }
-            return out.write(s.substring(i))
-          }
-          i += 1
+    if (first || second) {
+    for (c <- s if !c.isWhitespace && c != '\n') {
+      if (first && c == '{') {
+        first = false
+      } else if (second) {
+        second = false
+        if (c != '}') {
+          out.write(',')
+          JsonEncoder.pad(indent, out)
         }
-      } else out.write(s)
+        return  out.write(s.substring(s.indexOf(c)))
+      }
     }
+  } else {
+    out.write(s)
+  }
 }
 
 object DeriveJsonCodec {
