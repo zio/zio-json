@@ -1,7 +1,5 @@
 package zio.json
 
-import zio.json.ast.Json
-
 import scala.annotation.*
 import scala.compiletime.*
 import zio.Chunk
@@ -210,22 +208,24 @@ object DeriveJsonDecoder { self =>
         else leafTypes(child)
       }
 
+
     def deriveSumDecoder = {
-      val discrim = symbol.annotations.collectFirst { case jsonDiscriminator(n) => n }
-      val subTypes = leafTypes(symbol).map(_.tree).map {
-        case cls: ClassDef => cls.constructor.returnTpt.tpe
-        case ValDef(_, tpt, _) => tpt.tpe
+      val discrim = symbol.annotations.map(_.asExpr).collectFirst {
+        case '{ new zio.json.jsonDiscriminator(${Expr(name)}: String) } => name
       }
+      val subTypes = leafTypes(symbol).map(_.typeRef)
 
       val names: Array[String] =
           subTypes.map { subclassType =>
-              subclassType.typeSymbol.annotations.collectFirst { case jsonHint(name) => name }
-                .getOrElse {
-                  if subclassType.typeSymbol.flags.is(Flags.Module)
-                  then subclassType.typeSymbol.companionModule.name
-                  else subclassType.typeSymbol.name
-                }
+            subclassType.typeSymbol.annotations.map(_.asExpr).collectFirst {
+              case '{ new zio.json.jsonHint(${ Expr(name) }: String) } => name
+            }.getOrElse {
+                if subclassType.typeSymbol.flags.is(Flags.Module) // does not match on enums with intention
+                then subclassType.typeSymbol.companionModule.name
+                else subclassType.typeSymbol.name
+              }
           }.toArray
+
 
       val decodersExpr = Expr.ofList(subTypes.map(_.asType).map(decoder)).asExprOf[List[JsonDecoder[?]]]
 
@@ -237,8 +237,8 @@ object DeriveJsonDecoder { self =>
         '{ new JsonDecoder[A] {
           val namesMap: Map[String, Int]      = ${ namesMapExpr }
           val names: Array[String]            = ${ namesExpr }
-          val decoders: Array[JsonDecoder[?]] = ${ decodersExpr }.toArray
-          val spans: Array[JsonError]         = names.map(JsonError.ObjectAccess(_))
+          val spans: Array[JsonError]         = names.map(JsonError.ObjectAccess.apply)
+          lazy val decoders: Array[JsonDecoder[?]] = ${ decodersExpr }.toArray
           lazy val matrix: StringMatrix       = ${ matrixExpr }
 
           def unsafeDecode(trace: List[JsonError], in: RetractReader): A = {
@@ -254,7 +254,7 @@ object DeriveJsonDecoder { self =>
                 a.asInstanceOf[A]
               } else
                 throw UnsafeJson(
-                  JsonError.Message(s"invalid disambiguator: $field") :: trace
+                  JsonError.Message(s"invalid disambiguator") :: trace
                   )
             } else
               throw UnsafeJson(
@@ -268,7 +268,7 @@ object DeriveJsonDecoder { self =>
                 val (key, inner) = chunk.head
                 namesMap.get(key) match {
                   case Some(idx) => decoders(idx).unsafeFromJsonAST(JsonError.ObjectAccess(key) :: trace, inner).asInstanceOf[A]
-                  case None => throw UnsafeJson(JsonError.Message(s"Invalid disambiguator: $key") :: trace)
+                  case None => throw UnsafeJson(JsonError.Message(s"Invalid disambiguator") :: trace)
                 }
               case Json.Obj(_) => throw UnsafeJson(JsonError.Message("Not an object with a single field") :: trace)
               case _ => throw UnsafeJson(JsonError.Message("Not an object") :: trace)
@@ -283,8 +283,8 @@ object DeriveJsonDecoder { self =>
           val hintmatrix                      = new StringMatrix(Array(hintfield))
           val namesMap: Map[String, Int]      = ${ namesMapExpr }
           val names: Array[String]            = ${ namesExpr }
-          val decoders: Array[JsonDecoder[?]] = ${ decodersExpr }.toArray
           val spans: Array[JsonError]         = names.map(JsonError.Message(_))
+          lazy val decoders: Array[JsonDecoder[?]] = ${ decodersExpr }.toArray
           lazy val matrix: StringMatrix       = ${ matrixExpr }
 
           def unsafeDecode(trace: List[JsonError], in: RetractReader): A = {
@@ -298,7 +298,7 @@ object DeriveJsonDecoder { self =>
                   val field = Lexer.enumeration(trace, in_, matrix)
 
                   if (field == -1) {
-                    throw UnsafeJson(JsonError.Message(s"invalid disambiguator: $field") :: trace)
+                    throw UnsafeJson(JsonError.Message(s"invalid disambiguator") :: trace)
                   }
 
                   in_.rewind()
@@ -323,7 +323,7 @@ object DeriveJsonDecoder { self =>
                   case Some((_, Json.Str(name))) =>
                     namesMap.get(name) match {
                       case Some(idx) => decoders(idx).unsafeFromJsonAST(JsonError.ObjectAccess(name) :: trace, json).asInstanceOf[A]
-                      case None => throw UnsafeJson(JsonError.Message(s"Invalid disambiguator: $name") :: trace)
+                      case None => throw UnsafeJson(JsonError.Message(s"Invalid disambiguator") :: trace)
                     }
                   case Some(_) =>
                     throw UnsafeJson(JsonError.Message(s"Non-string hint '$hintfield'") :: trace)
@@ -346,26 +346,20 @@ object DeriveJsonDecoder { self =>
       def caseClassApply(input: List[Term]) =
         Apply(Select.unique(Ref(clsSymbol.companionModule), "apply"), input)
 
-      println(s"caseFields")
+      val annotations: Expr[List[Any]] =
+        Expr.ofList(symbol.annotations.map(_.asExpr))
 
-      val (transformNames, nameTransform): (Boolean, String => String) =
-        symbol.annotations.collectFirst { case jsonMemberNames(format) => format }
-          .map(true -> _)
-          .getOrElse(false -> identity)
-
-      println(s"transformNames")
-
-      val noExtra: Expr[Boolean] = Expr(symbol
-        .annotations
-        .collectFirst { case _: jsonNoExtraFields => () }
-        .isDefined)
-
-      println(s"noExtra")
+      val noExtra: Expr[Boolean] =
+        symbol
+          .annotations
+          .map(_.asExpr)
+          .collectFirst { case '{ new zio.json.jsonNoExtraFields() } => '{ true } }
+          .getOrElse('{ false })
 
       val isModule = symbol.flags.is(Flags.Module)
+      val isStaticEnum = symbol.flags.is(Flags.Enum) && symbol.flags.is(Flags.JavaStatic)
 
       if (caseFields.isEmpty) {
-        println(s"caseFields.isEmpty")
         '{ new JsonDecoder[A] {
           def unsafeDecode(trace: List[JsonError], in: RetractReader): A = {
             if (${noExtra}) {
@@ -377,6 +371,8 @@ object DeriveJsonDecoder { self =>
             ${
               if isModule
               then Ident(symbol.companionModule.termRef).asExprOf[A]
+              else if isStaticEnum
+              then Ident(symbol.termRef).asExprOf[A]
               else caseClassApply(Nil).asExprOf[A]
             }
           }
@@ -387,12 +383,16 @@ object DeriveJsonDecoder { self =>
                 ${
                   if isModule
                   then Ident(symbol.companionModule.termRef).asExprOf[A]
+                  else if isStaticEnum
+                  then Ident(symbol.termRef).asExprOf[A]
                   else caseClassApply(Nil).asExprOf[A]
                 }
               case Json.Null =>
                 ${
                   if isModule
                   then Ident(symbol.companionModule.termRef).asExprOf[A]
+                  else if isStaticEnum
+                  then Ident(symbol.termRef).asExprOf[A]
                   else caseClassApply(Nil).asExprOf[A]
                 }
               case _ => throw UnsafeJson(JsonError.Message("Not an object") :: trace)
@@ -400,70 +400,79 @@ object DeriveJsonDecoder { self =>
         }
         }
       } else {
-        println(s"caseFields.nonEmpty")
-        val (names, aliases): (Array[String], List[(String, Int)]) = {
-          val names = Array.ofDim[String](caseFields.size)
-          println(s"names")
-          val aliasesBuilder = Array.newBuilder[(String, Int)]
-          println(s"aliasesBuilder")
-          caseFields.zipWithIndex.foreach { (p, i) =>
-            names(i) =
-              p.annotations.collectFirst { case jsonField(name) => name }
-              .getOrElse {
-                if   transformNames
-                then nameTransform(p.name)
-                else p.name
-              }
-            println(s"names($i)")
-            aliasesBuilder ++= p
-              .annotations
-              .flatMap {
-                case jsonAliases(alias, aliases*) => (alias +: aliases).map(_ -> i)
-                case _ => Seq.empty
-              }
-          }
-          val aliases = aliasesBuilder.result()
+        val fieldAnnotations =
+          symbol.primaryConstructor.paramSymss.flatMap {
+            _.map(s => s.name -> s.annotations.map(_.asExpr))
+          }.toMap
 
-          val allFieldNames = names ++ aliases.map(_._1)
-          if (allFieldNames.length != allFieldNames.distinct.length) {
-            val aliasNames = aliases.map(_._1)
-            val collisions = aliasNames
-              .filter(alias => names.contains(alias) || aliases.count { case (a, _) => a == alias } > 1)
-              .distinct
-            val msg = s"Field names and aliases in case class ${symbol.fullName} must be distinct, " +
-              s"alias(es) ${collisions.mkString(",")} collide with a field or another alias"
-            report.error(msg)
-          }
-          println(s"aliases")
-
-          (names, aliases.toList)
-        }
-        val namesExpr = Expr(names)
-        val aliasesExpr = Expr(aliases)
-        println(s"namesExpr")
         val fieldTypes = caseFields.map(_.tree).map { case ValDef(_, tpe, _) => tpe.tpe.asType }
         val fieldDecoders: Expr[List[JsonDecoder[?]]] = Expr.ofList(fieldTypes.map(decoder))
-        println(s"fieldDecoders")
-        val defaultValues =
-          Expr.ofList((1 to caseFields.size).toList.map( i =>
-              Expr.ofSeq(TypeRepr.of[A].typeSymbol
-                .companionClass
-                .declaredMethod(s"$$lessinit$$greater$$default$$$i")
-                .headOption
-                .toSeq
-                .map(Select(Ref(TypeRepr.of[A].typeSymbol.companionModule), _).asExpr))
-            ))
+        val fieldNames: Expr[List[((Either[String, String], List[String]), Int)]] = Expr {
+          caseFields.zipWithIndex.map { (p, i) =>
+                val name =
+                  fieldAnnotations(p.name)
+                    .collectFirst { case '{ new zio.json.jsonField(${ Expr(n) }) } => Left(n) }
+                    .getOrElse(Right(p.name))
 
-        println(s"defaultValues")
+
+                val aliases =
+                  fieldAnnotations(p.name)
+                    .collectFirst {
+                      case '{
+                        new zio.json.jsonAliases(${ Expr(n) }, ${ Varargs(Exprs(aliases)) }: _*)
+                      } =>
+                        (n +: aliases).toList
+                    }
+                    .getOrElse(Nil)
+                ((name, aliases), i)
+            }
+        }
+
+        val defaultValues =
+          Expr.ofList(
+            (1 to caseFields.size).toList.map(
+              i =>
+                Expr.ofSeq(
+                  TypeRepr.of[A].typeSymbol
+                    .companionClass
+                    .declaredMethod(s"$$lessinit$$greater$$default$$$i")
+                    .headOption
+                    .toSeq
+                    .map(Select(Ref(TypeRepr.of[A].typeSymbol.companionModule), _).asExpr))
+              ))
+
 
         '{ new JsonDecoder[A] {
+          val nameTransformer: String => String = ${annotations}.collectFirst {
+            case jsonMemberNames(transformNames) => transformNames
+          }.getOrElse(identity[String] _)
 
-          val len: Int                        = ${namesExpr}.length
-          val spans: Array[JsonError]         = ${namesExpr}.map(JsonError.ObjectAccess(_))
-          val decoders: Array[JsonDecoder[?]] = ${ fieldDecoders }.toArray
+          val (names, aliases): (Array[String], Array[(String, Int)]) = {
+            val names = Array.ofDim[String](${fieldNames}.size)
+            val aliasesBuilder = Array.newBuilder[(String, Int)]
+            ${fieldNames}.map { case ((name, aliases), i) =>
+              names(i) = name.fold(identity, nameTransformer)
+              aliasesBuilder ++= aliases.map((_, i))
+            }
+            val aliases = aliasesBuilder.result()
+
+            val allFieldNames = names ++ aliases.map(_._1)
+            if (allFieldNames.length != allFieldNames.distinct.length) {
+              val aliasNames = aliases.map(_._1)
+              val collisions = aliasNames
+                .filter(alias => names.contains(alias) || aliases.count { case (a, _) => a == alias } > 1)
+                .distinct
+              val msg = s"Field names and aliases in case class ${${Expr(symbol.fullName)}} must be distinct, " +
+                s"alias(es) ${collisions.mkString(",")} collide with a field or another alias"
+              throw new AssertionError(msg)
+            }
+            (names, aliases)
+          }
+
+          val len: Int                        = names.length
+          val spans: Array[JsonError]         = names.map(JsonError.ObjectAccess.apply)
           val defaults: Array[Option[?]]      = ${ defaultValues }.map(_.headOption).toArray
-          val names: Array[String]            = ${namesExpr}
-          val aliases: Array[(String, Int)]   = ${aliasesExpr}.toArray
+          lazy val decoders: Array[JsonDecoder[?]] = ${ fieldDecoders }.toArray
           lazy val matrix: StringMatrix       = new StringMatrix(names, aliases)
           lazy val namesMap: Map[String, Int] = (names.zipWithIndex ++ aliases).toMap
 
@@ -567,7 +576,7 @@ object DeriveJsonDecoder { self =>
 
     }
 
-    if (symbol.flags.is(Flags.Trait) && symbol.flags.is(Flags.Sealed)) || symbol.flags.is(Flags.Enum)
+    if symbol.flags.is(Flags.Sealed) || symbol.flags.is(Flags.Enum)
     then deriveSumDecoder
     else deriveProductDecoder
 
@@ -586,31 +595,36 @@ object DeriveJsonEncoder { self =>
     def encoder(tpe: Type[?]): Expr[JsonEncoder[?]] =
       tpe match { case '[t] => Expr.summon[JsonEncoder[t]].getOrElse(deriveEncoder[t]) }
 
-    def leafTypes(of: Symbol): List[Symbol] =
+    def leafTypeSymbols(of: Symbol): List[Symbol] =
       of.children.flatMap { child =>
         if   child.flags.is(Flags.Case)
         then List(child)
-        else leafTypes(child)
+        else leafTypeSymbols(child)
       }
 
     def deriveSumEncoder = {
 
-      val discrim = symbol.annotations.collectFirst { case jsonDiscriminator(n) => n }
-      val subTypes = leafTypes(symbol).map(_.tree).map {
-        case cls: ClassDef => cls.constructor.returnTpt.tpe
-        case ValDef(_, tpt, _) => tpt.tpe
-      }
+      val discrim =
+        symbol.annotations
+        .map(_.asExpr)
+        .collectFirst { case '{ new zio.json.jsonDiscriminator(${ Expr(n) }: String)} => n }
+      val subTypeSymbols = leafTypeSymbols(symbol)
+      val subTypeRefs    = subTypeSymbols.map(_.typeRef)
 
       // creates a match expression
       def fromSubClassTo[T: Type](value: Expr[A], rhs: TypeRepr => Expr[T]): Expr[T] =
         Match(
           value.asTerm,
-          subTypes.map { subclassType =>
-            val sym = Symbol.newBind(Symbol.spliceOwner, "x", Flags.EmptyFlags, subclassType)
-            val pattern = Bind(sym, Typed(Ref(sym), TypeIdent(subclassType.typeSymbol)))
-            CaseDef(pattern, None, rhs(subclassType).asTerm)
+          subTypeRefs.zip(subTypeSymbols).map { (subType, subSymbol) =>
+            if subSymbol.flags.is(Flags.Enum) && subSymbol.primaryConstructor.paramSymss.isEmpty
+            then  CaseDef(Ident(subSymbol.termRef), None, rhs(subType).asTerm)
+            else {
+              val sym = Symbol.newBind(Symbol.spliceOwner, "x", Flags.EmptyFlags, subType)
+              val pattern = Bind(sym, Typed(Ref(sym), TypeIdent(subType.typeSymbol)))
+              CaseDef(pattern, None, rhs(subType).asTerm)
+            }
           }
-          ).asExprOf[T]
+        ).asExprOf[T]
 
       def encoderFor(value: Expr[A]): Expr[JsonEncoder[_ <: A]] =
         fromSubClassTo(value, subclassType => encoder(subclassType.asType).asExprOf[JsonEncoder[_ <: A]])
@@ -619,12 +633,13 @@ object DeriveJsonEncoder { self =>
         fromSubClassTo(
           value,
           subclassType => Expr {
-            subclassType.typeSymbol.annotations.collectFirst { case jsonHint(name) => name }
-              .getOrElse {
-                if   subclassType.typeSymbol.flags.is(Flags.Module)
-                then subclassType.typeSymbol.companionModule.name
-                else subclassType.typeSymbol.name
-              }
+            subclassType.typeSymbol.annotations.map(_.asExpr).collectFirst {
+              case '{ new zio.json.jsonHint(${ Expr(name) }: String) } => name
+            }.getOrElse {
+              if subclassType.typeSymbol.flags.is(Flags.Module) // does not match on enums with intention
+              then subclassType.typeSymbol.companionModule.name
+              else subclassType.typeSymbol.name
+            }
           }
           )
 
@@ -652,15 +667,10 @@ object DeriveJsonEncoder { self =>
           final override def toJsonAST(a: A): Either[String, Json] = {
             val encoder = ${ encoderFor('{ a }) }
             val name = ${ nameFor('{ a }) }
-            encoder.toJsonAST(a.asInstanceOf).map { inner =>
-              Json.Obj(
-                Chunk(
-                  name -> inner
-                  )
-                )
-            }
+            encoder.toJsonAST(a.asInstanceOf).map { inner => Json.Obj(Chunk(name -> inner)) }
           }
-        } }
+        }
+        }
       } else {
         val hintField: Expr[String] = Expr(discrim.get)
 
@@ -672,7 +682,7 @@ object DeriveJsonEncoder { self =>
             val indent_ = JsonEncoder.bump(indent)
             JsonEncoder.pad(indent_, out)
             JsonEncoder.string.unsafeEncode(${ hintField }, indent_, out)
-            if indent.isEmpty
+            if   indent.isEmpty
             then out.write(":")
             else out.write(" : ")
             JsonEncoder.string.unsafeEncode(name, indent_, out)
@@ -697,9 +707,18 @@ object DeriveJsonEncoder { self =>
     }
 
     def deriveProductEncoder = {
+      val fieldAnnotations =
+        symbol.primaryConstructor.paramSymss.flatMap {
+          _.map(s => s.name -> s.annotations.map(_.asExpr))
+        }.toMap
+      val caseFields = TypeTree.of[A].symbol.caseFields
+        .filterNot { f =>
+          fieldAnnotations(f.name)
+            .collectFirst { case '{ new zio.json.jsonExclude() } => () }.isDefined
+        }
 
-      val caseFields = symbol.caseFields
-      if (caseFields.isEmpty) {
+      if (symbol.flags.is(Flags.Enum) && symbol.flags.is(Flags.JavaStatic)
+        || symbol.flags.is(Flags.Module) || caseFields.isEmpty) {
         '{ new JsonEncoder[A] {
           def unsafeEncode(a: A, indent: Option[Int], out: Write): Unit =
             out.write("{}")
@@ -708,25 +727,20 @@ object DeriveJsonEncoder { self =>
             Right(Json.Obj(Chunk.empty))
         } }
       } else {
-        val (transformNames, nameTransform): (Boolean, String => String) =
-          symbol.annotations.collectFirst { case jsonMemberNames(format) => format }
-            .map(true -> _)
-            .getOrElse(false -> identity)
-
-        val caseFields = TypeTree.of[A].symbol.caseFields
-          .filterNot(_.annotations.collectFirst { case _: jsonExclude => () }.isDefined)
 
         val fieldTypes = caseFields.map(_.tree).map { case ValDef(_, tpe, _) => tpe.tpe.asType }
 
-        val names: List[String] =
+        val clsAnnotations: Expr[List[Any]] =
+          Expr.ofList(symbol.annotations.map(_.asExpr))
+
+        val fieldNames: Expr[List[Either[String, String]]] = Expr {
           caseFields.map { p =>
-            p.annotations.collectFirst { case jsonField(name) => name }
-              .getOrElse {
-                if   transformNames
-                then nameTransform(p.name)
-                else p.name
-              }
+            fieldAnnotations(p.name)
+              .collectFirst { case '{ new zio.json.jsonField(${ Expr(name) }: String) } => Left(name) }
+              .getOrElse(Right(p.name))
           }
+        }
+
 
         def selectFieldByName(field: Symbol): Expr[A => Any] =
           '{ (a: A) => ${ Select('{ a }.asTerm, field).asExprOf[Any] } }
@@ -736,39 +750,16 @@ object DeriveJsonEncoder { self =>
 
         def fieldType(param: Symbol) = param.tree match { case ValDef(_, tpe, _) => tpe.tpe.asType }
 
-        val toAstExpr: Expr[A => Either[String, Json]] = {
-          '{ (a: A) =>
-            ${
-              caseFields
-                .foldLeft[Expr[Either[String, Chunk[(String, Json)]]]]('{ Right(Chunk.empty) }) { case (accExpr, param) =>
-                  val name =
-                    param.annotations.collectFirst { case jsonField(name) => name }
-                      .getOrElse(nameTransform(param.name))
-
-                  '{
-                    ${ accExpr }.flatMap { chunk =>
-                      ${ val tpe = fieldType(param)
-                        tpe match {
-                          case '[t] =>
-                            '{ ${ encoder(tpe) }.asInstanceOf[JsonEncoder[t]]
-                              .toJsonAST(${ Select('{ a }.asTerm, param).asExprOf[t] })
-                              .map { value =>
-                                if   value == Json.Null
-                                then chunk
-                                else chunk :+ ${ Expr(name) } -> value
-                              }
-                            }
-                        }
-                      }
-                    }
-                  }
-                }
-            }.map(Json.Obj.apply)
-          }
-        }
-
-
         '{ new JsonEncoder[A] {
+          val nameTransformer: String => String = ${ clsAnnotations }.collectFirst {
+            case jsonMemberNames(transformNames) => transformNames
+          }.getOrElse(identity[String] _)
+
+          val names = ${ fieldNames }.map(_.fold(identity, nameTransformer))
+
+          lazy val encoders: List[JsonEncoder[?]] = ${ Expr.ofList(fieldEncoders) }
+          val fieldValues: List[A => Any] = ${ Expr.ofList(selectedFields) }
+
           def unsafeEncode(a: A, indent: Option[Int], out: Write): Unit = {
             out.write("{")
 
@@ -777,8 +768,6 @@ object DeriveJsonEncoder { self =>
 
             var i = 0
             var prevFields = false
-            val encoders: List[JsonEncoder[?]] = ${ Expr.ofList(fieldEncoders) }
-            val fieldValues: List[A => Any] = ${ Expr.ofList(selectedFields) }
 
             while (i < encoders.size) {
               val encoder = encoders(i)
@@ -795,7 +784,7 @@ object DeriveJsonEncoder { self =>
                   }
                 }
 
-                JsonEncoder.string.unsafeEncode(${ Expr(names) }.apply(i), indent_, out)
+                JsonEncoder.string.unsafeEncode(names(i), indent_, out)
 
                 if (indent.isEmpty) {
                   out.write(":")
@@ -814,15 +803,47 @@ object DeriveJsonEncoder { self =>
             out.write("}")
           }
 
-          override final def toJsonAST(a: A): Either[String, Json] = ${ toAstExpr }.apply(a)
+          override final def toJsonAST(a: A): Either[String, Json] =
+              ${
+                caseFields
+                  .foldLeft[Expr[Either[String, Chunk[(String, Json)]]]]('{ Right(Chunk.empty) }) { case (accExpr, p) =>
+                    val name =
+                      fieldAnnotations(p.name)
+                        .collectFirst {
+                          case '{ new zio.json.jsonField(${Expr(name)}: String)} =>
+                            Left(name)
+                        }
+                        .getOrElse(Right(p.name))
+
+                    '{
+                      ${ accExpr }.flatMap { chunk =>
+                        ${ val tpe = fieldType(p)
+                          tpe match {
+                            case '[t] =>
+                              '{
+                                val mappedName = ${ Expr(name) }.fold(identity, nameTransformer)
+                                ${ encoder(tpe) }.asInstanceOf[JsonEncoder[t]]
+                                .toJsonAST(${ Select('{ a }.asTerm, p).asExprOf[t] })
+                                .map { value =>
+                                  if value == Json.Null
+                                  then chunk
+                                  else chunk :+ mappedName -> value
+                                }
+                              }
+                          }
+                        }
+                      }
+                    }
+                  }
+              }.map(Json.Obj.apply)
         }
         }
       }
 
     }
 
-    if (symbol.flags.is(Flags.Trait) && symbol.flags.is(Flags.Sealed))
-      || symbol.flags.is(Flags.Enum)
+    if (symbol.flags.is(Flags.Sealed) || symbol.flags.is(Flags.Enum))
+      && (symbol.flags.is(Flags.Trait) || symbol.flags.is(Flags.Abstract))
     then deriveSumEncoder
     else deriveProductEncoder
   }
@@ -831,7 +852,7 @@ object DeriveJsonEncoder { self =>
 
   // intercepts the first `{` of a nested writer and discards it. We also need to
   // inject a `,` unless an empty object `{}` has been written.
-  private[this] final class NestedWriter(out: Write, indent: Option[Int]) extends Write {
+  final class NestedWriter(out: Write, indent: Option[Int]) extends Write {
     private[this] var first, second = true
 
     def write(c: Char): Unit = write(c.toString) // could be optimised
