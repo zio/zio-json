@@ -201,11 +201,11 @@ object DeriveJsonDecoder { self =>
     def decoder(tpe: Type[?]): Expr[JsonDecoder[?]] =
       tpe match { case '[t] => Expr.summon[JsonDecoder[t]].getOrElse(deriveDecoder[t]) }
 
-    def leafTypes(of: Symbol): List[Symbol] =
+    def leafTypesSymbols(of: Symbol): List[Symbol] =
       of.children.flatMap { child =>
         if child.flags.is(Flags.Case)
         then List(child)
-        else leafTypes(child)
+        else leafTypesSymbols(child)
       }
 
 
@@ -213,7 +213,7 @@ object DeriveJsonDecoder { self =>
       val discrim = symbol.annotations.map(_.asExpr).collectFirst {
         case '{ new zio.json.jsonDiscriminator(${Expr(name)}: String) } => name
       }
-      val subTypes = leafTypes(symbol).map(_.typeRef)
+      val subTypes = leafTypesSymbols(symbol).map(_.typeRef)
 
       val names: Array[String] =
           subTypes.map { subclassType =>
