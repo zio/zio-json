@@ -37,7 +37,7 @@ addCommandAlias("testJS", "zioJsonJS/test")
 
 val zioVersion = "2.0.12"
 
-lazy val root = project
+lazy val zioJsonRoot = project
   .in(file("."))
   .settings(
     publish / skip := true,
