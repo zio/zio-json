@@ -3,6 +3,7 @@ package zio.json
 sealed trait JsonMemberFormat extends (String => String)
 
 private[json] object JsonMemberFormat {
+
   /**
    * ~~Stolen~~ Borrowed from jsoniter-scala by Andriy Plokhotnyuk
    * (he even granted permission for this, imagine that!)
@@ -97,7 +98,8 @@ case object CamelCase extends JsonMemberFormat {
     JsonMemberFormat.enforceCamelOrPascalCase(memberName, toPascal = false)
 }
 case object PascalCase extends JsonMemberFormat {
-  override def apply(memberName: String): String = JsonMemberFormat.enforceCamelOrPascalCase(memberName, toPascal = true)
+  override def apply(memberName: String): String =
+    JsonMemberFormat.enforceCamelOrPascalCase(memberName, toPascal = true)
 }
 case object KebabCase extends JsonMemberFormat {
   override def apply(memberName: String): String = JsonMemberFormat.enforceSnakeOrKebabCase(memberName, '-')
@@ -126,7 +128,8 @@ object ziojson_03 {
  * @param allowExtraFields see [[jsonNoExtraFields]]
  */
 final case class JsonCodecConfiguration(
-  sumTypeHandling: JsonCodecConfiguration.SumTypeHandling = JsonCodecConfiguration.SumTypeHandling.WrapperWithClassNameField,
+  sumTypeHandling: JsonCodecConfiguration.SumTypeHandling =
+    JsonCodecConfiguration.SumTypeHandling.WrapperWithClassNameField,
   fieldNameMapping: JsonMemberFormat = IdentityFormat,
   allowExtraFields: Boolean = true
 )
