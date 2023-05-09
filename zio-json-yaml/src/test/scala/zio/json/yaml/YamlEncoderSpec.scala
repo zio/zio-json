@@ -25,6 +25,11 @@ object YamlEncoderSpec extends ZIOSpecDefault {
           isRight(equalTo("hello\n"))
         )
       },
+      test("large number") {
+        assert(Json.Num(2910000000L).toYaml(YamlOptions.default.copy(lineBreak = LineBreak.UNIX)))(
+          isRight(equalTo("2910000000\n"))
+        )
+      },
       test("special characters in string") {
         assert(Json.Arr(Json.Str("- [] &hello \\!")).toYaml(YamlOptions.default.copy(lineBreak = LineBreak.UNIX)))(
           isRight(equalTo("  - '- [] &hello \\!'\n"))

@@ -126,7 +126,7 @@ package object yaml {
       case Json.Num(value) =>
         val stripped = value.stripTrailingZeros()
         if (stripped.scale() <= 0) {
-          new ScalarNode(Tag.INT, stripped.intValue().toString, null, null, options.scalarStyle(json))
+          new ScalarNode(Tag.INT, stripped.longValue.toString, null, null, options.scalarStyle(json))
         } else {
           new ScalarNode(Tag.FLOAT, stripped.toString, null, null, options.scalarStyle(json))
         }
