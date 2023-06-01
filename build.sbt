@@ -102,8 +102,8 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform)
             "com.softwaremill.magnolia1_2"          %%% "magnolia"              % "1.1.3",
             "io.circe"                              %%% "circe-generic-extras"  % circeVersion       % "test",
             "com.typesafe.play"                     %%% "play-json"             % "2.9.4"            % "test",
-            "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-core"   % "2.23.0"           % "test",
-            "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-macros" % "2.23.0"           % "test"
+            "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-core"   % "2.23.1"           % "test",
+            "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-macros" % "2.23.1"           % "test"
           )
       }
     },
@@ -287,7 +287,7 @@ lazy val zioJsonInteropHttp4s = project
   .settings(
     crossScalaVersions -= ScalaDotty,
     libraryDependencies ++= Seq(
-      "org.http4s"    %% "http4s-dsl"       % "0.23.18",
+      "org.http4s"    %% "http4s-dsl"       % "0.23.19",
       "dev.zio"       %% "zio"              % zioVersion,
       "org.typelevel" %% "cats-effect"      % "3.4.9",
       "dev.zio"       %% "zio-interop-cats" % "23.0.03"  % "test",
