@@ -204,13 +204,13 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform)
       CrossVersion.partialVersion(scalaVersion.value) match {
         case Some((3, _)) =>
           Vector(
-            "org.typelevel" %% "jawn-ast" % "1.4.0" % "test"
+            "org.typelevel" %% "jawn-ast" % "1.5.0" % "test"
           )
 
         case _ =>
           Seq(
             "ai.x"          %% "play-json-extensions" % "0.42.0" % "test",
-            "org.typelevel" %% "jawn-ast"             % "1.4.0"  % "test"
+            "org.typelevel" %% "jawn-ast"             % "1.5.0"  % "test"
           )
       }
     }
@@ -287,7 +287,7 @@ lazy val zioJsonInteropHttp4s = project
   .settings(
     crossScalaVersions -= ScalaDotty,
     libraryDependencies ++= Seq(
-      "org.http4s"    %% "http4s-dsl"       % "0.23.19",
+      "org.http4s"    %% "http4s-dsl"       % "0.23.20",
       "dev.zio"       %% "zio"              % zioVersion,
       "org.typelevel" %% "cats-effect"      % "3.4.9",
       "dev.zio"       %% "zio-interop-cats" % "23.0.03"  % "test",
