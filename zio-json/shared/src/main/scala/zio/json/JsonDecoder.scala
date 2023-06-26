@@ -688,6 +688,15 @@ private[json] trait DecoderLowPriority3 extends DecoderLowPriority4 {
         case iae: IllegalArgumentException => Left(s"Invalid UUID: ${iae.getMessage}")
       }
     }
+
+  implicit val currency: JsonDecoder[java.util.Currency] =
+    mapStringOrFail { str =>
+      try {
+        Right(java.util.Currency.getInstance(str))
+      } catch {
+        case iae: IllegalArgumentException => Left(s"Invalid Currency: ${iae.getMessage}")
+      }
+    }
 }
 
 private[json] trait DecoderLowPriority4 {

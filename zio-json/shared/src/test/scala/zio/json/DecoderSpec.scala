@@ -4,6 +4,7 @@ import zio._
 import zio.json._
 import zio.json.ast.Json
 import zio.test.Assertion._
+import zio.test.TestAspect.jvmOnly
 import zio.test.{ TestAspect, _ }
 
 import java.time.{ Duration, OffsetDateTime, ZonedDateTime }
@@ -264,6 +265,10 @@ object DecoderSpec extends ZIOSpecDefault {
           assert(bad6.fromJson[UUID])(isLeft(containsString("Invalid UUID: 64d7c38d-2afd-X-9832-4e70afe4b0f8"))) &&
           assert(bad7.fromJson[UUID])(isLeft(containsString("Invalid UUID: 0-0-0-0-00000000000000000")))
         },
+        test("java.util.Currency") {
+          assert(""""USD"""".fromJson[java.util.Currency])(isRight(equalTo(java.util.Currency.getInstance("USD")))) &&
+          assert(""""LLL"""".fromJson[java.util.Currency])(isLeft)
+        } @@ jvmOnly,
         test("java.time.Duration") {
           val ok1  = """"PT1H2M3S""""
           val ok2  = """"PT-0.5S"""" // see https://bugs.java.com/bugdatabase/view_bug.do?bug_id=8054978
