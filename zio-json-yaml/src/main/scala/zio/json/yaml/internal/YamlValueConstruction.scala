@@ -2,10 +2,9 @@ package zio.json.yaml.internal
 
 import org.yaml.snakeyaml.constructor.SafeConstructor
 import org.yaml.snakeyaml.nodes.{ MappingNode, Node }
-import scala.annotation.nowarn
+import org.yaml.snakeyaml.LoaderOptions
 
-@nowarn
-private[yaml] final class YamlValueConstruction extends SafeConstructor {
+private[yaml] final class YamlValueConstruction extends SafeConstructor(new LoaderOptions()) {
   def toJavaValue(node: Node): AnyRef =
     getConstructor(node).construct(node)
 
