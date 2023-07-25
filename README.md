@@ -165,11 +165,11 @@ Learn more on the [ZIO JSON homepage](https://zio.dev/zio-json/)!
 
 ## Contributing
 
-For the general guidelines, see ZIO [contributor's guide](https://zio.dev/about/contributing).
+For the general guidelines, see ZIO [Contributor Guidelines](https://zio.dev/contributor-guidelines).
 
 ## Code of Conduct
 
-See the [Code of Conduct](https://zio.dev/about/code-of-conduct)
+See the [Code of Conduct](https://zio.dev/code-of-conduct).
 
 ## Support
 
@@ -180,7 +180,7 @@ Come chat with us on [![Badge-Discord]][Link-Discord].
 
 ## Acknowledgement
 
-- Uses [JsonTestSuite](https://github.com/nst/JSONTestSuite) to test parsing. (c) 2016 Nicolas Seriot)
+- Uses [JsonTestSuite](https://github.com/nst/JSONTestSuite) to test parsing. (c) 2016 Nicolas Seriot
 
 - Uses [YourKit Java Profiler](https://www.yourkit.com/java/profiler/) for performance optimisation. ![YourKit Logo](https://www.yourkit.com/images/yklogo.png)
 
