@@ -14,7 +14,7 @@ on:
 
 jobs:
   lint:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     timeout-minutes: 30
     steps:
       - name: Checkout current branch
@@ -33,7 +33,7 @@ jobs:
         run: ./sbt check
 
   benchmarks:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
       matrix:
@@ -56,7 +56,7 @@ jobs:
         run: ./sbt ++${{ matrix.scala }}! jmh:compile
 
   mdoc:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     timeout-minutes: 60
     steps:
       - name: Checkout current branch
@@ -73,7 +73,7 @@ jobs:
         run: ./sbt compileDocs
 
   test:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     timeout-minutes: 30
     strategy:
       fail-fast: false
@@ -102,14 +102,14 @@ jobs:
         run: sbt ++${{ matrix.scala }}! testJVMDotty
 
   ci:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     needs: [lint, mdoc, benchmarks, test]
     steps:
       - name: Aggregate of lint, and all tests
         run: echo "ci passed"
 
   publish:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     timeout-minutes: 60
     needs: [ci]
     if: github.event_name != 'pull_request'
