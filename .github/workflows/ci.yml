@@ -27,7 +27,6 @@ jobs:
           distribution: temurin
           java-version: 11
           check-latest: true
-          cache: sbt
       - name: Cache scala dependencies
         uses: coursier/cache-action@v6
       - name: Lint code
@@ -51,7 +50,6 @@ jobs:
           distribution: temurin
           java-version: ${{ matrix.java }}
           check-latest: true
-          cache: sbt
       - name: Cache scala dependencies
         uses: coursier/cache-action@v6
       - name: Compile benchmarks
@@ -69,7 +67,6 @@ jobs:
           distribution: temurin
           java-version: 8
           check-latest: true
-          cache: sbt
       - name: Cache scala dependencies
         uses: coursier/cache-action@v6
       - name: Check Document Generation
@@ -95,7 +92,6 @@ jobs:
           distribution: temurin
           java-version: ${{ matrix.java }}
           check-latest: true
-          cache: sbt
       - name: Cache scala dependencies
         uses: coursier/cache-action@v6
       - name: Run tests
@@ -128,7 +124,6 @@ jobs:
           distribution: temurin
           java-version: 8
           check-latest: true
-          cache: sbt
       - name: Release
         run: sbt ci-release
         env:
