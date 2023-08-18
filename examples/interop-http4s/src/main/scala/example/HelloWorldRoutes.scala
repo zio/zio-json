@@ -7,15 +7,14 @@ import org.http4s.dsl.Http4sDsl
 
 object HelloWorldRoutes {
   def routes[F[_]: Sync](H: HelloWorld[F]): HttpRoutes[F] = {
-    val dsl = new Http4sDsl[F]{}
+    val dsl = new Http4sDsl[F] {}
     import dsl._
 
-    HttpRoutes.of[F] {
-      case GET -> Root / "hello" / name =>
-        for {
-          greeting <- H.hello(HelloWorld.Name(name))
-          resp     <- Ok(greeting)
-        } yield resp
+    HttpRoutes.of[F] { case GET -> Root / "hello" / name =>
+      for {
+        greeting <- H.hello(HelloWorld.Name(name))
+        resp     <- Ok(greeting)
+      } yield resp
     }
   }
 }

@@ -2,6 +2,8 @@ import BuildHelper._
 import explicitdeps.ExplicitDepsPlugin.autoImport.moduleFilterRemoveValue
 import sbtcrossproject.CrossPlugin.autoImport.crossProject
 
+Global / onChangedBuildSource := IgnoreSourceChanges
+
 inThisBuild(
   List(
     organization := "dev.zio",
@@ -35,7 +37,7 @@ addCommandAlias(
 
 addCommandAlias("testJS", "zioJsonJS/test")
 
-val zioVersion = "2.0.12"
+val zioVersion = "2.0.15"
 
 lazy val zioJsonRoot = project
   .in(file("."))

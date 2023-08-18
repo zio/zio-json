@@ -1,6 +1,6 @@
 package example
 
-import cats.effect.{ExitCode, IO, IOApp}
+import cats.effect.{ ExitCode, IO, IOApp }
 
 object Main extends IOApp {
   def run(args: List[String]) =
