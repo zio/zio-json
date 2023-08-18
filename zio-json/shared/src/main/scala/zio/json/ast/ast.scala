@@ -151,8 +151,8 @@ sealed abstract class Json { self =>
 
       case JsonCursor.DownField(parent, field) =>
         self.get(parent).flatMap { case Obj(fields) =>
-          fields.find(_._1 == field).map(_._2) match {
-            case Some(x) => Right(x)
+          fields.collectFirst { case (key, value) if key == field => Right(value) } match {
+            case Some(x) => x
             case None    => Left(s"No such field: '$field'")
           }
         }
