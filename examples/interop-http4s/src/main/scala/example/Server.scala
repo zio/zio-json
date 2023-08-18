@@ -1,6 +1,6 @@
 package example
 
-import cats.effect.{ConcurrentEffect, Timer}
+import cats.effect.{ ConcurrentEffect, Timer }
 
 import fs2.Stream
 
