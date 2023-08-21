@@ -517,6 +517,8 @@ private[json] trait EncoderLowPriority3 extends EncoderLowPriority4 {
   implicit val zoneOffset: JsonEncoder[ZoneOffset]         = stringify(serializers.toString)
 
   implicit val uuid: JsonEncoder[UUID] = stringify(_.toString)
+
+  implicit val currency: JsonEncoder[java.util.Currency] = stringify(_.toString)
 }
 
 private[json] trait EncoderLowPriority4 {

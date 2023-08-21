@@ -3,6 +3,7 @@ package testzio.json
 import zio.json._
 import zio.json.ast.Json
 import zio.test.Assertion._
+import zio.test.TestAspect.jvmOnly
 import zio.test._
 import zio.{ Chunk, NonEmptyChunk }
 
@@ -265,6 +266,9 @@ object EncoderSpec extends ZIOSpecDefault {
             equalTo(""""e142f1aa-6e9e-4352-adfe-7e6eb9814ccd"""")
           )
         },
+        test("java.util.Currency") {
+          assert(java.util.Currency.getInstance("USD").toJson)(equalTo(""""USD""""))
+        } @@ jvmOnly,
         test("parameterless products") {
           import exampleproducts._
 

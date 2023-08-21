@@ -4,6 +4,7 @@ import zio._
 import zio.json._
 import zio.json.ast.Json
 import zio.test.Assertion._
+import zio.test.TestAspect.jvmOnly
 import zio.test._
 
 import scala.collection.immutable
@@ -41,6 +42,10 @@ object CodecSpec extends ZIOSpecDefault {
             isLeft(equalTo("(expected a 128 bit BigInteger)"))
           ) && assert(exampleBDString.fromJson[BigDecimal])(isRight(equalTo(BigDecimal(exampleBDString))))
         },
+        test("java.util.Currency") {
+          val exampleValue = "\"USD\""
+          assert(exampleValue.fromJson[java.util.Currency])(isRight(equalTo(java.util.Currency.getInstance("USD"))))
+        } @@ jvmOnly,
         test("eithers") {
           val bernies = List("""{"a":1}""", """{"left":1}""", """{"Left":1}""")
           val trumps  = List("""{"b":2}""", """{"right":2}""", """{"Right":2}""")
