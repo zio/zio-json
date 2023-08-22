@@ -26,7 +26,7 @@ package object yaml {
       val yamlNode = toYamlAST(options)
 
       try {
-        val dumperOptions = new DumperOptions()
+        val dumperOptions = options.newDumperOptions()
         dumperOptions.setIndent(options.indentation)
         dumperOptions.setIndicatorIndent(options.sequenceIndentation)
         options.maxScalarWidth match {
@@ -37,6 +37,7 @@ package object yaml {
             dumperOptions.setSplitLines(false)
         }
         dumperOptions.setLineBreak(options.lineBreak)
+        dumperOptions.setIndentWithIndicator(options.indentWithIndicator)
 
         val resolver   = new Resolver
         val output     = new StringWriter()
