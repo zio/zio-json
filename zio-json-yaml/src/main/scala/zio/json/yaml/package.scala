@@ -7,7 +7,7 @@ import org.yaml.snakeyaml.nodes.{ ScalarNode, _ }
 import org.yaml.snakeyaml.reader.StreamReader
 import org.yaml.snakeyaml.resolver.Resolver
 import org.yaml.snakeyaml.serializer._
-import org.yaml.snakeyaml.{ DumperOptions, Yaml }
+import org.yaml.snakeyaml.Yaml
 import zio.Chunk
 import zio.json.ast.Json
 import zio.json.yaml.internal.YamlValueConstruction
