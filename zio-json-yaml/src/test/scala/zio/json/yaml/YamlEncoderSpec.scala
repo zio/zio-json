@@ -20,6 +20,11 @@ object YamlEncoderSpec extends ZIOSpecDefault {
           isRight(equalTo(ex1Yaml))
         )
       },
+      test("object root with object in a sequence") {
+        assert(ex2.toYaml(YamlOptions.default.copy(lineBreak = LineBreak.UNIX)))(
+          isRight(equalTo(ex2Yaml))
+        )
+      },
       test("scalar root") {
         assert(Json.Str("hello").toYaml(YamlOptions.default.copy(lineBreak = LineBreak.UNIX)))(
           isRight(equalTo("hello\n"))
@@ -130,8 +135,32 @@ object YamlEncoderSpec extends ZIOSpecDefault {
       |    s: []
       |""".stripMargin
 
+  val ex2: Example2 =
+    Example2(
+      id = "ex2",
+      seq = List(SubObject(id = "a"), SubObject(id = "b"))
+    )
+
+  val ex2Yaml: String =
+    """id: ex2
+      |seq:
+      |  - id: a
+      |  - id: b
+      |""".stripMargin
+
   case class Example(i: Int, d: Double, s: List[String], o: Option[Example])
   object Example {
     implicit lazy val codec: JsonCodec[Example] = DeriveJsonCodec.gen[Example]
   }
+
+  case class SubObject(id: String)
+  object SubObject {
+    implicit lazy val codec: JsonCodec[SubObject] = DeriveJsonCodec.gen[SubObject]
+  }
+
+  case class Example2(id: String, seq: List[SubObject])
+  object Example2 {
+    implicit lazy val codec: JsonCodec[Example2] = DeriveJsonCodec.gen[Example2]
+  }
+
 }
