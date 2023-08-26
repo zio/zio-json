@@ -80,7 +80,7 @@ jobs:
       matrix:
         java: ['8', '11', '17']
         scala: ['2.12.18', '2.13.11', '3.3.0']
-        platform: ['JVM', 'JS']
+        platform: ['JVM', 'JS', 'Native']
     steps:
       - name: Checkout current branch
         uses: actions/checkout@v3.3.0
@@ -94,12 +94,14 @@ jobs:
           check-latest: true
       - name: Cache scala dependencies
         uses: coursier/cache-action@v6
-      - name: Run tests
+      - name: Install libuv
+        if: matrix.platform == 'Native'
+        run: sudo apt-get update && sudo apt-get install -y libuv1-dev
+      - name: Run Macros tests
         if: ${{ !startsWith(matrix.scala, '3.3.') }}
+        run: sbt ++${{ matrix.scala }}! testScala2${{ matrix.platform }}
+      - name: Run tests
         run: sbt ++${{ matrix.scala }}! test${{ matrix.platform }}
-      - name: Run Dotty tests
-        if: ${{ startsWith(matrix.scala, '3.3.') && matrix.platform == 'JVM' }}
-        run: sbt ++${{ matrix.scala }}! testJVMDotty
 
   ci:
     runs-on: ubuntu-20.04
