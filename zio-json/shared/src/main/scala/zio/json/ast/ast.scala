@@ -38,7 +38,7 @@ import scala.annotation._
  * excessive amount of heap memory).
  * JsonValue / Json / JValue
  */
-sealed abstract class Json { self =>
+sealed trait Json { self =>
   final def as[A](implicit decoder: JsonDecoder[A]): Either[String, A] = decoder.fromJsonAST(self)
 
   def asNull: Option[Unit]         = None
