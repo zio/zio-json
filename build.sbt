@@ -27,15 +27,33 @@ addCommandAlias("prepare", "fmt")
 
 addCommandAlias(
   "testJVM",
-  "zioJsonJVM/test; zioJsonYaml/test; zioJsonMacrosJVM/test; zioJsonInteropHttp4s/test; zioJsonInteropScalaz7xJVM/test; zioJsonGolden/test; zioJsonInteropScalaz7xJS/test; zioJsonInteropRefinedJVM/test; zioJsonInteropRefinedJS/test"
+  "zioJsonJVM/test; zioJsonYaml/test; zioJsonInteropHttp4s/test; zioJsonInteropScalaz7xJVM/test; zioJsonGolden/test"
 )
 
 addCommandAlias(
-  "testJVMDotty",
-  "zioJsonJVM/test"
+  "testScala2JVM",
+  "zioJsonMacrosJVM/test; zioJsonInteropRefinedJVM/test"
 )
 
-addCommandAlias("testJS", "zioJsonJS/test")
+addCommandAlias(
+  "testScala2JS",
+  "zioJsonMacrosJS/test; zioJsonInteropRefinedJS/test"
+)
+
+addCommandAlias(
+  "testScala2Native",
+  "zioJsonMacrosNative/test; zioJsonInteropRefinedNative/test"
+)
+
+addCommandAlias(
+  "testJS",
+  "zioJsonJS/test; zioJsonInteropScalaz7xJS/test"
+)
+
+addCommandAlias(
+  "testNative",
+  "zioJsonNative/test; zioJsonInteropScalaz7xNative/test"
+)
 
 val zioVersion = "2.0.16"
 
@@ -49,20 +67,24 @@ lazy val zioJsonRoot = project
     docs,
     zioJsonJVM,
     zioJsonJS,
+    zioJson.native,
     zioJsonYaml,
     zioJsonMacrosJVM,
     zioJsonMacrosJS,
+    zioJsonMacros.native,
     zioJsonInteropHttp4s,
     zioJsonInteropRefined.js,
     zioJsonInteropRefined.jvm,
+    zioJsonInteropRefined.native,
     zioJsonInteropScalaz7x.js,
     zioJsonInteropScalaz7x.jvm,
+    zioJsonInteropScalaz7x.native,
     zioJsonGolden
   )
 
 val circeVersion = "0.14.3"
 
-lazy val zioJson = crossProject(JSPlatform, JVMPlatform)
+lazy val zioJson = crossProject(JSPlatform, JVMPlatform, NativePlatform)
   .in(file("zio-json"))
   .settings(stdSettings("zio-json"))
   .settings(crossProjectSettings)
@@ -103,7 +125,6 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform)
             "org.scala-lang"                          % "scala-reflect"         % scalaVersion.value % Provided,
             "com.softwaremill.magnolia1_2"          %%% "magnolia"              % "1.1.3",
             "io.circe"                              %%% "circe-generic-extras"  % circeVersion       % "test",
-            "com.typesafe.play"                     %%% "play-json"             % "2.9.4"            % "test",
             "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-core"   % "2.23.3"           % "test",
             "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-macros" % "2.23.3"           % "test"
           )
@@ -211,11 +232,18 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform)
 
         case _ =>
           Seq(
-            "ai.x"          %% "play-json-extensions" % "0.42.0" % "test",
-            "org.typelevel" %% "jawn-ast"             % "1.5.1"  % "test"
+            "ai.x"               %% "play-json-extensions" % "0.42.0" % "test",
+            "com.typesafe.play" %%% "play-json"            % "2.9.4"  % "test",
+            "org.typelevel"      %% "jawn-ast"             % "1.5.1"  % "test"
           )
       }
     }
+  )
+  .nativeSettings(Test / fork := false)
+  .nativeSettings(
+    libraryDependencies ++= Seq(
+      "io.github.cquiroz" %%% "scala-java-time" % "2.5.0"
+    )
   )
   .enablePlugins(BuildInfoPlugin)
 
@@ -260,8 +288,9 @@ lazy val zioJsonYaml = project
   .dependsOn(zioJsonJVM)
   .enablePlugins(BuildInfoPlugin)
 
-lazy val zioJsonMacros = crossProject(JSPlatform, JVMPlatform)
+lazy val zioJsonMacros = crossProject(JSPlatform, JVMPlatform, NativePlatform)
   .in(file("zio-json-macros"))
+  .nativeConfigure(_.dependsOn(zioJson.native))
   .settings(stdSettings("zio-json-macros"))
   .settings(crossProjectSettings)
   .settings(macroExpansionSettings)
@@ -275,6 +304,7 @@ lazy val zioJsonMacros = crossProject(JSPlatform, JVMPlatform)
     ),
     testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework")
   )
+  .nativeSettings(Test / fork := false)
 
 lazy val zioJsonMacrosJVM = zioJsonMacros.jvm.dependsOn(zioJsonJVM)
 
@@ -301,10 +331,9 @@ lazy val zioJsonInteropHttp4s = project
   .dependsOn(zioJsonJVM)
   .enablePlugins(BuildInfoPlugin)
 
-lazy val zioJsonInteropRefined = crossProject(JSPlatform, JVMPlatform)
+lazy val zioJsonInteropRefined = crossProject(JSPlatform, JVMPlatform, NativePlatform)
   .in(file("zio-json-interop-refined"))
-  .jvmConfigure(_.dependsOn(zioJsonJVM))
-  .jsConfigure(_.dependsOn(zioJsonJS))
+  .dependsOn(zioJson)
   .settings(stdSettings("zio-json-interop-refined"))
   .settings(buildInfoSettings("zio.json.interop.refined"))
   .settings(
@@ -317,10 +346,9 @@ lazy val zioJsonInteropRefined = crossProject(JSPlatform, JVMPlatform)
   )
   .enablePlugins(BuildInfoPlugin)
 
-lazy val zioJsonInteropScalaz7x = crossProject(JSPlatform, JVMPlatform)
+lazy val zioJsonInteropScalaz7x = crossProject(JSPlatform, JVMPlatform, NativePlatform)
   .in(file("zio-json-interop-scalaz7x"))
-  .jvmConfigure(_.dependsOn(zioJsonJVM))
-  .jsConfigure(_.dependsOn(zioJsonJS))
+  .dependsOn(zioJson)
   .settings(stdSettings("zio-json-interop-scalaz7x"))
   .settings(buildInfoSettings("zio.json.interop.scalaz7x"))
   .settings(

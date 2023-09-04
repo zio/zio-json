@@ -103,7 +103,6 @@ object CodecSpec extends ZIOSpecDefault {
           assert(snakedLegacy.fromJson[legacy.Snaked])(isRight(equalTo(legacy.Snaked("")))) &&
           assert(pascaled.fromJson[Pascaled])(isRight(equalTo(Pascaled("")))) &&
           assert(cameled.fromJson[Cameled])(isRight(equalTo(Cameled("")))) &&
-          assert(indianaJones.fromJson[Custom])(isRight(equalTo(Custom("")))) &&
           assert(overrides.fromJson[OverridesAlsoWork])(isRight(equalTo(OverridesAlsoWork("", 0)))) &&
           assertTrue(Kebabed("").toJson == kebabed) &&
           assertTrue(Kebabed("").toJsonAST.toOption.get == kebabed.fromJson[Json].toOption.get) &&
@@ -117,10 +116,19 @@ object CodecSpec extends ZIOSpecDefault {
           assertTrue(Pascaled("").toJsonAST.toOption.get == pascaled.fromJson[Json].toOption.get) &&
           assertTrue(Cameled("").toJson == cameled) &&
           assertTrue(Cameled("").toJsonAST.toOption.get == cameled.fromJson[Json].toOption.get) &&
-          assertTrue(Custom("").toJson == indianaJones) &&
-          assertTrue(Custom("").toJsonAST.toOption.get == indianaJones.fromJson[Json].toOption.get) &&
           assertTrue(OverridesAlsoWork("", 0).toJson == overrides)
         },
+        test("key transformation - except native") {
+          // Problem in scala-native seems to be with implementation of package scala.scalanative.regex.Parser, in particular method `parsePerlFlags`.
+          // It should be fixed from there. Until then, better not to use regex.
+
+          import exampletransformkeys._
+          val indianaJones = """{"wHATcASEiStHIS":""}"""
+
+          assert(indianaJones.fromJson[Custom])(isRight(equalTo(Custom("")))) &&
+          assertTrue(Custom("").toJson == indianaJones) &&
+          assertTrue(Custom("").toJsonAST.toOption.get == indianaJones.fromJson[Json].toOption.get)
+        } @@ TestAspect.exceptNative,
         test("unicode") {
           assert(""""€🐵🥰"""".fromJson[String])(isRight(equalTo("€🐵🥰")))
         },
