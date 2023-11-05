@@ -51,6 +51,8 @@ implicit val decoder: JsonDecoder[Entity] =
 """{ "id": 42, "related": null }""".fromJson[Entity]
 ```
 
+_Note: If you’re using Scala 3 and your case class is defining default parameters, `-Yretain-trees` needs to be added to `scalacOptions`._
+
 ## ADTs
 
 Say we extend our data model to include more data types
