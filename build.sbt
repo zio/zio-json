@@ -55,7 +55,7 @@ addCommandAlias(
   "zioJsonNative/test; zioJsonInteropScalaz7xNative/test"
 )
 
-val zioVersion = "2.0.16"
+val zioVersion = "2.0.19"
 
 lazy val zioJsonRoot = project
   .in(file("."))
