@@ -354,7 +354,7 @@ lazy val zioJsonInteropScalaz7x = crossProject(JSPlatform, JVMPlatform, NativePl
   .settings(
     crossScalaVersions -= ScalaDotty,
     libraryDependencies ++= Seq(
-      "org.scalaz" %%% "scalaz-core"  % "7.3.7",
+      "org.scalaz" %%% "scalaz-core"  % "7.3.8",
       "dev.zio"    %%% "zio-test"     % zioVersion % "test",
       "dev.zio"    %%% "zio-test-sbt" % zioVersion % "test"
     ),
