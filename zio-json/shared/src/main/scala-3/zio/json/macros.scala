@@ -521,8 +521,7 @@ object DeriveJsonEncoder extends Derivation[JsonEncoder] { self =>
         val len = params.length
 
         val names =
-          IArray.genericWrapArray(ctx
-            .params
+          IArray.genericWrapArray(params
             .map { p =>
               p.annotations.collectFirst {
                 case jsonField(name) => name
