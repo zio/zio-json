@@ -201,6 +201,37 @@ trait JsonDecoder[A] extends JsonDecoderPlatformSpecific[A] {
   final def zipWith[B, C](that: => JsonDecoder[B])(f: (A, B) => C): JsonDecoder[C] =
     self.zip(that).map(f.tupled)
 
+  /**
+   * Returns a new codec that combines this codec and the specified codec into a single codec that
+   * decodes the input into a tuple of the values by the respective codecs.
+   */
+  final def newZip[B](that: => JsonDecoder[B]): JsonDecoder[(A, B)] = new JsonDecoder[(A, B)] {
+      def unsafeDecode(trace: List[JsonError], in: RetractReader): (A, B) = {
+        val in2 = new zio.json.internal.WithRecordingReader(in, 64)
+        val a = self.unsafeDecode(trace, in2)
+        in2.rewind()
+        val b = that.unsafeDecode(trace, in2)
+        (a, b)
+      }
+  }
+
+  /**
+   * NewZips two codecs, but discards the output on the right hand side.
+   */
+  final def newZipLeft[B](that: => JsonDecoder[B]): JsonDecoder[A] = self.newZipWith(that)((a, _) => a)
+
+  /**
+   * NewZips two codecs, but discards the output on the left hand side.
+   */
+  final def newZipRight[B](that: => JsonDecoder[B]): JsonDecoder[B] = self.newZipWith(that)((_, b) => b)
+
+  /**
+   * NewZips two codecs into one, transforming the outputs of zip codecs by the specified function.
+   */
+  final def newZipWith[B, C](that: => JsonDecoder[B])(f: (A, B) => C): JsonDecoder[C] =
+    self.newZip(that).map(f.tupled)
+
+
   def unsafeDecodeMissing(trace: List[JsonError]): A =
     throw JsonDecoder.UnsafeJson(JsonError.Message("missing") :: trace)
 
