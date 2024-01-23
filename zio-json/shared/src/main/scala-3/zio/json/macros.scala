@@ -197,7 +197,7 @@ final class jsonExclude extends Annotation
 object DeriveJsonDecoder extends Derivation[JsonDecoder] { self =>
   def join[A](ctx: CaseClass[Typeclass, A]): JsonDecoder[A] = {
     val (transformNames, nameTransform): (Boolean, String => String) =
-      ctx.annotations.collectFirst { case jsonMemberNames(format) => format }
+      (ctx.annotations ++ ctx.inheritedAnnotations).collectFirst { case jsonMemberNames(format) => format }
         .map(true -> _)
         .getOrElse(false -> identity)
 
