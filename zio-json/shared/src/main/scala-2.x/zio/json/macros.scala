@@ -194,7 +194,7 @@ final class jsonNoExtraFields extends Annotation
  */
 final class jsonExclude extends Annotation
 
-// TODO: implement same configuration for Scala 3 once this issue is resolved: https://github.com/softwaremill/magnolia/issues/296
+// TODO: implement same configuration for Scala 3
 /**
  * Implicit codec derivation configuration.
  *
