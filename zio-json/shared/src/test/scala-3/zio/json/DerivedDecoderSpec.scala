@@ -17,7 +17,17 @@ object DerivedDecoderSpec extends ZIOSpecDefault {
         """
       })(isRight(anything))
     },
-    test("Derives for a sum type") {
+    test("Derives for a sum Enumeration type") {
+      enum Foo derives JsonDecoder:
+        case Bar
+        case Baz
+        case Qux
+
+      val result = "\"Qux\"".fromJson[Foo]
+    
+      assertTrue(result == Right(Foo.Qux))
+    },
+    test("Derives for a sum ADT type") {
       assertZIO(typeCheck {
         """
           enum Foo derives JsonDecoder:
