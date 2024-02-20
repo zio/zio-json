@@ -16,17 +16,25 @@ object DerivedEncoderSpec extends ZIOSpecDefault {
         """
       })(isRight(anything))
     },
-    test("Derives for a sum type") {
-      assertZIO(typeCheck {
-        """
-          enum Foo derives JsonEncoder:
-            case Bar
-            case Baz(baz: String)
-            case Qux(foo: Foo)
+    test("Derives for a sum Enumeration type") {
+      enum Foo derives JsonEncoder:
+        case Bar
+        case Baz
+        case Qux
 
-          (Foo.Qux(Foo.Bar): Foo).toJson
-        """
-      })(isRight(anything))
+      val json = (Foo.Qux: Foo).toJson
+
+      assertTrue(json == """"Qux"""")
+    },
+    test("Derives for a sum ADT type") {
+      enum Foo derives JsonEncoder:
+        case Bar
+        case Baz(baz: String)
+        case Qux(foo: Foo)
+
+      val json = (Foo.Qux(Foo.Bar): Foo).toJson
+
+      assertTrue(json == """{"Qux":{"foo":{"Bar":{}}}}""")
     },
     test("Derives and encodes for a union of string-based literals") {
       case class Foo(aOrB: "A" | "B", optA: Option["A"]) derives JsonEncoder
