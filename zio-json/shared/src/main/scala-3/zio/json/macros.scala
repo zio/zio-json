@@ -386,7 +386,7 @@ object DeriveJsonDecoder extends Derivation[JsonDecoder] { self =>
     lazy val namesMap: Map[String, Int] =
       names.zipWithIndex.toMap
 
-    def isEnumeration = ctx.subtypes.forall(_.typeclass.isInstanceOf[CaseObjectDecoder[?, ?]])
+    def isEnumeration = ctx.isEnum && ctx.subtypes.forall(_.typeclass.isInstanceOf[CaseObjectDecoder[?, ?]])
 
     def discrim = ctx.annotations.collectFirst { case jsonDiscriminator(n) => n }
 
@@ -622,7 +622,7 @@ object DeriveJsonEncoder extends Derivation[JsonEncoder] { self =>
     }
 
   def split[A](ctx: SealedTrait[JsonEncoder, A]): JsonEncoder[A] = {
-    val isEnumeration = ctx.subtypes.forall(_.typeclass == caseObjectEncoder)
+    val isEnumeration = ctx.isEnum && ctx.subtypes.forall(_.typeclass == caseObjectEncoder)
 
     val discrim = ctx
       .annotations
