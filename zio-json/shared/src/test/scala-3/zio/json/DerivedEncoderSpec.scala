@@ -8,13 +8,11 @@ import zio.test._
 object DerivedEncoderSpec extends ZIOSpecDefault {
   val spec = suite("DerivedEncoderSpec")(
     test("Derives for a product type") {
-      assertZIO(typeCheck {
-        """
-          case class Foo(bar: String) derives JsonEncoder
+      case class Foo(bar: String) derives JsonEncoder
 
-          Foo("bar").toJson
-        """
-      })(isRight(anything))
+      val json = Foo("bar").toJson
+
+      assertTrue(json == """{"bar":"bar"}""")
     },
     test("Derives for a sum Enumeration type") {
       enum Foo derives JsonEncoder:
