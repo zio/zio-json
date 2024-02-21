@@ -402,7 +402,7 @@ object DeriveJsonDecoder extends Derivation[JsonDecoder] { self =>
     lazy val namesMap: Map[String, Int] =
       names.zipWithIndex.toMap
 
-    def isEnumeration = ctx.subtypes.forall(_.typeclass.isInstanceOf[CaseObjectDecoder[?, ?]])
+    def isEnumeration = ctx.isEnum && ctx.subtypes.forall(_.typeclass.isInstanceOf[CaseObjectDecoder[?, ?]])
 
     def discrim = ctx.annotations.collectFirst { case jsonDiscriminator(n) => n }
 
