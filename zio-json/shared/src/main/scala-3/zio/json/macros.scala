@@ -207,21 +207,7 @@ final class jsonNoExtraFields extends Annotation
  */
 final class jsonExclude extends Annotation
 
-// TODO: implement same configuration as for Scala 2 once this issue is resolved: https://github.com/softwaremill/magnolia/issues/296
-object DeriveJsonDecoder extends Derivation[JsonDecoder] { self =>
-  def join[A](ctx: CaseClass[Typeclass, A]): JsonDecoder[A] = {
-    val (transformNames, nameTransform): (Boolean, String => String) =
-      ctx.annotations.collectFirst { case jsonMemberNames(format) => format }
-        .map(true -> _)
-        .getOrElse(false -> identity)
-
-    val no_extra = ctx
-      .annotations
-      .collectFirst { case _: jsonNoExtraFields => () }
-      .isDefined
-
-    if (ctx.params.isEmpty) {
-      new JsonDecoder[A] {
+private class CaseObjectDecoder[Typeclass[*], A](val ctx: CaseClass[Typeclass, A], no_extra: Boolean) extends JsonDecoder[A] {
         def unsafeDecode(trace: List[JsonError], in: RetractReader): A = {
           if (no_extra) {
             Lexer.char(trace, in, '{')
@@ -239,6 +225,22 @@ object DeriveJsonDecoder extends Derivation[JsonDecoder] { self =>
             case _           => throw UnsafeJson(JsonError.Message("Not an object") :: trace)
           }
       }
+      
+// TODO: implement same configuration as for Scala 2 once this issue is resolved: https://github.com/softwaremill/magnolia/issues/296
+object DeriveJsonDecoder extends Derivation[JsonDecoder] { self =>
+  def join[A](ctx: CaseClass[Typeclass, A]): JsonDecoder[A] = {
+    val (transformNames, nameTransform): (Boolean, String => String) =
+      ctx.annotations.collectFirst { case jsonMemberNames(format) => format }
+        .map(true -> _)
+        .getOrElse(false -> identity)
+
+    val no_extra = ctx
+      .annotations
+      .collectFirst { case _: jsonNoExtraFields => () }
+      .isDefined
+
+    if (ctx.params.isEmpty) {
+      new CaseObjectDecoder(ctx, no_extra)
     } else {
       new JsonDecoder[A] {
         val (names, aliases): (Array[String], Array[(String, Int)]) = {
@@ -400,9 +402,32 @@ object DeriveJsonDecoder extends Derivation[JsonDecoder] { self =>
     lazy val namesMap: Map[String, Int] =
       names.zipWithIndex.toMap
 
+    def isEnumeration = ctx.subtypes.forall(_.typeclass.isInstanceOf[CaseObjectDecoder[?, ?]])
+
     def discrim = ctx.annotations.collectFirst { case jsonDiscriminator(n) => n }
 
-    if (discrim.isEmpty) {
+    if (isEnumeration) {
+      new JsonDecoder[A] {
+        def unsafeDecode(trace: List[JsonError], in: RetractReader): A = {
+          val typeName = Lexer.string(trace, in).toString()
+          namesMap.find(_._1 == typeName) match {
+            case Some((_, idx)) => tcs(idx).asInstanceOf[CaseObjectDecoder[JsonDecoder, A]].ctx.rawConstruct(Nil)
+            case None      => throw UnsafeJson(JsonError.Message(s"Invalid enumeration value $typeName") :: trace)
+          }
+        }
+
+        override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): A = {
+          json match {
+            case Json.Str(typeName) =>
+              ctx.subtypes.find(_.typeInfo.short == typeName) match {
+                case Some(sub) => sub.typeclass.asInstanceOf[CaseObjectDecoder[JsonDecoder, A]].ctx.rawConstruct(Nil)
+                case None      => throw UnsafeJson(JsonError.Message(s"Invalid enumeration value $typeName") :: trace)
+              }
+            case _ => throw UnsafeJson(JsonError.Message("Not a string") :: trace)
+          }
+        }
+      }
+    } else if (discrim.isEmpty) {
       // We're not allowing extra fields in this encoding
       new JsonDecoder[A] {
         val spans: Array[JsonError] = names.map(JsonError.ObjectAccess(_))
@@ -506,16 +531,18 @@ object DeriveJsonDecoder extends Derivation[JsonDecoder] { self =>
   }
 }
 
+private lazy val caseObjectEncoder = new JsonEncoder[Any] {
+  def unsafeEncode(a: Any, indent: Option[Int], out: Write): Unit =
+    out.write("{}")
+
+  override final def toJsonAST(a: Any): Either[String, Json] =
+    Right(Json.Obj(Chunk.empty))
+}
+
 object DeriveJsonEncoder extends Derivation[JsonEncoder] { self =>
   def join[A](ctx: CaseClass[Typeclass, A]): JsonEncoder[A] =
     if (ctx.params.isEmpty) {
-      new JsonEncoder[A] {
-        def unsafeEncode(a: A, indent: Option[Int], out: Write): Unit =
-          out.write("{}")
-
-        override final def toJsonAST(a: A): Either[String, Json] =
-          Right(Json.Obj(Chunk.empty))
-      }
+      caseObjectEncoder.narrow[A]
     } else {
       new JsonEncoder[A] {
         val (transformNames, nameTransform): (Boolean, String => String) =
@@ -620,7 +647,35 @@ object DeriveJsonEncoder extends Derivation[JsonEncoder] { self =>
         case jsonDiscriminator(n) => n
       }
 
-    if (discrim.isEmpty) {
+    if (isEnumeration) {
+      new JsonEncoder[A] {
+        def unsafeEncode(a: A, indent: Option[Int], out: Write): Unit = {
+          val typeName = ctx.choose(a) { sub =>
+            sub
+              .annotations
+              .collectFirst {
+                case jsonHint(name) => name
+              }.getOrElse(sub.typeInfo.short)
+          }
+
+          JsonEncoder.string.unsafeEncode(typeName, indent, out)
+        }
+
+        override final def toJsonAST(a: A): Either[String, Json] = {
+          ctx.choose(a) { sub =>
+            Right(
+              Json.Str(
+                sub
+                  .annotations
+                  .collectFirst {
+                    case jsonHint(name) => name
+                  }.getOrElse(sub.typeInfo.short)
+              )
+            )
+          }
+        }
+      }
+    } else if (discrim.isEmpty) {
       new JsonEncoder[A] {
         def unsafeEncode(a: A, indent: Option[Int], out: Write): Unit = {
           ctx.choose(a) { sub =>
