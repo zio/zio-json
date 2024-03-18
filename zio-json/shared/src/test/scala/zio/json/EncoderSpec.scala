@@ -315,7 +315,7 @@ object EncoderSpec extends ZIOSpecDefault {
         },
         test("exclude fields") {
           import exampleexcludefield._
-          assert(Person("Peter", 20).toJson)(equalTo("""{"name":"Peter"}"""))
+          assert(Person(7, "Peter", 20).toJson)(equalTo("""{"name":"Peter"}"""))
         },
         test("aliases") {
           import exampleproducts._
@@ -465,7 +465,7 @@ object EncoderSpec extends ZIOSpecDefault {
 
   object exampleexcludefield {
 
-    case class Person(name: String, @jsonExclude age: Int)
+    case class Person(@jsonExclude id: Long, name: String, @jsonExclude age: Int)
 
     object Person {
       implicit val encoder: JsonEncoder[Person] = DeriveJsonEncoder.gen[Person]
