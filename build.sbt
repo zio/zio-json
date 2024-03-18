@@ -230,12 +230,23 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform, NativePlatform)
             "org.typelevel" %% "jawn-ast" % "1.5.1" % "test"
           )
 
+        case Some((2, n)) =>
+          if (n >= 13) {
+            Seq(
+              "com.particeep"      %% "play-json-extensions" % "0.43.1" % "test",
+              "com.typesafe.play" %%% "play-json"            % "2.9.4" % "test",
+              "org.typelevel"      %% "jawn-ast"             % "1.5.1"  % "test"
+            )
+          } else {
+            Seq(
+              "ai.x"               %% "play-json-extensions" % "0.42.0" % "test",
+              "com.typesafe.play" %%% "play-json"            % "2.9.4" % "test",
+              "org.typelevel"      %% "jawn-ast"             % "1.5.1"  % "test"
+            )
+          }
+
         case _ =>
-          Seq(
-            "ai.x"               %% "play-json-extensions" % "0.42.0" % "test",
-            "com.typesafe.play" %%% "play-json"            % "2.9.4"  % "test",
-            "org.typelevel"      %% "jawn-ast"             % "1.5.1"  % "test"
-          )
+          Seq.empty
       }
     }
   )
