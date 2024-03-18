@@ -70,7 +70,7 @@ object YamlEncoderSpec extends ZIOSpecDefault {
       test("sequence root") {
         assert(
           Json
-            .Arr(Json.Bool(true), Json.Bool(false), Json.Bool(true))
+            .Arr(Json.Bool.True, Json.Bool.False, Json.Bool.True)
             .toYaml(YamlOptions.default.copy(lineBreak = LineBreak.UNIX))
         )(
           isRight(equalTo("""  - true
