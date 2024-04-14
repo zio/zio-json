@@ -306,7 +306,6 @@ lazy val zioJsonMacros = crossProject(JSPlatform, JVMPlatform, NativePlatform)
   .settings(crossProjectSettings)
   .settings(macroExpansionSettings)
   .settings(
-    crossScalaVersions -= ScalaDotty,
     scalacOptions -= "-Xfatal-warnings", // not quite ready.
     libraryDependencies ++= Seq(
       "org.scala-lang" % "scala-reflect" % scalaVersion.value % Provided,

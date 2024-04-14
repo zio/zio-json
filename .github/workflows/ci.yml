@@ -98,7 +98,6 @@ jobs:
         if: matrix.platform == 'Native'
         run: sudo apt-get update && sudo apt-get install -y libuv1-dev
       - name: Run Macros tests
-        if: ${{ !startsWith(matrix.scala, '3.3.') }}
         run: sbt ++${{ matrix.scala }}! testScala2${{ matrix.platform }}
       - name: Run tests
         run: sbt ++${{ matrix.scala }}! test${{ matrix.platform }}
