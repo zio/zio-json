@@ -174,3 +174,47 @@ implicit val decodeName: JsonDecoder[String Refined NonEmpty] =
 ```
 
 Now the code compiles.
+
+### Writing a Custom Decoder
+In some rare cases, you might encounter situations where the data format deviates from the expected structure.
+
+#### Problem
+Let's consider an Animal case class with a categories field that should be a list of strings. However, some JSON data might represent the categories as a comma-separated string instead of a proper list.
+
+```scala mdoc
+import zio.json.ast.Json
+case class Animal(name: String, categories: List[String])
+```
+
+
+#### The Solution: Custom Decoder
+
+We can create custom decoders to handle specific data formats. Here's an implementation for our Animal case class:
+```scala mdoc
+object Animal {
+  implicit val decoder: JsonDecoder[Animal] = JsonDecoder[Json].mapOrFail {
+    case Json.Obj(fields) =>
+      (for {
+        name <- fields.find(_._1 == "name").map(_._2.toString())
+        categories <- fields
+          .find(_._1 == "categories").map(_._2.toString())
+      } yield Right(Animal(name, handleCategories(categories))))
+        .getOrElse(Left("DecodingError"))
+    case _ => Left("Error")
+  }
+
+  private def handleCategories(categories: String): List[String] = {
+    val decodedList = JsonDecoder[List[String]].decodeJson(categories)
+    decodedList match {
+      case Right(list) => list
+      case Left(_) =>
+        categories.replaceAll("\"", "").split(",").toList
+    }
+  }
+}
+```
+And now, JsonDecoder for Animal can handle both formats:
+``` scala mdoc
+"""{"name": "Dog", "categories": "Warm-blooded, Mammal"}""".fromJson[Animal]
+"""{"name": "Snake", "categories": [ "Cold-blooded", "Reptile"]}""".fromJson[Animal]
+```
