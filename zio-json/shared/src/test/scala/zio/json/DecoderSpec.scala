@@ -149,6 +149,14 @@ object DecoderSpec extends ZIOSpecDefault {
           assert("""{"Child2":{}}""".fromJson[Parent])(isRight(equalTo(Child2()))) &&
           assert("""{"type":"Child1"}""".fromJson[Parent])(isLeft(equalTo("(invalid disambiguator)")))
         },
+        test("sum encoding with hint names") {
+          import examplesumhintnames._
+
+          assert("""{"child1":{}}""".fromJson[Parent])(isRight(equalTo(Child1()))) &&
+          assert("""{"child2":{}}""".fromJson[Parent])(isRight(equalTo(Child2()))) &&
+          assert("""{"Child1":{}}""".fromJson[Parent])(isLeft(equalTo("(invalid disambiguator)"))) &&
+          assert("""{"type":"child1"}""".fromJson[Parent])(isLeft(equalTo("(invalid disambiguator)")))
+        },
         test("sum alternative encoding") {
           import examplealtsum._
 
@@ -156,6 +164,14 @@ object DecoderSpec extends ZIOSpecDefault {
           assert("""{"hint":"Abel"}""".fromJson[Parent])(isRight(equalTo(Child2()))) &&
           assert("""{"hint":"Samson"}""".fromJson[Parent])(isLeft(equalTo("(invalid disambiguator)"))) &&
           assert("""{"Cain":{}}""".fromJson[Parent])(isLeft(equalTo("(missing hint 'hint')")))
+        },
+        test("sum alternative encoding with hint names") {
+          import examplealtsumhintnames._
+
+          assert("""{"hint":"child1"}""".fromJson[Parent])(isRight(equalTo(Child1()))) &&
+          assert("""{"hint":"Abel"}""".fromJson[Parent])(isRight(equalTo(Child2()))) &&
+          assert("""{"hint":"Child2"}""".fromJson[Parent])(isLeft(equalTo("(invalid disambiguator)"))) &&
+          assert("""{"child1":{}}""".fromJson[Parent])(isLeft(equalTo("(missing hint 'hint')")))
         },
         test("unicode") {
           assert(""""€🐵🥰"""".fromJson[String])(isRight(equalTo("€🐵🥰")))
@@ -544,6 +560,21 @@ object DecoderSpec extends ZIOSpecDefault {
 
   }
 
+  object examplesumhintnames {
+
+    @jsonHintNames(CamelCase)
+    sealed abstract class Parent
+
+    object Parent {
+      implicit val decoder: JsonDecoder[Parent] = DeriveJsonDecoder.gen[Parent]
+    }
+
+    case class Child1() extends Parent
+
+    case class Child2() extends Parent
+
+  }
+
   object examplealtsum {
 
     @jsonDiscriminator("hint")
@@ -554,6 +585,23 @@ object DecoderSpec extends ZIOSpecDefault {
     }
 
     @jsonHint("Cain")
+    case class Child1() extends Parent
+
+    @jsonHint("Abel")
+    case class Child2() extends Parent
+
+  }
+
+  object examplealtsumhintnames {
+
+    @jsonDiscriminator("hint")
+    @jsonHintNames(CamelCase)
+    sealed abstract class Parent
+
+    object Parent {
+      implicit val decoder: JsonDecoder[Parent] = DeriveJsonDecoder.gen[Parent]
+    }
+
     case class Child1() extends Parent
 
     @jsonHint("Abel")

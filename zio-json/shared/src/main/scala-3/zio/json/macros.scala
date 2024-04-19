@@ -64,6 +64,9 @@ case object PascalCase extends JsonMemberFormat {
 case object KebabCase extends JsonMemberFormat {
   override def apply(memberName: String): String = jsonMemberNames.enforceSnakeOrKebabCase(memberName, '-')
 }
+case object IdentityFormat extends JsonMemberFormat {
+  override def apply(memberName: String): String = memberName
+}
 
 /** zio-json version 0.3.0 formats. abc123Def -> abc_123_def */
 object ziojson_03 {
@@ -174,6 +177,12 @@ private[json] object jsonMemberNames {
  * sealed traits. Defaults to the short type name.
  */
 final case class jsonHint(name: String) extends Annotation
+
+/**
+ * If used on a sealed class will determine the strategy of type hint value transformation for disambiguating
+ * classes during serialization and deserialization. Same strategies are provided as for [[jsonMemberNames]].
+ */
+final case class jsonHintNames(format: JsonMemberFormat) extends Annotation
 
 /**
  * If used on a case class, will exit early if any fields are in the JSON that
@@ -370,10 +379,12 @@ object DeriveJsonDecoder extends Derivation[JsonDecoder] { self =>
   }
 
   def split[A](ctx: SealedTrait[JsonDecoder, A]): JsonDecoder[A] = {
+    val jsonHintFormat: JsonMemberFormat =
+      ctx.annotations.collectFirst { case jsonHintNames(format) => format }.getOrElse(IdentityFormat)
     val names: Array[String] = IArray.genericWrapArray(ctx.subtypes.map { p =>
       p.annotations.collectFirst { case jsonHint(name) =>
         name
-      }.getOrElse(p.typeInfo.short)
+      }.getOrElse(jsonHintFormat(p.typeInfo.short))
     }).toArray
 
     val matrix: StringMatrix = new StringMatrix(names)
@@ -594,6 +605,8 @@ object DeriveJsonEncoder extends Derivation[JsonEncoder] { self =>
     }
 
   def split[A](ctx: SealedTrait[JsonEncoder, A]): JsonEncoder[A] = {
+    val jsonHintFormat: JsonMemberFormat =
+      ctx.annotations.collectFirst { case jsonHintNames(format) => format }.getOrElse(IdentityFormat)
     val discrim = ctx
       .annotations
       .collectFirst {
@@ -608,7 +621,7 @@ object DeriveJsonEncoder extends Derivation[JsonEncoder] { self =>
               .annotations
               .collectFirst {
                 case jsonHint(name) => name
-              }.getOrElse(sub.typeInfo.short)
+              }.getOrElse(jsonHintFormat(sub.typeInfo.short))
 
             out.write("{")
             val indent_ = JsonEncoder.bump(indent)
@@ -635,7 +648,7 @@ object DeriveJsonEncoder extends Derivation[JsonEncoder] { self =>
                 .annotations
                 .collectFirst {
                   case jsonHint(name) => name
-                }.getOrElse(sub.typeInfo.short)
+                }.getOrElse(jsonHintFormat(sub.typeInfo.short))
 
               Json.Obj(
                 Chunk(
@@ -652,7 +665,7 @@ object DeriveJsonEncoder extends Derivation[JsonEncoder] { self =>
       def getName(annotations: Iterable[_], default: => String): String =
         annotations
           .collectFirst { case jsonHint(name) => name }
-          .getOrElse(default)
+          .getOrElse(jsonHintFormat(default))
 
       new JsonEncoder[A] {
         def unsafeEncode(a: A, indent: Option[Int], out: Write): Unit = {

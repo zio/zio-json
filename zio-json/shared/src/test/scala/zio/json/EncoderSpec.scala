@@ -400,10 +400,25 @@ object EncoderSpec extends ZIOSpecDefault {
           assert((Child1(): Parent).toJsonAST)(isRight(equalTo(Json.Obj(Chunk("Child1" -> Json.Obj()))))) &&
           assert((Child2(): Parent).toJsonAST)(isRight(equalTo(Json.Obj(Chunk("Cain" -> Json.Obj())))))
         },
+        test("sum encoding with hint names") {
+          import examplesumhintnames._
+
+          assert((Child1(): Parent).toJsonAST)(isRight(equalTo(Json.Obj(Chunk("child1" -> Json.Obj()))))) &&
+          assert((Child2(): Parent).toJsonAST)(isRight(equalTo(Json.Obj(Chunk("Cain" -> Json.Obj())))))
+        },
         test("sum alternative encoding") {
           import examplealtsum._
 
           assert((Child1(): Parent).toJsonAST)(isRight(equalTo(Json.Obj("hint" -> Json.Str("Child1"))))) &&
+          assert((Child2(None): Parent).toJsonAST)(isRight(equalTo(Json.Obj("hint" -> Json.Str("Abel"))))) &&
+          assert((Child2(Some("hello")): Parent).toJsonAST)(
+            (isRight(equalTo(Json.Obj("s" -> Json.Str("hello"), "hint" -> Json.Str("Abel")))))
+          )
+        },
+        test("sum alternative encoding with hint names") {
+          import examplealtsumhintnames._
+
+          assert((Child1(): Parent).toJsonAST)(isRight(equalTo(Json.Obj("hint" -> Json.Str("child1"))))) &&
           assert((Child2(None): Parent).toJsonAST)(isRight(equalTo(Json.Obj("hint" -> Json.Str("Abel"))))) &&
           assert((Child2(Some("hello")): Parent).toJsonAST)(
             (isRight(equalTo(Json.Obj("s" -> Json.Str("hello"), "hint" -> Json.Str("Abel")))))
@@ -488,9 +503,42 @@ object EncoderSpec extends ZIOSpecDefault {
 
   }
 
+  object examplesumhintnames {
+
+    @jsonHintNames(CamelCase)
+    sealed abstract class Parent
+
+    object Parent {
+      implicit val encoder: JsonEncoder[Parent] = DeriveJsonEncoder.gen[Parent]
+    }
+
+    case class Child1() extends Parent
+
+    @jsonHint("Cain")
+    case class Child2() extends Parent
+
+  }
+
   object examplealtsum {
 
     @jsonDiscriminator("hint")
+    sealed abstract class Parent
+
+    object Parent {
+      implicit val encoder: JsonEncoder[Parent] = DeriveJsonEncoder.gen[Parent]
+    }
+
+    case class Child1() extends Parent
+
+    @jsonHint("Abel")
+    case class Child2(s: Option[String]) extends Parent
+
+  }
+
+  object examplealtsumhintnames {
+
+    @jsonDiscriminator("hint")
+    @jsonHintNames(CamelCase)
     sealed abstract class Parent
 
     object Parent {

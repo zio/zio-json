@@ -80,6 +80,32 @@ banana.toJson
 apple.toJson
 ```
 
+Another way of changing type hint is using `@jsonHintNames` annotation on sealed class. It allows to apply transformation
+to all type hint values in hierarchy. Same transformations are provided as for `@jsonMemberNames` annotation.
+
+Here's an example:
+
+```scala mdoc
+import zio.json._
+
+@jsonHintNames(SnakeCase)
+sealed trait FruitKind
+
+case class GoodFruit(good: Boolean) extends FruitKind
+
+case class BadFruit(bad: Boolean) extends FruitKind
+
+object FruitKind {
+  implicit val encoder: JsonEncoder[FruitKind] =
+    DeriveJsonEncoder.gen[FruitKind]
+}
+
+val goodFruit: FruitKind = GoodFruit(true)
+val badFruit: FruitKind = BadFruit(true)
+
+goodFruit.toJson
+badFruit.toJson
+```
 ## jsonDiscriminator
 
 
