@@ -14,6 +14,7 @@ import zio.json.internal.{ Lexer, RetractReader, StringMatrix, Write }
 
 import scala.annotation._
 import scala.collection.mutable
+import scala.collection.immutable.ArraySeq
 import scala.language.experimental.macros
 
 /**
@@ -47,127 +48,12 @@ final case class jsonDiscriminator(name: String) extends Annotation
 // does not provide a mechanism for obtaining the CaseClass associated to the
 // Subtype.
 
-sealed trait JsonMemberFormat extends (String => String)
-case class CustomCase(f: String => String) extends JsonMemberFormat {
-  override def apply(memberName: String): String = f(memberName)
-}
-case object SnakeCase extends JsonMemberFormat {
-  override def apply(memberName: String): String = jsonMemberNames.enforceSnakeOrKebabCase(memberName, '_')
-}
-case object CamelCase extends JsonMemberFormat {
-  override def apply(memberName: String): String =
-    jsonMemberNames.enforceCamelOrPascalCase(memberName, toPascal = false)
-}
-case object PascalCase extends JsonMemberFormat {
-  override def apply(memberName: String): String = jsonMemberNames.enforceCamelOrPascalCase(memberName, toPascal = true)
-}
-case object KebabCase extends JsonMemberFormat {
-  override def apply(memberName: String): String = jsonMemberNames.enforceSnakeOrKebabCase(memberName, '-')
-}
-
-/** zio-json version 0.3.0 formats. abc123Def -> abc_123_def */
-object ziojson_03 {
-  case object SnakeCase extends JsonMemberFormat {
-    override def apply(memberName: String): String =
-      jsonMemberNames.enforceSnakeOrKebabCaseSeparateNumbers(memberName, '_')
-  }
-  case object KebabCase extends JsonMemberFormat {
-    override def apply(memberName: String): String =
-      jsonMemberNames.enforceSnakeOrKebabCaseSeparateNumbers(memberName, '-')
-  }
-}
-
 /**
  * If used on a case class, determines the strategy of member names
  * transformation during serialization and deserialization. Four common
  * strategies are provided above and a custom one to support specific use cases.
  */
 final case class jsonMemberNames(format: JsonMemberFormat) extends Annotation
-private[json] object jsonMemberNames {
-
-  /**
-   * ~~Stolen~~ Borrowed from jsoniter-scala by Andriy Plokhotnyuk
-   * (he even granted permission for this, imagine that!)
-   */
-
-  import java.lang.Character._
-
-  def enforceCamelOrPascalCase(s: String, toPascal: Boolean): String =
-    if (s.indexOf('_') == -1 && s.indexOf('-') == -1) {
-      if (s.isEmpty) s
-      else {
-        val ch = s.charAt(0)
-        val fixedCh =
-          if (toPascal) toUpperCase(ch)
-          else toLowerCase(ch)
-        s"$fixedCh${s.substring(1)}"
-      }
-    } else {
-      val len             = s.length
-      val sb              = new StringBuilder(len)
-      var i               = 0
-      var isPrecedingDash = toPascal
-      while (i < len) isPrecedingDash = {
-        val ch = s.charAt(i)
-        i += 1
-        (ch == '_' || ch == '-') || {
-          val fixedCh =
-            if (isPrecedingDash) toUpperCase(ch)
-            else toLowerCase(ch)
-          sb.append(fixedCh)
-          false
-        }
-      }
-      sb.toString
-    }
-
-  def enforceSnakeOrKebabCase(s: String, separator: Char): String = {
-    val len                   = s.length
-    val sb                    = new StringBuilder(len << 1)
-    var i                     = 0
-    var isPrecedingNotUpperCased = false
-    while (i < len) isPrecedingNotUpperCased = {
-      val ch = s.charAt(i)
-      i += 1
-      if (ch == '_' || ch == '-') {
-        sb.append(separator)
-        false
-      } else if (!isUpperCase(ch)) {
-        sb.append(ch)
-        true
-      } else {
-        if (isPrecedingNotUpperCased || i > 1 && i < len && !isUpperCase(s.charAt(i))) sb.append(separator)
-        sb.append(toLowerCase(ch))
-        false
-      }
-    }
-    sb.toString
-  }
-
-  def enforceSnakeOrKebabCaseSeparateNumbers(s: String, separator: Char): String = {
-    val len = s.length
-    val sb = new StringBuilder(len << 1)
-    var i = 0
-    var isPrecedingLowerCased = false
-    while (i < len) isPrecedingLowerCased = {
-      val ch = s.charAt(i)
-      i += 1
-      if (ch == '_' || ch == '-') {
-        sb.append(separator)
-        false
-      } else if (isLowerCase(ch)) {
-        sb.append(ch)
-        true
-      } else {
-        if (isPrecedingLowerCased || i > 1 && i < len && isLowerCase(s.charAt(i))) sb.append(separator)
-        sb.append(toLowerCase(ch))
-        false
-      }
-    }
-    sb.toString
-  }
-
-}
 
 /**
  * If used on a case class will determine the type hint value for disambiguating
@@ -193,18 +79,19 @@ final class jsonNoExtraFields extends Annotation
  */
 final class jsonExclude extends Annotation
 
-// TODO: implement same configuration as for Scala 2 once this issue is resolved: https://github.com/softwaremill/magnolia/issues/296
-object DeriveJsonDecoder extends Derivation[JsonDecoder] { self =>
+final class JsonDecoderDerivation(config: JsonCodecConfiguration) extends Derivation[JsonDecoder] {
   def join[A](ctx: CaseClass[Typeclass, A]): JsonDecoder[A] = {
     val (transformNames, nameTransform): (Boolean, String => String) =
       ctx.annotations.collectFirst { case jsonMemberNames(format) => format }
+        .orElse(Some(config.fieldNameMapping))
+        .filter(_ != IdentityFormat)
         .map(true -> _)
-        .getOrElse(false -> identity)
+        .getOrElse(false -> IdentityFormat)
 
     val no_extra = ctx
       .annotations
       .collectFirst { case _: jsonNoExtraFields => () }
-      .isDefined
+      .isDefined || !config.allowExtraFields
 
     if (ctx.params.isEmpty) {
       new JsonDecoder[A] {
@@ -312,7 +199,7 @@ object DeriveJsonDecoder extends Derivation[JsonDecoder] { self =>
             i += 1
           }
 
-          ctx.rawConstruct(new ArraySeq(ps))
+          ctx.rawConstruct(ArraySeq.unsafeWrapArray(ps))
         }
 
         override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): A = {
@@ -360,7 +247,7 @@ object DeriveJsonDecoder extends Derivation[JsonDecoder] { self =>
                 i += 1
               }
 
-              ctx.rawConstruct(new ArraySeq(ps))
+              ctx.rawConstruct(ArraySeq.unsafeWrapArray(ps))
 
             case _ => throw UnsafeJson(JsonError.Message("Not an object") :: trace)
           }
@@ -384,7 +271,9 @@ object DeriveJsonDecoder extends Derivation[JsonDecoder] { self =>
     lazy val namesMap: Map[String, Int] =
       names.zipWithIndex.toMap
 
-    def discrim = ctx.annotations.collectFirst { case jsonDiscriminator(n) => n }
+    def discrim = ctx.annotations
+      .collectFirst { case jsonDiscriminator(n) => n }
+      .orElse(config.sumTypeHandling.discriminatorField)
 
     if (discrim.isEmpty) {
       // We're not allowing extra fields in this encoding
@@ -480,17 +369,16 @@ object DeriveJsonDecoder extends Derivation[JsonDecoder] { self =>
       }
     }
   }
+}
 
-  inline def gen[A](using mirror: Mirror.Of[A]) = self.derived[A]
-
-  // Backcompat for 2.12, otherwise we'd use ArraySeq.unsafeWrapArray
-  private final class ArraySeq(p: Array[Any]) extends IndexedSeq[Any] {
-    def apply(i: Int): Any = p(i)
-    def length: Int        = p.length
+object DeriveJsonDecoder {
+  inline def gen[A](using config: JsonCodecConfiguration, mirror: Mirror.Of[A]) = {
+    val derivation = new JsonDecoderDerivation(config)
+    derivation.derived[A]
   }
 }
 
-object DeriveJsonEncoder extends Derivation[JsonEncoder] { self =>
+final class JsonEncoderDerivation(config: JsonCodecConfiguration) extends Derivation[JsonEncoder] {
   def join[A](ctx: CaseClass[Typeclass, A]): JsonEncoder[A] =
     if (ctx.params.isEmpty) {
       new JsonEncoder[A] {
@@ -504,8 +392,10 @@ object DeriveJsonEncoder extends Derivation[JsonEncoder] { self =>
       new JsonEncoder[A] {
         val (transformNames, nameTransform): (Boolean, String => String) =
           ctx.annotations.collectFirst { case jsonMemberNames(format) => format }
+            .orElse(Some(config.fieldNameMapping))
+            .filter(_ != IdentityFormat)
             .map(true -> _)
-            .getOrElse(false -> identity)
+            .getOrElse(false -> IdentityFormat)
 
         val params = ctx
           .params
@@ -599,6 +489,7 @@ object DeriveJsonEncoder extends Derivation[JsonEncoder] { self =>
       .collectFirst {
         case jsonDiscriminator(n) => n
       }
+      .orElse(config.sumTypeHandling.discriminatorField)
 
     if (discrim.isEmpty) {
       new JsonEncoder[A] {
@@ -666,7 +557,7 @@ object DeriveJsonEncoder extends Derivation[JsonEncoder] { self =>
             JsonEncoder.string.unsafeEncode(getName(sub.annotations, sub.typeInfo.short), indent_, out)
 
             // whitespace is always off by 2 spaces at the end, probably not worth fixing
-            val intermediate = new NestedWriter(out, indent_)
+            val intermediate = new DeriveJsonEncoder.NestedWriter(out, indent_)
             sub.typeclass.unsafeEncode(sub.cast(a), indent, intermediate)
           }
         }
@@ -682,12 +573,17 @@ object DeriveJsonEncoder extends Derivation[JsonEncoder] { self =>
       }
     }
   }
+}
 
-  inline def gen[A](using mirror: Mirror.Of[A]) = self.derived[A]
+object DeriveJsonEncoder {
+  inline def gen[A](using config: JsonCodecConfiguration, mirror: Mirror.Of[A]) = {
+    val derivation = new JsonEncoderDerivation(config)
+    derivation.derived[A]
+  }
 
   // intercepts the first `{` of a nested writer and discards it. We also need to
   // inject a `,` unless an empty object `{}` has been written.
-  private[this] final class NestedWriter(out: Write, indent: Option[Int]) extends Write {
+  private[json] final class NestedWriter(out: Write, indent: Option[Int]) extends Write {
     private[this] var first, second = true
 
     def write(c: Char): Unit = write(c.toString) // could be optimised
@@ -714,7 +610,7 @@ object DeriveJsonEncoder extends Derivation[JsonEncoder] { self =>
 }
 
 object DeriveJsonCodec {
-  inline def gen[A](using mirror: Mirror.Of[A]) = {
+  inline def gen[A](using config: JsonCodecConfiguration, mirror: Mirror.Of[A]) = {
     val encoder = DeriveJsonEncoder.gen[A]
     val decoder = DeriveJsonDecoder.gen[A]
 
