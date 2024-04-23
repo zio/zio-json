@@ -52,7 +52,7 @@ object NeoJmhPlugin extends AutoPlugin {
   override def projectSettings =
     inConfig(Jmh)(
       Defaults.testSettings ++ Seq(
-        run := (run in JmhInternal).evaluated,
+        run := (JmhInternal / run).evaluated,
         neoJmhGenerator := "reflection",
         neoJmhYourkit := Nil,
         javaOptions ++= Seq(
@@ -71,11 +71,11 @@ object NeoJmhPlugin extends AutoPlugin {
       )
     ) ++ inConfig(JmhInternal)(
       Defaults.testSettings ++ Seq(
-        javaOptions := (javaOptions in Jmh).value,
-        envVars := (envVars in Jmh).value,
-        mainClass in run := Some("org.openjdk.jmh.Main"),
-        fork in run := true,
-        dependencyClasspath ++= (fullClasspath in Jmh).value,
+        javaOptions := (Jmh / javaOptions).value,
+        envVars := (Jmh / envVars).value,
+        run / mainClass := Some("org.openjdk.jmh.Main"),
+        run / fork := true,
+        dependencyClasspath ++= (Jmh / fullClasspath).value,
         sourceGenerators += generateJmhSourcesAndResources.map { case (sources, _) =>
           sources
         },
@@ -106,23 +106,23 @@ object NeoJmhPlugin extends AutoPlugin {
 
   def backCompatProjectSettings: Seq[Setting[_]] = Seq(
     // WORKAROUND https://github.com/sbt/sbt/issues/3935
-    dependencyClasspathAsJars in NeoJmhPlugin.JmhInternal ++= (fullClasspathAsJars in NeoJmhKeys.Jmh).value
+    NeoJmhPlugin.JmhInternal / dependencyClasspathAsJars ++= (NeoJmhKeys.Jmh / fullClasspathAsJars).value
   )
 
   def generateBenchmarkSourcesAndResources: Def.Initialize[Task[(Seq[File], Seq[File])]] = Def.task {
     val s                = streams.value
     val cacheDir         = crossTarget.value / "jmh-cache"
-    val bytecodeDir      = (classDirectory in Jmh).value
+    val bytecodeDir      = (Jmh / classDirectory).value
     val sourceDir        = sourceManaged.value
     val resourceDir      = resourceManaged.value
-    val generator        = (neoJmhGenerator in Jmh).value
+    val generator        = (Jmh / neoJmhGenerator).value
     val classpath        = dependencyClasspath.value
-    val javaHomeV        = (javaHome in Jmh).value
-    val outputStrategyV  = (outputStrategy in Jmh).value
-    val workingDirectory = Option((baseDirectory in Jmh).value)
-    val connectInputV    = (connectInput in Jmh).value
-    val envVarsV         = (envVars in Jmh).value
-    val javaFlags        = (javaOptions in Jmh).value.toVector
+    val javaHomeV        = (Jmh / javaHome).value
+    val outputStrategyV  = (Jmh / outputStrategy).value
+    val workingDirectory = Option((Jmh / baseDirectory).value)
+    val connectInputV    = (Jmh / connectInput).value
+    val envVarsV         = (Jmh / envVars).value
+    val javaFlags        = (Jmh / javaOptions).value.toVector
 
     val inputs: Set[File] = (bytecodeDir ** "*").filter(_.isFile).get.toSet
     val cachedGeneration = FileFunction.cached(cacheDir, FilesInfo.hash) { _ =>
