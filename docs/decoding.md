@@ -197,7 +197,7 @@ final case class Quote(
 )
 ```
 
-All approaches result in the same result:
+All approaches have the same result:
 
 ```scala mdoc:fail
 """{"01. symbol":"IBM","02. open": "182.4300","03. high": "182.8000"}""".fromJson[Quote]
