@@ -197,12 +197,19 @@ final case class Quote(
 )
 ```
 
+All approaches result in the same result:
+
+```scala mdoc:fail
+"""{"01. symbol":"IBM","02. open": "182.4300","03. high": "182.8000"}""".fromJson[Quote]
+// >> Right(Quote(IBM,182.4300,182.8000))
+```
+
 ## Approach 1: use annotation hints
 
 In this approach we enrich the case class with annotations to tell the derived decoder which field names to use.
 Obviously, this approach only works if we can/want to change the case class.
 
-```scala mdoc
+```scala mdoc:reset
 import zio.json._
 
 final case class Quote(
@@ -214,9 +221,6 @@ final case class Quote(
 object Quote {
   implicit val decoder: JsonDecoder[Quote] = DeriveJsonDecoder.gen[Quote]
 }
-
-"""{"01. symbol":"IBM","02. open": "182.4300","03. high": "182.8000"}""".fromJson[Quote]
-// >> Right(Quote(IBM,182.4300,182.8000))
 ```
 
 ## Approach 2: use an intermediate case class
@@ -224,8 +228,10 @@ object Quote {
 Instead of hints, we can also put the actual field names in an intermediate case class. In our example the field names
 are not valid scala identifiers. We fix this by putting the names in backticks:
 
-```scala mdoc
+```scala mdoc:reset
 import zio.json._
+
+final case class Quote(symbol: String, open: String, high: String)
 
 object Quote {
   private final case class JsonQuote(
@@ -249,9 +255,11 @@ extract data from any valid JSON.
 Note that this implementation is a bit sloppy. It uses `toString` on a JSON node. The node is not necessarily a
 String, it can be of any JSON type! So this might happily process JSON that doesn't match your expectations.
 
-```scala mdoc
+```scala mdoc:reset
 import zio.json._
 import zio.json.ast.Json
+
+final case class Quote(symbol: String, open: String, high: String)
 
 object Quote {
   implicit val decoder: JsonDecoder[Quote] = JsonDecoder[Json]
@@ -279,9 +287,11 @@ object Quote {
 Here we also first decode to `Json`, but now we use cursors to find the data we need. Here we do check that the fields
 are actually strings.
 
-```scala mdoc
+```scala mdoc:reset
 import zio.json._
 import zio.json.ast.{Json, JsonCursor}
+
+final case class Quote(symbol: String, open: String, high: String)
 
 object Quote {
   private val symbolC = JsonCursor.field("01. symbol") >>> JsonCursor.isString
@@ -307,7 +317,7 @@ both cases.
 
 Here's a custom decode for our Animal case class:
 
-```scala mdoc
+```scala mdoc:reset
 import zio.Chunk
 import zio.json._
 import zio.json.ast._
