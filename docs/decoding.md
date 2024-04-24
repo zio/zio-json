@@ -175,46 +175,188 @@ implicit val decodeName: JsonDecoder[String Refined NonEmpty] =
 
 Now the code compiles.
 
-### Writing a Custom Decoder
-In some rare cases, you might encounter situations where the data format deviates from the expected structure.
+# Parsing custom JSON
 
-#### Problem
-Let's consider an Animal case class with a categories field that should be a list of strings. However, some JSON data might represent the categories as a comma-separated string instead of a proper list.
+In this section we show several approaches for decoding JSON that looks like:
 
-```scala mdoc
-import zio.json.ast.Json
-case class Animal(name: String, categories: List[String])
+```json
+{
+  "01. symbol": "IBM",
+  "02. open": "182.4300",
+  "03. high": "182.8000"
+}
 ```
 
+Which we want to decode into the following case class:
 
-#### The Solution: Custom Decoder
-
-We can create custom decoders to handle specific data formats. Here's an implementation for our Animal case class:
 ```scala mdoc
-object Animal {
-  implicit val decoder: JsonDecoder[Animal] = JsonDecoder[Json].mapOrFail {
-    case Json.Obj(fields) =>
-      (for {
-        name <- fields.find(_._1 == "name").map(_._2.toString())
-        categories <- fields
-          .find(_._1 == "categories").map(_._2.toString())
-      } yield Right(Animal(name, handleCategories(categories))))
-        .getOrElse(Left("DecodingError"))
-    case _ => Left("Error")
-  }
+final case class Quote(
+  symbol: String,
+  open: String,
+  high: String
+)
+```
 
-  private def handleCategories(categories: String): List[String] = {
-    val decodedList = JsonDecoder[List[String]].decodeJson(categories)
-    decodedList match {
-      case Right(list) => list
-      case Left(_) =>
-        categories.replaceAll("\"", "").split(",").toList
+All approaches have the same result:
+
+```scala mdoc:fail
+"""{"01. symbol":"IBM","02. open": "182.4300","03. high": "182.8000"}""".fromJson[Quote]
+// >> Right(Quote(IBM,182.4300,182.8000))
+```
+
+## Approach 1: use annotation hints
+
+In this approach we enrich the case class with annotations to tell the derived decoder which field names to use.
+Obviously, this approach only works if we can/want to change the case class.
+
+```scala mdoc:reset
+import zio.json._
+
+final case class Quote(
+  @jsonField("01. symbol") symbol: String,
+  @jsonField("02. open") open: String,
+  @jsonField("03. high") high: String
+)
+
+object Quote {
+  implicit val decoder: JsonDecoder[Quote] = DeriveJsonDecoder.gen[Quote]
+}
+```
+
+## Approach 2: use an intermediate case class
+
+Instead of hints, we can also put the actual field names in an intermediate case class. In our example the field names
+are not valid scala identifiers. We fix this by putting the names in backticks:
+
+```scala mdoc:reset
+import zio.json._
+
+final case class Quote(symbol: String, open: String, high: String)
+
+object Quote {
+  private final case class JsonQuote(
+    `01. symbol`: String,
+    `02. open`: String,
+    `03. high`: String
+  )
+
+  implicit val decoder: JsonDecoder[Quote] =
+    DeriveJsonDecoder
+      .gen[JsonQuote]
+      .map { case JsonQuote(s, o, h) => Quote(s, o, h) }
+}
+```
+
+## Approach 3: decode to JSON
+
+In this approach we first decode to the generic `Json` data structure. This approach is very flexible because it can
+extract data from any valid JSON.
+
+Note that this implementation is a bit sloppy. It uses `toString` on a JSON node. The node is not necessarily a
+String, it can be of any JSON type! So this might happily process JSON that doesn't match your expectations.
+
+```scala mdoc:reset
+import zio.json._
+import zio.json.ast.Json
+
+final case class Quote(symbol: String, open: String, high: String)
+
+object Quote {
+  implicit val decoder: JsonDecoder[Quote] = JsonDecoder[Json]
+    .mapOrFail {
+      case Json.Obj(fields) =>
+        def findField(name: String): Either[String, String] =
+          fields
+            .find(_._1 == name)
+            .map(_._2.toString())  // ⚠️ .toString on any JSON type
+            .toRight(left = s"Field '$name' is missing")
+  
+        for {
+          symbol <- findField("01. symbol")
+          open <- findField("02. open")
+          high <- findField("03. high")
+        } yield Quote(symbol, open, high)
+      case _ =>
+        Left("Not a JSON record")
     }
+}
+```
+
+## Approach 4: decode to JSON, use cursors
+
+Here we also first decode to `Json`, but now we use cursors to find the data we need. Here we do check that the fields
+are actually strings.
+
+```scala mdoc:reset
+import zio.json._
+import zio.json.ast.{Json, JsonCursor}
+
+final case class Quote(symbol: String, open: String, high: String)
+
+object Quote {
+  private val symbolC = JsonCursor.field("01. symbol") >>> JsonCursor.isString
+  private val openC = JsonCursor.field("02. open") >>> JsonCursor.isString
+  private val highC = JsonCursor.field("03. high") >>> JsonCursor.isString
+
+  implicit val decoder: JsonDecoder[Quote] = JsonDecoder[Json]
+    .mapOrFail { c =>
+      for {
+        symbol <- c.get(symbolC)
+        open <- c.get(openC)
+        high <- c.get(highC)
+      } yield Quote(symbol.value, open.value, high.value)
   }
 }
 ```
-And now, JsonDecoder for Animal can handle both formats:
-``` scala mdoc
+
+# More custom decoder examples
+
+Let's consider an `Animal` case class with a `categories` field that should be a list of strings. However, some
+producers accidentally represent the categories as a comma-separated string instead of a proper list. We want to parse
+both cases.
+
+Here's a custom decode for our Animal case class:
+
+```scala mdoc:reset
+import zio.Chunk
+import zio.json._
+import zio.json.ast._
+
+case class Animal(name: String, categories: List[String])
+
+object Animal {
+  private val nameC = JsonCursor.field("name") >>> JsonCursor.isString
+  private val categoryArrayC = JsonCursor.field("categories") >>> JsonCursor.isArray
+  private val categoryStringC = JsonCursor.field("categories") >>> JsonCursor.isString
+
+  implicit val decoder: JsonDecoder[Animal] = JsonDecoder[Json]
+    .mapOrFail { c =>
+      for {
+        name <- c.get(nameC).map(_.value)
+        categories <- arrayCategory(c).map(_.toList)
+          .orElse(c.get(categoryStringC).map(_.value.split(',').map(_.trim).toList))
+      } yield Animal(name, categories)
+    }
+
+  private def arrayCategory(c: Json): Either[String, Chunk[String]] =
+    c.get(categoryArrayC)
+      .flatMap { arr =>
+        // Get the string elements, and sequence the obtained eithers to a single either
+        sequence(arr.elements.map(_.get(JsonCursor.isString).map(_.value)))
+      }
+
+  private def sequence[A, B](chunk: Chunk[Either[A, B]]): Either[A, Chunk[B]] =
+    chunk.partition(_.isLeft) match {
+      case (Nil, rights) => Right(rights.collect { case Right(r) => r })
+      case (lefts, _) => Left(lefts.collect { case Left(l) => l }.head)
+    }
+}
+```
+
+And now, the Json decoder for Animal can handle both formats:
+```scala mdoc
 """{"name": "Dog", "categories": "Warm-blooded, Mammal"}""".fromJson[Animal]
+// >> Right(Animal(Dog,List(Warm-blooded, Mammal)))
 """{"name": "Snake", "categories": [ "Cold-blooded", "Reptile"]}""".fromJson[Animal]
+// >>  Right(Animal(Snake,List(Cold-blooded, Reptile)))
 ```
