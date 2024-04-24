@@ -30,7 +30,7 @@ class UUIDBenchmarks {
     } yield s"$s1-$s2-$s3-$s4-$s5"
 
     unparsedUUIDChunk = {
-      Unsafe.unsafeCompat { implicit u =>
+      Unsafe.unsafe { implicit u =>
         zio.Runtime.default.unsafe.run(gen.runCollectN(10000).map(Chunk.fromIterable)).getOrThrow()
       }
     }

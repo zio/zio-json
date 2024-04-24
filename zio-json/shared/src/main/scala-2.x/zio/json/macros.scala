@@ -9,7 +9,6 @@ import zio.json.ast.Json
 import zio.json.internal.{ Lexer, RetractReader, StringMatrix, Write }
 
 import scala.annotation._
-import scala.collection.mutable
 import scala.language.experimental.macros
 
 /**
@@ -309,7 +308,7 @@ object DeriveJsonDecoder {
 
         val len: Int                = names.length
         val matrix: StringMatrix    = new StringMatrix(names, aliases)
-        val spans: Array[JsonError] = names.map(JsonError.ObjectAccess(_))
+        val spans: Array[JsonError] = names.map(JsonError.ObjectAccess)
         lazy val tcs: Array[JsonDecoder[Any]] =
           ctx.parameters.map(_.typeclass).toArray.asInstanceOf[Array[JsonDecoder[Any]]]
         lazy val defaults: Array[Option[Any]] =
@@ -431,7 +430,7 @@ object DeriveJsonDecoder {
       ctx.annotations.collectFirst { case jsonDiscriminator(n) => n }.orElse(config.sumTypeHandling.discriminatorField)
     if (discrim.isEmpty)
       new JsonDecoder[A] {
-        val spans: Array[JsonError] = names.map(JsonError.ObjectAccess(_))
+        val spans: Array[JsonError] = names.map(JsonError.ObjectAccess)
         def unsafeDecode(trace: List[JsonError], in: RetractReader): A = {
           Lexer.char(trace, in, '{')
           // we're not allowing extra fields in this encoding
@@ -469,7 +468,7 @@ object DeriveJsonDecoder {
       new JsonDecoder[A] {
         val hintfield               = discrim.get
         val hintmatrix              = new StringMatrix(Array(hintfield))
-        val spans: Array[JsonError] = names.map(JsonError.Message(_))
+        val spans: Array[JsonError] = names.map(JsonError.Message)
 
         def unsafeDecode(trace: List[JsonError], in: RetractReader): A = {
           val in_ = internal.RecordingReader(in)

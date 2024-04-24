@@ -17,7 +17,7 @@ trait JsonEncoderPlatformSpecific[A] { self: JsonEncoder[A] =>
     delimiter: Option[Char],
     endWith: Option[Char]
   ): ZPipeline[Any, Throwable, A, Char] =
-    Unsafe.unsafeCompat { (u: Unsafe) =>
+    Unsafe.unsafe { (u: Unsafe) =>
       implicit val unsafe: Unsafe = u
 
       ZPipeline.fromPush {

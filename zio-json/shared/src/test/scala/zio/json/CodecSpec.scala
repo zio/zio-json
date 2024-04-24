@@ -92,7 +92,6 @@ object CodecSpec extends ZIOSpecDefault {
           val snaked        = """{"indiana123_jones":""}"""
           val pascaled      = """{"Anders123Hejlsberg":""}"""
           val cameled       = """{"small123Talk":""}"""
-          val indianaJones  = """{"wHATcASEiStHIS":""}"""
           val overrides     = """{"not_modified":"","but-this-should-be":0}"""
           val kebabedLegacy = """{"shish-123-kebab":""}"""
           val snakedLegacy  = """{"indiana_123_jones":""}"""

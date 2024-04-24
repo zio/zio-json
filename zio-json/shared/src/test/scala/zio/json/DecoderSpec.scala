@@ -5,7 +5,7 @@ import zio.json._
 import zio.json.ast.Json
 import zio.test.Assertion._
 import zio.test.TestAspect.jvmOnly
-import zio.test.{ TestAspect, _ }
+import zio.test._
 
 import java.time.{ Duration, OffsetDateTime, ZonedDateTime }
 import java.util.UUID

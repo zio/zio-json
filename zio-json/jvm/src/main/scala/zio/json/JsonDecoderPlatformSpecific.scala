@@ -54,7 +54,7 @@ trait JsonDecoderPlatformSpecific[A] { self: JsonDecoder[A] =>
   final def decodeJsonPipeline(
     delimiter: JsonStreamDelimiter = JsonStreamDelimiter.Array
   ): ZPipeline[Any, Throwable, Char, A] = {
-    Unsafe.unsafeCompat { (u: Unsafe) =>
+    Unsafe.unsafe { (u: Unsafe) =>
       implicit val unsafe: Unsafe = u
 
       ZPipeline.fromPush {
@@ -121,7 +121,7 @@ trait JsonDecoderPlatformSpecific[A] { self: JsonDecoder[A] =>
                   throw new Exception(JsonError.render(trace))
               }
 
-              Unsafe.unsafeCompat { (u: Unsafe) =>
+              Unsafe.unsafe { (u: Unsafe) =>
                 implicit val unsafe: Unsafe = u
 
                 runtime.unsafe.run(outQueue.offer(Take.single(nextElem))).getOrThrow()
