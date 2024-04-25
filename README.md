@@ -6,7 +6,7 @@
 
 [ZIO Json](https://github.com/zio/zio-json) is a fast and secure JSON library with tight ZIO integration.
 
-[![Production Ready](https://img.shields.io/badge/Project%20Stage-Production%20Ready-brightgreen.svg)](https://github.com/zio/zio/wiki/Project-Stages) ![CI Badge](https://github.com/zio/zio-json/workflows/CI/badge.svg) [![Sonatype Releases](https://img.shields.io/nexus/r/https/oss.sonatype.org/dev.zio/zio-json_2.13.svg?label=Sonatype%20Release)](https://oss.sonatype.org/content/repositories/releases/dev/zio/zio-json_2.13/) [![Sonatype Snapshots](https://img.shields.io/nexus/s/https/oss.sonatype.org/dev.zio/zio-json_2.13.svg?label=Sonatype%20Snapshot)](https://oss.sonatype.org/content/repositories/snapshots/dev/zio/zio-json_2.13/) [![javadoc](https://javadoc.io/badge2/dev.zio/zio-json-docs_2.13/javadoc.svg)](https://javadoc.io/doc/dev.zio/zio-json-docs_2.13) [![ZIO JSON](https://img.shields.io/github/stars/zio/zio-json?style=social)](https://github.com/zio/zio-json)
+[![Production Ready](https://img.shields.io/badge/Project%20Stage-Production%20Ready-brightgreen.svg)](https://github.com/zio/zio/wiki/Project-Stages) ![CI Badge](https://github.com/zio/zio-json/workflows/CI/badge.svg) [![Sonatype Snapshots](https://img.shields.io/nexus/s/https/oss.sonatype.org/dev.zio/zio-json_2.13.svg?label=Sonatype%20Snapshot)](https://oss.sonatype.org/content/repositories/snapshots/dev/zio/zio-json_2.13/) [![ZIO JSON](https://img.shields.io/github/stars/zio/zio-json?style=social)](https://github.com/zio/zio-json)
 
 ## Introduction
 
@@ -25,7 +25,7 @@ The goal of this project is to create the best all-round JSON library for Scala:
 In order to use this library, we need to add the following line in our `build.sbt` file:
 
 ```scala
-libraryDependencies += "dev.zio" %% "zio-json" % "0.6.2"
+libraryDependencies += "dev.zio" %% "zio-json" % "<version>"
 ```
 
 ## Example
@@ -149,7 +149,7 @@ List(Apple(false), Banana(0.4)).toJsonPretty
 
 # How
 
-Extreme **performance** is achieved by decoding JSON directly from the input source into business objects (docs/inspired by [plokhotnyuk](https://github.com/plokhotnyuk/jsoniter-scala)). Although not a requirement, the latest advances in [Java Loom](https://wiki.openjdk.java.net/display/loom/Main) can be used to support arbitrarily large payloads with near-zero overhead.
+Extreme **performance** is achieved by decoding JSON directly from the input source into business objects (inspired by [plokhotnyuk](https://github.com/plokhotnyuk/jsoniter-scala)). Although not a requirement, the latest advances in [Java Loom](https://wiki.openjdk.java.net/display/loom/Main) can be used to support arbitrarily large payloads with near-zero overhead.
 
 Best in class **security** is achieved with an aggressive *early exit* strategy that avoids costly stack traces, even when parsing malformed numbers. Malicious (and badly formed) payloads are rejected before finishing reading.
 
@@ -165,11 +165,11 @@ Learn more on the [ZIO JSON homepage](https://zio.dev/zio-json/)!
 
 ## Contributing
 
-For the general guidelines, see ZIO [contributor's guide](https://zio.dev/about/contributing).
+For the general guidelines, see ZIO [contributor's guide](https://zio.dev/contributor-guidelines).
 
 ## Code of Conduct
 
-See the [Code of Conduct](https://zio.dev/about/code-of-conduct)
+See the [Code of Conduct](https://zio.dev/code-of-conduct)
 
 ## Support
 

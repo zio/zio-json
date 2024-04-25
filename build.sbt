@@ -400,7 +400,6 @@ lazy val docs = project
       zioJsonInteropScalaz7x.jvm,
       zioJsonGolden
     ),
-    docsPublishBranch := "series/2.x",
     readmeAcknowledgement :=
       """|- Uses [JsonTestSuite](https://github.com/nst/JSONTestSuite) to test parsing. (c) 2016 Nicolas Seriot)
          |
