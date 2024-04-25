@@ -113,6 +113,19 @@ object ConfigurableDeriveCodecSpec extends ZIOSpecDefault {
             expectedObj.toJson == expectedStr
           )
         },
+        test("should override sum type mapping") {
+          val expectedStr     = """{"$type":"case_class","i":1}"""
+          val expectedObj: ST = ST.CaseClass(i = 1)
+
+          implicit val config: JsonCodecConfiguration =
+            JsonCodecConfiguration(sumTypeHandling = DiscriminatorField("$type"), sumTypeMapping = SnakeCase)
+          implicit val codec: JsonCodec[ST] = DeriveJsonCodec.gen
+
+          assertTrue(
+            expectedStr.fromJson[ST].toOption.get == expectedObj,
+            expectedObj.toJson == expectedStr
+          )
+        },
         test("should prevent extra fields") {
           val jsonStr = """{"someField":1,"someOtherField":"a","extra":123}"""
 

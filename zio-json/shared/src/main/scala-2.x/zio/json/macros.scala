@@ -176,6 +176,12 @@ private[json] object jsonMemberNames {
 final case class jsonHint(name: String) extends Annotation
 
 /**
+ * If used on a sealed class will determine the strategy of type hint value transformation for disambiguating
+ * classes during serialization and deserialization. Same strategies are provided as for [[jsonMemberNames]].
+ */
+final case class jsonHintNames(format: JsonMemberFormat) extends Annotation
+
+/**
  * If used on a case class, will exit early if any fields are in the JSON that
  * do not correspond to field names in the case class.
  *
@@ -200,11 +206,13 @@ final class jsonExclude extends Annotation
  * @param sumTypeHandling see [[jsonDiscriminator]]
  * @param fieldNameMapping see [[jsonMemberNames]]
  * @param allowExtraFields see [[jsonNoExtraFields]]
+ * @param sumTypeMapping see [[jsonHintNames]]
  */
 final case class JsonCodecConfiguration(
   sumTypeHandling: SumTypeHandling = WrapperWithClassNameField,
   fieldNameMapping: JsonMemberFormat = IdentityFormat,
-  allowExtraFields: Boolean = true
+  allowExtraFields: Boolean = true,
+  sumTypeMapping: JsonMemberFormat = IdentityFormat
 )
 
 object JsonCodecConfiguration {
@@ -416,10 +424,12 @@ object DeriveJsonDecoder {
   }
 
   def split[A](ctx: SealedTrait[JsonDecoder, A])(implicit config: JsonCodecConfiguration): JsonDecoder[A] = {
+    val jsonHintFormat: JsonMemberFormat =
+      ctx.annotations.collectFirst { case jsonHintNames(format) => format }.getOrElse(config.sumTypeMapping)
     val names: Array[String] = ctx.subtypes.map { p =>
       p.annotations.collectFirst { case jsonHint(name) =>
         name
-      }.getOrElse(p.typeName.short)
+      }.getOrElse(jsonHintFormat(p.typeName.short))
     }.toArray
     val matrix: StringMatrix = new StringMatrix(names)
     lazy val tcs: Array[JsonDecoder[Any]] =
@@ -594,10 +604,12 @@ object DeriveJsonEncoder {
       }
 
   def split[A](ctx: SealedTrait[JsonEncoder, A])(implicit config: JsonCodecConfiguration): JsonEncoder[A] = {
+    val jsonHintFormat: JsonMemberFormat =
+      ctx.annotations.collectFirst { case jsonHintNames(format) => format }.getOrElse(config.sumTypeMapping)
     val names: Array[String] = ctx.subtypes.map { p =>
       p.annotations.collectFirst { case jsonHint(name) =>
         name
-      }.getOrElse(p.typeName.short)
+      }.getOrElse(jsonHintFormat(p.typeName.short))
     }.toArray
     def discrim =
       ctx.annotations.collectFirst { case jsonDiscriminator(n) => n }.orElse(config.sumTypeHandling.discriminatorField)
