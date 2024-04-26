@@ -360,3 +360,107 @@ And now, the Json decoder for Animal can handle both formats:
 """{"name": "Snake", "categories": [ "Cold-blooded", "Reptile"]}""".fromJson[Animal]
 // >>  Right(Animal(Snake,List(Cold-blooded, Reptile)))
 ```
+
+# JSON AST and Cursors
+
+In most cases it is not necessary to work with the JSON AST directly,
+instead it is more convenient to decode directly to domain objects.
+However, sometimes it is handy to work with a lower level representation of JSON.
+This may for example be the case when you need to work with deeply nested JSON structures 
+that would result in deeply nested case classes,
+or when you expect a lot of variation in the JSON structure, which would result in nasty decoders.
+
+
+## JSON AST
+
+To get the AST representation of a JSON string, use the `fromJson[Json]` method.
+
+```scala mdoc
+import zio.json._
+import zio.json.ast._
+
+val jsonString: String            = """{"name": "John Doe"}"""
+val jsonAst: Either[String, Json] = jsonString.fromJson[Json]
+```
+
+The `Json` type is a recursive data structure that can be navigated in a fairly straightforward way.
+
+```scala mdoc:reset
+
+import zio.Chunk
+import zio.json._
+import zio.json.ast.Json
+import zio.json.ast.Json._
+
+val jsonString: String = """{"name": "John Doe"}"""
+val jsonAst: Json      = jsonString.fromJson[Json].toOption.get
+jsonAst match {
+  case Obj(fields: Chunk[(String, Json)]) => ()
+  case Arr(elements: Chunk[Json])         => ()
+  case Bool(value: Boolean)               => ()
+  case Str(value: String)                 => ()
+  case Num(value: java.math.BigDecimal)   => ()
+  case Json.Null                          => ()
+}
+```
+
+To get the `name` field, you could do the following:
+
+```scala mdoc
+import zio.json._
+import zio.json.ast.Json
+
+val json: Option[Json] = """{"name": "John Doe"}""".fromJson[Json].toOption
+val name: Option[String] = json.flatMap { json =>
+  json match {
+    case Json.Obj(fields) => fields.collectFirst { case ("name", Json.Str(name)) => name }
+    case _                => None
+  }
+}
+```
+
+## Cursors
+
+In practice, it is normally more convenient to use cursors to navigate the JSON AST.
+
+```scala mdoc:reset
+import zio.json._
+import zio.json.ast.Json
+import zio.json.ast.JsonCursor
+import zio.json.ast.Json.Str
+
+val json: Either[String, Json]    = """{"name": "John Doe"}""".fromJson[Json]
+val cursor: JsonCursor[Json, Str] = JsonCursor.field("name").isString
+val name: Either[String, String]  = json.flatMap(_.get(cursor).map(_.value))
+```
+
+Cursors can be composed to navigate more complex JSON structures.
+
+```scala mdoc
+import zio.json._
+import zio.json.ast.Json
+import zio.json.ast.JsonCursor
+
+val json1: Either[String, Json] = """{"posts": [{"id": 0, "title": "foo"}]}""".fromJson[Json]
+val json2: Either[String, Json] = """{"userPosts": [{"id": 1, "title": "bar"}]}""".fromJson[Json]
+
+val commonCursor = 
+  JsonCursor.isArray >>> 
+    JsonCursor.element(0) >>> 
+    JsonCursor.isObject >>> 
+    JsonCursor.field("title") >>> 
+    JsonCursor.isString
+
+val cursor1 = JsonCursor.field("posts")
+val cursor2 = JsonCursor.field("userPosts")
+
+def getTitle(json: Either[String, Json]) =
+  for {
+    ast   <- json
+    posts <- ast.get(cursor1).orElse(ast.get(cursor2))
+    title <- posts.get(commonCursor).map(_.value)
+  } yield title
+
+val title1 = getTitle(json1)
+val title2 = getTitle(json2)
+```
