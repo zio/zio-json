@@ -14,11 +14,22 @@ object DerivedEncoderSpec extends ZIOSpecDefault {
 
       assertTrue(json == """{"bar":"bar"}""")
     },
-    test("Derives for a sum Enumeration type") {
+    test("Derives for a sum enum Enumeration type") {
       enum Foo derives JsonEncoder:
         case Bar
         case Baz
         case Qux
+
+      val json = (Foo.Qux: Foo).toJson
+
+      assertTrue(json == """"Qux"""")
+    },
+    test("Derives for a sum sealed trait Enumeration type") {
+      sealed trait Foo derives JsonEncoder
+      object Foo:
+        case object Bar extends Foo
+        case object Baz extends Foo
+        case object Qux extends Foo
 
       val json = (Foo.Qux: Foo).toJson
 
