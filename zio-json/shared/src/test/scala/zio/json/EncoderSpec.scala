@@ -291,6 +291,7 @@ object EncoderSpec extends ZIOSpecDefault {
           ) &&
           assert(CoupleOfThings(0, None, true).toJsonPretty)(equalTo("{\n  \"j\" : 0,\n  \"b\" : true\n}")) &&
           assert(OptionalAndRequired(None, "foo").toJson)(equalTo("""{"s":"foo"}"""))
+          assert(OptionalExplicitNullAndRequired(None, "foo").toJson)(equalTo("""{"i":null,"s":"foo"}"""))
         },
         test("sum encoding") {
           import examplesum._
@@ -466,6 +467,15 @@ object EncoderSpec extends ZIOSpecDefault {
 
       implicit val encoder: JsonEncoder[OptionalAndRequired] =
         DeriveJsonEncoder.gen[OptionalAndRequired]
+    }
+
+    @jsonExplicitNull
+    case class OptionalExplicitNullAndRequired(i: Option[Int], s: String)
+
+    object OptionalExplicitNullAndRequired {
+
+      implicit val encoder: JsonEncoder[OptionalExplicitNullAndRequired] =
+        DeriveJsonEncoder.gen[OptionalExplicitNullAndRequired]
     }
 
     case class Aliases(@jsonAliases("j", "k") i: Int, f: String)
