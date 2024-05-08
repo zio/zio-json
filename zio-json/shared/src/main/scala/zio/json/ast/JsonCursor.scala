@@ -19,7 +19,7 @@ sealed trait JsonCursor[-From, +To <: Json] { self =>
   final def >>>[Next <: Json](that: JsonCursor[To, Next]): JsonCursor[From, Next] =
     (that.asInstanceOf[JsonCursor[_ <: Json, _ <: Json]] match {
       case JsonCursor.Identity =>
-        that
+        self
 
       case JsonCursor.DownField(oldParent @ _, name) =>
         JsonCursor.DownField(self.asInstanceOf[JsonCursor[Json, Json.Obj]], name)
