@@ -32,12 +32,12 @@ addCommandAlias(
 
 addCommandAlias(
   "testScala2JVM",
-  "zioJsonMacrosJVM/test; zioJsonInteropRefinedJVM/test"
+  "zioJsonMacrosJVM/test; zioJsonInteropRefinedJVM/test; zioJsonInteropNewtypeJVM/test"
 )
 
 addCommandAlias(
   "testScala2JS",
-  "zioJsonMacrosJS/test; zioJsonInteropRefinedJS/test"
+  "zioJsonMacrosJS/test; zioJsonInteropRefinedJS/test; zioJsonInteropNewtypeJS/test"
 )
 
 addCommandAlias(
@@ -371,6 +371,7 @@ lazy val zioJsonInteropNewtype = crossProject(JSPlatform, JVMPlatform)
       "dev.zio"     %%% "zio-test"     % zioVersion % "test",
       "dev.zio"     %%% "zio-test-sbt" % zioVersion % "test"
     ),
+    scalacOptions += "-language:implicitConversions",
     testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework")
   )
   .enablePlugins(BuildInfoPlugin)
@@ -400,7 +401,8 @@ lazy val docs = project
     zioJsonMacrosJVM,
     zioJsonInteropHttp4s,
     zioJsonInteropRefined.jvm,
-    zioJsonInteropScalaz7x.jvm
+    zioJsonInteropScalaz7x.jvm,
+    zioJsonInteropNewtype.jvm
   )
   .settings(
     crossScalaVersions -= ScalaDotty,
