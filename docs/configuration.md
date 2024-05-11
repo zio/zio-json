@@ -55,8 +55,8 @@ sealed trait Fruit
 ) extends Fruit
 
 object Fruit {
-  implicit val encoder: JsonEncoder[Fruit] =
-    DeriveJsonEncoder.gen[Fruit]
+  implicit val codec: JsonCodec[Fruit] =
+    DeriveJsonCodec.gen[Fruit]
 }
 
 val banana: Fruit = Banana(0.5)
@@ -96,8 +96,8 @@ case class GoodFruit(good: Boolean) extends FruitKind
 case class BadFruit(bad: Boolean) extends FruitKind
 
 object FruitKind {
-  implicit val encoder: JsonEncoder[FruitKind] =
-    DeriveJsonEncoder.gen[FruitKind]
+  implicit val codec: JsonCodec[FruitKind] =
+    DeriveJsonCodec.gen[FruitKind]
 }
 
 val goodFruit: FruitKind = GoodFruit(true)
@@ -106,6 +106,34 @@ val badFruit: FruitKind = BadFruit(true)
 goodFruit.toJson
 badFruit.toJson
 ```
+
+Note that with this code, you can't directly decode the subclasses of `FruitKind`. You would need to create a dedicated decoder for each subclass.
+
+```scala mdoc
+object GoodFruit {
+  implicit val codec: JsonCodec[GoodFruit] =
+    DeriveJsonCodec.gen[GoodFruit]
+}
+```
+
+Since `GoodFruit` is only a case class, it will not require any kind of discriminator to be decoded.
+    
+```scala mdoc
+"""{"good":true}""".fromJson[GoodFruit]
+```
+
+If you want for some reason to decode only for a specific type of `FruitKind` that has a discriminator, don't derive the codec for the subtype, but transform the `FruitKind` codec.
+
+```scala mdoc
+object BadFruit {
+  implicit val decoder: JsonDecoder[BadFruit] =
+    FruitKind.codec.decoder.mapOrFail {
+        case GoodFruit(_) => Left("Expected BadFruit, got GoodFruit")
+        case BadFruit(bad) => Right(BadFruit(bad))
+      }
+}
+```
+
 ## jsonDiscriminator
 
 
