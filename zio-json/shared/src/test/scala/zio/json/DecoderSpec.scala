@@ -173,6 +173,21 @@ object DecoderSpec extends ZIOSpecDefault {
           assert("""{"hint":"Child2"}""".fromJson[Parent])(isLeft(equalTo("(invalid disambiguator)"))) &&
           assert("""{"child1":{}}""".fromJson[Parent])(isLeft(equalTo("(missing hint 'hint')")))
         },
+        test("") {
+          import exampleinheritdiscriminator._
+
+          assert("""{"hint":"child1"}""".fromJson[Parent])(isRight(equalTo(Child1()))) &&
+          assert("""{"hint":"Abel"}""".fromJson[Parent])(isRight(equalTo(Child2()))) &&
+          assert("""{"hint":"Child2"}""".fromJson[Parent])(isLeft(equalTo("(invalid disambiguator)"))) &&
+          assert("""{"child1":{}}""".fromJson[Parent])(isLeft(equalTo("(missing hint 'hint')"))) &&
+          assert("""{"hint":"child1"}""".fromJson[Child1])(isRight(equalTo(Child1()))) &&
+          assert("""{"hint":"child1"}""".fromJson[Child2])(isLeft(equalTo("(invalid disambiguator)"))) &&
+          assert("""{"hint":"Abel"}""".fromJson[Child2])(isRight(equalTo(Child2()))) &&
+          assert("""{"hint":"Abel"}""".fromJson[Child1])(isLeft(equalTo("(invalid disambiguator)")))
+          assert("""{}""".fromJson[Child1])(isLeft(equalTo(".hint(missing)"))) &&
+          assert("""{}""".fromJson[Child2])(isLeft(equalTo(".hint(missing)")))
+
+        },
         test("unicode") {
           assert(""""€🐵🥰"""".fromJson[String])(isRight(equalTo("€🐵🥰")))
         },
@@ -606,6 +621,33 @@ object DecoderSpec extends ZIOSpecDefault {
 
     @jsonHint("Abel")
     case class Child2() extends Parent
+
+  }
+
+  object exampleinheritdiscriminator {
+
+    @jsonDiscriminator("hint")
+    @jsonHintNames(CamelCase)
+    sealed abstract class Parent
+
+    object Parent {
+      implicit val decoder: JsonDecoder[Parent] = DeriveJsonDecoder.gen[Parent]
+    }
+
+    @inheritDiscriminator
+    case class Child1() extends Parent
+
+    @inheritDiscriminator
+    @jsonHint("Abel")
+    case class Child2() extends Parent
+
+    object Child1 {
+      implicit val decoder: JsonDecoder[Child1] = DeriveJsonDecoder.gen[Child1]
+    }
+
+    object Child2 {
+      implicit val decoder: JsonDecoder[Child2] = DeriveJsonDecoder.gen[Child2]
+    }
 
   }
 
