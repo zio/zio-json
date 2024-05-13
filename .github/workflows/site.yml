@@ -75,8 +75,6 @@ jobs:
         distribution: temurin
         java-version: 17
         check-latest: true
-    - name: Generate Readme
-      run: sbt  docs/generateReadme
     - name: Commit Changes
       run: |
         git config --local user.email "github-actions[bot]@users.noreply.github.com"
