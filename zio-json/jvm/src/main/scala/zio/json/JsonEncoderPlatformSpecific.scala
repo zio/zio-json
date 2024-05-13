@@ -43,17 +43,20 @@ trait JsonEncoderPlatformSpecific[A] { self: JsonEncoder[A] =>
                         )
                       }
                     }
-          writeWriter <- ZIO.succeed(new WriteWriter(writer))
+          writeWriter          <- ZIO.succeed(new WriteWriter(writer))
+          hasAtLeastOneElement <- Ref.make(false)
           push = { (is: Option[Chunk[A]]) =>
             val pushChars = chunkBuffer.getAndUpdate(c => if (c.isEmpty) c else Chunk())
 
             is match {
               case None =>
-                ZIO.attemptBlocking(writer.close()) *> pushChars.map { terminal =>
-                  endWith.fold(terminal) { last =>
-                    // Chop off terminal delimiter
-                    (if (delimiter.isDefined) terminal.dropRight(1) else terminal) :+ last
-                  }
+                ZIO.attemptBlocking(writer.close()) *> pushChars.flatMap { terminal =>
+                  hasAtLeastOneElement.get.map(nonEmptyStream =>
+                    endWith.fold(terminal) { last =>
+                      // Chop off terminal delimiter if stream is not empty
+                      (if (delimiter.isDefined && nonEmptyStream) terminal.dropRight(1) else terminal) :+ last
+                    }
+                  )
                 }
 
               case Some(xs) =>
@@ -64,7 +67,7 @@ trait JsonEncoderPlatformSpecific[A] { self: JsonEncoder[A] =>
                     for (s <- delimiter)
                       writeWriter.write(s)
                   }
-                } *> pushChars
+                } *> hasAtLeastOneElement.set(true).when(xs.nonEmpty) *> pushChars
             }
           }
         } yield push
