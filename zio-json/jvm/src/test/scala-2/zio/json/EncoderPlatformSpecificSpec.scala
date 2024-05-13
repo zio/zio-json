@@ -7,7 +7,7 @@ import testzio.json.data.googlemaps._
 import testzio.json.data.twitter._
 import zio.Chunk
 import zio.json.ast.Json
-import zio.stream.ZStream
+import zio.stream.{ ZSink, ZStream }
 import zio.test.Assertion._
 import zio.test.{ ZIOSpecDefault, assert, _ }
 
@@ -75,6 +75,14 @@ object EncoderPlatformSpecificSpec extends ZIOSpecDefault {
           } yield {
             assert(xs.mkString)(equalTo("""[{"id":1},{"id":2},{"id":3}]"""))
           }
+        },
+        test("encodeJsonArrayPipeline, empty stream") {
+          val emptyArray = ZStream
+            .from(List())
+            .via(JsonEncoder[String].encodeJsonArrayPipeline)
+            .run(ZSink.mkString)
+
+          assertZIO(emptyArray)(equalTo("[]"))
         }
       ),
       suite("helpers in zio.json")(

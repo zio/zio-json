@@ -267,6 +267,16 @@ object JsonSpec extends ZIOSpecDefault {
           assert(posts.get(combined))(
             isRight(equalTo(Json.Str("foo")))
           )
+        },
+        test(">>>, identity") {
+          val obj = Json.Obj("a" -> Json.Num(1))
+
+          val fieldA   = JsonCursor.field("a")
+          val identity = JsonCursor.identity
+
+          val num = obj.get(fieldA >>> identity)
+
+          assert(num)(isRight(equalTo(Json.Num(1))))
         }
       ),
       suite("intersect")(
