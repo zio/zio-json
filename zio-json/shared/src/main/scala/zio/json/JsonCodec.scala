@@ -87,8 +87,6 @@ final case class JsonCodec[A](encoder: JsonEncoder[A], decoder: JsonDecoder[A]) 
 object JsonCodec extends GeneratedTupleCodecs with CodecLowPriority0 with JsonCodecVersionSpecific {
   def apply[A](implicit jsonCodec: JsonCodec[A]): JsonCodec[A] = jsonCodec
 
-  def apply[A](encoder: JsonEncoder[A], decoder: JsonDecoder[A]): JsonCodec[A] = new JsonCodec(encoder, decoder)
-
   private def orElseEither[A, B](A: JsonCodec[A], B: JsonCodec[B]): JsonCodec[Either[A, B]] =
     JsonCodec(
       JsonEncoder.orElseEither[A, B](A.encoder, B.encoder),
@@ -190,4 +188,7 @@ private[json] trait CodecLowPriority3 { this: JsonCodec.type =>
   implicit val uuid: JsonCodec[java.util.UUID] = JsonCodec(JsonEncoder.uuid, JsonDecoder.uuid)
 
   implicit val currency: JsonCodec[java.util.Currency] = JsonCodec(JsonEncoder.currency, JsonDecoder.currency)
+
+  implicit def fromEncoderDecoder[A](implicit encoder: JsonEncoder[A], decoder: JsonDecoder[A]): JsonCodec[A] =
+    new JsonCodec(encoder, decoder)
 }
