@@ -391,6 +391,8 @@ object Json {
 
       override final def toJsonAST(a: Obj): Either[String, Json] = Right(a)
     }
+
+    implicit val codec: JsonCodec[Obj] = JsonCodec(encoder, decoder)
   }
   final case class Arr(elements: Chunk[Json]) extends Json {
     def isEmpty: Boolean  = elements.isEmpty
@@ -434,6 +436,8 @@ object Json {
 
       override final def toJsonAST(a: Arr): Either[String, Json] = Right(a)
     }
+
+    implicit val codec: JsonCodec[Arr] = JsonCodec(encoder, decoder)
   }
   final case class Bool(value: Boolean) extends Json {
     override def asBoolean: Some[Boolean]                     = Some(value)
@@ -460,6 +464,8 @@ object Json {
 
       override final def toJsonAST(a: Bool): Either[String, Json] = Right(a)
     }
+
+    implicit val codec: JsonCodec[Bool] = JsonCodec(encoder, decoder)
   }
   final case class Str(value: String) extends Json {
     override def asString: Some[String]                   = Some(value)
@@ -482,6 +488,8 @@ object Json {
 
       override final def toJsonAST(a: Str): Either[String, Json] = Right(a)
     }
+
+    implicit val codec: JsonCodec[Str] = JsonCodec(encoder, decoder)
   }
   final case class Num(value: java.math.BigDecimal) extends Json {
     override def asNumber: Some[Json.Num]                                             = Some(this)
@@ -512,6 +520,8 @@ object Json {
 
       override final def toJsonAST(a: Num): Either[String, Num] = Right(a)
     }
+
+    implicit val codec: JsonCodec[Num] = JsonCodec(encoder, decoder)
   }
   type Null = Null.type
   case object Null extends Json {
@@ -534,6 +544,8 @@ object Json {
 
       override final def toJsonAST(a: Null.type): Either[String, Json] = Right(a)
     }
+
+    implicit val codec: JsonCodec[Null.type] = JsonCodec(encoder, decoder)
 
     override def asNull: Some[Unit] = Some(())
   }
@@ -571,6 +583,8 @@ object Json {
 
     override final def toJsonAST(a: Json): Either[String, Json] = Right(a)
   }
+
+  implicit val codec: JsonCodec[Json] = JsonCodec(encoder, decoder)
 
   def apply(fields: (String, Json)*): Json = Json.Obj(Chunk(fields: _*))
 }
