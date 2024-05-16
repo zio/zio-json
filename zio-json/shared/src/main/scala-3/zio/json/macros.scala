@@ -282,6 +282,20 @@ object DeriveJsonDecoder extends Derivation[JsonDecoder] { self =>
         lazy val defaults: Array[Option[Any]] =
           IArray.genericWrapArray(ctx.params.map(_.default)).toArray
 
+        lazy val dynamicDefaults: Array[Option[() => Any]] =
+          IArray.genericWrapArray {
+            ctx.params.map { param =>
+              param.dynamicDefault.flatMap { dynamicDefault =>
+                val firstVal  = dynamicDefault()
+                val secondVal = dynamicDefault()
+
+                if (firstVal != secondVal) {
+                  Some(dynamicDefault)
+                } else None
+              }
+            }
+          }.toArray
+
         lazy val namesMap: Map[String, Int] =
           (names.zipWithIndex ++ aliases).toMap
 
@@ -298,11 +312,19 @@ object DeriveJsonDecoder extends Derivation[JsonDecoder] { self =>
                 trace_ = spans(field) :: trace
                 if (ps(field) != null)
                   throw UnsafeJson(JsonError.Message("duplicate") :: trace)
-                if (defaults(field).isDefined) {
-                  val opt = JsonDecoder.option(tcs(field)).unsafeDecode(trace_, in)
-                  ps(field) = opt.getOrElse(defaults(field).get)
-                } else
-                  ps(field) = tcs(field).unsafeDecode(trace_, in)
+                ps(field) = dynamicDefaults(field).map { dynamicDefault =>
+                  JsonDecoder
+                    .option(tcs(field))
+                    .unsafeDecode(trace_, in)
+                    .getOrElse(dynamicDefault())
+                }.orElse {
+                  defaults(field).map { default =>
+                    JsonDecoder
+                      .option(tcs(field))
+                      .unsafeDecode(trace_, in)
+                      .getOrElse(default)
+                  }
+                }.getOrElse(tcs(field).unsafeDecode(trace_, in))
               } else if (no_extra) {
                 throw UnsafeJson(
                   JsonError.Message(s"invalid extra field") :: trace
@@ -317,11 +339,10 @@ object DeriveJsonDecoder extends Derivation[JsonDecoder] { self =>
 
           while (i < len) {
             if (ps(i) == null) {
-              if (defaults(i).isDefined) {
-                ps(i) = defaults(i).get
-              } else {
-                ps(i) = tcs(i).unsafeDecodeMissing(spans(i) :: trace)
-              }
+              ps(i) = dynamicDefaults(i)
+                .map(dynamicDefault => dynamicDefault())
+                .orElse(defaults(i))
+                .getOrElse(tcs(i).unsafeDecodeMissing(spans(i) :: trace))
             }
             i += 1
           }
@@ -347,12 +368,19 @@ object DeriveJsonDecoder extends Derivation[JsonDecoder] { self =>
                 namesMap.get(key) match {
                   case Some(field) =>
                     val trace_ = JsonError.ObjectAccess(key) :: trace
-                    if (defaults(field).isDefined) {
-                      val opt = JsonDecoder.option(tcs(field)).unsafeFromJsonAST(trace_, value)
-                      ps(field) = opt.getOrElse(defaults(field).get)
-                    } else {
-                      ps(field) = tcs(field).unsafeFromJsonAST(trace_, value)
-                    }
+                    ps(field) = dynamicDefaults(field).map { dynamicDefault =>
+                      JsonDecoder
+                        .option(tcs(field))
+                        .unsafeFromJsonAST(trace_, value)
+                        .getOrElse(dynamicDefault())
+                    }.orElse {
+                      defaults(field).map { default =>
+                        JsonDecoder
+                          .option(tcs(field))
+                          .unsafeFromJsonAST(trace_, value)
+                          .getOrElse(default)
+                      }
+                    }.getOrElse(tcs(field).unsafeFromJsonAST(trace_, value))
                   case None =>
                     if (no_extra) {
                       throw UnsafeJson(
@@ -365,11 +393,12 @@ object DeriveJsonDecoder extends Derivation[JsonDecoder] { self =>
               var i = 0
               while (i < len) {
                 if (ps(i) == null) {
-                  if (defaults(i).isDefined) {
-                    ps(i) = defaults(i).get
-                  } else {
-                    ps(i) = tcs(i).unsafeDecodeMissing(JsonError.ObjectAccess(names(i)) :: trace)
-                  }
+                  ps(i) = dynamicDefaults(i)
+                    .map(dynamicDefault => dynamicDefault())
+                    .orElse(defaults(i))
+                    .getOrElse {
+                      tcs(i).unsafeDecodeMissing(JsonError.ObjectAccess(names(i)) :: trace)
+                    }
                 }
                 i += 1
               }
