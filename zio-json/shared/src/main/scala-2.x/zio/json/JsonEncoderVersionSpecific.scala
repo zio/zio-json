@@ -1,3 +1,3 @@
 package zio.json
 
-trait JsonEncoderVersionSpecific
+private[json] trait JsonEncoderVersionSpecific

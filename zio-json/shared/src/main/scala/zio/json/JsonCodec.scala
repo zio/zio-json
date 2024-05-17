@@ -188,7 +188,4 @@ private[json] trait CodecLowPriority3 { this: JsonCodec.type =>
   implicit val uuid: JsonCodec[java.util.UUID] = JsonCodec(JsonEncoder.uuid, JsonDecoder.uuid)
 
   implicit val currency: JsonCodec[java.util.Currency] = JsonCodec(JsonEncoder.currency, JsonDecoder.currency)
-
-  implicit def fromEncoderDecoder[A](implicit encoder: JsonEncoder[A], decoder: JsonDecoder[A]): JsonCodec[A] =
-    new JsonCodec(encoder, decoder)
 }
