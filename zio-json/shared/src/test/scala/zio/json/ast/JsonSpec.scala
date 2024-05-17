@@ -1,5 +1,6 @@
 package zio.json.ast
 
+import zio.json._
 import zio.test.Assertion._
 import zio.test._
 
@@ -243,6 +244,39 @@ object JsonSpec extends ZIOSpecDefault {
           assert(tweet.get(combined))(
             isRight(equalTo(Json.Str("twitter")))
           )
+        },
+        test(">>>, array, filterType (second operand of >>> is complex)") {
+          val downEntities = JsonCursor.field("entities")
+          val downHashtag =
+            JsonCursor.isObject >>> JsonCursor.field("hashtags") >>> JsonCursor.isArray >>> JsonCursor.element(0)
+
+          val combined = downEntities >>> downHashtag
+
+          assert(tweet.get(combined))(
+            isRight(equalTo(Json.Str("twitter")))
+          )
+        },
+        test(">>>, combination of some methods of JsonCursor (second operand of >>> is complex)") {
+          val posts: Json = """{"posts": [{"id": 0, "title": "foo"}]}""".fromJson[Json].toOption.get
+
+          val downPosts = JsonCursor.field("posts")
+          val downTitle = JsonCursor.isArray >>> JsonCursor.element(0) >>> JsonCursor.isObject >>>
+            JsonCursor.field("title") >>> JsonCursor.isString
+          val combined = downPosts >>> downTitle
+
+          assert(posts.get(combined))(
+            isRight(equalTo(Json.Str("foo")))
+          )
+        },
+        test(">>>, identity") {
+          val obj = Json.Obj("a" -> Json.Num(1))
+
+          val fieldA   = JsonCursor.field("a")
+          val identity = JsonCursor.identity
+
+          val num = obj.get(fieldA >>> identity)
+
+          assert(num)(isRight(equalTo(Json.Num(1))))
         }
       ),
       suite("intersect")(

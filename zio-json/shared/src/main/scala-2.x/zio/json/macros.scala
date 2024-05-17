@@ -22,6 +22,8 @@ final case class jsonField(name: String) extends Annotation
  */
 final case class jsonAliases(alias: String, aliases: String*) extends Annotation
 
+final class jsonExplicitNull extends Annotation
+
 /**
  * If used on a sealed class, will determine the name of the field for
  * disambiguating classes.
@@ -212,7 +214,8 @@ final case class JsonCodecConfiguration(
   sumTypeHandling: SumTypeHandling = WrapperWithClassNameField,
   fieldNameMapping: JsonMemberFormat = IdentityFormat,
   allowExtraFields: Boolean = true,
-  sumTypeMapping: JsonMemberFormat = IdentityFormat
+  sumTypeMapping: JsonMemberFormat = IdentityFormat,
+  explicitNulls: Boolean = false
 )
 
 object JsonCodecConfiguration {
@@ -554,6 +557,10 @@ object DeriveJsonEncoder {
             name
           }.getOrElse(if (transformNames) nameTransform(p.label) else p.label)
         }
+
+        val explicitNulls: Boolean =
+          config.explicitNulls || ctx.annotations.exists(_.isInstanceOf[jsonExplicitNull])
+
         lazy val tcs: Array[JsonEncoder[Any]] = params.map(p => p.typeclass.asInstanceOf[JsonEncoder[Any]])
         val len: Int                          = params.length
         def unsafeEncode(a: A, indent: Option[Int], out: Write): Unit = {
@@ -564,9 +571,10 @@ object DeriveJsonEncoder {
 
           var prevFields = false // whether any fields have been written
           while (i < len) {
-            val tc = tcs(i)
-            val p  = params(i).dereference(a)
-            if (!tc.isNothing(p)) {
+            val tc         = tcs(i)
+            val p          = params(i).dereference(a)
+            val writeNulls = explicitNulls || params(i).annotations.exists(_.isInstanceOf[jsonExplicitNull])
+            if (!tc.isNothing(p) || writeNulls) {
               // if we have at least one field already, we need a comma
               if (prevFields) {
                 if (indent.isEmpty) out.write(",")

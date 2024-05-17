@@ -14,6 +14,8 @@ object ConfigurableDeriveCodecSpec extends ZIOSpecDefault {
     case class CaseClass(i: Int) extends ST
   }
 
+  case class OptionalField(a: Option[Int])
+
   def spec = suite("ConfigurableDeriveCodecSpec")(
     suite("defaults")(
       suite("string")(
@@ -177,6 +179,21 @@ object ConfigurableDeriveCodecSpec extends ZIOSpecDefault {
           )
         }
       )
+    ),
+    suite("explicit nulls")(
+      test("write null if configured") {
+        val expectedStr = """{"a":null}"""
+        val expectedObj = OptionalField(None)
+
+        implicit val config: JsonCodecConfiguration =
+          JsonCodecConfiguration(explicitNulls = true)
+        implicit val codec: JsonCodec[OptionalField] = DeriveJsonCodec.gen
+
+        assertTrue(
+          expectedStr.fromJson[OptionalField].toOption.get == expectedObj,
+          expectedObj.toJson == expectedStr
+        )
+      }
     )
   )
 }
