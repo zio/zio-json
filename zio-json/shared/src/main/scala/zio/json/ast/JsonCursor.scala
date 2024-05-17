@@ -19,17 +19,19 @@ sealed trait JsonCursor[-From, +To <: Json] { self =>
   final def >>>[Next <: Json](that: JsonCursor[To, Next]): JsonCursor[From, Next] =
     (that.asInstanceOf[JsonCursor[_ <: Json, _ <: Json]] match {
       case JsonCursor.Identity =>
-        that
+        self
 
-      case JsonCursor.DownField(oldParent @ _, name) =>
-        JsonCursor.DownField(self.asInstanceOf[JsonCursor[Json, Json.Obj]], name)
+      case JsonCursor.DownField(oldParent: JsonCursor[To, Json.Obj], name) =>
+        JsonCursor.DownField(self >>> oldParent, name)
 
-      case JsonCursor.DownElement(oldParent @ _, index) =>
-        JsonCursor.DownElement(self.asInstanceOf[JsonCursor[Json, Json.Arr]], index)
+      case JsonCursor.DownElement(oldParent: JsonCursor[To, Json.Arr], index) =>
+        JsonCursor.DownElement(self >>> oldParent, index)
 
-      case JsonCursor.FilterType(oldParent @ _, tpe) =>
-        JsonCursor.FilterType(self.asInstanceOf[JsonCursor[Json, Json]], tpe)
+      case JsonCursor.FilterType(oldParent: JsonCursor[To, _], tpe) =>
+        JsonCursor.FilterType(self >>> oldParent, tpe)
     }).asInstanceOf[JsonCursor[From, Next]]
+
+  final def andThen[Next <: Json](that: JsonCursor[To, Next]): JsonCursor[From, Next] = self >>> that
 
   final def isArray: JsonCursor[Json, Json.Arr] = filterType(JsonType.Arr)
 
