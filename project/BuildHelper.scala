@@ -265,8 +265,8 @@ object BuildHelper {
   )
 
   def jsSettings = Seq(
-    libraryDependencies += "io.github.cquiroz" %%% "scala-java-time"      % "2.2.2",
-    libraryDependencies += "io.github.cquiroz" %%% "scala-java-time-tzdb" % "2.2.2"
+    libraryDependencies += "io.github.cquiroz" %%% "scala-java-time"      % Dependencies.scalaJavaTime,
+    libraryDependencies += "io.github.cquiroz" %%% "scala-java-time-tzdb" % Dependencies.scalaJavaTime
   )
 
   def nativeSettings = Seq(
@@ -313,5 +313,25 @@ object BuildHelper {
 
   implicit class ModuleHelper(p: Project) {
     def module: Project = p.in(file(p.id)).settings(stdSettings(p.id))
+  }
+
+  object Dependencies {
+    val catsEffect             = "3.4.9"
+    val circe                  = "0.14.3"
+    val http4s                 = "0.23.26"
+    val jawnAST                = "1.5.1"
+    val jsoniterScala          = "2.23.3"
+    val magnolia2              = "1.1.9+3-96133f8f-SNAPSHOT"
+    val magnolia3              = "1.3.6+3-f33c4308-SNAPSHOT"
+    val playJson               = "2.9.4"
+    val playJsonExtensions     = "0.43.1"
+    val playJsonExtensions2_12 = "0.42.0"
+    val refined                = "0.10.2"
+    val scalaCollectionCompat  = "2.9.0"
+    val scalaJavaTime          = "2.5.0"
+    val scalaz                 = "7.3.7"
+    val snakeYaml              = "2.2"
+    val zio                    = "2.1.0"
+    val zioInteropCats         = "23.1.0.2"
   }
 }
