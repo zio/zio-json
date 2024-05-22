@@ -201,6 +201,11 @@ final class jsonNoExtraFields extends Annotation
  */
 final class jsonExclude extends Annotation
 
+/**
+ * If used on a case class field, the default will be evaluated every time a json string is decoded. This is necessary for computing reliable time-based values, such as Instant.now()
+ */
+final class jsonAlwaysEvaluateDefault extends Annotation
+
 // TODO: implement same configuration for Scala 3 once this issue is resolved: https://github.com/softwaremill/magnolia/issues/296
 /**
  * Implicit codec derivation configuration.
@@ -324,15 +329,11 @@ object DeriveJsonDecoder {
           ctx.parameters.map(_.typeclass).toArray.asInstanceOf[Array[JsonDecoder[Any]]]
 
         lazy val defaults: Array[Option[Either[Any, () => Any]]] = ctx.parameters.map { param =>
+          val isAlwaysEvaluateAnnotationPresent = param.annotations.collectFirst { case _: jsonAlwaysEvaluateDefault =>
+            true
+          }.getOrElse(false)
           param.evaluateDefault.flatMap { defaultEvaluator =>
-            val firstVal = defaultEvaluator()
-            Thread.sleep(
-              0,
-              1
-            ) //Sleeping for one nanosecond ensures that random generators based on clocks, such as Instant.now, will always be different, and therefore recorded as dynamic here.
-            val secondVal = defaultEvaluator()
-
-            if (firstVal != secondVal) {
+            if (isAlwaysEvaluateAnnotationPresent || defaultEvaluator() != defaultEvaluator()) {
               Some(Right(defaultEvaluator))
             } else None
           }.orElse(param.default.map(Left(_)))
@@ -366,13 +367,14 @@ object DeriveJsonDecoder {
                 trace_ = spans(field) :: trace
                 if (ps(field) != null)
                   throw UnsafeJson(JsonError.Message("duplicate") :: trace)
-                ps(field) = JsonDecoder
-                  .option(tcs(field))
-                  .unsafeDecode(trace_, in)
-                  .orElse(getDefaultFromFieldIndex(field))
-                  .getOrElse {
-                    tcs(field).unsafeDecode(trace_, in)
-                  }
+                ps(field) = getDefaultFromFieldIndex(field).map { default =>
+                  JsonDecoder
+                    .option(tcs(field))
+                    .unsafeDecode(trace_, in)
+                    .getOrElse(default)
+                }.getOrElse {
+                  tcs(field).unsafeDecode(trace_, in)
+                }
               } else if (no_extra) {
                 throw UnsafeJson(
                   JsonError.Message(s"invalid extra field") :: trace
@@ -412,13 +414,14 @@ object DeriveJsonDecoder {
                 namesMap.get(key) match {
                   case Some(field) =>
                     val trace_ = JsonError.ObjectAccess(key) :: trace
-                    ps(field) = JsonDecoder
-                      .option(tcs(field))
-                      .unsafeFromJsonAST(trace_, value)
-                      .orElse(getDefaultFromFieldIndex(field))
-                      .getOrElse {
-                        tcs(field).unsafeFromJsonAST(trace_, value)
-                      }
+                    ps(field) = getDefaultFromFieldIndex(field).map { default =>
+                      JsonDecoder
+                        .option(tcs(field))
+                        .unsafeFromJsonAST(trace_, value)
+                        .getOrElse(default)
+                    }.getOrElse {
+                      tcs(field).unsafeFromJsonAST(trace_, value)
+                    }
                   case None =>
                     if (no_extra) {
                       throw UnsafeJson(

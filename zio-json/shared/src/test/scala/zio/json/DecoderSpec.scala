@@ -155,9 +155,10 @@ object DecoderSpec extends ZIOSpecDefault {
 
           for {
             dynamics <- res
-            finalRes <- assert(res1)(isRight) && assert(res2)(isRight) &&
-                          assertTrue(dynamics._1.uuid != dynamics._2.uuid) &&
-                          assertTrue(dynamics._1.instant != dynamics._2.instant)
+            finalRes <-
+              assert(res1)(isRight) && assert(res2)(isRight) &&
+                assertTrue(dynamics._1.randomNumber != dynamics._2.randomNumber) &&
+                assertTrue(dynamics._1.randomNumberWithoutAnnotation != dynamics._2.randomNumberWithoutAnnotation)
           } yield finalRes
         },
         test("sum encoding") {
@@ -545,8 +546,9 @@ object DecoderSpec extends ZIOSpecDefault {
     }
 
     case class DefaultDynamic(
-      uuid: UUID = UUID.randomUUID(),
-      instant: Option[Instant] = Some(Instant.now())
+      @jsonAlwaysEvaluateDefault
+      randomNumber: Double = scala.math.random(),
+      randomNumberWithoutAnnotation: Double = scala.math.random()
     )
 
     object DefaultDynamic {

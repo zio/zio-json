@@ -22,8 +22,6 @@ object BuildHelper {
   val Scala213: String   = versions("2.13")
   val ScalaDotty: String = "3.3.3"
 
-  val SilencerVersion = "1.7.16"
-
   private val stdOptions = Seq(
     "-deprecation",
     "-encoding",
@@ -95,7 +93,7 @@ object BuildHelper {
   )
 
   val scalaReflectSettings = Seq(
-    libraryDependencies ++= Seq("dev.zio" %%% "izumi-reflect" % "1.0.0-M10")
+    libraryDependencies ++= Seq("dev.zio" %%% "izumi-reflect" % Dependencies.zioReflect)
   )
 
   // Keep this consistent with the version in .core-tests/shared/src/test/scala/REPLSpec.scala
@@ -218,13 +216,13 @@ object BuildHelper {
     libraryDependencies ++= {
       if (scalaVersion.value == ScalaDotty)
         Seq(
-          "com.github.ghik" % s"silencer-lib_$Scala213" % SilencerVersion % Provided
+          "com.github.ghik" % s"silencer-lib_$Scala213" % Dependencies.silencer % Provided
         )
       else
         Seq(
-          "com.github.ghik" % "silencer-lib" % SilencerVersion % Provided cross CrossVersion.full,
-          compilerPlugin("com.github.ghik" % "silencer-plugin" % SilencerVersion cross CrossVersion.full),
-          compilerPlugin("org.typelevel"  %% "kind-projector"  % "0.13.3" cross CrossVersion.full)
+          "com.github.ghik" % "silencer-lib" % Dependencies.silencer % Provided cross CrossVersion.full,
+          compilerPlugin("com.github.ghik" % "silencer-plugin" % Dependencies.silencer cross CrossVersion.full),
+          compilerPlugin("org.typelevel"  %% "kind-projector"  % Dependencies.kindProjector cross CrossVersion.full)
         )
     },
     semanticdbEnabled := scalaVersion.value != ScalaDotty, // enable SemanticDB
@@ -246,7 +244,7 @@ object BuildHelper {
     libraryDependencies ++= {
       CrossVersion.partialVersion(scalaVersion.value) match {
         case Some((2, x)) if x <= 12 =>
-          Seq(compilerPlugin(("org.scalamacros" % "paradise" % "2.1.1").cross(CrossVersion.full)))
+          Seq(compilerPlugin(("org.scalamacros" % "paradise" % Dependencies.scalaMacros).cross(CrossVersion.full)))
         case _ => Seq.empty
       }
     }
@@ -321,6 +319,7 @@ object BuildHelper {
     val http4s                 = "0.23.26"
     val jawnAST                = "1.5.1"
     val jsoniterScala          = "2.23.3"
+    val kindProjector          = "0.13.3"
     val magnolia2              = "1.1.9+3-96133f8f-SNAPSHOT"
     val magnolia3              = "1.3.6+3-f33c4308-SNAPSHOT"
     val playJson               = "2.9.4"
@@ -329,9 +328,12 @@ object BuildHelper {
     val refined                = "0.10.2"
     val scalaCollectionCompat  = "2.9.0"
     val scalaJavaTime          = "2.5.0"
+    val scalaMacros            = "2.1.1"
     val scalaz                 = "7.3.7"
+    val silencer               = "1.7.16"
     val snakeYaml              = "2.2"
     val zio                    = "2.1.0"
     val zioInteropCats         = "23.1.0.2"
+    val zioReflect             = "1.0.0-M10"
   }
 }

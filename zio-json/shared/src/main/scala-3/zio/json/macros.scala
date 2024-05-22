@@ -207,6 +207,11 @@ final class jsonNoExtraFields extends Annotation
  */
 final class jsonExclude extends Annotation
 
+/**
+ * If used on a case class field, the default will be evaluated every time a json string is decoded. This is necessary for computing reliable time-based values, such as Instant.now()
+ */
+final class jsonAlwaysEvaluateDefault extends Annotation
+
 // TODO: implement same configuration as for Scala 2 once this issue is resolved: https://github.com/softwaremill/magnolia/issues/296
 object DeriveJsonDecoder extends Derivation[JsonDecoder] { self =>
   def join[A](ctx: CaseClass[Typeclass, A]): JsonDecoder[A] = {
@@ -279,31 +284,19 @@ object DeriveJsonDecoder extends Derivation[JsonDecoder] { self =>
         lazy val tcs: Array[JsonDecoder[Any]] =
           IArray.genericWrapArray(ctx.params.map(_.typeclass)).toArray.asInstanceOf[Array[JsonDecoder[Any]]]
 
-        lazy val defaults: Array[Option[Either[Any, () => Any]]] =
-          IArray.genericWrapArray {
-            ctx.parameters.map { param =>
-              param.evaluateDefault.flatMap { defaultEvaluator =>
-                val firstVal = defaultEvaluator()
-                Thread.sleep(
-                  0,
-                  1
-                ) //Sleeping for one nanosecond ensures that random generators based on clocks, such as Instant.now, will always be different, and therefore recorded as dynamic here.
-                val secondVal = defaultEvaluator()
-
-                if (firstVal != secondVal) {
-                  Some(Right(defaultEvaluator))
-                } else None
-              }.orElse(param.default.map(Left(_)))
-            }
-          }.toArray
+        lazy val defaults: Array[Option[Either[Any, () => Any]]] = ctx.parameters.map { param =>
+          val isAlwaysEvaluateAnnotationPresent = param.annotations.collectFirst { case _ :jsonAlwaysEvaluateDefault => true }.getOrElse(false)
+          param.evaluateDefault.flatMap { defaultEvaluator =>
+            if (isAlwaysEvaluateAnnotationPresent || defaultEvaluator() != defaultEvaluator()) {
+              Some(Right(defaultEvaluator))
+            } else None
+          }.orElse(param.default.map(Left(_)))
+        }.toArray
 
         def getDefaultFromFieldIndex(index: Int): Option[Any] = {
-          val help = defaults(index).map { defaultEither =>
+          defaults(index).map { defaultEither =>
             defaultEither.fold(normalDefault => normalDefault, dynamicDefault => dynamicDefault())
           }
-          println("Returning res")
-          println(help)
-          help
         }
 
         lazy val namesMap: Map[String, Int] =
@@ -322,11 +315,12 @@ object DeriveJsonDecoder extends Derivation[JsonDecoder] { self =>
                 trace_ = spans(field) :: trace
                 if (ps(field) != null)
                   throw UnsafeJson(JsonError.Message("duplicate") :: trace)
-                ps(field) = JsonDecoder
-                  .option(tcs(field))
-                  .unsafeDecode(trace_, in)
-                  .orElse(getDefaultFromFieldIndex(field))
-                  .getOrElse {
+                ps(field) = getDefaultFromFieldIndex(field).map { default =>
+                  JsonDecoder
+                    .option(tcs(field))
+                    .unsafeDecode(trace_, in)
+                    .getOrElse(default)
+                }.getOrElse {
                     tcs(field).unsafeDecode(trace_, in)
                   }
               } else if (no_extra) {
@@ -370,13 +364,14 @@ object DeriveJsonDecoder extends Derivation[JsonDecoder] { self =>
                 namesMap.get(key) match {
                   case Some(field) =>
                     val trace_ = JsonError.ObjectAccess(key) :: trace
-                    ps(field) = JsonDecoder
-                      .option(tcs(field))
-                      .unsafeFromJsonAST(trace_, value)
-                      .orElse(getDefaultFromFieldIndex(field))
-                      .getOrElse {
-                        tcs(field).unsafeFromJsonAST(trace_, value)
-                      }
+                    ps(field) = getDefaultFromFieldIndex(field).map { default =>
+                      JsonDecoder
+                        .option(tcs(field))
+                        .unsafeFromJsonAST(trace_, value)
+                        .getOrElse(default)
+                    }.getOrElse {
+                      tcs(field).unsafeFromJsonAST(trace_, value)
+                    }
                   case None =>
                     if (no_extra) {
                       throw UnsafeJson(
