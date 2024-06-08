@@ -219,7 +219,7 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform, NativePlatform)
   .jsSettings(
     libraryDependencies ++= Seq(
       "io.github.cquiroz" %%% "scala-java-time"      % "2.5.0",
-      "io.github.cquiroz" %%% "scala-java-time-tzdb" % "2.5.0"
+      "io.github.cquiroz" %%% "scala-java-time-tzdb" % "2.6.0"
     )
   )
   .jvmSettings(
