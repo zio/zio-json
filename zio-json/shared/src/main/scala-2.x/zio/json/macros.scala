@@ -259,7 +259,7 @@ object DeriveJsonDecoder {
 
   def join[A](ctx: CaseClass[JsonDecoder, A])(implicit config: JsonCodecConfiguration): JsonDecoder[A] = {
     val (transformNames, nameTransform): (Boolean, String => String) =
-      ctx.annotations.collectFirst { case jsonMemberNames(format) => format }
+      (ctx.annotations ++ ctx.inheritedAnnotations).collectFirst { case jsonMemberNames(format) => format }
         .orElse(Some(config.fieldNameMapping))
         .filter(_ != IdentityFormat)
         .map(true -> _)

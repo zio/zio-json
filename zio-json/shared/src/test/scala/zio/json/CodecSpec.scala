@@ -108,6 +108,9 @@ object CodecSpec extends ZIOSpecDefault {
           val pascaled      = """{"Anders123Hejlsberg":""}"""
           val cameled       = """{"small123Talk":""}"""
           val overrides     = """{"not_modified":"","but-this-should-be":0}"""
+          val firstSnake    = """{"FirstSnake":{"known_for":"ocelli"}}"""
+          val secondSnake   = """{"SecondSnake":{"is_venomous":true}}"""
+          val kebabSnake    = """{"KebabSnake":{"number-of-legs":0}}"""
           val kebabedLegacy = """{"shish-123-kebab":""}"""
           val snakedLegacy  = """{"indiana_123_jones":""}"""
 
@@ -118,6 +121,9 @@ object CodecSpec extends ZIOSpecDefault {
           assert(pascaled.fromJson[Pascaled])(isRight(equalTo(Pascaled("")))) &&
           assert(cameled.fromJson[Cameled])(isRight(equalTo(Cameled("")))) &&
           assert(overrides.fromJson[OverridesAlsoWork])(isRight(equalTo(OverridesAlsoWork("", 0)))) &&
+          assert(firstSnake.fromJson[SnakeEnum])(isRight(equalTo(FirstSnake("ocelli")))) &&
+          assert(secondSnake.fromJson[SnakeEnum])(isRight(equalTo(SecondSnake(true)))) &&
+          assert(kebabSnake.fromJson[SnakeEnum])(isRight(equalTo(KebabSnake(0)))) &&
           assertTrue(Kebabed("").toJson == kebabed) &&
           assertTrue(Kebabed("").toJsonAST.toOption.get == kebabed.fromJson[Json].toOption.get) &&
           assertTrue(legacy.Kebabed("").toJson == kebabedLegacy) &&
@@ -339,6 +345,17 @@ object CodecSpec extends ZIOSpecDefault {
     case class OverridesAlsoWork(@jsonField("not_modified") notModified: String, butThisShouldBe: Int)
     object OverridesAlsoWork {
       implicit val codec: JsonCodec[OverridesAlsoWork] = DeriveJsonCodec.gen[OverridesAlsoWork]
+    }
+
+    @jsonMemberNames(SnakeCase)
+    sealed trait SnakeEnum
+    final case class FirstSnake(knownFor: String) extends SnakeEnum
+    final case class SecondSnake(isVenomous: Boolean) extends SnakeEnum
+    @jsonMemberNames(KebabCase)
+    final case class KebabSnake(numberOfLegs: Int) extends SnakeEnum
+
+    object SnakeEnum {
+      implicit val decoder: JsonDecoder[SnakeEnum] = DeriveJsonDecoder.gen
     }
 
     object legacy {
