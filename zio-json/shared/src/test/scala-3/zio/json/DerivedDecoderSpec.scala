@@ -28,6 +28,12 @@ object DerivedDecoderSpec extends ZIOSpecDefault {
           "{\"Qux\":{\"foo\":{\"Bar\":{}}}}".fromJson[Foo]
         """
       })(isRight(anything))
+    },
+    test("Derives and decodes for a union of string-based literals") {
+      case class Foo(aOrB: "A" | "B", optA: Option["A"]) derives JsonDecoder
+
+      assertTrue("""{"aOrB": "A", "optA": "A"}""".fromJson[Foo] == Right(Foo("A", Some("A")))) &&
+      assertTrue("""{"aOrB": "C"}""".fromJson[Foo] == Left(".aOrB(expected one of: A, B)"))
     }
   )
 }

@@ -27,6 +27,11 @@ object DerivedEncoderSpec extends ZIOSpecDefault {
           (Foo.Qux(Foo.Bar): Foo).toJson
         """
       })(isRight(anything))
+    },
+    test("Derives and encodes for a union of string-based literals") {
+      case class Foo(aOrB: "A" | "B", optA: Option["A"]) derives JsonEncoder
+
+      assertTrue(Foo("A", Some("A")).toJson == """{"aOrB":"A","optA":"A"}""")
     }
   )
 }
