@@ -83,6 +83,22 @@ object Fruit {
 """{ "Apple": { "poison": false }}""".fromJson[Fruit]
 ```
 
+### String-based union types (Enum)
+The codecs support string-based union types (enums) out of the box. This is useful when the overhead of a Enum is not desired.
+
+```scala
+val appleOrBanana: "Apple" | "Banana" = "Apple"
+```
+Decoding succeeds because 'Apple' is a valid value
+```scala
+appleOrBanana.toJson
+"Apple".fromJson["Apple" | "Banana"]
+```
+Decoding fail because 'Pear' is not a valid value
+```scala
+"Peer".fromJson["Apple" | "Banana"]
+```
+
 Almost all of the standard library data types are supported as fields on the case class, and it is easy to add support if one is missing.
 
 ## Manual instances
