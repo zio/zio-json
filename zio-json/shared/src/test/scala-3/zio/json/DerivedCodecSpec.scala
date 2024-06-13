@@ -27,6 +27,11 @@ object DerivedCodecSpec extends ZIOSpecDefault {
           (Foo.Qux(Foo.Bar): Foo).toJson.fromJson[Foo]
         """
       })(isRight(anything))
-    }
+    },
+    test("Derives and encodes for a union of string-based literals") {
+      case class Foo(aOrB: "A" | "B", optA: Option["A"]) derives JsonCodec
+
+      assertTrue(Foo("A", Some("A")).toJson.fromJson[Foo] == Right(Foo("A", Some("A"))))
+    },
   )
 }

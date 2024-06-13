@@ -699,6 +699,6 @@ private[json] trait DecoderLowPriority3 extends DecoderLowPriority4 {
     }
 }
 
-private[json] trait DecoderLowPriority4 {
+private[json] trait DecoderLowPriority4 extends DecoderLowPriorityVersionSpecific {
   implicit def fromCodec[A](implicit codec: JsonCodec[A]): JsonDecoder[A] = codec.decoder
 }
