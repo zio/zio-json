@@ -4,22 +4,6 @@ import scala.compiletime.*
 import scala.deriving.*
 import scala.quoted.*
 
-@scala.annotation.implicitNotFound("${A} is not a union type")
-sealed trait IsUnion[A]
-
-object IsUnion:
-
-  private val singleton: IsUnion[Any] = new IsUnion[Any] {}
-
-  transparent inline given derived[A]: IsUnion[A] = ${ deriveImpl[A] }
-
-  private def deriveImpl[A](using quotes: Quotes, t: Type[A]): Expr[IsUnion[A]] =
-    import quotes.reflect.*
-    val tpe: TypeRepr   = TypeRepr.of[A]
-    tpe.dealias match
-      case o: OrType => ('{ IsUnion.singleton.asInstanceOf[IsUnion[A]] }).asExprOf[IsUnion[A]]
-      case other     => report.errorAndAbort(s"${tpe.show} is not a Union")
-
 @scala.annotation.implicitNotFound("${A} is not a union of ${T}")
 sealed trait IsUnionOf[T, A]
 
@@ -44,10 +28,12 @@ object IsUnionOf:
           else report.errorAndAbort(s"${o.show} is not a subtype of ${bound.show}")
 
     tpe.dealias match
-      case o: OrType => 
+      case o: OrType =>
         validateTypes(o)
         ('{ IsUnionOf.singleton.asInstanceOf[IsUnionOf[T, A]] }).asExprOf[IsUnionOf[T, A]]
-      case other     => report.errorAndAbort(s"${tpe.show} is not a Union")
+      case o =>
+        if o <:< bound then ('{ IsUnionOf.singleton.asInstanceOf[IsUnionOf[T, A]] }).asExprOf[IsUnionOf[T, A]]
+        else report.errorAndAbort(s"${tpe.show} is not a Union")
 
 object UnionDerivation:
   transparent inline def constValueUnionTuple[T, A](using IsUnionOf[T, A]): Tuple = ${ constValueUnionTupleImpl[T, A] }
