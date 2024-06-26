@@ -5,9 +5,9 @@ import scala.deriving.*
 import scala.quoted.*
 
 @scala.annotation.implicitNotFound("${A} is not a union of ${T}")
-sealed trait IsUnionOf[T, A]
+private[json] sealed trait IsUnionOf[T, A]
 
-object IsUnionOf:
+private[json] object IsUnionOf:
 
   private val singleton: IsUnionOf[Any, Any] = new IsUnionOf[Any, Any] {}
 
@@ -35,7 +35,7 @@ object IsUnionOf:
         if o <:< bound then ('{ IsUnionOf.singleton.asInstanceOf[IsUnionOf[T, A]] }).asExprOf[IsUnionOf[T, A]]
         else report.errorAndAbort(s"${tpe.show} is not a Union")
 
-object UnionDerivation:
+private[json] object UnionDerivation:
   transparent inline def constValueUnionTuple[T, A](using IsUnionOf[T, A]): Tuple = ${ constValueUnionTupleImpl[T, A] }
 
   private def constValueUnionTupleImpl[T: Type, A: Type](using Quotes): Expr[Tuple] =
