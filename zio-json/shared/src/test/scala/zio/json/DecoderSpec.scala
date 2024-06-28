@@ -8,9 +8,9 @@ import zio.test.TestAspect.jvmOnly
 import zio.test._
 
 import java.math.BigInteger
-import java.time.{Duration, OffsetDateTime, ZonedDateTime}
+import java.time.{ Duration, OffsetDateTime, ZonedDateTime }
 import java.util.UUID
-import scala.collection.{SortedMap, immutable, mutable}
+import scala.collection.{ SortedMap, immutable, mutable }
 
 object DecoderSpec extends ZIOSpecDefault {
 
@@ -27,7 +27,10 @@ object DecoderSpec extends ZIOSpecDefault {
         },
         test("BigInteger too large") {
           // this big integer consumes more than 256 bits
-          assert("170141183460469231731687303715884105728489465165484668486513574864654818964653168465316546851".fromJson[java.math.BigInteger])(
+          assert(
+            "170141183460469231731687303715884105728489465165484668486513574864654818964653168465316546851"
+              .fromJson[java.math.BigInteger]
+          )(
             isLeft(equalTo("(expected a 256 bit BigInteger)"))
           )
         },
