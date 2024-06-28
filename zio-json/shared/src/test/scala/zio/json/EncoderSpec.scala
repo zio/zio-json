@@ -190,8 +190,9 @@ object EncoderSpec extends ZIOSpecDefault {
             ) // See the issue: https://github.com/zio/zio-json/pull/375
           },
           test("other numerics") {
-            val exampleBigIntStr     = "115792089237316195423570985008687907853269984665640564039457584007913129639935"
-            val exampleBigDecimalStr = "115792089237316195423570985008687907853269984665640564039457584007913129639935.4433"
+            val exampleBigIntStr = "115792089237316195423570985008687907853269984665640564039457584007913129639935"
+            val exampleBigDecimalStr =
+              "115792089237316195423570985008687907853269984665640564039457584007913129639935.4433"
             assert((1: Byte).toJson)(equalTo("1")) &&
             assert((1: Short).toJson)(equalTo("1")) &&
             assert((1: Int).toJson)(equalTo("1")) &&
