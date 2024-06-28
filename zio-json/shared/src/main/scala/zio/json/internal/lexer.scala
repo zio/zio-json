@@ -26,7 +26,7 @@ object Lexer {
   // TODO need a variant that doesn't skip whitespace, so that attack vectors
   // consisting of an infinite stream of space can exit early.
 
-  val NumberMaxBits: Int = 128
+  val NumberMaxBits: Int = 256
 
   // True if we got a string (implies a retraction), False for }
   def firstField(trace: List[JsonError], in: RetractReader): Boolean =

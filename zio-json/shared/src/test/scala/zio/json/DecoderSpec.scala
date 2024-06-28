@@ -20,9 +20,11 @@ object DecoderSpec extends ZIOSpecDefault {
           assert("123".fromJson[BigDecimal])(isRight(equalTo(BigDecimal(123))))
         },
         test("BigInteger too large") {
-          // this big integer consumes more than 128 bits
-          assert("170141183460469231731687303715884105728".fromJson[java.math.BigInteger])(
-            isLeft(equalTo("(expected a 128 bit BigInteger)"))
+          // the maximum value of an unsigned 256-bit integer is (upto 78 digits) :
+          // 115,792,089,237,316,195,423,570,985,008,687,907,853,269,984,665,640,564,039,457,584,007,913,129,639,935
+          // this big integer consumes more than 256 bits
+          assert("170141183460469231731687303715884105728170141183460469231731687303715884105728".fromJson[java.math.BigInteger])(
+            isLeft(equalTo("(expected a 256 bit BigInteger)"))
           )
         },
         test("collections") {
