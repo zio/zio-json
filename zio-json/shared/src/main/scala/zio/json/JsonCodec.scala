@@ -87,6 +87,9 @@ final case class JsonCodec[A](encoder: JsonEncoder[A], decoder: JsonDecoder[A]) 
 object JsonCodec extends GeneratedTupleCodecs with CodecLowPriority0 with JsonCodecVersionSpecific {
   def apply[A](implicit jsonCodec: JsonCodec[A]): JsonCodec[A] = jsonCodec
 
+  implicit def fromEncoderDecoder[A](encoder: JsonEncoder[A], decoder: JsonDecoder[A]): JsonCodec[A] =
+    JsonCodec(encoder, decoder)
+
   private def orElseEither[A, B](A: JsonCodec[A], B: JsonCodec[B]): JsonCodec[Either[A, B]] =
     JsonCodec(
       JsonEncoder.orElseEither[A, B](A.encoder, B.encoder),
