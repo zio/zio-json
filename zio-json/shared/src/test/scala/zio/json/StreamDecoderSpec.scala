@@ -10,7 +10,7 @@ import zio.test._
 
 import java.nio.charset.StandardCharsets
 
-object DecoderPlatformSpecificSpec extends ZIOSpecDefault {
+object StreamDecoderSpec extends ZIOSpecDefault {
 
   val spec =
     suite("Decoder")(
@@ -133,74 +133,4 @@ object DecoderPlatformSpecificSpec extends ZIOSpecDefault {
         )
       )
     )
-
-  // reorder objects to match jawn's lossy AST (and dedupe)
-  def normalize(ast: Json): Json =
-    ast match {
-      case Json.Obj(values) =>
-        Json.Obj(
-          Chunk
-            .fromIterable(
-              values
-                .groupBy(_._1)
-                .map(_._2.head)
-            )
-            .map { case (k, v) => (k, normalize(v)) }
-            .sortBy(_._1)
-        )
-      case Json.Arr(values) => Json.Arr(values.map(normalize(_)))
-      case other            => other
-    }
-
-  object exampleproducts {
-    case class Parameterless()
-
-    object Parameterless {
-
-      implicit val decoder: JsonDecoder[Parameterless] =
-        DeriveJsonDecoder.gen[Parameterless]
-    }
-
-    @jsonNoExtraFields
-    case class OnlyString(s: String)
-
-    object OnlyString {
-
-      implicit val decoder: JsonDecoder[OnlyString] =
-        DeriveJsonDecoder.gen[OnlyString]
-    }
-  }
-
-  object examplesum {
-    sealed abstract class Parent
-
-    object Parent {
-      implicit val decoder: JsonDecoder[Parent] = DeriveJsonDecoder.gen[Parent]
-    }
-    case class Child1() extends Parent
-    case class Child2() extends Parent
-  }
-
-  object examplealtsum {
-
-    @jsonDiscriminator("hint")
-    sealed abstract class Parent
-
-    object Parent {
-      implicit val decoder: JsonDecoder[Parent] = DeriveJsonDecoder.gen[Parent]
-    }
-
-    @jsonHint("Cain")
-    case class Child1() extends Parent
-
-    @jsonHint("Abel")
-    case class Child2() extends Parent
-  }
-
-  object logEvent {
-    case class Event(at: Long, message: String)
-
-    implicit val eventDecoder: JsonDecoder[Event] = DeriveJsonDecoder.gen[Event]
-    implicit val eventEncoder: JsonEncoder[Event] = DeriveJsonEncoder.gen[Event]
-  }
 }

@@ -6,7 +6,7 @@ import zio.stream.{ ZSink, ZStream }
 import zio.test.Assertion._
 import zio.test.{ ZIOSpecDefault, assert, _ }
 
-object EncoderPlatformSpecificSpec extends ZIOSpecDefault {
+object StreamEncoderSpec extends ZIOSpecDefault {
 
   val spec =
     suite("Encoder")(
