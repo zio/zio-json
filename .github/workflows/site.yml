@@ -28,7 +28,7 @@ jobs:
         java-version: 17
         check-latest: true
     - name: Check artifacts build process
-      run: sbt  +publishLocal
+      run: sbt clean; +publishLocal
     - name: Check website build process
       run: sbt docs/clean; sbt  docs/buildWebsite
   publish-docs:

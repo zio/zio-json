@@ -88,7 +88,6 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform, NativePlatform)
   .enablePlugins(NeoJmhPlugin)
   .settings(
     scalacOptions -= "-Xfatal-warnings", // not quite ready.
-
     // as per @fommil, optimization slows things down.
     scalacOptions -= "-opt:l:inline",
     scalacOptions -= "-opt-inline-from:zio.internal.**",
@@ -358,6 +357,7 @@ lazy val zioJsonInteropScalaz7x = crossProject(JSPlatform, JVMPlatform, NativePl
   .dependsOn(zioJson)
   .settings(stdSettings("zio-json-interop-scalaz7x"))
   .settings(buildInfoSettings("zio.json.interop.scalaz7x"))
+  .settings(nativeSettings)
   .settings(
     crossScalaVersions -= ScalaDotty,
     libraryDependencies ++= Seq(

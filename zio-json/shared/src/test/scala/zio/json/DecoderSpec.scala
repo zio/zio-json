@@ -371,8 +371,6 @@ object DecoderSpec extends ZIOSpecDefault {
         },
         test("parameterless products") {
           import exampleproducts._
-          println("Holy...")
-          println(Json.Obj().as[Parameterless])
           assert(Json.Obj().as[Parameterless])(isRight(equalTo(Parameterless()))) &&
           assert(Json.Null.as[Parameterless])(isRight(equalTo(Parameterless()))) &&
           assert(Json.Obj("field" -> Json.Str("value")).as[Parameterless])(isRight(equalTo(Parameterless())))

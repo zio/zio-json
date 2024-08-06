@@ -1,10 +1,12 @@
-import explicitdeps.ExplicitDepsPlugin.autoImport._
-import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport._
-import sbt.Keys._
-import sbt._
-import sbtbuildinfo.BuildInfoKeys._
-import sbtbuildinfo._
-import sbtcrossproject.CrossPlugin.autoImport._
+import explicitdeps.ExplicitDepsPlugin.autoImport.*
+import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport.*
+import sbt.Keys.*
+import sbt.*
+import sbtbuildinfo.BuildInfoKeys.*
+import sbtbuildinfo.*
+import sbtcrossproject.CrossPlugin.autoImport.*
+
+import scala.scalanative.sbtplugin.ScalaNativePlugin.autoImport.nativeConfig
 
 object BuildHelper {
   private val versions: Map[String, String] = {
@@ -206,7 +208,7 @@ object BuildHelper {
         baseDirectory.value
       )
     }
-  )
+  ) ++ nativeSettings
 
   def stdSettings(prjName: String) = Seq(
     name := s"$prjName",
@@ -267,10 +269,9 @@ object BuildHelper {
     libraryDependencies += "io.github.cquiroz" %%% "scala-java-time-tzdb" % Dependencies.scalaJavaTime
   )
 
+  //The initial upgrade to the Scala Native 0.5.x series does not support native multithreading with ZIO. See https://github.com/zio/zio/pull/8840.
   def nativeSettings = Seq(
-    Test / skip := true,
-    doc / skip := true,
-    Compile / doc / sources := Seq.empty
+    nativeConfig ~= { _.withMultithreading(false) }
   )
 
   val scalaReflectTestSettings: List[Setting[_]] = List(
