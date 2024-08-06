@@ -7,6 +7,7 @@ import zio.json.JsonCodecConfiguration.SumTypeHandling.WrapperWithClassNameField
 import zio.json.JsonDecoder.{ JsonError, UnsafeJson }
 import zio.json.ast.Json
 import zio.json.internal.{ Lexer, RetractReader, StringMatrix, Write }
+import zio.json.MacroUtils.{ DefaultOption, calculateDefaultOption }
 
 import scala.annotation._
 import scala.language.experimental.macros
@@ -328,24 +329,11 @@ object DeriveJsonDecoder {
         lazy val tcs: Array[JsonDecoder[Any]] =
           ctx.parameters.map(_.typeclass).toArray.asInstanceOf[Array[JsonDecoder[Any]]]
 
-        //A list of default options for each case class field.
-        //Each default option is an Option[Either[A,B]] where A is the standard, precomputed default and B is a function to calculate the default each time
-        //This is necessary to support both defaults that can be precomputed as well as others (e.g. random generators such as UUID.randomUUID()) that need to be freshly calculated each time
-        lazy val defaults: Array[Option[Either[Any, () => Any]]] = ctx.parameters.map { param =>
+        lazy val defaults: Array[DefaultOption] = ctx.parameters.map { param =>
           val isAlwaysEvaluateAnnotationPresent = param.annotations.collectFirst { case _: jsonAlwaysEvaluateDefault =>
             true
           }.getOrElse(false)
-          param.evaluateDefault.flatMap { defaultEvaluator =>
-            val sampleEvaluation = defaultEvaluator()
-            if (isAlwaysEvaluateAnnotationPresent || sampleEvaluation != defaultEvaluator()) {
-              Some(Right(defaultEvaluator))
-            } else {
-              sampleEvaluation match {
-                case _: java.time.temporal.Temporal => Some(Right(defaultEvaluator))
-                case _                              => None
-              }
-            }
-          }.orElse(param.default.map(Left(_)))
+          calculateDefaultOption(param.evaluateDefault, param.default, isAlwaysEvaluateAnnotationPresent)
         }.toArray
 
         def getDefaultFromFieldIndex(index: Int): Option[Any] =

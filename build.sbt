@@ -118,11 +118,11 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform, NativePlatform)
 
         case _ =>
           Vector(
-            "org.scala-lang"                          % "scala-reflect"         % scalaVersion.value         % Provided,
+            "org.scala-lang"                          % "scala-reflect"         % scalaVersion.value              % Provided,
             "com.softwaremill.magnolia1_2"          %%% "magnolia"              % Dependencies.magnolia2,
-            "io.circe"                              %%% "circe-generic-extras"  % Dependencies.circe         % "test",
-            "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-core"   % Dependencies.jsoniterScala % "test",
-            "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-macros" % Dependencies.jsoniterScala % "test"
+            "io.circe"                              %%% "circe-generic-extras"  % Dependencies.circeGenericExtras % "test",
+            "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-core"   % Dependencies.jsoniterScala      % "test",
+            "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-macros" % Dependencies.jsoniterScala      % "test"
           )
       }
     },
