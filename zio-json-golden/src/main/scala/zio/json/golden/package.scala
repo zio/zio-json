@@ -1,7 +1,5 @@
 package zio.json
 
-import scala.annotation.nowarn
-
 import zio.Tag
 import zio.{ test => _, _ }
 import zio.json.golden.filehelpers._
@@ -27,7 +25,7 @@ package object golden {
       else DiffResult.Different(x, y)
   }
 
-  @nowarn implicit private lazy val diff: Diff[GoldenSample] = (x: GoldenSample, y: GoldenSample) =>
+  implicit private lazy val diff: Diff[GoldenSample] = (x: GoldenSample, y: GoldenSample) =>
     Diff[Json].diff(x.samples, y.samples)
 
   def goldenTest[A: Tag: JsonEncoder](

@@ -226,7 +226,9 @@ private class CaseObjectDecoder[Typeclass[*], A](val ctx: CaseClass[Typeclass, A
 
         override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): A =
           json match {
+            case Json.Obj(_) => ctx.rawConstruct(Nil)
             case Json.Null   => ctx.rawConstruct(Nil)
+            case _ => throw UnsafeJson(JsonError.Message("Not an object") :: trace)
           }
       }
       
