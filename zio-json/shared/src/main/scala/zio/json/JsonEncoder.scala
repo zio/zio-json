@@ -520,6 +520,6 @@ private[json] trait EncoderLowPriority3 extends EncoderLowPriority4 {
   implicit val currency: JsonEncoder[java.util.Currency] = stringify(_.toString)
 }
 
-private[json] trait EncoderLowPriority4 {
+private[json] trait EncoderLowPriority4 extends EncoderLowPriorityVersionSpecific {
   implicit def fromCodec[A](implicit codec: JsonCodec[A]): JsonEncoder[A] = codec.encoder
 }

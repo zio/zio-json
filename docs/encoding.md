@@ -55,6 +55,23 @@ apple.toJson
 
 Almost all of the standard library data types are supported as fields on the case class, and it is easy to add support if one is missing.
 
+### Sealed families and enums for Scala 3
+Sealed families where all members are only objects, or a Scala 3 enum with all cases parameterless are interpreted as enumerations and will encode 1:1 with their value-names.
+```scala
+enum Foo derives JsonEncoder:
+  case Bar
+  case Baz
+  case Qux
+```
+or
+```scala
+sealed trait Foo derives JsonEncoder
+object Foo:
+  case object Bar extends Foo
+  case object Baz extends Foo
+  case object Qux extends Foo
+```
+
 ## Manual instances
 
 Sometimes it is easier to reuse an existing `JsonEncoder` rather than generate a new one. This can be accomplished using convenience methods on the `JsonEncoder` typeclass to *derive* new decoders:

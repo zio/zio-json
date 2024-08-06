@@ -11,9 +11,9 @@ object GoldenSpec extends ZIOSpecDefault {
   sealed trait SumType
 
   object SumType {
-    case object Case1 extends SumType
-    case object Case2 extends SumType
-    case object Case3 extends SumType
+    case object Case1  extends SumType
+    case object Case2  extends SumType
+    case class Case3() extends SumType
 
     implicit val jsonCodec: JsonCodec[SumType] = DeriveJsonCodec.gen
   }
