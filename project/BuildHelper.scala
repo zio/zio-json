@@ -227,7 +227,7 @@ object BuildHelper {
     },
     semanticdbEnabled := scalaVersion.value != ScalaDotty, // enable SemanticDB
     semanticdbOptions += "-P:semanticdb:synthetics:on",
-    semanticdbVersion := "4.9.2",
+    semanticdbVersion := Dependencies.semanticDB,
     Test / parallelExecution := true,
     incOptions ~= (_.withLogRecompileOnMacro(false)),
     autoAPIMappings := true,
@@ -318,7 +318,7 @@ object BuildHelper {
     val circe                  = "0.14.9"
     val circeGenericExtras     = "0.14.4"
     val http4s                 = "0.23.26"
-    val jawnAST                = "1.5.1"
+    val jawnAST                = "1.6.0"
     val jsoniterScala          = "2.30.7"
     val kindProjector          = "0.13.3"
     val magnolia2              = "1.1.10"
@@ -331,7 +331,8 @@ object BuildHelper {
     val scalaJavaTime          = "2.6.0"
     val scalaMacros            = "2.1.1"
     val scalaz                 = "7.2.36"
-    val silencer               = "1.7.16"
+    val semanticDB             = "4.9.9"
+    val silencer               = "1.7.17"
     val snakeYaml              = "2.2"
     val zio                    = "2.1.7"
     val zioInteropCats         = "23.1.0.2"
