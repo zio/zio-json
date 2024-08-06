@@ -1,10 +1,12 @@
-import explicitdeps.ExplicitDepsPlugin.autoImport._
-import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport._
-import sbt.Keys._
-import sbt._
-import sbtbuildinfo.BuildInfoKeys._
-import sbtbuildinfo._
-import sbtcrossproject.CrossPlugin.autoImport._
+import explicitdeps.ExplicitDepsPlugin.autoImport.*
+import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport.*
+import sbt.Keys.*
+import sbt.*
+import sbtbuildinfo.BuildInfoKeys.*
+import sbtbuildinfo.*
+import sbtcrossproject.CrossPlugin.autoImport.*
+
+import scala.scalanative.sbtplugin.ScalaNativePlugin.autoImport.nativeConfig
 
 object BuildHelper {
   private val versions: Map[String, String] = {
@@ -21,8 +23,6 @@ object BuildHelper {
   val Scala212: String   = versions("2.12")
   val Scala213: String   = versions("2.13")
   val ScalaDotty: String = "3.3.3"
-
-  val SilencerVersion = "1.7.16"
 
   private val stdOptions = Seq(
     "-deprecation",
@@ -95,7 +95,7 @@ object BuildHelper {
   )
 
   val scalaReflectSettings = Seq(
-    libraryDependencies ++= Seq("dev.zio" %%% "izumi-reflect" % "1.0.0-M10")
+    libraryDependencies ++= Seq("dev.zio" %%% "izumi-reflect" % Dependencies.zioReflect)
   )
 
   // Keep this consistent with the version in .core-tests/shared/src/test/scala/REPLSpec.scala
@@ -208,7 +208,7 @@ object BuildHelper {
         baseDirectory.value
       )
     }
-  )
+  ) ++ nativeSettings
 
   def stdSettings(prjName: String) = Seq(
     name := s"$prjName",
@@ -218,18 +218,18 @@ object BuildHelper {
     libraryDependencies ++= {
       if (scalaVersion.value == ScalaDotty)
         Seq(
-          "com.github.ghik" % s"silencer-lib_$Scala213" % SilencerVersion % Provided
+          "com.github.ghik" % s"silencer-lib_$Scala213" % Dependencies.silencer % Provided
         )
       else
         Seq(
-          "com.github.ghik" % "silencer-lib" % SilencerVersion % Provided cross CrossVersion.full,
-          compilerPlugin("com.github.ghik" % "silencer-plugin" % SilencerVersion cross CrossVersion.full),
-          compilerPlugin("org.typelevel"  %% "kind-projector"  % "0.13.3" cross CrossVersion.full)
+          "com.github.ghik" % "silencer-lib" % Dependencies.silencer % Provided cross CrossVersion.full,
+          compilerPlugin("com.github.ghik" % "silencer-plugin" % Dependencies.silencer cross CrossVersion.full),
+          compilerPlugin("org.typelevel"  %% "kind-projector"  % Dependencies.kindProjector cross CrossVersion.full)
         )
     },
     semanticdbEnabled := scalaVersion.value != ScalaDotty, // enable SemanticDB
     semanticdbOptions += "-P:semanticdb:synthetics:on",
-    semanticdbVersion := "4.9.2",
+    semanticdbVersion := Dependencies.semanticDB,
     Test / parallelExecution := true,
     incOptions ~= (_.withLogRecompileOnMacro(false)),
     autoAPIMappings := true,
@@ -246,7 +246,7 @@ object BuildHelper {
     libraryDependencies ++= {
       CrossVersion.partialVersion(scalaVersion.value) match {
         case Some((2, x)) if x <= 12 =>
-          Seq(compilerPlugin(("org.scalamacros" % "paradise" % "2.1.1").cross(CrossVersion.full)))
+          Seq(compilerPlugin(("org.scalamacros" % "paradise" % Dependencies.scalaMacros).cross(CrossVersion.full)))
         case _ => Seq.empty
       }
     }
@@ -265,14 +265,13 @@ object BuildHelper {
   )
 
   def jsSettings = Seq(
-    libraryDependencies += "io.github.cquiroz" %%% "scala-java-time"      % "2.2.2",
-    libraryDependencies += "io.github.cquiroz" %%% "scala-java-time-tzdb" % "2.2.2"
+    libraryDependencies += "io.github.cquiroz" %%% "scala-java-time"      % Dependencies.scalaJavaTime,
+    libraryDependencies += "io.github.cquiroz" %%% "scala-java-time-tzdb" % Dependencies.scalaJavaTime
   )
 
+  //The initial upgrade to the Scala Native 0.5.x series does not support native multithreading with ZIO. See https://github.com/zio/zio/pull/8840.
   def nativeSettings = Seq(
-    Test / skip := true,
-    doc / skip := true,
-    Compile / doc / sources := Seq.empty
+    nativeConfig ~= { _.withMultithreading(false) }
   )
 
   val scalaReflectTestSettings: List[Setting[_]] = List(
@@ -313,5 +312,31 @@ object BuildHelper {
 
   implicit class ModuleHelper(p: Project) {
     def module: Project = p.in(file(p.id)).settings(stdSettings(p.id))
+  }
+
+  object Dependencies {
+    val catsEffect             = "3.4.9"
+    val circe                  = "0.14.9"
+    val circeGenericExtras     = "0.14.4"
+    val http4s                 = "0.23.26"
+    val jawnAST                = "1.6.0"
+    val jsoniterScala          = "2.30.7"
+    val kindProjector          = "0.13.3"
+    val magnolia2              = "1.1.10"
+    val magnolia3              = "1.3.7"
+    val playJson               = "2.9.4"
+    val playJsonExtensions     = "0.43.1"
+    val playJsonExtensions2_12 = "0.42.0"
+    val refined                = "0.11.2"
+    val scalaCollectionCompat  = "2.12.0"
+    val scalaJavaTime          = "2.6.0"
+    val scalaMacros            = "2.1.1"
+    val scalaz                 = "7.2.36"
+    val semanticDB             = "4.9.9"
+    val silencer               = "1.7.17"
+    val snakeYaml              = "2.2"
+    val zio                    = "2.1.7"
+    val zioInteropCats         = "23.1.0.2"
+    val zioReflect             = "1.0.0-M10"
   }
 }

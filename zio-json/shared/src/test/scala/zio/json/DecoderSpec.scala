@@ -1,13 +1,14 @@
 package testzio.json
 
+import testzio.json.DecoderSpec.exampleproducts.{ DefaultDynamic, DefaultDynamicWithTime }
 import zio._
 import zio.json._
 import zio.json.ast.Json
 import zio.test.Assertion._
-import zio.test.TestAspect.jvmOnly
+import zio.test.TestAspect.{ jvm, jvmOnly, samples }
 import zio.test._
 
-import java.time.{ Duration, OffsetDateTime, ZonedDateTime }
+import java.time.{ Duration, Instant, OffsetDateTime, ZonedDateTime }
 import java.util.UUID
 import scala.collection.{ SortedMap, immutable, mutable }
 
@@ -142,6 +143,41 @@ object DecoderSpec extends ZIOSpecDefault {
           assert("""{}""".fromJson[DefaultString])(isRight(equalTo(DefaultString("")))) &&
           assert("""{"s": null}""".fromJson[DefaultString])(isRight(equalTo(DefaultString(""))))
         },
+        test("dynamic default value") {
+          val res1 = """{}""".stripMargin.fromJson[DefaultDynamic]
+          val res2 = """{}""".stripMargin.fromJson[DefaultDynamic]
+          val res = ZIO.fromEither {
+            for {
+              json1 <- res1
+              json2 <- res2
+            } yield (json1, json2)
+          }
+
+          for {
+            dynamics <- res
+            finalRes <-
+              assert(res1)(isRight) && assert(res2)(isRight) &&
+                assertTrue(dynamics._1.randomNumber != dynamics._2.randomNumber) &&
+                assertTrue(dynamics._1.randomNumberWithoutAnnotation != dynamics._2.randomNumberWithoutAnnotation)
+          } yield finalRes
+        },
+        test("dynamic default value with time") {
+          val res1 = """{}""".stripMargin.fromJson[DefaultDynamicWithTime]
+          val res2 = """{}""".stripMargin.fromJson[DefaultDynamicWithTime]
+          val res = ZIO.fromEither {
+            for {
+              json1 <- res1
+              json2 <- res2
+            } yield (json1, json2)
+          }
+
+          for {
+            dynamics <- res
+            finalRes <-
+              assert(res1)(isRight) && assert(res2)(isRight) &&
+                assertTrue(dynamics._1.instant != dynamics._2.instant)
+          } yield finalRes
+        } @@ jvm(samples(100)) @@ jvmOnly,
         test("sum encoding") {
           import examplesum._
 
@@ -524,6 +560,24 @@ object DecoderSpec extends ZIOSpecDefault {
 
       implicit val decoder: JsonDecoder[DefaultString] =
         DeriveJsonDecoder.gen[DefaultString]
+    }
+
+    case class DefaultDynamic(
+      @jsonAlwaysEvaluateDefault
+      randomNumber: Double = scala.math.random(),
+      randomNumberWithoutAnnotation: Double = scala.math.random()
+    )
+
+    object DefaultDynamic {
+      implicit val decoder: JsonDecoder[DefaultDynamic] = DeriveJsonDecoder.gen[DefaultDynamic]
+    }
+
+    case class DefaultDynamicWithTime(
+      instant: Instant = Instant.now()
+    )
+
+    object DefaultDynamicWithTime {
+      implicit val decoder: JsonDecoder[DefaultDynamicWithTime] = DeriveJsonDecoder.gen[DefaultDynamicWithTime]
     }
 
     case class Inner(str: String)

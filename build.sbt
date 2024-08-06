@@ -55,8 +55,6 @@ addCommandAlias(
   "zioJsonNative/test; zioJsonInteropScalaz7xNative/test"
 )
 
-val zioVersion = "2.0.21"
-
 lazy val zioJsonRoot = project
   .in(file("."))
   .settings(
@@ -82,8 +80,6 @@ lazy val zioJsonRoot = project
     zioJsonGolden
   )
 
-val circeVersion = "0.14.3"
-
 lazy val zioJson = crossProject(JSPlatform, JVMPlatform, NativePlatform)
   .in(file("zio-json"))
   .settings(stdSettings("zio-json"))
@@ -92,7 +88,6 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform, NativePlatform)
   .enablePlugins(NeoJmhPlugin)
   .settings(
     scalacOptions -= "-Xfatal-warnings", // not quite ready.
-
     // as per @fommil, optimization slows things down.
     scalacOptions -= "-opt:l:inline",
     scalacOptions -= "-opt-inline-from:zio.internal.**",
@@ -103,30 +98,30 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform, NativePlatform)
         Vector.empty
     },
     libraryDependencies ++= Seq(
-      "dev.zio"                %%% "zio"                     % zioVersion,
-      "dev.zio"                %%% "zio-streams"             % zioVersion,
-      "org.scala-lang.modules" %%% "scala-collection-compat" % "2.9.0",
-      "dev.zio"                %%% "zio-test"                % zioVersion   % "test",
-      "dev.zio"                %%% "zio-test-sbt"            % zioVersion   % "test",
-      "io.circe"               %%% "circe-core"              % circeVersion % "test",
-      "io.circe"               %%% "circe-generic"           % circeVersion % "test",
-      "io.circe"               %%% "circe-parser"            % circeVersion % "test"
+      "dev.zio"                %%% "zio"                     % Dependencies.zio,
+      "dev.zio"                %%% "zio-streams"             % Dependencies.zio,
+      "org.scala-lang.modules" %%% "scala-collection-compat" % Dependencies.scalaCollectionCompat,
+      "dev.zio"                %%% "zio-test"                % Dependencies.zio   % "test",
+      "dev.zio"                %%% "zio-test-sbt"            % Dependencies.zio   % "test",
+      "io.circe"               %%% "circe-core"              % Dependencies.circe % "test",
+      "io.circe"               %%% "circe-generic"           % Dependencies.circe % "test",
+      "io.circe"               %%% "circe-parser"            % Dependencies.circe % "test"
     ),
     // scala version specific dependencies
     libraryDependencies ++= {
       CrossVersion.partialVersion(scalaVersion.value) match {
         case Some((3, _)) =>
           Vector(
-            "com.softwaremill.magnolia1_3" %%% "magnolia" % "1.3.0"
+            "com.softwaremill.magnolia1_3" %%% "magnolia" % Dependencies.magnolia3
           )
 
         case _ =>
           Vector(
-            "org.scala-lang"                          % "scala-reflect"         % scalaVersion.value % Provided,
-            "com.softwaremill.magnolia1_2"          %%% "magnolia"              % "1.1.8",
-            "io.circe"                              %%% "circe-generic-extras"  % circeVersion       % "test",
-            "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-core"   % "2.23.3"           % "test",
-            "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-macros" % "2.23.3"           % "test"
+            "org.scala-lang"                          % "scala-reflect"         % scalaVersion.value              % Provided,
+            "com.softwaremill.magnolia1_2"          %%% "magnolia"              % Dependencies.magnolia2,
+            "io.circe"                              %%% "circe-generic-extras"  % Dependencies.circeGenericExtras % "test",
+            "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-core"   % Dependencies.jsoniterScala      % "test",
+            "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-macros" % Dependencies.jsoniterScala      % "test"
           )
       }
     },
@@ -218,8 +213,8 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform, NativePlatform)
   .settings(testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework"))
   .jsSettings(
     libraryDependencies ++= Seq(
-      "io.github.cquiroz" %%% "scala-java-time"      % "2.5.0",
-      "io.github.cquiroz" %%% "scala-java-time-tzdb" % "2.6.0"
+      "io.github.cquiroz" %%% "scala-java-time"      % Dependencies.scalaJavaTime,
+      "io.github.cquiroz" %%% "scala-java-time-tzdb" % Dependencies.scalaJavaTime
     )
   )
   .jvmSettings(
@@ -227,21 +222,21 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform, NativePlatform)
       CrossVersion.partialVersion(scalaVersion.value) match {
         case Some((3, _)) =>
           Vector(
-            "org.typelevel" %% "jawn-ast" % "1.6.0" % "test"
+            "org.typelevel" %% "jawn-ast" % Dependencies.jawnAST % "test"
           )
 
         case Some((2, n)) =>
           if (n >= 13) {
             Seq(
-              "com.particeep"      %% "play-json-extensions" % "0.43.1" % "test",
-              "com.typesafe.play" %%% "play-json"            % "2.9.4"  % "test",
-              "org.typelevel"      %% "jawn-ast"             % "1.6.0"  % "test"
+              "com.particeep"      %% "play-json-extensions" % Dependencies.playJsonExtensions % "test",
+              "com.typesafe.play" %%% "play-json"            % Dependencies.playJson           % "test",
+              "org.typelevel"      %% "jawn-ast"             % Dependencies.jawnAST            % "test"
             )
           } else {
             Seq(
-              "ai.x"               %% "play-json-extensions" % "0.42.0" % "test",
-              "com.typesafe.play" %%% "play-json"            % "2.9.4"  % "test",
-              "org.typelevel"      %% "jawn-ast"             % "1.6.0"  % "test"
+              "ai.x"               %% "play-json-extensions" % Dependencies.playJsonExtensions2_12 % "test",
+              "com.typesafe.play" %%% "play-json"            % Dependencies.playJson               % "test",
+              "org.typelevel"      %% "jawn-ast"             % Dependencies.jawnAST                % "test"
             )
           }
 
@@ -253,7 +248,7 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform, NativePlatform)
   .nativeSettings(Test / fork := false)
   .nativeSettings(
     libraryDependencies ++= Seq(
-      "io.github.cquiroz" %%% "scala-java-time" % "2.5.0"
+      "io.github.cquiroz" %%% "scala-java-time" % Dependencies.scalaJavaTime
     )
   )
   .enablePlugins(BuildInfoPlugin)
@@ -273,10 +268,10 @@ lazy val zioJsonGolden = project
   .settings(buildInfoSettings("zio.json.golden"))
   .settings(
     libraryDependencies ++= Seq(
-      "dev.zio" %% "zio"               % zioVersion,
-      "dev.zio" %% "zio-test"          % zioVersion,
-      "dev.zio" %% "zio-test-sbt"      % zioVersion,
-      "dev.zio" %% "zio-test-magnolia" % zioVersion
+      "dev.zio" %% "zio"               % Dependencies.zio,
+      "dev.zio" %% "zio-test"          % Dependencies.zio,
+      "dev.zio" %% "zio-test-sbt"      % Dependencies.zio,
+      "dev.zio" %% "zio-test-magnolia" % Dependencies.zio
     ),
     testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework")
   )
@@ -289,10 +284,10 @@ lazy val zioJsonYaml = project
   .settings(buildInfoSettings("zio.json.yaml"))
   .settings(
     libraryDependencies ++= Seq(
-      "org.yaml" % "snakeyaml"    % "2.2",
-      "dev.zio" %% "zio"          % zioVersion,
-      "dev.zio" %% "zio-test"     % zioVersion % "test",
-      "dev.zio" %% "zio-test-sbt" % zioVersion % "test"
+      "org.yaml" % "snakeyaml"    % Dependencies.snakeYaml,
+      "dev.zio" %% "zio"          % Dependencies.zio,
+      "dev.zio" %% "zio-test"     % Dependencies.zio % "test",
+      "dev.zio" %% "zio-test-sbt" % Dependencies.zio % "test"
     ),
     testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework")
   )
@@ -310,8 +305,8 @@ lazy val zioJsonMacros = crossProject(JSPlatform, JVMPlatform, NativePlatform)
     scalacOptions -= "-Xfatal-warnings", // not quite ready.
     libraryDependencies ++= Seq(
       "org.scala-lang" % "scala-reflect" % scalaVersion.value % Provided,
-      "dev.zio"      %%% "zio-test"      % zioVersion         % "test",
-      "dev.zio"      %%% "zio-test-sbt"  % zioVersion         % "test"
+      "dev.zio"      %%% "zio-test"      % Dependencies.zio   % "test",
+      "dev.zio"      %%% "zio-test-sbt"  % Dependencies.zio   % "test"
     ),
     testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework")
   )
@@ -330,12 +325,12 @@ lazy val zioJsonInteropHttp4s = project
   .settings(
     crossScalaVersions -= ScalaDotty,
     libraryDependencies ++= Seq(
-      "org.http4s"    %% "http4s-dsl"       % "0.23.26",
-      "dev.zio"       %% "zio"              % zioVersion,
-      "org.typelevel" %% "cats-effect"      % "3.4.9",
-      "dev.zio"       %% "zio-interop-cats" % "23.0.03"  % "test",
-      "dev.zio"       %% "zio-test"         % zioVersion % "test",
-      "dev.zio"       %% "zio-test-sbt"     % zioVersion % "test"
+      "org.http4s"    %% "http4s-dsl"       % Dependencies.http4s,
+      "dev.zio"       %% "zio"              % Dependencies.zio,
+      "org.typelevel" %% "cats-effect"      % Dependencies.catsEffect,
+      "dev.zio"       %% "zio-interop-cats" % Dependencies.zioInteropCats % "test",
+      "dev.zio"       %% "zio-test"         % Dependencies.zio            % "test",
+      "dev.zio"       %% "zio-test-sbt"     % Dependencies.zio            % "test"
     ),
     testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework")
   )
@@ -349,9 +344,9 @@ lazy val zioJsonInteropRefined = crossProject(JSPlatform, JVMPlatform, NativePla
   .settings(buildInfoSettings("zio.json.interop.refined"))
   .settings(
     libraryDependencies ++= Seq(
-      "eu.timepit" %%% "refined"      % "0.10.2",
-      "dev.zio"    %%% "zio-test"     % zioVersion % "test",
-      "dev.zio"    %%% "zio-test-sbt" % zioVersion % "test"
+      "eu.timepit" %%% "refined"      % Dependencies.refined,
+      "dev.zio"    %%% "zio-test"     % Dependencies.zio % "test",
+      "dev.zio"    %%% "zio-test-sbt" % Dependencies.zio % "test"
     ),
     testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework")
   )
@@ -362,12 +357,13 @@ lazy val zioJsonInteropScalaz7x = crossProject(JSPlatform, JVMPlatform, NativePl
   .dependsOn(zioJson)
   .settings(stdSettings("zio-json-interop-scalaz7x"))
   .settings(buildInfoSettings("zio.json.interop.scalaz7x"))
+  .settings(nativeSettings)
   .settings(
     crossScalaVersions -= ScalaDotty,
     libraryDependencies ++= Seq(
-      "org.scalaz" %%% "scalaz-core"  % "7.3.7",
-      "dev.zio"    %%% "zio-test"     % zioVersion % "test",
-      "dev.zio"    %%% "zio-test-sbt" % zioVersion % "test"
+      "org.scalaz" %%% "scalaz-core"  % Dependencies.scalaz,
+      "dev.zio"    %%% "zio-test"     % Dependencies.zio % "test",
+      "dev.zio"    %%% "zio-test-sbt" % Dependencies.zio % "test"
     ),
     testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework")
   )

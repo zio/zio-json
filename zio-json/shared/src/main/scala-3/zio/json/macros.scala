@@ -11,6 +11,7 @@ import zio.Chunk
 import zio.json.JsonDecoder.{ JsonError, UnsafeJson }
 import zio.json.ast.Json
 import zio.json.internal.{ Lexer, RetractReader, StringMatrix, Write }
+import zio.json.MacroUtils.{DefaultOption, calculateDefaultOption}
 
 import scala.annotation._
 import scala.collection.mutable
@@ -207,6 +208,11 @@ final class jsonNoExtraFields extends Annotation
  */
 final class jsonExclude extends Annotation
 
+/**
+ * If used on a case class field, the default will be evaluated every time a json string is decoded. This is necessary for computing reliable time-based values, such as Instant.now()
+ */
+final class jsonAlwaysEvaluateDefault extends Annotation
+
 private class CaseObjectDecoder[Typeclass[*], A](val ctx: CaseClass[Typeclass, A], no_extra: Boolean) extends JsonDecoder[A] {
         def unsafeDecode(trace: List[JsonError], in: RetractReader): A = {
           if (no_extra) {
@@ -222,7 +228,7 @@ private class CaseObjectDecoder[Typeclass[*], A](val ctx: CaseClass[Typeclass, A
           json match {
             case Json.Obj(_) => ctx.rawConstruct(Nil)
             case Json.Null   => ctx.rawConstruct(Nil)
-            case _           => throw UnsafeJson(JsonError.Message("Not an object") :: trace)
+            case _ => throw UnsafeJson(JsonError.Message("Not an object") :: trace)
           }
       }
       
@@ -281,8 +287,16 @@ object DeriveJsonDecoder extends Derivation[JsonDecoder] { self =>
         lazy val tcs: Array[JsonDecoder[Any]] =
           IArray.genericWrapArray(ctx.params.map(_.typeclass)).toArray.asInstanceOf[Array[JsonDecoder[Any]]]
 
-        lazy val defaults: Array[Option[Any]] =
-          IArray.genericWrapArray(ctx.params.map(_.default)).toArray
+        lazy val defaults: Array[DefaultOption] = ctx.parameters.map { param =>
+          val isAlwaysEvaluateAnnotationPresent = param.annotations.collectFirst { case _ :jsonAlwaysEvaluateDefault => true }.getOrElse(false)
+          calculateDefaultOption(param.evaluateDefault, param.default, isAlwaysEvaluateAnnotationPresent)
+        }.toArray
+
+        def getDefaultFromFieldIndex(index: Int): Option[Any] = {
+          defaults(index).map { defaultEither =>
+            defaultEither.fold(normalDefault => normalDefault, dynamicDefault => dynamicDefault())
+          }
+        }
 
         lazy val namesMap: Map[String, Int] =
           (names.zipWithIndex ++ aliases).toMap
@@ -300,11 +314,14 @@ object DeriveJsonDecoder extends Derivation[JsonDecoder] { self =>
                 trace_ = spans(field) :: trace
                 if (ps(field) != null)
                   throw UnsafeJson(JsonError.Message("duplicate") :: trace)
-                if (defaults(field).isDefined) {
-                  val opt = JsonDecoder.option(tcs(field)).unsafeDecode(trace_, in)
-                  ps(field) = opt.getOrElse(defaults(field).get)
-                } else
-                  ps(field) = tcs(field).unsafeDecode(trace_, in)
+                ps(field) = getDefaultFromFieldIndex(field).map { default =>
+                  JsonDecoder
+                    .option(tcs(field))
+                    .unsafeDecode(trace_, in)
+                    .getOrElse(default)
+                }.getOrElse {
+                    tcs(field).unsafeDecode(trace_, in)
+                  }
               } else if (no_extra) {
                 throw UnsafeJson(
                   JsonError.Message(s"invalid extra field") :: trace
@@ -319,11 +336,8 @@ object DeriveJsonDecoder extends Derivation[JsonDecoder] { self =>
 
           while (i < len) {
             if (ps(i) == null) {
-              if (defaults(i).isDefined) {
-                ps(i) = defaults(i).get
-              } else {
-                ps(i) = tcs(i).unsafeDecodeMissing(spans(i) :: trace)
-              }
+              ps(i) = getDefaultFromFieldIndex(i)
+                .getOrElse(tcs(i).unsafeDecodeMissing(spans(i) :: trace))
             }
             i += 1
           }
@@ -349,11 +363,13 @@ object DeriveJsonDecoder extends Derivation[JsonDecoder] { self =>
                 namesMap.get(key) match {
                   case Some(field) =>
                     val trace_ = JsonError.ObjectAccess(key) :: trace
-                    if (defaults(field).isDefined) {
-                      val opt = JsonDecoder.option(tcs(field)).unsafeFromJsonAST(trace_, value)
-                      ps(field) = opt.getOrElse(defaults(field).get)
-                    } else {
-                      ps(field) = tcs(field).unsafeFromJsonAST(trace_, value)
+                    ps(field) = getDefaultFromFieldIndex(field).map { default =>
+                      JsonDecoder
+                        .option(tcs(field))
+                        .unsafeFromJsonAST(trace_, value)
+                        .getOrElse(default)
+                    }.getOrElse {
+                      tcs(field).unsafeFromJsonAST(trace_, value)
                     }
                   case None =>
                     if (no_extra) {
@@ -367,10 +383,8 @@ object DeriveJsonDecoder extends Derivation[JsonDecoder] { self =>
               var i = 0
               while (i < len) {
                 if (ps(i) == null) {
-                  if (defaults(i).isDefined) {
-                    ps(i) = defaults(i).get
-                  } else {
-                    ps(i) = tcs(i).unsafeDecodeMissing(JsonError.ObjectAccess(names(i)) :: trace)
+                  ps(i) = getDefaultFromFieldIndex(i).getOrElse {
+                    tcs(i).unsafeDecodeMissing(JsonError.ObjectAccess(names(i)) :: trace)
                   }
                 }
                 i += 1
