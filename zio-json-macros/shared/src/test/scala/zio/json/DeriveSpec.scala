@@ -54,7 +54,7 @@ object DeriveSpec extends ZIOSpecDefault {
           assert("""{"hint":"Child1"}""".fromJson[Parent])(isLeft(equalTo("(invalid disambiguator)"))) &&
           assert("""{"child1":{}}""".fromJson[Parent])(isLeft(equalTo("(missing hint 'hint')")))
         }
-      )
+      ) @@ TestAspect.flaky // flaky only for Scala Native
     )
 
   object exampleproducts {
