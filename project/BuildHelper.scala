@@ -264,10 +264,13 @@ object BuildHelper {
     }
   )
 
-  def jsSettings = Seq(
-    libraryDependencies += "io.github.cquiroz" %%% "scala-java-time"      % "2.2.2",
-    libraryDependencies += "io.github.cquiroz" %%% "scala-java-time-tzdb" % "2.2.2"
-  )
+  val scalaJavaTimeVersion = "2.6.0"
+
+  def jsSettings =
+    Seq(
+      libraryDependencies += "io.github.cquiroz" %%% "scala-java-time"      % scalaJavaTimeVersion,
+      libraryDependencies += "io.github.cquiroz" %%% "scala-java-time-tzdb" % scalaJavaTimeVersion
+    )
 
   def nativeSettings = Seq(
     Test / skip := true,

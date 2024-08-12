@@ -55,7 +55,7 @@ addCommandAlias(
   "zioJsonNative/test; zioJsonInteropScalaz7xNative/test"
 )
 
-val zioVersion = "2.0.21"
+val zioVersion = "2.1.7"
 
 lazy val zioJsonRoot = project
   .in(file("."))
@@ -82,7 +82,7 @@ lazy val zioJsonRoot = project
     zioJsonGolden
   )
 
-val circeVersion = "0.14.3"
+val circeVersion = "0.14.9"
 
 lazy val zioJson = crossProject(JSPlatform, JVMPlatform, NativePlatform)
   .in(file("zio-json"))
@@ -105,7 +105,7 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform, NativePlatform)
     libraryDependencies ++= Seq(
       "dev.zio"                %%% "zio"                     % zioVersion,
       "dev.zio"                %%% "zio-streams"             % zioVersion,
-      "org.scala-lang.modules" %%% "scala-collection-compat" % "2.9.0",
+      "org.scala-lang.modules" %%% "scala-collection-compat" % "2.12.0",
       "dev.zio"                %%% "zio-test"                % zioVersion   % "test",
       "dev.zio"                %%% "zio-test-sbt"            % zioVersion   % "test",
       "io.circe"               %%% "circe-core"              % circeVersion % "test",
@@ -117,16 +117,16 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform, NativePlatform)
       CrossVersion.partialVersion(scalaVersion.value) match {
         case Some((3, _)) =>
           Vector(
-            "com.softwaremill.magnolia1_3" %%% "magnolia" % "1.3.0"
+            "com.softwaremill.magnolia1_3" %%% "magnolia" % "1.3.7"
           )
 
         case _ =>
           Vector(
             "org.scala-lang"                          % "scala-reflect"         % scalaVersion.value % Provided,
-            "com.softwaremill.magnolia1_2"          %%% "magnolia"              % "1.1.8",
-            "io.circe"                              %%% "circe-generic-extras"  % circeVersion       % "test",
-            "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-core"   % "2.23.3"           % "test",
-            "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-macros" % "2.23.3"           % "test"
+            "com.softwaremill.magnolia1_2"          %%% "magnolia"              % "1.1.10",
+            "io.circe"                              %%% "circe-generic-extras"  % "0.14.4"           % "test",
+            "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-core"   % "2.30.7"           % "test",
+            "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-macros" % "2.30.7"           % "test"
           )
       }
     },
@@ -218,8 +218,8 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform, NativePlatform)
   .settings(testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework"))
   .jsSettings(
     libraryDependencies ++= Seq(
-      "io.github.cquiroz" %%% "scala-java-time"      % "2.5.0",
-      "io.github.cquiroz" %%% "scala-java-time-tzdb" % "2.6.0"
+      "io.github.cquiroz" %%% "scala-java-time"      % scalaJavaTimeVersion,
+      "io.github.cquiroz" %%% "scala-java-time-tzdb" % scalaJavaTimeVersion
     )
   )
   .jvmSettings(
@@ -253,7 +253,7 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform, NativePlatform)
   .nativeSettings(Test / fork := false)
   .nativeSettings(
     libraryDependencies ++= Seq(
-      "io.github.cquiroz" %%% "scala-java-time" % "2.5.0"
+      "io.github.cquiroz" %%% "scala-java-time" % scalaJavaTimeVersion
     )
   )
   .enablePlugins(BuildInfoPlugin)
@@ -349,7 +349,7 @@ lazy val zioJsonInteropRefined = crossProject(JSPlatform, JVMPlatform, NativePla
   .settings(buildInfoSettings("zio.json.interop.refined"))
   .settings(
     libraryDependencies ++= Seq(
-      "eu.timepit" %%% "refined"      % "0.10.2",
+      "eu.timepit" %%% "refined"      % "0.11.2",
       "dev.zio"    %%% "zio-test"     % zioVersion % "test",
       "dev.zio"    %%% "zio-test-sbt" % zioVersion % "test"
     ),
@@ -365,7 +365,7 @@ lazy val zioJsonInteropScalaz7x = crossProject(JSPlatform, JVMPlatform, NativePl
   .settings(
     crossScalaVersions -= ScalaDotty,
     libraryDependencies ++= Seq(
-      "org.scalaz" %%% "scalaz-core"  % "7.3.7",
+      "org.scalaz" %%% "scalaz-core"  % "7.3.8",
       "dev.zio"    %%% "zio-test"     % zioVersion % "test",
       "dev.zio"    %%% "zio-test-sbt" % zioVersion % "test"
     ),
