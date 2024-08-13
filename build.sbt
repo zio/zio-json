@@ -254,7 +254,8 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform, NativePlatform)
   .nativeSettings(
     libraryDependencies ++= Seq(
       "io.github.cquiroz" %%% "scala-java-time" % scalaJavaTimeVersion
-    )
+    ),
+    nativeConfig ~= { _.withMultithreading(false) }
   )
   .enablePlugins(BuildInfoPlugin)
 
