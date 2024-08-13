@@ -25,7 +25,7 @@ jobs:
         uses: actions/setup-java@v4.2.1
         with:
           distribution: temurin
-          java-version: 11
+          java-version: 21
           check-latest: true
       - name: Cache scala dependencies
         uses: coursier/cache-action@v6
@@ -37,7 +37,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        java: ['11', '17']
+        java: ['17', '21']
         scala: ['2.13.13']
     steps:
       - name: Checkout current branch
@@ -78,7 +78,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        java: ['11', '17']
+        java: ['17', '21']
         scala: ['2.12.19', '2.13.13', '3.3.3']
         platform: ['JVM', 'JS', 'Native']
     steps:
