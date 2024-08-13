@@ -314,7 +314,8 @@ lazy val zioJsonMacros = crossProject(JSPlatform, JVMPlatform, NativePlatform)
       "dev.zio"      %%% "zio-test"      % zioVersion         % "test",
       "dev.zio"      %%% "zio-test-sbt"  % zioVersion         % "test"
     ),
-    testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework")
+    testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework"),
+    nativeConfig ~= { _.withMultithreading(false) }
   )
   .nativeSettings(Test / fork := false)
 
