@@ -255,16 +255,30 @@ object DecoderSpec extends ZIOSpecDefault {
           val bad6 = """{"64d7c38d-2afd-X-9832-4e70afe4b0f8": "value"}"""
           val bad7 = """{"0-0-0-0-00000000000000000": "value"}"""
 
-          assert(ok1.fromJson[Map[UUID, String]])(isRight(equalTo(expectedMap("64d7c38d-2afd-4514-9832-4e70afe4b0f8")))) &&
-            assert(ok2.fromJson[Map[UUID, String]])(isRight(equalTo(expectedMap("64D7C38D-00FD-0014-0032-0070AfE4B0f8")))) &&
-            assert(ok3.fromJson[Map[UUID, String]])(isRight(equalTo(expectedMap("00000000-0000-0000-0000-000000000000")))) &&
-            assert(bad1.fromJson[Map[UUID, String]])(isLeft(containsString("Invalid UUID: "))) &&
-            assert(bad2.fromJson[Map[UUID, String]])(isLeft(containsString("Invalid UUID: UUID string too large"))) &&
-            assert(bad3.fromJson[Map[UUID, String]])(isLeft(containsString("Invalid UUID: 64d7c38d-2afd-4514-983-4e70afe4b0f80"))) &&
-            assert(bad4.fromJson[Map[UUID, String]])(isLeft(containsString("Invalid UUID: 64d7c38d-2afd--9832-4e70afe4b0f8"))) &&
-            assert(bad5.fromJson[Map[UUID, String]])(isLeft(containsString("Invalid UUID: 64d7c38d-2afd-XXXX-9832-4e70afe4b0f8"))) &&
-            assert(bad6.fromJson[Map[UUID, String]])(isLeft(containsString("Invalid UUID: 64d7c38d-2afd-X-9832-4e70afe4b0f8"))) &&
-            assert(bad7.fromJson[Map[UUID, String]])(isLeft(containsString("Invalid UUID: 0-0-0-0-00000000000000000")))
+          assert(ok1.fromJson[Map[UUID, String]])(
+            isRight(equalTo(expectedMap("64d7c38d-2afd-4514-9832-4e70afe4b0f8")))
+          ) &&
+          assert(ok2.fromJson[Map[UUID, String]])(
+            isRight(equalTo(expectedMap("64D7C38D-00FD-0014-0032-0070AfE4B0f8")))
+          ) &&
+          assert(ok3.fromJson[Map[UUID, String]])(
+            isRight(equalTo(expectedMap("00000000-0000-0000-0000-000000000000")))
+          ) &&
+          assert(bad1.fromJson[Map[UUID, String]])(isLeft(containsString("Invalid UUID: "))) &&
+          assert(bad2.fromJson[Map[UUID, String]])(isLeft(containsString("Invalid UUID: UUID string too large"))) &&
+          assert(bad3.fromJson[Map[UUID, String]])(
+            isLeft(containsString("Invalid UUID: 64d7c38d-2afd-4514-983-4e70afe4b0f80"))
+          ) &&
+          assert(bad4.fromJson[Map[UUID, String]])(
+            isLeft(containsString("Invalid UUID: 64d7c38d-2afd--9832-4e70afe4b0f8"))
+          ) &&
+          assert(bad5.fromJson[Map[UUID, String]])(
+            isLeft(containsString("Invalid UUID: 64d7c38d-2afd-XXXX-9832-4e70afe4b0f8"))
+          ) &&
+          assert(bad6.fromJson[Map[UUID, String]])(
+            isLeft(containsString("Invalid UUID: 64d7c38d-2afd-X-9832-4e70afe4b0f8"))
+          ) &&
+          assert(bad7.fromJson[Map[UUID, String]])(isLeft(containsString("Invalid UUID: 0-0-0-0-00000000000000000")))
         },
         test("zio.Chunk") {
           val jsonStr  = """["5XL","2XL","XL"]"""
