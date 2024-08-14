@@ -17,8 +17,6 @@ package zio.json
 
 import zio.json.uuid.UUIDParser
 
-import java.util.UUID
-
 /** When decoding a JSON Object, we only allow the keys that implement this interface. */
 trait JsonFieldDecoder[+A] {
   self =>

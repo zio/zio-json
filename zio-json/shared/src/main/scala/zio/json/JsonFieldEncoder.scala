@@ -15,9 +15,6 @@
  */
 package zio.json
 
-import zio.json.ast.Json
-import zio.json.internal.Write
-
 /** When encoding a JSON Object, we only allow keys that implement this interface. */
 trait JsonFieldEncoder[-A] {
   self =>
