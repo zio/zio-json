@@ -15,6 +15,10 @@
  */
 package zio.json
 
+import zio.json.uuid.UUIDParser
+
+import java.util.UUID
+
 /** When decoding a JSON Object, we only allow the keys that implement this interface. */
 trait JsonFieldDecoder[+A] {
   self =>
@@ -63,5 +67,23 @@ object JsonFieldDecoder {
       } catch {
         case n: NumberFormatException => Left(s"Invalid Long: '$str': $n")
       }
+    }
+
+  implicit val uuid: JsonFieldDecoder[java.util.UUID] = mapStringOrFail { str =>
+    try {
+      Right(UUIDParser.unsafeParse(str))
+    } catch {
+      case iae: IllegalArgumentException => Left(s"Invalid UUID: ${iae.getMessage}")
+    }
+  }
+
+  // use this instead of `string.mapOrFail` in supertypes (to prevent class initialization error at runtime)
+  private[json] def mapStringOrFail[A](f: String => Either[String, A]): JsonFieldDecoder[A] =
+    new JsonFieldDecoder[A] {
+      def unsafeDecodeField(trace: List[JsonError], in: String): A =
+        f(string.unsafeDecodeField(trace, in)) match {
+          case Left(err)    => throw JsonDecoder.UnsafeJson(JsonError.Message(err) :: trace)
+          case Right(value) => value
+        }
     }
 }

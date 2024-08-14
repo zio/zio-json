@@ -15,6 +15,9 @@
  */
 package zio.json
 
+import zio.json.ast.Json
+import zio.json.internal.Write
+
 /** When encoding a JSON Object, we only allow keys that implement this interface. */
 trait JsonFieldEncoder[-A] {
   self =>
@@ -38,4 +41,8 @@ object JsonFieldEncoder {
 
   implicit val long: JsonFieldEncoder[Long] =
     JsonFieldEncoder[String].contramap(_.toString)
+
+  implicit val uuid: JsonFieldEncoder[java.util.UUID] =
+    JsonFieldEncoder[String].contramap(_.toString)
+
 }
