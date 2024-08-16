@@ -32,12 +32,12 @@ addCommandAlias(
 
 addCommandAlias(
   "testScala2JVM",
-  "zioJsonMacrosJVM/test; zioJsonInteropRefinedJVM/test"
+  "zioJsonMacrosJVM/test; zioJsonInteropRefinedJVM/test; zioJsonInteropNewtypeJVM/test"
 )
 
 addCommandAlias(
   "testScala2JS",
-  "zioJsonMacrosJS/test; zioJsonInteropRefinedJS/test"
+  "zioJsonMacrosJS/test; zioJsonInteropRefinedJS/test; zioJsonInteropNewtypeJS/test"
 )
 
 addCommandAlias(
@@ -79,6 +79,8 @@ lazy val zioJsonRoot = project
     zioJsonInteropScalaz7x.js,
     zioJsonInteropScalaz7x.jvm,
     zioJsonInteropScalaz7x.native,
+    zioJsonInteropNewtype.js,
+    zioJsonInteropNewtype.jvm,
     zioJsonGolden
   )
 
@@ -359,6 +361,23 @@ lazy val zioJsonInteropRefined = crossProject(JSPlatform, JVMPlatform, NativePla
   )
   .enablePlugins(BuildInfoPlugin)
 
+lazy val zioJsonInteropNewtype = crossProject(JSPlatform, JVMPlatform)
+  .in(file("zio-json-interop-newtype"))
+  .dependsOn(zioJson)
+  .settings(stdSettings("zio-json-interop-newtype"))
+  .settings(buildInfoSettings("zio.json.interop.newtype"))
+  .settings(macroExpansionSettings)
+  .settings(
+    libraryDependencies ++= Seq(
+      "io.estatico" %%% "newtype"      % "0.4.4",
+      "dev.zio"     %%% "zio-test"     % zioVersion % "test",
+      "dev.zio"     %%% "zio-test-sbt" % zioVersion % "test"
+    ),
+    scalacOptions += "-language:implicitConversions",
+    testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework")
+  )
+  .enablePlugins(BuildInfoPlugin)
+
 lazy val zioJsonInteropScalaz7x = crossProject(JSPlatform, JVMPlatform, NativePlatform)
   .in(file("zio-json-interop-scalaz7x"))
   .dependsOn(zioJson)
@@ -384,7 +403,8 @@ lazy val docs = project
     zioJsonMacrosJVM,
     zioJsonInteropHttp4s,
     zioJsonInteropRefined.jvm,
-    zioJsonInteropScalaz7x.jvm
+    zioJsonInteropScalaz7x.jvm,
+    zioJsonInteropNewtype.jvm
   )
   .settings(
     crossScalaVersions -= ScalaDotty,
@@ -400,6 +420,7 @@ lazy val docs = project
       zioJsonInteropHttp4s,
       zioJsonInteropRefined.jvm,
       zioJsonInteropScalaz7x.jvm,
+      zioJsonInteropNewtype.jvm,
       zioJsonGolden
     ),
     readmeAcknowledgement :=
