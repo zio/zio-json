@@ -261,6 +261,11 @@ object EncoderSpec extends ZIOSpecDefault {
         test("Map, custom keys") {
           assert(Map(1 -> "a").toJson)(equalTo("""{"1":"a"}"""))
         },
+        test("Map, UUID keys") {
+          assert(Map(UUID.fromString("e142f1aa-6e9e-4352-adfe-7e6eb9814ccd") -> "abcd").toJson)(
+            equalTo("""{"e142f1aa-6e9e-4352-adfe-7e6eb9814ccd":"abcd"}""")
+          )
+        },
         test("java.util.UUID") {
           assert(UUID.fromString("e142f1aa-6e9e-4352-adfe-7e6eb9814ccd").toJson)(
             equalTo(""""e142f1aa-6e9e-4352-adfe-7e6eb9814ccd"""")
