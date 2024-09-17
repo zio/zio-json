@@ -409,7 +409,7 @@ object DeriveJsonDecoder extends Derivation[JsonDecoder] { self =>
 
     def discrim = ctx.annotations.collectFirst { case jsonDiscriminator(n) => n }
 
-    if (isEnumeration) {
+    if (isEnumeration && discrim.isEmpty) {
       new JsonDecoder[A] {
         def unsafeDecode(trace: List[JsonError], in: RetractReader): A = {
           val typeName = Lexer.string(trace, in).toString()
@@ -656,7 +656,7 @@ object DeriveJsonEncoder extends Derivation[JsonEncoder] { self =>
         case jsonDiscriminator(n) => n
       }
 
-    if (isEnumeration) {
+    if (isEnumeration && discrim.isEmpty) {
       new JsonEncoder[A] {
         def unsafeEncode(a: A, indent: Option[Int], out: Write): Unit = {
           val typeName = ctx.choose(a) { sub =>
