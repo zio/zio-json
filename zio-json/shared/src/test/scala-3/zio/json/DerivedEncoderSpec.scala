@@ -60,6 +60,11 @@ object DerivedEncoderSpec extends ZIOSpecDefault {
       case class Foo(aOrB: "A" | "B", optA: Option["A"]) derives JsonEncoder
 
       assertTrue(Foo("A", Some("A")).toJson == """{"aOrB":"A","optA":"A"}""")
+    },
+    test("Derives and encodes for a custom map key string-based union type") {
+      case class Foo(aOrB: Map["A" | "B", Int]) derives JsonEncoder
+
+      assertTrue(Foo(Map("A" -> 1, "B" -> 2)).toJson == """{"aOrB":{"A":1,"B":2}}""")
     }
   )
 }

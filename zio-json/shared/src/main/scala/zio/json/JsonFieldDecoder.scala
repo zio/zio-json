@@ -42,7 +42,7 @@ trait JsonFieldDecoder[+A] {
   def unsafeDecodeField(trace: List[JsonError], in: String): A
 }
 
-object JsonFieldDecoder {
+object JsonFieldDecoder extends LowPriorityJsonFieldDecoder {
   def apply[A](implicit a: JsonFieldDecoder[A]): JsonFieldDecoder[A] = a
 
   implicit val string: JsonFieldDecoder[String] = new JsonFieldDecoder[String] {
@@ -84,4 +84,14 @@ object JsonFieldDecoder {
           case Right(value) => value
         }
     }
+}
+
+private[json] trait LowPriorityJsonFieldDecoder {
+
+  def string: JsonFieldDecoder[String]
+
+  private def quotedString = string.map(raw => s""""$raw"""")
+
+  implicit def stringLike[T <: String: JsonDecoder]: JsonFieldDecoder[T] =
+    quotedString.mapOrFail(implicitly[JsonDecoder[T]].decodeJson)
 }

@@ -63,6 +63,12 @@ object DerivedDecoderSpec extends ZIOSpecDefault {
 
       assertTrue("""{"aOrB": "A", "optA": "A"}""".fromJson[Foo] == Right(Foo("A", Some("A")))) &&
       assertTrue("""{"aOrB": "C"}""".fromJson[Foo] == Left(".aOrB(expected one of: A, B)"))
-    }
+    },
+    test("Derives and decodes for a custom map key string-based union type") {
+      case class Foo(aOrB: Map["A" | "B", Int]) derives JsonDecoder
+
+      assertTrue("""{"aOrB": {"A": 1, "B": 2}}""".fromJson[Foo] == Right(Foo(Map("A" -> 1, "B" -> 2)))) &&
+      assertTrue("""{"aOrB": {"C": 1}}""".fromJson[Foo] == Left(".aOrB.C((expected one of: A, B))"))
+    },
   )
 }
