@@ -4,7 +4,7 @@ import zio.json.internal.WriteWriter
 import zio.stream._
 import zio.{ Chunk, Ref, Unsafe, ZIO }
 
-trait JsonEncoderPlatformSpecific[A] { self: JsonEncoder[A] =>
+trait JsonStreamEncoder[A] { self: JsonEncoder[A] =>
 
   /**
    * Encodes the specified value into a character stream.

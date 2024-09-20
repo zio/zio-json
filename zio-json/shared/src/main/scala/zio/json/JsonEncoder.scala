@@ -25,7 +25,7 @@ import scala.annotation._
 import scala.collection.{ immutable, mutable }
 import scala.reflect.ClassTag
 
-trait JsonEncoder[A] extends JsonEncoderPlatformSpecific[A] {
+trait JsonEncoder[A] extends JsonStreamEncoder[A] {
   self =>
 
   /**

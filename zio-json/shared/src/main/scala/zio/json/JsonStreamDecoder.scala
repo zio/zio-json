@@ -8,7 +8,7 @@ import zio.stream.{ Take, ZPipeline, ZStream }
 import java.nio.charset.{ Charset, StandardCharsets }
 import scala.annotation.tailrec
 
-trait JsonDecoderPlatformSpecific[A] { self: JsonDecoder[A] =>
+trait JsonStreamDecoder[A] { self: JsonDecoder[A] =>
 
   private def readAll(reader: java.io.Reader): ZIO[Any, Throwable, A] =
     ZIO.attemptBlocking {

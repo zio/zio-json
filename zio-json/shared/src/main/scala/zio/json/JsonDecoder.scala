@@ -31,7 +31,7 @@ import scala.util.control.NoStackTrace
  * A `JsonDecoder[A]` instance has the ability to decode JSON to values of type `A`, potentially
  * failing with an error if the JSON content does not encode a value of the given type.
  */
-trait JsonDecoder[A] extends JsonDecoderPlatformSpecific[A] {
+trait JsonDecoder[A] extends JsonStreamDecoder[A] {
   self =>
 
   /**
