@@ -256,6 +256,9 @@ object EncoderSpec extends ZIOSpecDefault {
           assert(Map("hello" -> "world").toJsonPretty)(equalTo("{\n  \"hello\" : \"world\"\n}")) &&
           assert(Map("hello" -> Some("world"), "goodbye" -> None).toJsonPretty)(
             equalTo("{\n  \"hello\" : \"world\"\n}")
+          ) &&
+          assert(immutable.ListMap("hello" -> "world", "goodbye" -> "world").toJson)(
+            equalTo("""{"hello":"world","goodbye":"world"}""")
           )
         },
         test("Map, custom keys") {

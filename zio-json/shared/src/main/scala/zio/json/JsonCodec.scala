@@ -157,6 +157,10 @@ private[json] trait CodecLowPriority1 extends CodecLowPriority2 { this: JsonCode
 
   implicit def sortedSet[A: Ordering: JsonEncoder: JsonDecoder]: JsonCodec[immutable.SortedSet[A]] =
     JsonCodec(JsonEncoder.sortedSet[A], JsonDecoder.sortedSet[A])
+
+  implicit def listMap[K: JsonFieldEncoder: JsonFieldDecoder, V: JsonEncoder: JsonDecoder]
+    : JsonCodec[immutable.ListMap[K, V]] =
+    JsonCodec(JsonEncoder.listMap[K, V], JsonDecoder.listMap[K, V])
 }
 
 private[json] trait CodecLowPriority2 extends CodecLowPriority3 { this: JsonCodec.type =>

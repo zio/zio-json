@@ -597,6 +597,13 @@ private[json] trait DecoderLowPriority1 extends DecoderLowPriority2 {
       def unsafeDecode(trace: List[JsonError], in: RetractReader): collection.SortedMap[K, V] =
         keyValueBuilder(trace, in, collection.SortedMap.newBuilder[K, V])
     }
+
+  implicit def listMap[K: JsonFieldDecoder, V: JsonDecoder]: JsonDecoder[immutable.ListMap[K, V]] =
+    new JsonDecoder[immutable.ListMap[K, V]] {
+
+      def unsafeDecode(trace: List[JsonError], in: RetractReader): immutable.ListMap[K, V] =
+        keyValueBuilder(trace, in, immutable.ListMap.newBuilder[K, V])
+    }
 }
 
 // We have a hierarchy of implicits for two reasons:
