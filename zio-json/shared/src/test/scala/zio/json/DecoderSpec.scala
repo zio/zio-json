@@ -7,6 +7,7 @@ import zio.test.Assertion._
 import zio.test.TestAspect.jvmOnly
 import zio.test._
 
+import java.math.BigInteger
 import java.time.{ Duration, OffsetDateTime, ZonedDateTime }
 import java.util.UUID
 import scala.collection.{ SortedMap, immutable, mutable }
@@ -19,10 +20,18 @@ object DecoderSpec extends ZIOSpecDefault {
         test("BigDecimal") {
           assert("123".fromJson[BigDecimal])(isRight(equalTo(BigDecimal(123))))
         },
-        test("BigInteger too large") {
-          // this big integer consumes more than 128 bits
+        test("256 bit BigInteger") {
           assert("170141183460469231731687303715884105728".fromJson[java.math.BigInteger])(
-            isLeft(equalTo("(expected a 128 bit BigInteger)"))
+            isRight(equalTo(new BigInteger("170141183460469231731687303715884105728")))
+          )
+        },
+        test("BigInteger too large") {
+          // this big integer consumes more than 256 bits
+          assert(
+            "170141183460469231731687303715884105728489465165484668486513574864654818964653168465316546851"
+              .fromJson[java.math.BigInteger]
+          )(
+            isLeft(equalTo("(expected a 256 bit BigInteger)"))
           )
         },
         test("collections") {
