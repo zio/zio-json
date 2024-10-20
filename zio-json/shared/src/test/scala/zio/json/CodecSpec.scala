@@ -182,6 +182,12 @@ object CodecSpec extends ZIOSpecDefault {
 
           assert(jsonStr.fromJson[Map[String, Int]])(isRight(equalTo(expected)))
         },
+        test("ListMap") {
+          val jsonStr  = """{"5XL":3,"2XL":14,"XL":159}"""
+          val expected = collection.immutable.ListMap("5XL" -> 3, "2XL" -> 14, "XL" -> 159)
+
+          assert(jsonStr.fromJson[collection.immutable.ListMap[String, Int]])(isRight(equalTo(expected)))
+        },
         test("zio.Chunk") {
           val jsonStr  = """["5XL","2XL","XL"]"""
           val expected = Chunk("5XL", "2XL", "XL")

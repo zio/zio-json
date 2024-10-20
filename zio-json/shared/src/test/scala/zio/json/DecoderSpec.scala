@@ -494,6 +494,12 @@ object DecoderSpec extends ZIOSpecDefault {
 
           assert(json.as[SortedMap[String, Int]])(isRight(equalTo(expected)))
         },
+        test("ListMap") {
+          val json     = Json.Obj("5XL" -> Json.Num(3), "2XL" -> Json.Num(14), "XL" -> Json.Num(159))
+          val expected = immutable.ListMap("5XL" -> 3, "2XL" -> 14, "XL" -> 159)
+
+          assert(json.as[immutable.ListMap[String, Int]])(isRight(equalTo(expected)))
+        },
         test("Map, custom keys") {
           val json     = Json.Obj("1" -> Json.Str("a"), "2" -> Json.Str("b"))
           val expected = Map(1 -> "a", 2 -> "b")

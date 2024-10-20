@@ -377,6 +377,9 @@ private[json] trait EncoderLowPriority1 extends EncoderLowPriority2 {
 
   implicit def sortedMap[K: JsonFieldEncoder, V: JsonEncoder]: JsonEncoder[collection.SortedMap[K, V]] =
     keyValueIterable[K, V, collection.SortedMap]
+
+  implicit def listMap[K: JsonFieldEncoder, V: JsonEncoder]: JsonEncoder[immutable.ListMap[K, V]] =
+    keyValueIterable[K, V, immutable.ListMap]
 }
 
 private[json] trait EncoderLowPriority2 extends EncoderLowPriority3 {
