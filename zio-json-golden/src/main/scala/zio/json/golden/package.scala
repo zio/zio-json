@@ -97,21 +97,20 @@ package object golden {
     } yield TestResult(assertion)
   }
 
+  /**
+   * Implementation inspired by zio-test [[zio.test#check]]
+   */
   private def generateSample[A: JsonEncoder](
     gen: Gen[Sized, A],
     sampleSize: Int
   )(implicit trace: Trace): ZIO[Sized, Exception, GoldenSample] =
-    Gen
-      .listOfN(sampleSize)(gen)
-      .sample
+    gen.sample.forever
       .map(_.value)
-      .map { elements =>
-        val jsonElements = elements.map(_.toJsonAST).collect { case Right(a) => a }
-        val jsonArray    = new Json.Arr(Chunk.fromIterable(jsonElements))
-        GoldenSample(jsonArray)
-      }
-      .runHead
-      .someOrFailException
+      .map(_.toJsonAST)
+      .collectRight
+      .take(sampleSize.toLong)
+      .runCollect
+      .map(jsonElements => GoldenSample(new Json.Arr(jsonElements)))
 
   private def getName[A](implicit tag: Tag[A]): String =
     tag.tag.shortName

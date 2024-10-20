@@ -82,7 +82,7 @@ lazy val zioJsonRoot = project
     zioJsonGolden
   )
 
-val circeVersion = "0.14.9"
+val circeVersion = "0.14.10"
 
 lazy val zioJson = crossProject(JSPlatform, JVMPlatform, NativePlatform)
   .in(file("zio-json"))
@@ -125,8 +125,8 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform, NativePlatform)
             "org.scala-lang"                          % "scala-reflect"         % scalaVersion.value % Provided,
             "com.softwaremill.magnolia1_2"          %%% "magnolia"              % "1.1.10",
             "io.circe"                              %%% "circe-generic-extras"  % "0.14.4"           % "test",
-            "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-core"   % "2.30.7"           % "test",
-            "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-macros" % "2.30.7"           % "test"
+            "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-core"   % "2.30.9"           % "test",
+            "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-macros" % "2.30.9"           % "test"
           )
       }
     },
@@ -290,7 +290,7 @@ lazy val zioJsonYaml = project
   .settings(buildInfoSettings("zio.json.yaml"))
   .settings(
     libraryDependencies ++= Seq(
-      "org.yaml" % "snakeyaml"    % "2.2",
+      "org.yaml" % "snakeyaml"    % "2.3",
       "dev.zio" %% "zio"          % zioVersion,
       "dev.zio" %% "zio-test"     % zioVersion % "test",
       "dev.zio" %% "zio-test-sbt" % zioVersion % "test"

@@ -38,4 +38,8 @@ object JsonFieldEncoder {
 
   implicit val long: JsonFieldEncoder[Long] =
     JsonFieldEncoder[String].contramap(_.toString)
+
+  implicit val uuid: JsonFieldEncoder[java.util.UUID] =
+    JsonFieldEncoder[String].contramap(_.toString)
+
 }

@@ -256,10 +256,18 @@ object EncoderSpec extends ZIOSpecDefault {
           assert(Map("hello" -> "world").toJsonPretty)(equalTo("{\n  \"hello\" : \"world\"\n}")) &&
           assert(Map("hello" -> Some("world"), "goodbye" -> None).toJsonPretty)(
             equalTo("{\n  \"hello\" : \"world\"\n}")
+          ) &&
+          assert(immutable.ListMap("hello" -> "world", "goodbye" -> "world").toJson)(
+            equalTo("""{"hello":"world","goodbye":"world"}""")
           )
         },
         test("Map, custom keys") {
           assert(Map(1 -> "a").toJson)(equalTo("""{"1":"a"}"""))
+        },
+        test("Map, UUID keys") {
+          assert(Map(UUID.fromString("e142f1aa-6e9e-4352-adfe-7e6eb9814ccd") -> "abcd").toJson)(
+            equalTo("""{"e142f1aa-6e9e-4352-adfe-7e6eb9814ccd":"abcd"}""")
+          )
         },
         test("java.util.UUID") {
           assert(UUID.fromString("e142f1aa-6e9e-4352-adfe-7e6eb9814ccd").toJson)(

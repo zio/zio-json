@@ -7,6 +7,7 @@ import zio.test.Assertion._
 import zio.test.TestAspect.jvmOnly
 import zio.test._
 
+import java.math.BigInteger
 import java.time.{ Duration, OffsetDateTime, ZonedDateTime }
 import java.util.UUID
 import scala.collection.{ SortedMap, immutable, mutable }
@@ -19,10 +20,18 @@ object DecoderSpec extends ZIOSpecDefault {
         test("BigDecimal") {
           assert("123".fromJson[BigDecimal])(isRight(equalTo(BigDecimal(123))))
         },
-        test("BigInteger too large") {
-          // this big integer consumes more than 128 bits
+        test("256 bit BigInteger") {
           assert("170141183460469231731687303715884105728".fromJson[java.math.BigInteger])(
-            isLeft(equalTo("(expected a 128 bit BigInteger)"))
+            isRight(equalTo(new BigInteger("170141183460469231731687303715884105728")))
+          )
+        },
+        test("BigInteger too large") {
+          // this big integer consumes more than 256 bits
+          assert(
+            "170141183460469231731687303715884105728489465165484668486513574864654818964653168465316546851"
+              .fromJson[java.math.BigInteger]
+          )(
+            isLeft(equalTo("(expected a 256 bit BigInteger)"))
           )
         },
         test("collections") {
@@ -241,6 +250,45 @@ object DecoderSpec extends ZIOSpecDefault {
           val jsonStr  = JsonEncoder[Map[String, String]].encodeJson(expected, None)
           assert(jsonStr.fromJson[Map[String, String]])(isRight(equalTo(expected)))
         },
+        test("Map with UUID keys") {
+          def expectedMap(str: String): Map[UUID, String] = Map(UUID.fromString(str) -> "value")
+
+          val ok1  = """{"64d7c38d-2afd-4514-9832-4e70afe4b0f8": "value"}"""
+          val ok2  = """{"0000000064D7C38D-FD-14-32-70AFE4B0f8": "value"}"""
+          val ok3  = """{"0-0-0-0-0": "value"}"""
+          val bad1 = """{"": "value"}"""
+          val bad2 = """{"64d7c38d-2afd-4514-9832-4e70afe4b0f80": "value"}"""
+          val bad3 = """{"64d7c38d-2afd-4514-983-4e70afe4b0f80": "value"}"""
+          val bad4 = """{"64d7c38d-2afd--9832-4e70afe4b0f8": "value"}"""
+          val bad5 = """{"64d7c38d-2afd-XXXX-9832-4e70afe4b0f8": "value"}"""
+          val bad6 = """{"64d7c38d-2afd-X-9832-4e70afe4b0f8": "value"}"""
+          val bad7 = """{"0-0-0-0-00000000000000000": "value"}"""
+
+          assert(ok1.fromJson[Map[UUID, String]])(
+            isRight(equalTo(expectedMap("64d7c38d-2afd-4514-9832-4e70afe4b0f8")))
+          ) &&
+          assert(ok2.fromJson[Map[UUID, String]])(
+            isRight(equalTo(expectedMap("64D7C38D-00FD-0014-0032-0070AfE4B0f8")))
+          ) &&
+          assert(ok3.fromJson[Map[UUID, String]])(
+            isRight(equalTo(expectedMap("00000000-0000-0000-0000-000000000000")))
+          ) &&
+          assert(bad1.fromJson[Map[UUID, String]])(isLeft(containsString("Invalid UUID: "))) &&
+          assert(bad2.fromJson[Map[UUID, String]])(isLeft(containsString("Invalid UUID: UUID string too large"))) &&
+          assert(bad3.fromJson[Map[UUID, String]])(
+            isLeft(containsString("Invalid UUID: 64d7c38d-2afd-4514-983-4e70afe4b0f80"))
+          ) &&
+          assert(bad4.fromJson[Map[UUID, String]])(
+            isLeft(containsString("Invalid UUID: 64d7c38d-2afd--9832-4e70afe4b0f8"))
+          ) &&
+          assert(bad5.fromJson[Map[UUID, String]])(
+            isLeft(containsString("Invalid UUID: 64d7c38d-2afd-XXXX-9832-4e70afe4b0f8"))
+          ) &&
+          assert(bad6.fromJson[Map[UUID, String]])(
+            isLeft(containsString("Invalid UUID: 64d7c38d-2afd-X-9832-4e70afe4b0f8"))
+          ) &&
+          assert(bad7.fromJson[Map[UUID, String]])(isLeft(containsString("Invalid UUID: 0-0-0-0-00000000000000000")))
+        },
         test("zio.Chunk") {
           val jsonStr  = """["5XL","2XL","XL"]"""
           val expected = Chunk("5XL", "2XL", "XL")
@@ -454,6 +502,12 @@ object DecoderSpec extends ZIOSpecDefault {
           val expected = SortedMap("5XL" -> 3, "2XL" -> 14, "XL" -> 159)
 
           assert(json.as[SortedMap[String, Int]])(isRight(equalTo(expected)))
+        },
+        test("ListMap") {
+          val json     = Json.Obj("5XL" -> Json.Num(3), "2XL" -> Json.Num(14), "XL" -> Json.Num(159))
+          val expected = immutable.ListMap("5XL" -> 3, "2XL" -> 14, "XL" -> 159)
+
+          assert(json.as[immutable.ListMap[String, Int]])(isRight(equalTo(expected)))
         },
         test("Map, custom keys") {
           val json     = Json.Obj("1" -> Json.Str("a"), "2" -> Json.Str("b"))
