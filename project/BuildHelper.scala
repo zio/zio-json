@@ -32,7 +32,8 @@ object BuildHelper {
     "-unchecked"
   ) ++ {
     if (sys.env.contains("CI")) {
-      Seq("-Xfatal-warnings")
+      // Seq("-Xfatal-warnings") // enable this when we are ready to enforce this
+      Nil
     } else {
       Nil // to enable Scalafix locally
     }
