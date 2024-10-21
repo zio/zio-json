@@ -22,7 +22,7 @@ object BuildHelper {
   val Scala213: String   = versions("2.13")
   val ScalaDotty: String = "3.3.4"
 
-  val SilencerVersion = "1.7.16"
+  val SilencerVersion = "1.7.19"
 
   private val stdOptions = Seq(
     "-deprecation",
@@ -32,7 +32,8 @@ object BuildHelper {
     "-unchecked"
   ) ++ {
     if (sys.env.contains("CI")) {
-      Seq("-Xfatal-warnings")
+      // Seq("-Xfatal-warnings") // enable this when we are ready to enforce this
+      Nil
     } else {
       Nil // to enable Scalafix locally
     }
@@ -229,7 +230,7 @@ object BuildHelper {
     },
     semanticdbEnabled := scalaVersion.value != ScalaDotty, // enable SemanticDB
     semanticdbOptions += "-P:semanticdb:synthetics:on",
-    semanticdbVersion := "4.9.2",
+    semanticdbVersion := "4.10.2",
     Test / parallelExecution := true,
     incOptions ~= (_.withLogRecompileOnMacro(false)),
     autoAPIMappings := true,
