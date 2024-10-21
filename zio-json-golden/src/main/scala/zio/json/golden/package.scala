@@ -27,7 +27,7 @@ package object golden {
       else DiffResult.Different(x, y)
   }
 
-  @nowarn implicit private lazy val diff: Diff[GoldenSample] = (x: GoldenSample, y: GoldenSample) =>
+  implicit private lazy val diff: Diff[GoldenSample] = (x: GoldenSample, y: GoldenSample) =>
     Diff[Json].diff(x.samples, y.samples)
 
   def goldenTest[A: Tag: JsonEncoder](
