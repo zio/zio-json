@@ -124,7 +124,7 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform, NativePlatform)
           Vector(
             "org.scala-lang"                          % "scala-reflect"         % scalaVersion.value % Provided,
             "com.softwaremill.magnolia1_2"          %%% "magnolia"              % "1.1.10",
-            "io.circe"                              %%% "circe-generic-extras"  % "0.14.8"           % "test",
+            "io.circe"                              %%% "circe-generic-extras"  % "0.14.4"           % "test",
             "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-core"   % "2.30.9"           % "test",
             "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-macros" % "2.30.9"           % "test"
           )
