@@ -6,8 +6,8 @@ import zio.json.ast.Json
 import zio.json.codegen.Generator.pascalFormat
 import zio.json.codegen.JsonType._
 
-import java.time.{ LocalDate, LocalDateTime }
 import java.time.format.DateTimeFormatter
+import java.time.{ LocalDate, LocalDateTime }
 import java.util.UUID
 import scala.collection.immutable.ListMap
 import scala.math.BigDecimal.javaBigDecimal2bigDecimal
@@ -16,8 +16,7 @@ import scala.util.Try
 object Generator {
 
   /**
-   * Renders the JSON string as a series of Scala case classes derived from the
-   * structure of the JSON.
+   * Renders the JSON string as a series of Scala case classes derived from the structure of the JSON.
    *
    * For example, the following JSON:
    *

@@ -18,7 +18,7 @@ import java.nio.file.Paths
 
 object DecoderPlatformSpecificSpec extends ZIOSpecDefault {
 
-  val spec =
+  val spec: Spec[Annotations with Live with Sized with TestConfig, Throwable] =
     suite("Decoder")(
       test("excessively nested structures") {
         // JVM specific: getResourceAsString not yet supported
@@ -273,7 +273,7 @@ object DecoderPlatformSpecificSpec extends ZIOSpecDefault {
       )
     )
 
-  def testAst(label: String) =
+  def testAst(label: String): Spec[Any, Throwable] =
     test(label) {
       getResourceAsStringM(s"jawn/$label.json").flatMap { input =>
         val expected = jawn.JParser.parseFromString(input).toEither.map(fromJawn)

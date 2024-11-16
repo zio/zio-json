@@ -110,16 +110,16 @@ object StringMatrixSpec extends ZIOSpecDefault {
     }
   )
 
-  val genNonEmptyString =
+  val genNonEmptyString: Gen[Any, String] =
     Gen.alphaNumericString.filter(_.nonEmpty)
 
-  val genTestStrings =
+  val genTestStrings: Gen[Any, List[String]] =
     for {
       n  <- Gen.int(1, 63)
       xs <- Gen.setOfN(n)(genNonEmptyString)
     } yield xs.toList
 
-  val genTestStringsAndAliases =
+  val genTestStringsAndAliases: Gen[Any, (List[String], List[(String, Int)])] =
     for {
       xsn    <- Gen.int(1, 63)
       xs     <- Gen.setOfN(xsn)(genNonEmptyString)

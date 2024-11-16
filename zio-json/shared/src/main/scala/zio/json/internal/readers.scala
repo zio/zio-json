@@ -75,9 +75,8 @@ private[zio] final class RewindTwice
 /**
  * A Reader that can retract and replay the last char that it read.
  *
- * This is essential when parsing contents that do not have a terminator
- * character, e.g. numbers, whilst preserving the non-significant character for
- * further processing.
+ * This is essential when parsing contents that do not have a terminator character, e.g. numbers, whilst preserving the
+ * non-significant character for further processing.
  */
 sealed trait RetractReader extends OneCharReader {
 
@@ -150,13 +149,11 @@ final class WithRetractReader(in: java.io.Reader) extends RetractReader with Aut
 }
 
 /**
- * Records the contents of an underlying Reader and allows rewinding back to
- * the beginning once. If rewound and reading continues past the
- * recording, the recording no longer continues.
+ * Records the contents of an underlying Reader and allows rewinding back to the beginning once. If rewound and reading
+ * continues past the recording, the recording no longer continues.
  *
- * To avoid feature interaction edge cases, `retract` is not allowed as the
- * first action nor is `retract` allowed to happen immediately before or after
- * a `rewind`.
+ * To avoid feature interaction edge cases, `retract` is not allowed as the first action nor is `retract` allowed to
+ * happen immediately before or after a `rewind`.
  */
 private[zio] sealed trait RecordingReader extends RetractReader {
   def rewind(): Unit

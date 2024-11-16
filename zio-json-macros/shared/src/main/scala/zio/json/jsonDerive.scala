@@ -74,12 +74,11 @@ private[json] final class DeriveCodecMacros(val c: blackbox.Context) {
   private[this] val EncoderClass = typeOf[JsonEncoder[_]].typeSymbol.asType
   private[this] val CodecClass   = typeOf[JsonCodec[_]].typeSymbol.asType
 
-  private[this] val macroName: Tree = {
+  private[this] val macroName: Tree =
     c.prefix.tree match {
       case Apply(Select(New(name), _), _) => name
       case _                              => c.abort(c.enclosingPosition, "Unexpected macro application")
     }
-  }
 
   private[this] val (codecStyle: JsonCodecStyle, codecType: JsonCodecType) = {
     val style: JsonCodecStyle = macroName match {

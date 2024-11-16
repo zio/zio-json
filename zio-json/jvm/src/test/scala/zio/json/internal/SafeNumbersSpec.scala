@@ -1,12 +1,13 @@
 package testzio.json.internal
 
 import testzio.json.Gens._
+import zio.Scope
 import zio.json.internal._
 import zio.test.Assertion._
 import zio.test._
 
 object SafeNumbersSpec extends ZIOSpecDefault {
-  val spec =
+  val spec: Spec[Environment with TestEnvironment with Scope, Any] =
     suite("SafeNumbers")(
       test("valid big decimals") {
         check(genBigDecimal)(i => assert(SafeNumbers.bigDecimal(i.toString, 2048))(isSome(equalTo(i))))

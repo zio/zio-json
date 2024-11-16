@@ -1,11 +1,12 @@
 package zio.json.codegen
 
+import zio.Scope
 import zio.json._
 import zio.json.ast.Json
 import zio.test._
 
 object GeneratorSpec extends ZIOSpecDefault {
-  def spec = suite("GeneratorSpec")(
+  def spec: Spec[Environment with TestEnvironment with Scope, Any] = suite("GeneratorSpec")(
     suite("generates case classes from JSON strings")(
       test("simple object") {
         val json =
