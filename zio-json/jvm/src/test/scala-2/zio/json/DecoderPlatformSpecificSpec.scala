@@ -236,7 +236,7 @@ object DecoderPlatformSpecificSpec extends ZIOSpecDefault {
             import logEvent._
 
             for {
-              lines <- readJsonLinesAs[Event](Paths.get("zio-json/jvm/src/test/resources/log.jsonlines")).runCollect
+              lines <- readJsonLinesAs[Event](Paths.get("src/test/resources/log.jsonlines")).runCollect
             } yield {
               assert(lines(0))(equalTo(Event(1603669875, "hello"))) &&
               assert(lines(1))(equalTo(Event(1603669876, "world")))
