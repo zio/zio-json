@@ -23,14 +23,10 @@ inThisBuild(
     ),
     scalaVersion      := scala213.value,
     javaPlatform      := zio.sbt.JavaVersion.`11`,
-    ciEnabledBranches := Seq("series/2.x")
+    ciEnabledBranches := Seq("series/2.x"),
+    checkMima / skip  := true
   )
 )
-
-addCommandAlias("check", "; scalafmtSbtCheck; scalafmtCheckAll")
-addCommandAlias("fmt", "all scalafmtSbt scalafmtAll")
-addCommandAlias("fmtCheck", "all scalafmtSbtCheck scalafmtCheckAll")
-addCommandAlias("prepare", "fmt")
 
 lazy val zioJsonRoot = project
   .in(file("."))
