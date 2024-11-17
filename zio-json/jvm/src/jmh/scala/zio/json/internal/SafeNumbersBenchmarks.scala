@@ -10,7 +10,7 @@ import org.openjdk.jmh.annotations._
 @Fork(value = 1)
 class SafeNumbersBenchInt {
 
-  //@Param(Array("100", "1000"))
+  // @Param(Array("100", "1000"))
   var size: Int = 10000
 
   // invalid input. e.g. out of range longs
@@ -69,7 +69,7 @@ class SafeNumbersBenchInt {
 @Measurement(iterations = 5, time = 1, timeUnit = TimeUnit.SECONDS)
 @Fork(value = 1)
 class SafeNumbersBenchFloat {
-  //@Param(Array("100", "1000"))
+  // @Param(Array("100", "1000"))
   var size: Int = 10000
 
   var invalids: Array[String] = _
@@ -135,7 +135,7 @@ class SafeNumbersBenchFloat {
 @Measurement(iterations = 5, time = 1, timeUnit = TimeUnit.SECONDS)
 @Fork(value = 1)
 class SafeNumbersBenchBigDecimal {
-  //@Param(Array("100", "1000"))
+  // @Param(Array("100", "1000"))
   var size: Int = 10000
 
   var invalids: Array[String] = _

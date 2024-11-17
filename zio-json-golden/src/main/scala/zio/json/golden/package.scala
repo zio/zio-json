@@ -1,17 +1,14 @@
 package zio.json
 
-import scala.annotation.nowarn
-
-import zio.Tag
-import zio.{ test => _, _ }
+import zio.json.ast._
 import zio.json.golden.filehelpers._
 import zio.stacktracer.TracingImplicits.disableAutoTrace
 import zio.test._
-import zio.test.diff._
 import zio.test.diff.Diff._
-import java.nio.file.{ Paths, Path, Files }
+import zio.test.diff._
+import zio.{ Tag, test => _, _ }
 
-import zio.json.ast._
+import java.nio.file.{ Files, Path, Paths }
 
 package object golden {
 

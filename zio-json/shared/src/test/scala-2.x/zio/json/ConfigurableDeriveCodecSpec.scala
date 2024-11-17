@@ -1,5 +1,6 @@
 package zio.json
 
+import zio.Scope
 import zio.json.JsonCodecConfiguration.SumTypeHandling.DiscriminatorField
 import zio.json.ast.Json
 import zio.test._
@@ -16,7 +17,7 @@ object ConfigurableDeriveCodecSpec extends ZIOSpecDefault {
 
   case class OptionalField(a: Option[Int])
 
-  def spec = suite("ConfigurableDeriveCodecSpec")(
+  def spec: Spec[Environment with TestEnvironment with Scope, Any] = suite("ConfigurableDeriveCodecSpec")(
     suite("defaults")(
       suite("string")(
         test("should not map field names by default") {

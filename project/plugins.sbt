@@ -1,16 +1,9 @@
-addSbtPlugin("com.eed3si9n"       % "sbt-buildinfo"                 % "0.13.0")
-addSbtPlugin("com.github.sbt"     % "sbt-ci-release"                % "1.6.1")
-addSbtPlugin("com.github.cb372"   % "sbt-explicit-dependencies"     % "0.3.1")
-addSbtPlugin("com.typesafe"       % "sbt-mima-plugin"               % "1.1.4")
-addSbtPlugin("de.heikoseeberger"  % "sbt-header"                    % "5.10.0")
-addSbtPlugin("org.portable-scala" % "sbt-scala-native-crossproject" % "1.3.2")
-addSbtPlugin("org.portable-scala" % "sbt-scalajs-crossproject"      % "1.3.2")
-addSbtPlugin("org.scala-js"       % "sbt-scalajs"                   % "1.17.0")
-addSbtPlugin("org.scala-native"   % "sbt-scala-native"              % "0.5.5")
-addSbtPlugin("org.scalameta"      % "sbt-scalafmt"                  % "2.5.0")
-addSbtPlugin("pl.project13.scala" % "sbt-jcstress"                  % "0.2.0")
-addSbtPlugin("org.scoverage"      % "sbt-scoverage"                 % "2.0.11")
-addSbtPlugin("dev.zio"            % "zio-sbt-website"               % "0.4.0-alpha.28")
-addSbtPlugin("dev.zio"            % "zio-sbt-website"               % "0.4.0-alpha.27")
+val zioSbtVersion = "0.0.0+529-d9aba4fa-SNAPSHOT"
 
-libraryDependencies += "org.snakeyaml" % "snakeyaml-engine" % "2.8"
+addSbtPlugin("pl.project13.scala" % "sbt-jcstress"      % "0.2.0")
+addSbtPlugin("org.scoverage"      % "sbt-scoverage"     % "2.0.11")
+addSbtPlugin("nl.thijsbroersen"   % "zio-sbt-ci"        % zioSbtVersion)
+addSbtPlugin("nl.thijsbroersen"   % "zio-sbt-ecosystem" % zioSbtVersion)
+addSbtPlugin("nl.thijsbroersen"   % "zio-sbt-website"   % zioSbtVersion)
+
+resolvers ++= Resolver.sonatypeOssRepos("snapshots")

@@ -1,8 +1,7 @@
 package zio.json.yaml
 
-import org.yaml.snakeyaml.DumperOptions.{ FlowStyle, LineBreak, NonPrintableStyle, ScalarStyle }
 import org.yaml.snakeyaml.DumperOptions
-
+import org.yaml.snakeyaml.DumperOptions.{ FlowStyle, LineBreak, NonPrintableStyle, ScalarStyle }
 import zio.json.ast.Json
 
 case class YamlOptions(
@@ -20,11 +19,10 @@ case class YamlOptions(
 )
 
 object YamlOptions {
-  private val defaultLineBreak: LineBreak = {
+  private val defaultLineBreak: LineBreak =
     Set(LineBreak.MAC, LineBreak.WIN, LineBreak.UNIX)
       .find(_.getString == System.lineSeparator())
       .getOrElse(LineBreak.UNIX)
-  }
 
   val default: YamlOptions = YamlOptions(
     () => new DumperOptions(),

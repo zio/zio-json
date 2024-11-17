@@ -38,7 +38,7 @@ object Nested {
 @Measurement(iterations = 5, time = 1, timeUnit = TimeUnit.SECONDS)
 @Fork(value = 1)
 class SyntheticBenchmarks {
-  //@Param(Array("100", "1000"))
+  // @Param(Array("100", "1000"))
   var size: Int               = 500
   var jsonString: String      = _
   var jsonChars: CharSequence = _

@@ -18,7 +18,7 @@ import java.nio.file.Paths
 
 object DecoderPlatformSpecificSpec extends ZIOSpecDefault {
 
-  val spec =
+  val spec: Spec[Annotations with Live with Sized with TestConfig, Throwable] =
     suite("Decoder")(
       test("excessively nested structures") {
         // JVM specific: getResourceAsString not yet supported
@@ -236,7 +236,7 @@ object DecoderPlatformSpecificSpec extends ZIOSpecDefault {
             import logEvent._
 
             for {
-              lines <- readJsonLinesAs[Event](Paths.get("zio-json/jvm/src/test/resources/log.jsonlines")).runCollect
+              lines <- readJsonLinesAs[Event](Paths.get("src/test/resources/log.jsonlines")).runCollect
             } yield {
               assert(lines(0))(equalTo(Event(1603669875, "hello"))) &&
               assert(lines(1))(equalTo(Event(1603669876, "world")))
@@ -273,7 +273,7 @@ object DecoderPlatformSpecificSpec extends ZIOSpecDefault {
       )
     )
 
-  def testAst(label: String) =
+  def testAst(label: String): Spec[Any, Throwable] =
     test(label) {
       getResourceAsStringM(s"jawn/$label.json").flatMap { input =>
         val expected = jawn.JParser.parseFromString(input).toEither.map(fromJawn)

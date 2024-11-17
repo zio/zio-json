@@ -7,7 +7,6 @@ import zio.test.Assertion._
 import zio.test.TestAspect.jvmOnly
 import zio.test._
 
-import java.math.BigInteger
 import scala.collection.immutable
 
 object CodecSpec extends ZIOSpecDefault {
@@ -37,7 +36,7 @@ object CodecSpec extends ZIOSpecDefault {
           )
         },
         test("primitives") {
-          val exampleBDString = "234234.234"
+
           // this big integer consumes more than 256 bits
           assert(
             "170141183460469231731687303715884105728489465165484668486513574864654818964653168465316546851"
