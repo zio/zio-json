@@ -39,6 +39,8 @@ trait JsonEncoder[A] extends JsonEncoderPlatformSpecific[A] {
 
     override def isNothing(b: B): Boolean = self.isNothing(f(b))
 
+    override def isEmpty(b: B): Boolean = self.isEmpty(f(b))
+
     override final def toJsonAST(b: B): Either[String, Json] =
       self.toJsonAST(f(b))
   }
@@ -81,6 +83,12 @@ trait JsonEncoder[A] extends JsonEncoderPlatformSpecific[A] {
    * be encoded.
    */
   def isNothing(a: A): Boolean = false
+
+  /**
+   * This default may be overridden when this value may be empty within a JSON object and still
+   * be encoded.
+   */
+  def isEmpty(a: A): Boolean = false
 
   /**
    * Returns this encoder but narrowed to the its given sub-type
@@ -186,6 +194,8 @@ object JsonEncoder extends GeneratedTupleEncoders with EncoderLowPriority1 with 
       override def unsafeEncode(a: A, indent: Option[Int], out: Write): Unit = encoder.unsafeEncode(a, indent, out)
 
       override def isNothing(a: A): Boolean = encoder.isNothing(a)
+
+      override def isEmpty(a: A): Boolean = encoder.isEmpty(a)
 
       override def toJsonAST(a: A): Either[String, Json] = encoder.toJsonAST(a)
     }
@@ -341,44 +351,80 @@ private[json] trait EncoderLowPriority1 extends EncoderLowPriority2 {
           .map(Json.Arr(_))
     }
 
-  implicit def seq[A: JsonEncoder]: JsonEncoder[Seq[A]] = iterable[A, Seq]
+  implicit def seq[A: JsonEncoder](implicit
+    config: JsonCodecConfiguration
+  ): JsonEncoder[Seq[A]] = iterable[A, Seq]
 
-  implicit def chunk[A: JsonEncoder]: JsonEncoder[Chunk[A]] = iterable[A, Chunk]
+  implicit def chunk[A: JsonEncoder](implicit
+    config: JsonCodecConfiguration
+  ): JsonEncoder[Chunk[A]] = iterable[A, Chunk]
 
-  implicit def nonEmptyChunk[A: JsonEncoder]: JsonEncoder[NonEmptyChunk[A]] = chunk[A].contramap(_.toChunk)
+  implicit def nonEmptyChunk[A: JsonEncoder](implicit
+    config: JsonCodecConfiguration
+  ): JsonEncoder[NonEmptyChunk[A]] = chunk[A].contramap(_.toChunk)
 
-  implicit def indexedSeq[A: JsonEncoder]: JsonEncoder[IndexedSeq[A]] = iterable[A, IndexedSeq]
+  implicit def indexedSeq[A: JsonEncoder](implicit
+    config: JsonCodecConfiguration
+  ): JsonEncoder[IndexedSeq[A]] = iterable[A, IndexedSeq]
 
-  implicit def linearSeq[A: JsonEncoder]: JsonEncoder[immutable.LinearSeq[A]] = iterable[A, immutable.LinearSeq]
+  implicit def linearSeq[A: JsonEncoder](implicit
+    config: JsonCodecConfiguration
+  ): JsonEncoder[immutable.LinearSeq[A]] = iterable[A, immutable.LinearSeq]
 
-  implicit def listSet[A: JsonEncoder]: JsonEncoder[immutable.ListSet[A]] = iterable[A, immutable.ListSet]
+  implicit def listSet[A: JsonEncoder](implicit
+    config: JsonCodecConfiguration
+  ): JsonEncoder[immutable.ListSet[A]] = iterable[A, immutable.ListSet]
 
-  implicit def treeSet[A: JsonEncoder]: JsonEncoder[immutable.TreeSet[A]] = iterable[A, immutable.TreeSet]
+  implicit def treeSet[A: JsonEncoder](implicit
+    config: JsonCodecConfiguration
+  ): JsonEncoder[immutable.TreeSet[A]] = iterable[A, immutable.TreeSet]
 
-  implicit def list[A: JsonEncoder]: JsonEncoder[List[A]] = iterable[A, List]
+  implicit def list[A: JsonEncoder](implicit
+    config: JsonCodecConfiguration
+  ): JsonEncoder[List[A]] = iterable[A, List]
 
-  implicit def vector[A: JsonEncoder]: JsonEncoder[Vector[A]] = iterable[A, Vector]
+  implicit def vector[A: JsonEncoder](implicit
+    config: JsonCodecConfiguration
+  ): JsonEncoder[Vector[A]] = iterable[A, Vector]
 
-  implicit def set[A: JsonEncoder]: JsonEncoder[Set[A]] = iterable[A, Set]
+  implicit def set[A: JsonEncoder](implicit
+    config: JsonCodecConfiguration
+  ): JsonEncoder[Set[A]] =
+    iterable[A, Set]
 
-  implicit def hashSet[A: JsonEncoder]: JsonEncoder[immutable.HashSet[A]] = iterable[A, immutable.HashSet]
+  implicit def hashSet[A: JsonEncoder](implicit
+    config: JsonCodecConfiguration
+  ): JsonEncoder[immutable.HashSet[A]] =
+    iterable[A, immutable.HashSet]
 
-  implicit def sortedSet[A: Ordering: JsonEncoder]: JsonEncoder[immutable.SortedSet[A]] =
+  implicit def sortedSet[A: Ordering: JsonEncoder](implicit
+    config: JsonCodecConfiguration
+  ): JsonEncoder[immutable.SortedSet[A]] =
     iterable[A, immutable.SortedSet]
 
-  implicit def map[K: JsonFieldEncoder, V: JsonEncoder]: JsonEncoder[Map[K, V]] =
+  implicit def map[K: JsonFieldEncoder, V: JsonEncoder](implicit
+    config: JsonCodecConfiguration
+  ): JsonEncoder[Map[K, V]] =
     keyValueIterable[K, V, Map]
 
-  implicit def hashMap[K: JsonFieldEncoder, V: JsonEncoder]: JsonEncoder[immutable.HashMap[K, V]] =
+  implicit def hashMap[K: JsonFieldEncoder, V: JsonEncoder](implicit
+    config: JsonCodecConfiguration
+  ): JsonEncoder[immutable.HashMap[K, V]] =
     keyValueIterable[K, V, immutable.HashMap]
 
-  implicit def mutableMap[K: JsonFieldEncoder, V: JsonEncoder]: JsonEncoder[mutable.Map[K, V]] =
+  implicit def mutableMap[K: JsonFieldEncoder, V: JsonEncoder](implicit
+    config: JsonCodecConfiguration
+  ): JsonEncoder[mutable.Map[K, V]] =
     keyValueIterable[K, V, mutable.Map]
 
-  implicit def sortedMap[K: JsonFieldEncoder, V: JsonEncoder]: JsonEncoder[collection.SortedMap[K, V]] =
+  implicit def sortedMap[K: JsonFieldEncoder, V: JsonEncoder](implicit
+    config: JsonCodecConfiguration
+  ): JsonEncoder[collection.SortedMap[K, V]] =
     keyValueIterable[K, V, collection.SortedMap]
 
-  implicit def listMap[K: JsonFieldEncoder, V: JsonEncoder]: JsonEncoder[immutable.ListMap[K, V]] =
+  implicit def listMap[K: JsonFieldEncoder, V: JsonEncoder](implicit
+    config: JsonCodecConfiguration
+  ): JsonEncoder[immutable.ListMap[K, V]] =
     keyValueIterable[K, V, immutable.ListMap]
 }
 
@@ -432,8 +478,12 @@ private[json] trait EncoderLowPriority2 extends EncoderLowPriority3 {
   // not implicit because this overlaps with encoders for lists of tuples
   def keyValueIterable[K, A, T[X, Y] <: Iterable[(X, Y)]](implicit
     K: JsonFieldEncoder[K],
-    A: JsonEncoder[A]
+    A: JsonEncoder[A],
+    config: JsonCodecConfiguration
   ): JsonEncoder[T[K, A]] = new JsonEncoder[T[K, A]] {
+
+    override def isEmpty(a: T[K, A]): Boolean = a.isEmpty
+
     def unsafeEncode(kvs: T[K, A], indent: Option[Int], out: Write): Unit =
       if (kvs.isEmpty) out.write("{}")
       else {
@@ -447,7 +497,11 @@ private[json] trait EncoderLowPriority2 extends EncoderLowPriority3 {
       kvs.foreach {
         var first = true
         kv =>
-          if (!A.isNothing(kv._2)) {
+          if (
+            (!A.isNothing(kv._2) && !A.isEmpty(kv._2)) || (A
+              .isNothing(kv._2) && config.explicitNulls) || (A.isEmpty(kv._2) && config.explicitEmptyCollections)
+          ) {
+            // if (!A.isNothing(kv._2)) {
             if (first) first = false
             else out.write(',')
             string.unsafeEncode(K.unsafeEncodeField(kv._1), indent, out)
@@ -462,7 +516,11 @@ private[json] trait EncoderLowPriority2 extends EncoderLowPriority3 {
       kvs.foreach {
         var first = true
         kv =>
-          if (!A.isNothing(kv._2)) {
+          if (
+            (!A.isNothing(kv._2) && !A.isEmpty(kv._2)) || (A
+              .isNothing(kv._2) && config.explicitNulls) || (A.isEmpty(kv._2) && config.explicitEmptyCollections)
+          ) {
+            // if (!A.isNothing(kv._2)) {
             if (first) first = false
             else {
               out.write(',')
@@ -491,7 +549,8 @@ private[json] trait EncoderLowPriority2 extends EncoderLowPriority3 {
   // not implicit because this overlaps with encoders for lists of tuples
   def keyValueChunk[K, A](implicit
     K: JsonFieldEncoder[K],
-    A: JsonEncoder[A]
+    A: JsonEncoder[A],
+    config: JsonCodecConfiguration
   ): JsonEncoder[({ type lambda[X, Y] = Chunk[(X, Y)] })#lambda[K, A]] =
     keyValueIterable[K, A, ({ type lambda[X, Y] = Chunk[(X, Y)] })#lambda]
 }

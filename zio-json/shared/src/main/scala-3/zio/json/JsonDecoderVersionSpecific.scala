@@ -4,7 +4,7 @@ import scala.compiletime.*
 import scala.compiletime.ops.any.IsConst
 
 private[json] trait JsonDecoderVersionSpecific {
-  inline def derived[A: deriving.Mirror.Of]: JsonDecoder[A] = DeriveJsonDecoder.gen[A]
+  inline def derived[A: deriving.Mirror.Of](using config: JsonCodecConfiguration): JsonDecoder[A] = DeriveJsonDecoder.gen[A]
 }
 
 trait DecoderLowPriorityVersionSpecific {

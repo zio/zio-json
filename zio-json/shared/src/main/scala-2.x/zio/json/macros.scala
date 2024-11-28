@@ -2,8 +2,6 @@ package zio.json
 
 import magnolia1._
 import zio.Chunk
-import zio.json.JsonCodecConfiguration.SumTypeHandling
-import zio.json.JsonCodecConfiguration.SumTypeHandling.WrapperWithClassNameField
 import zio.json.JsonDecoder.{ JsonError, UnsafeJson }
 import zio.json.ast.Json
 import zio.json.internal.{ Lexer, RetractReader, StringMatrix, Write }
@@ -22,7 +20,8 @@ final case class jsonField(name: String) extends Annotation
  */
 final case class jsonAliases(alias: String, aliases: String*) extends Annotation
 
-final class jsonExplicitNull extends Annotation
+final class jsonExplicitNull            extends Annotation
+final class jsonExplicitEmptyCollection extends Annotation
 
 /**
  * If used on a sealed class, will determine the name of the field for
@@ -200,59 +199,6 @@ final class jsonNoExtraFields extends Annotation
  * If used on a case class field, will exclude it from the resulting JSON.
  */
 final class jsonExclude extends Annotation
-
-// TODO: implement same configuration for Scala 3 once this issue is resolved: https://github.com/softwaremill/magnolia/issues/296
-/**
- * Implicit codec derivation configuration.
- *
- * @param sumTypeHandling see [[jsonDiscriminator]]
- * @param fieldNameMapping see [[jsonMemberNames]]
- * @param allowExtraFields see [[jsonNoExtraFields]]
- * @param sumTypeMapping see [[jsonHintNames]]
- */
-final case class JsonCodecConfiguration(
-  sumTypeHandling: SumTypeHandling = WrapperWithClassNameField,
-  fieldNameMapping: JsonMemberFormat = IdentityFormat,
-  allowExtraFields: Boolean = true,
-  sumTypeMapping: JsonMemberFormat = IdentityFormat,
-  explicitNulls: Boolean = false
-)
-
-object JsonCodecConfiguration {
-  implicit val default: JsonCodecConfiguration = JsonCodecConfiguration()
-
-  sealed trait SumTypeHandling {
-    def discriminatorField: Option[String]
-  }
-
-  object SumTypeHandling {
-
-    /**
-     * Use an object with a single key that is the class name.
-     */
-    case object WrapperWithClassNameField extends SumTypeHandling {
-      override def discriminatorField: Option[String] = None
-    }
-
-    /**
-     * For sealed classes, will determine the name of the field for
-     * disambiguating classes.
-     *
-     * The default is to not use a typehint field and instead
-     * have an object with a single key that is the class name.
-     * See [[WrapperWithClassNameField]].
-     *
-     * Note that using a discriminator is less performant, uses more memory, and may
-     * be prone to DOS attacks that are impossible with the default encoding. In
-     * addition, there is slightly less type safety when using custom product
-     * encoders (which must write an unenforced object type). Only use this option
-     * if you must model an externally defined schema.
-     */
-    final case class DiscriminatorField(name: String) extends SumTypeHandling {
-      override def discriminatorField: Option[String] = Some(name)
-    }
-  }
-}
 
 object DeriveJsonDecoder {
   type Typeclass[A] = JsonDecoder[A]
@@ -561,8 +507,14 @@ object DeriveJsonEncoder {
         val explicitNulls: Boolean =
           config.explicitNulls || ctx.annotations.exists(_.isInstanceOf[jsonExplicitNull])
 
+        val explicitEmptyCollections: Boolean =
+          config.explicitEmptyCollections || ctx.annotations.exists(_.isInstanceOf[jsonExplicitEmptyCollection])
+
         lazy val tcs: Array[JsonEncoder[Any]] = params.map(p => p.typeclass.asInstanceOf[JsonEncoder[Any]])
         val len: Int                          = params.length
+
+        override def isEmpty(a: A): Boolean = params.forall(p => p.typeclass.isEmpty(p.dereference(a)))
+
         def unsafeEncode(a: A, indent: Option[Int], out: Write): Unit = {
           var i = 0
           out.write("{")
@@ -574,7 +526,12 @@ object DeriveJsonEncoder {
             val tc         = tcs(i)
             val p          = params(i).dereference(a)
             val writeNulls = explicitNulls || params(i).annotations.exists(_.isInstanceOf[jsonExplicitNull])
-            if (!tc.isNothing(p) || writeNulls) {
+            val writeEmptyCollections =
+              explicitEmptyCollections || params(i).annotations.exists(_.isInstanceOf[jsonExplicitEmptyCollection])
+            if (
+              (!tc.isNothing(p) && !tc.isEmpty(p)) || (tc
+                .isNothing(p) && writeNulls) || (tc.isEmpty(p) && writeEmptyCollections)
+            ) {
               // if we have at least one field already, we need a comma
               if (prevFields) {
                 if (indent.isEmpty) out.write(",")

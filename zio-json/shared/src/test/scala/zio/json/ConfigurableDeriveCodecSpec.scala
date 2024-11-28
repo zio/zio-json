@@ -16,6 +16,8 @@ object ConfigurableDeriveCodecSpec extends ZIOSpecDefault {
 
   case class OptionalField(a: Option[Int])
 
+  case class EmptyMap(a: Map[String, String])
+
   def spec = suite("ConfigurableDeriveCodecSpec")(
     suite("defaults")(
       suite("string")(
@@ -191,6 +193,34 @@ object ConfigurableDeriveCodecSpec extends ZIOSpecDefault {
 
         assertTrue(
           expectedStr.fromJson[OptionalField].toOption.get == expectedObj,
+          expectedObj.toJson == expectedStr
+        )
+      }
+    ),
+    suite("explicit empty collections")(
+      test("should write empty collections if set to true") {
+        val expectedStr = """{"a":{}}"""
+        val expectedObj = EmptyMap(Map.empty)
+
+        implicit val config: JsonCodecConfiguration =
+          JsonCodecConfiguration(explicitEmptyCollections = true)
+        implicit val codec: JsonCodec[EmptyMap] = DeriveJsonCodec.gen
+
+        assertTrue(
+          expectedStr.fromJson[EmptyMap].toOption.get == expectedObj,
+          expectedObj.toJson == expectedStr
+        )
+      },
+      test("should not write empty collections if set to false") {
+        val expectedStr = """{}"""
+        val expectedObj = EmptyMap(Map.empty)
+
+        implicit val config: JsonCodecConfiguration =
+          JsonCodecConfiguration(explicitEmptyCollections = false)
+        implicit val codec: JsonCodec[EmptyMap] = DeriveJsonCodec.gen
+
+        assertTrue(
+          expectedStr.fromJson[EmptyMap].toOption.get == expectedObj,
           expectedObj.toJson == expectedStr
         )
       }

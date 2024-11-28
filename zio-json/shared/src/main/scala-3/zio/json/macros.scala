@@ -33,6 +33,11 @@ final case class jsonAliases(alias: String, aliases: String*) extends Annotation
 final class jsonExplicitNull extends Annotation
 
 /**
+ * Empty collections will be encoded as `null`.
+ */
+final class jsonExplicitEmptyCollection extends Annotation
+
+/**
  * If used on a sealed class, will determine the name of the field for
  * disambiguating classes.
  *
@@ -225,19 +230,20 @@ private class CaseObjectDecoder[Typeclass[*], A](val ctx: CaseClass[Typeclass, A
             case _           => throw UnsafeJson(JsonError.Message("Not an object") :: trace)
           }
       }
-      
-// TODO: implement same configuration as for Scala 2 once this issue is resolved: https://github.com/softwaremill/magnolia/issues/296
-object DeriveJsonDecoder extends Derivation[JsonDecoder] { self =>
+
+final class JsonDecoderDerivation(config: JsonCodecConfiguration) extends Derivation[JsonDecoder] { self =>
   def join[A](ctx: CaseClass[Typeclass, A]): JsonDecoder[A] = {
     val (transformNames, nameTransform): (Boolean, String => String) =
       ctx.annotations.collectFirst { case jsonMemberNames(format) => format }
+        .orElse(Some(config.fieldNameMapping))
+        .filter(_ != IdentityFormat)
         .map(true -> _)
         .getOrElse(false -> identity)
 
     val no_extra = ctx
       .annotations
       .collectFirst { case _: jsonNoExtraFields => () }
-      .isDefined
+      .isDefined || !config.allowExtraFields
 
     if (ctx.params.isEmpty) {
       new CaseObjectDecoder(ctx, no_extra)
@@ -387,7 +393,7 @@ object DeriveJsonDecoder extends Derivation[JsonDecoder] { self =>
 
   def split[A](ctx: SealedTrait[JsonDecoder, A]): JsonDecoder[A] = {
     val jsonHintFormat: JsonMemberFormat =
-      ctx.annotations.collectFirst { case jsonHintNames(format) => format }.getOrElse(IdentityFormat)
+      ctx.annotations.collectFirst { case jsonHintNames(format) => format }.getOrElse(config.sumTypeMapping)
     val names: Array[String] = IArray.genericWrapArray(ctx.subtypes.map { p =>
       p.annotations.collectFirst { case jsonHint(name) =>
         name
@@ -407,7 +413,7 @@ object DeriveJsonDecoder extends Derivation[JsonDecoder] { self =>
         !ctx.isEnum && ctx.subtypes.forall(_.isObject)
       )
 
-    def discrim = ctx.annotations.collectFirst { case jsonDiscriminator(n) => n }
+    def discrim = ctx.annotations.collectFirst { case jsonDiscriminator(n) => n }.orElse(config.sumTypeHandling.discriminatorField)
 
     if (isEnumeration && discrim.isEmpty) {
       new JsonDecoder[A] {
@@ -542,14 +548,23 @@ private lazy val caseObjectEncoder = new JsonEncoder[Any] {
     Right(Json.Obj(Chunk.empty))
 }
 
-object DeriveJsonEncoder extends Derivation[JsonEncoder] { self =>
-  def join[A](ctx: CaseClass[Typeclass, A]): JsonEncoder[A] =
+object DeriveJsonDecoder {
+  inline def gen[A](using config: JsonCodecConfiguration, mirror: Mirror.Of[A]) = {
+    val derivation = new JsonDecoderDerivation(config)
+    derivation.derived[A]
+  }
+}
+
+final class JsonEncoderDerivation(config: JsonCodecConfiguration) extends Derivation[JsonEncoder] { self =>
+   def join[A](ctx: CaseClass[Typeclass, A]): JsonEncoder[A] =
     if (ctx.params.isEmpty) {
       caseObjectEncoder.narrow[A]
     } else {
       new JsonEncoder[A] {
         val (transformNames, nameTransform): (Boolean, String => String) =
           ctx.annotations.collectFirst { case jsonMemberNames(format) => format }
+            .orElse(Some(config.fieldNameMapping))
+            .filter(_ != IdentityFormat)
             .map(true -> _)
             .getOrElse(false -> identity)
 
@@ -575,7 +590,8 @@ object DeriveJsonEncoder extends Derivation[JsonEncoder] { self =>
             })
             .toArray
 
-        val explicitNulls = ctx.annotations.exists(_.isInstanceOf[jsonExplicitNull])
+        val explicitNulls = config.explicitNulls || ctx.annotations.exists(_.isInstanceOf[jsonExplicitNull])
+        val explicitEmptyCollections = config.explicitEmptyCollections || ctx.annotations.exists(_.isInstanceOf[jsonExplicitEmptyCollection])
 
         lazy val tcs: Array[JsonEncoder[Any]] =
             IArray.genericWrapArray(params.map(_.typeclass.asInstanceOf[JsonEncoder[Any]])).toArray
@@ -593,7 +609,11 @@ object DeriveJsonEncoder extends Derivation[JsonEncoder] { self =>
             val tc = tcs(i)
             val p  = params(i).deref(a)
             val writeNulls = explicitNulls || params(i).annotations.exists(_.isInstanceOf[jsonExplicitNull])
-            if (! tc.isNothing(p) || writeNulls) {
+            val writeEmptyCollections = explicitEmptyCollections || params(i).annotations.exists(_.isInstanceOf[jsonExplicitEmptyCollection])
+            if (
+              (!tc.isNothing(p) && !tc.isEmpty(p)) || (tc
+                .isNothing(p) && writeNulls) || (tc.isEmpty(p) && writeEmptyCollections)
+            ) {
               // if we have at least one field already, we need a comma
               if (prevFields) {
                 if (indent.isEmpty) {
@@ -641,20 +661,20 @@ object DeriveJsonEncoder extends Derivation[JsonEncoder] { self =>
       }
     }
 
-  def split[A](ctx: SealedTrait[JsonEncoder, A]): JsonEncoder[A] = {
+   def split[A](ctx: SealedTrait[JsonEncoder, A]): JsonEncoder[A] = {
     val isEnumeration = 
       (ctx.isEnum && ctx.subtypes.forall(_.typeclass == caseObjectEncoder)) || (
         !ctx.isEnum && ctx.subtypes.forall(_.isObject)
       )
 
     val jsonHintFormat: JsonMemberFormat =
-      ctx.annotations.collectFirst { case jsonHintNames(format) => format }.getOrElse(IdentityFormat)
+      ctx.annotations.collectFirst { case jsonHintNames(format) => format }.getOrElse(config.sumTypeMapping)
 
     val discrim = ctx
       .annotations
       .collectFirst {
         case jsonDiscriminator(n) => n
-      }
+      }.orElse(config.sumTypeHandling.discriminatorField)
 
     if (isEnumeration && discrim.isEmpty) {
       new JsonEncoder[A] {
@@ -750,7 +770,7 @@ object DeriveJsonEncoder extends Derivation[JsonEncoder] { self =>
             JsonEncoder.string.unsafeEncode(getName(sub.annotations, sub.typeInfo.short), indent_, out)
 
             // whitespace is always off by 2 spaces at the end, probably not worth fixing
-            val intermediate = new NestedWriter(out, indent_)
+            val intermediate = new DeriveJsonEncoder.NestedWriter(out, indent_)
             sub.typeclass.unsafeEncode(sub.cast(a), indent, intermediate)
           }
         }
@@ -766,16 +786,20 @@ object DeriveJsonEncoder extends Derivation[JsonEncoder] { self =>
       }
     }
   }
+}
 
-  inline def gen[A](using mirror: Mirror.Of[A]) = self.derived[A]
+object DeriveJsonEncoder {
+  inline def gen[A](using config: JsonCodecConfiguration, mirror: Mirror.Of[A]) = {
+    val derivation = new JsonEncoderDerivation(config)
+    derivation.derived[A]
+  }
 
   // intercepts the first `{` of a nested writer and discards it. We also need to
   // inject a `,` unless an empty object `{}` has been written.
-  private[this] final class NestedWriter(out: Write, indent: Option[Int]) extends Write {
+  private[json] final class NestedWriter(out: Write, indent: Option[Int]) extends Write {
     private[this] var first, second = true
 
     def write(c: Char): Unit = write(c.toString) // could be optimised
-
     def write(s: String): Unit =
       if (first || second) {
         var i = 0
@@ -798,7 +822,7 @@ object DeriveJsonEncoder extends Derivation[JsonEncoder] { self =>
 }
 
 object DeriveJsonCodec {
-  inline def gen[A](using mirror: Mirror.Of[A]) = {
+  inline def gen[A](using mirror: Mirror.Of[A], config: JsonCodecConfiguration) = {
     val encoder = DeriveJsonEncoder.gen[A]
     val decoder = DeriveJsonDecoder.gen[A]
 

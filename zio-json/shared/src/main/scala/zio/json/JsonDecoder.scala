@@ -563,43 +563,79 @@ private[json] trait DecoderLowPriority1 extends DecoderLowPriority2 {
       builder(trace, in, immutable.HashSet.newBuilder[A])
   }
 
-  implicit def map[K: JsonFieldDecoder, V: JsonDecoder]: JsonDecoder[Map[K, V]] =
+  implicit def map[K: JsonFieldDecoder, V: JsonDecoder](implicit
+    config: JsonCodecConfiguration
+  ): JsonDecoder[Map[K, V]] =
     new JsonDecoder[Map[K, V]] {
+
+      override def unsafeDecodeMissing(trace: List[JsonError]): Map[K, V] =
+        if (!config.explicitEmptyCollections) Map.empty
+        else super.unsafeDecodeMissing(trace)
 
       def unsafeDecode(trace: List[JsonError], in: RetractReader): Map[K, V] =
         keyValueBuilder(trace, in, Map.newBuilder[K, V])
     }
 
-  implicit def hashMap[K: JsonFieldDecoder, V: JsonDecoder]: JsonDecoder[immutable.HashMap[K, V]] =
+  implicit def hashMap[K: JsonFieldDecoder, V: JsonDecoder](implicit
+    config: JsonCodecConfiguration
+  ): JsonDecoder[immutable.HashMap[K, V]] =
     new JsonDecoder[immutable.HashMap[K, V]] {
+
+      override def unsafeDecodeMissing(trace: List[JsonError]): immutable.HashMap[K, V] =
+        if (!config.explicitEmptyCollections) immutable.HashMap.empty
+        else super.unsafeDecodeMissing(trace)
 
       def unsafeDecode(trace: List[JsonError], in: RetractReader): immutable.HashMap[K, V] =
         keyValueBuilder(trace, in, immutable.HashMap.newBuilder[K, V])
     }
 
-  implicit def mutableMap[K: JsonFieldDecoder, V: JsonDecoder]: JsonDecoder[mutable.Map[K, V]] =
+  implicit def mutableMap[K: JsonFieldDecoder, V: JsonDecoder](implicit
+    config: JsonCodecConfiguration
+  ): JsonDecoder[mutable.Map[K, V]] =
     new JsonDecoder[mutable.Map[K, V]] {
+
+      override def unsafeDecodeMissing(trace: List[JsonError]): mutable.Map[K, V] =
+        if (!config.explicitEmptyCollections) mutable.Map.empty
+        else super.unsafeDecodeMissing(trace)
 
       def unsafeDecode(trace: List[JsonError], in: RetractReader): mutable.Map[K, V] =
         keyValueBuilder(trace, in, mutable.Map.newBuilder[K, V])
     }
 
-  implicit def sortedSet[A: Ordering: JsonDecoder]: JsonDecoder[immutable.SortedSet[A]] =
+  implicit def sortedSet[A: Ordering: JsonDecoder](implicit
+    config: JsonCodecConfiguration
+  ): JsonDecoder[immutable.SortedSet[A]] =
     new JsonDecoder[immutable.SortedSet[A]] {
+
+      override def unsafeDecodeMissing(trace: List[JsonError]): immutable.SortedSet[A] =
+        if (!config.explicitEmptyCollections) immutable.SortedSet.empty
+        else super.unsafeDecodeMissing(trace)
 
       def unsafeDecode(trace: List[JsonError], in: RetractReader): immutable.SortedSet[A] =
         builder(trace, in, immutable.SortedSet.newBuilder[A])
     }
 
-  implicit def sortedMap[K: JsonFieldDecoder: Ordering, V: JsonDecoder]: JsonDecoder[collection.SortedMap[K, V]] =
+  implicit def sortedMap[K: JsonFieldDecoder: Ordering, V: JsonDecoder](implicit
+    config: JsonCodecConfiguration
+  ): JsonDecoder[collection.SortedMap[K, V]] =
     new JsonDecoder[collection.SortedMap[K, V]] {
+
+      override def unsafeDecodeMissing(trace: List[JsonError]): collection.SortedMap[K, V] =
+        if (!config.explicitEmptyCollections) collection.SortedMap.empty
+        else super.unsafeDecodeMissing(trace)
 
       def unsafeDecode(trace: List[JsonError], in: RetractReader): collection.SortedMap[K, V] =
         keyValueBuilder(trace, in, collection.SortedMap.newBuilder[K, V])
     }
 
-  implicit def listMap[K: JsonFieldDecoder, V: JsonDecoder]: JsonDecoder[immutable.ListMap[K, V]] =
+  implicit def listMap[K: JsonFieldDecoder, V: JsonDecoder](implicit
+    config: JsonCodecConfiguration
+  ): JsonDecoder[immutable.ListMap[K, V]] =
     new JsonDecoder[immutable.ListMap[K, V]] {
+
+      override def unsafeDecodeMissing(trace: List[JsonError]): immutable.ListMap[K, V] =
+        if (!config.explicitEmptyCollections) immutable.ListMap.empty
+        else super.unsafeDecodeMissing(trace)
 
       def unsafeDecode(trace: List[JsonError], in: RetractReader): immutable.ListMap[K, V] =
         keyValueBuilder(trace, in, immutable.ListMap.newBuilder[K, V])
