@@ -306,8 +306,15 @@ object JsonEncoder extends GeneratedTupleEncoders with EncoderLowPriority1 with 
 private[json] trait EncoderLowPriority1 extends EncoderLowPriority2 {
   this: JsonEncoder.type =>
 
-  implicit def array[A](implicit A: JsonEncoder[A], classTag: ClassTag[A]): JsonEncoder[Array[A]] =
+  implicit def array[A](implicit
+    A: JsonEncoder[A],
+    classTag: ClassTag[A],
+    config: JsonCodecConfiguration
+  ): JsonEncoder[Array[A]] =
     new JsonEncoder[Array[A]] {
+
+      override def isEmpty(as: Array[A]): Boolean = as.isEmpty
+
       def unsafeEncode(as: Array[A], indent: Option[Int], out: Write): Unit =
         if (as.isEmpty) out.write("[]")
         else {
@@ -359,9 +366,7 @@ private[json] trait EncoderLowPriority1 extends EncoderLowPriority2 {
     config: JsonCodecConfiguration
   ): JsonEncoder[Chunk[A]] = iterable[A, Chunk]
 
-  implicit def nonEmptyChunk[A: JsonEncoder](implicit
-    config: JsonCodecConfiguration
-  ): JsonEncoder[NonEmptyChunk[A]] = chunk[A].contramap(_.toChunk)
+  implicit def nonEmptyChunk[A: JsonEncoder]: JsonEncoder[NonEmptyChunk[A]] = chunk[A].contramap(_.toChunk)
 
   implicit def indexedSeq[A: JsonEncoder](implicit
     config: JsonCodecConfiguration
@@ -431,8 +436,14 @@ private[json] trait EncoderLowPriority1 extends EncoderLowPriority2 {
 private[json] trait EncoderLowPriority2 extends EncoderLowPriority3 {
   this: JsonEncoder.type =>
 
-  implicit def iterable[A, T[X] <: Iterable[X]](implicit A: JsonEncoder[A]): JsonEncoder[T[A]] =
+  implicit def iterable[A, T[X] <: Iterable[X]](implicit
+    A: JsonEncoder[A],
+    config: JsonCodecConfiguration
+  ): JsonEncoder[T[A]] =
     new JsonEncoder[T[A]] {
+
+      override def isEmpty(as: T[A]): Boolean = as.isEmpty
+
       def unsafeEncode(as: T[A], indent: Option[Int], out: Write): Unit =
         if (as.isEmpty) out.write("[]")
         else {
