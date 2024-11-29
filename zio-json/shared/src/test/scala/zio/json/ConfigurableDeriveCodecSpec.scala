@@ -20,10 +20,6 @@ object ConfigurableDeriveCodecSpec extends ZIOSpecDefault {
 
   case class OptionalField(a: Option[Int])
 
-  case class EmptyMap(a: Map[String, String])
-
-  case class EmptyList(a: List[String])
-
   def spec = suite("ConfigurableDeriveCodecSpec")(
     suite("defaults")(
       suite("string")(
@@ -493,6 +489,7 @@ object ConfigurableDeriveCodecSpec extends ZIOSpecDefault {
           assertTrue(expectedStr.fromJson[EmptyTreeSet].toOption.get == expectedObj, expectedObj.toJson == expectedStr)
         },
         test("for a list") {
+          case class EmptyList(a: List[Int])
           val expectedStr = """{}"""
           val expectedObj = EmptyList(List.empty)
 
@@ -553,6 +550,7 @@ object ConfigurableDeriveCodecSpec extends ZIOSpecDefault {
           )
         },
         test("for a map") {
+          case class EmptyMap(a: Map[String, String])
           val expectedStr = """{}"""
           val expectedObj = EmptyMap(Map.empty)
 
