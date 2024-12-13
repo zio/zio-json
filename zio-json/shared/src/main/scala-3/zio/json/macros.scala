@@ -33,9 +33,9 @@ final case class jsonAliases(alias: String, aliases: String*) extends Annotation
 final class jsonExplicitNull extends Annotation
 
 /**
- * Empty collections will be encoded as `null`.
+ * When disabled keys with empty collections will be omitted from the JSON.
  */
-final class jsonExplicitEmptyCollection extends Annotation
+final case class jsonExplicitEmptyCollection(enabled: Boolean = true) extends Annotation
 
 /**
  * If used on a sealed class, will determine the name of the field for
@@ -58,6 +58,7 @@ final case class jsonDiscriminator(name: String) extends Annotation
 // Subtype.
 
 sealed trait JsonMemberFormat extends (String => String)
+
 case class CustomCase(f: String => String) extends JsonMemberFormat {
   override def apply(memberName: String): String = f(memberName)
 }
@@ -68,6 +69,7 @@ case object CamelCase extends JsonMemberFormat {
   override def apply(memberName: String): String =
     jsonMemberNames.enforceCamelOrPascalCase(memberName, toPascal = false)
 }
+
 case object PascalCase extends JsonMemberFormat {
   override def apply(memberName: String): String = jsonMemberNames.enforceCamelOrPascalCase(memberName, toPascal = true)
 }
@@ -135,9 +137,9 @@ private[json] object jsonMemberNames {
     }
 
   def enforceSnakeOrKebabCase(s: String, separator: Char): String = {
-    val len                   = s.length
-    val sb                    = new StringBuilder(len << 1)
-    var i                     = 0
+    val len                      = s.length
+    val sb                       = new StringBuilder(len << 1)
+    var i                        = 0
     var isPrecedingNotUpperCased = false
     while (i < len) isPrecedingNotUpperCased = {
       val ch = s.charAt(i)
@@ -158,9 +160,9 @@ private[json] object jsonMemberNames {
   }
 
   def enforceSnakeOrKebabCaseSeparateNumbers(s: String, separator: Char): String = {
-    val len = s.length
-    val sb = new StringBuilder(len << 1)
-    var i = 0
+    val len                   = s.length
+    val sb                    = new StringBuilder(len << 1)
+    var i                     = 0
     var isPrecedingLowerCased = false
     while (i < len) isPrecedingLowerCased = {
       val ch = s.charAt(i)
@@ -591,7 +593,10 @@ final class JsonEncoderDerivation(config: JsonCodecConfiguration) extends Deriva
             .toArray
 
         val explicitNulls = config.explicitNulls || ctx.annotations.exists(_.isInstanceOf[jsonExplicitNull])
-        val explicitEmptyCollections = config.explicitEmptyCollections || ctx.annotations.exists(_.isInstanceOf[jsonExplicitEmptyCollection])
+        val explicitEmptyCollections = 
+          ctx.annotations.collectFirst { case jsonExplicitEmptyCollection(enabled) =>
+            enabled
+          }.getOrElse(config.explicitEmptyCollections)
 
         lazy val tcs: Array[JsonEncoder[Any]] =
             IArray.genericWrapArray(params.map(_.typeclass.asInstanceOf[JsonEncoder[Any]])).toArray
@@ -606,10 +611,13 @@ final class JsonEncoderDerivation(config: JsonCodecConfiguration) extends Deriva
           var prevFields = false
 
           while (i < len) {
-            val tc = tcs(i)
-            val p  = params(i).deref(a)
+            val tc         = tcs(i)
+            val p          = params(i).deref(a)
             val writeNulls = explicitNulls || params(i).annotations.exists(_.isInstanceOf[jsonExplicitNull])
-            val writeEmptyCollections = explicitEmptyCollections || params(i).annotations.exists(_.isInstanceOf[jsonExplicitEmptyCollection])
+            val writeEmptyCollections =
+              params(i).annotations.collectFirst { case jsonExplicitEmptyCollection(enabled) =>
+                enabled
+              }.getOrElse(explicitEmptyCollections)
             if (
               (!tc.isNothing(p) && !tc.isEmpty(p)) || (tc
                 .isNothing(p) && writeNulls) || (tc.isEmpty(p) && writeEmptyCollections)
@@ -649,9 +657,17 @@ final class JsonEncoderDerivation(config: JsonCodecConfiguration) extends Deriva
               val name = param.annotations.collectFirst { case jsonField(name) =>
                 name
               }.getOrElse(nameTransform(param.label))
+              val writeNulls = explicitNulls || param.annotations.exists(_.isInstanceOf[jsonExplicitNull])
+              val writeEmptyCollections =
+                param.annotations.collectFirst { case jsonExplicitEmptyCollection(enabled) =>
+                  enabled
+                }.getOrElse(explicitEmptyCollections)
               c.flatMap { chunk =>
                 param.typeclass.toJsonAST(param.deref(a)).map { value =>
-                  if (value == Json.Null) chunk
+                  if (
+                    (value == Json.Null && !writeNulls) ||
+                    (value.asObject.exists(_.fields.isEmpty) && !writeEmptyCollections)
+                  ) chunk
                   else chunk :+ name -> value
                 }
               }

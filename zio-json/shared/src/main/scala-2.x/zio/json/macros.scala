@@ -20,8 +20,12 @@ final case class jsonField(name: String) extends Annotation
  */
 final case class jsonAliases(alias: String, aliases: String*) extends Annotation
 
-final class jsonExplicitNull            extends Annotation
-final class jsonExplicitEmptyCollection extends Annotation
+final class jsonExplicitNull extends Annotation
+
+/**
+ * When disabled keys with empty collections will be omitted from the JSON.
+ */
+final case class jsonExplicitEmptyCollection(enabled: Boolean = true) extends Annotation
 
 /**
  * If used on a sealed class, will determine the name of the field for
@@ -508,7 +512,9 @@ object DeriveJsonEncoder {
           config.explicitNulls || ctx.annotations.exists(_.isInstanceOf[jsonExplicitNull])
 
         val explicitEmptyCollections: Boolean =
-          config.explicitEmptyCollections || ctx.annotations.exists(_.isInstanceOf[jsonExplicitEmptyCollection])
+          ctx.annotations.collectFirst { case jsonExplicitEmptyCollection(enabled) =>
+            enabled
+          }.getOrElse(config.explicitEmptyCollections)
 
         lazy val tcs: Array[JsonEncoder[Any]] = params.map(p => p.typeclass.asInstanceOf[JsonEncoder[Any]])
         val len: Int                          = params.length
@@ -527,7 +533,9 @@ object DeriveJsonEncoder {
             val p          = params(i).dereference(a)
             val writeNulls = explicitNulls || params(i).annotations.exists(_.isInstanceOf[jsonExplicitNull])
             val writeEmptyCollections =
-              explicitEmptyCollections || params(i).annotations.exists(_.isInstanceOf[jsonExplicitEmptyCollection])
+              params(i).annotations.collectFirst { case jsonExplicitEmptyCollection(enabled) =>
+                enabled
+              }.getOrElse(explicitEmptyCollections)
             if (
               (!tc.isNothing(p) && !tc.isEmpty(p)) || (tc
                 .isNothing(p) && writeNulls) || (tc.isEmpty(p) && writeEmptyCollections)
@@ -558,9 +566,17 @@ object DeriveJsonEncoder {
               val name = param.annotations.collectFirst { case jsonField(name) =>
                 name
               }.getOrElse(nameTransform(param.label))
+              val writeNulls = explicitNulls || param.annotations.exists(_.isInstanceOf[jsonExplicitNull])
+              val writeEmptyCollections =
+                param.annotations.collectFirst { case jsonExplicitEmptyCollection(enabled) =>
+                  enabled
+                }.getOrElse(explicitEmptyCollections)
               c.flatMap { chunk =>
                 param.typeclass.toJsonAST(param.dereference(a)).map { value =>
-                  if (value == Json.Null) chunk
+                  if (
+                    (value == Json.Null && !writeNulls) ||
+                    (value.asObject.exists(_.fields.isEmpty) && !writeEmptyCollections)
+                  ) chunk
                   else chunk :+ name -> value
                 }
               }
