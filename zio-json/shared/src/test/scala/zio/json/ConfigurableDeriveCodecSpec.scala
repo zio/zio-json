@@ -124,12 +124,15 @@ object ConfigurableDeriveCodecSpec extends ZIOSpecDefault {
         test("write empty collections by default") {
           case class EmptySeq(a: Seq[Int])
 
-          val expectedStr = """{"a":[]}"""
+          val jsonAST = Json.Obj("a" -> Json.Arr())
           val expectedObj = EmptySeq(Seq.empty)
 
           implicit val codec: JsonCodec[EmptySeq] = DeriveJsonCodec.gen
 
-          assertTrue(expectedStr.fromJson[EmptySeq].toOption.get == expectedObj, expectedObj.toJson == expectedStr)
+          assertTrue(
+            jsonAST.as[EmptySeq].toOption.get == expectedObj,
+            expectedObj.toJsonAST == Right(jsonAST)
+          )
         }
       )
     ),
