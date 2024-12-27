@@ -58,15 +58,21 @@ into a Scala `case class`
 case class Banana(curvature: Double)
 ```
 
-To do this, we create an *instance* of the `JsonDecoder` typeclass for `Banana` using the `zio-json` code generator. It is best practice to put it on the companion of `Banana`, like so
+To do this, we derive an *instance* of the `JsonDecoder` typeclass for `Banana`.
 
 ```scala
-object Banana {
-  implicit val decoder: JsonDecoder[Banana] = DeriveJsonDecoder.gen[Banana]
-}
+case class Banana(curvature: Double) derives JsonDecoder
 ```
 
-_Note: If you’re using Scala 3 and your case class is defining default parameters, `-Yretain-trees` needs to be added to `scalacOptions`._
+> [!NOTE]
+>
+> In scala 2, we need to use the `zio-json` code generator. It is best practice to put it on the companion of `Banana`, like so
+>
+> ```scala
+> object Banana {
+>   implicit val decoder: JsonDecoder[Banana] = DeriveJsonDecoder.gen[Banana]
+> }
+> ```
 
 Now we can parse JSON into our object
 
@@ -75,13 +81,10 @@ scala> """{"curvature":0.5}""".fromJson[Banana]
 val res: Either[String, Banana] = Right(Banana(0.5))
 ```
 
-Likewise, to produce JSON from our data we define a `JsonEncoder`
+Likewise, to produce JSON from our data we derive a `JsonEncoder`
 
 ```scala
-object Banana {
-  ...
-  implicit val encoder: JsonEncoder[Banana] = DeriveJsonEncoder.gen[Banana]
-}
+case class Banana(curvature: Double) derives JsonEncoder
 
 scala> Banana(0.5).toJson
 val res: String = {"curvature":0.5}
@@ -93,6 +96,16 @@ val res: String =
 }
 ```
 
+> [!NOTE]
+>
+> In scala 2:
+> ```scala
+> object Banana {
+>   ...
+>   implicit val encoder: JsonEncoder[Banana] = DeriveJsonEncoder.gen[Banana]
+> }
+> ```
+
 And bad JSON will produce an error in `jq` syntax with an additional piece of contextual information (in parentheses)
 
 ```
@@ -103,19 +116,48 @@ val res: Either[String, Banana] = Left(.curvature(expected a Double))
 Say we extend our data model to include more data types
 
 ```scala
-sealed trait Fruit
-case class Banana(curvature: Double) extends Fruit
-case class Apple (poison: Boolean)   extends Fruit
+enum Fruit:
+  case Banana(curvature: Double) extends Fruit
+  case Apple(poison: Boolean)    extends Fruit
 ```
 
-we can generate the encoder and decoder for the entire `sealed` family
+we can generate the encoder and decoder for the entire `sealed` family using `JsonCodec`
 
 ```scala
-object Fruit {
-  implicit val decoder: JsonDecoder[Fruit] = DeriveJsonDecoder.gen[Fruit]
-  implicit val encoder: JsonEncoder[Fruit] = DeriveJsonEncoder.gen[Fruit]
-}
+enum Fruit derives JsonCodec:
+  case Banana(curvature: Double)
+  case Apple(poison: Boolean)
 ```
+
+> [!NOTE]
+>
+> In scala 2:
+>
+> ```scala mdoc:compile-only
+> import zio.json._
+> 
+> sealed trait Fruit                   extends Product with Serializable
+> case class Banana(curvature: Double) extends Fruit
+> case class Apple(poison: Boolean)    extends Fruit
+> 
+> object Fruit {
+>   implicit val decoder: JsonDecoder[Fruit] =
+>     DeriveJsonDecoder.gen[Fruit]
+> 
+>   implicit val encoder: JsonEncoder[Fruit] =
+>     DeriveJsonEncoder.gen[Fruit]
+> }
+> 
+> val json1         = """{ "Banana":{ "curvature":0.5 }}"""
+> val json2         = """{ "Apple": { "poison": false }}"""
+> val malformedJson = """{ "Banana":{ "curvature": true }}"""
+> 
+> json1.fromJson[Fruit]
+> json2.fromJson[Fruit]
+> malformedJson.fromJson[Fruit]
+> 
+> List(Apple(false), Banana(0.4)).toJsonPretty
+> ```
 
 allowing us to load the fruit based on a single field type tag in the JSON
 
@@ -129,20 +171,14 @@ val res: Either[String, Fruit] = Right(Apple(false))
 
 Almost all of the standard library data types are supported as fields on the case class, and it is easy to add support if one is missing.
 
-```scala mdoc:compile-only
-import zio.json._
+```scala
+import zio.json.*
 
-sealed trait Fruit                   extends Product with Serializable
-case class Banana(curvature: Double) extends Fruit
-case class Apple(poison: Boolean)    extends Fruit
+enum Fruit extends Product, Serializable derives JsonCodec:
+  case Banana(curvature: Double) extends Fruit
+  case Apple(poison: Boolean)    extends Fruit
 
-object Fruit {
-  implicit val decoder: JsonDecoder[Fruit] =
-    DeriveJsonDecoder.gen[Fruit]
-
-  implicit val encoder: JsonEncoder[Fruit] =
-    DeriveJsonEncoder.gen[Fruit]
-}
+export Fruit.*
 
 val json1         = """{ "Banana":{ "curvature":0.5 }}"""
 val json2         = """{ "Apple": { "poison": false }}"""
