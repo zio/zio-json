@@ -94,95 +94,94 @@ object SafeNumbers {
       if (x != x) """"NaN""""
       else if (bits < 0) """"-Infinity""""
       else """"Infinity""""
-    } else
-      {
-        val s = new java.lang.StringBuilder(24)
-        if (bits < 0) s.append('-')
-        if (x == 0.0f) s.append('0').append('.').append('0')
+    } else {
+      val s = new java.lang.StringBuilder(24)
+      if (bits < 0) s.append('-')
+      if (x == 0.0f) s.append('0').append('.').append('0')
+      else {
+        var e   = ieeeExponent - 1075
+        var m   = ieeeMantissa | 0x10000000000000L
+        var dv  = 0L
+        var exp = 0
+        if (e == 0) dv = m
+        else if (e >= -52 && e < 0 && m << e == 0) dv = m >> -e
         else {
-          var e   = ieeeExponent - 1075
-          var m   = ieeeMantissa | 0x10000000000000L
-          var dv  = 0L
-          var exp = 0
-          if (e == 0) dv = m
-          else if (e >= -52 && e < 0 && m << e == 0) dv = m >> -e
-          else {
-            var expShift, expCorr = 0
-            var cblShift          = 2
-            if (ieeeExponent == 0) {
-              e = -1074
-              m = ieeeMantissa
-              if (ieeeMantissa < 3) {
-                m *= 10
-                expShift = 1
-              }
-            } else if (ieeeMantissa == 0 && ieeeExponent > 1) {
-              expCorr = 131007
-              cblShift = 1
+          var expShift, expCorr = 0
+          var cblShift          = 2
+          if (ieeeExponent == 0) {
+            e = -1074
+            m = ieeeMantissa
+            if (ieeeMantissa < 3) {
+              m *= 10
+              expShift = 1
             }
-            exp = e * 315653 - expCorr >> 20
-            val i     = exp + 324 << 1
-            val g1    = gs(i)
-            val g0    = gs(i + 1)
-            val h     = (-exp * 108853 >> 15) + e + 2
-            val cb    = m << 2
-            val outm1 = (m.toInt & 0x1) - 1
-            val vb    = rop(g1, g0, cb << h)
-            val vbls  = rop(g1, g0, cb - cblShift << h) + outm1
-            val vbrd  = outm1 - rop(g1, g0, cb + 2 << h)
-            val s     = vb >> 2
-            if (
-              s < 100 || {
-                dv =
-                  s / 10 // FIXME: Use Math.multiplyHigh(s, 1844674407370955168L) instead after dropping JDK 8 support
-                val sp40 = dv * 40
-                val upin = (vbls - sp40).toInt
-                (((sp40 + vbrd).toInt + 40) ^ upin) >= 0 || {
-                  dv += ~upin >>> 31
-                  exp += 1
-                  false
-                }
-              }
-            ) {
-              val s4  = s << 2
-              val uin = (vbls - s4).toInt
-              dv = (~ {
-                if ((((s4 + vbrd).toInt + 4) ^ uin) < 0) uin
-                else (vb.toInt & 0x3) + (s.toInt & 0x1) - 3
-              } >>> 31) + s
-              exp -= expShift
-            }
+          } else if (ieeeMantissa == 0 && ieeeExponent > 1) {
+            expCorr = 131007
+            cblShift = 1
           }
-          val len = digitCount(dv)
-          exp += len - 1
-          if (exp < -3 || exp >= 7) {
-            val dotOff = s.length + 1
-            s.append(dv)
-            var i = s.length - 1
-            while (i > dotOff && s.charAt(i) == '0') i -= 1
-            s.setLength(i + 1)
-            s.insert(dotOff, '.').append('E').append(exp)
-          } else if (exp < 0) {
-            s.append('0').append('.')
-            while ({
-              exp += 1
-              exp != 0
-            }) s.append('0')
-            s.append(dv)
-            var i = s.length - 1
-            while (s.charAt(i) == '0') i -= 1
-            s.setLength(i + 1)
-            s
-          } else if (exp + 1 < len) {
-            val dotOff = s.length + exp + 1
-            s.append(dv)
-            var i = s.length - 1
-            while (s.charAt(i) == '0') i -= 1
-            s.setLength(i + 1)
-            s.insert(dotOff, '.')
-          } else s.append(dv).append('.').append('0')
+          exp = e * 315653 - expCorr >> 20
+          val i     = exp + 324 << 1
+          val g1    = gs(i)
+          val g0    = gs(i + 1)
+          val h     = (-exp * 108853 >> 15) + e + 2
+          val cb    = m << 2
+          val outm1 = (m.toInt & 0x1) - 1
+          val vb    = rop(g1, g0, cb << h)
+          val vbls  = rop(g1, g0, cb - cblShift << h) + outm1
+          val vbrd  = outm1 - rop(g1, g0, cb + 2 << h)
+          val s     = vb >> 2
+          if (
+            s < 100 || {
+              dv = s / 10 // FIXME: Use Math.multiplyHigh(s, 1844674407370955168L) instead after dropping JDK 8 support
+              val sp40 = dv * 40
+              val upin = (vbls - sp40).toInt
+              (((sp40 + vbrd).toInt + 40) ^ upin) >= 0 || {
+                dv += ~upin >>> 31
+                exp += 1
+                false
+              }
+            }
+          ) {
+            val s4  = s << 2
+            val uin = (vbls - s4).toInt
+            dv = (~ {
+              if ((((s4 + vbrd).toInt + 4) ^ uin) < 0) uin
+              else (vb.toInt & 0x3) + (s.toInt & 0x1) - 3
+            } >>> 31) + s
+            exp -= expShift
+          }
         }
-      }.toString
+        val len = digitCount(dv)
+        exp += len - 1
+        if (exp < -3 || exp >= 7) {
+          val dotOff = s.length + 1
+          s.append(dv)
+          var i = s.length - 1
+          while (i > dotOff && s.charAt(i) == '0') i -= 1
+          s.setLength(i + 1)
+          s.insert(dotOff, '.').append('E').append(exp)
+        } else if (exp < 0) {
+          s.append('0').append('.')
+          while ({
+            exp += 1
+            exp != 0
+          }) s.append('0')
+          s.append(dv)
+          var i = s.length - 1
+          while (s.charAt(i) == '0') i -= 1
+          s.setLength(i + 1)
+          s
+        } else if (exp + 1 < len) {
+          val dotOff = s.length + exp + 1
+          s.append(dv)
+          var i = s.length - 1
+          while (s.charAt(i) == '0') i -= 1
+          s.setLength(i + 1)
+          s.insert(dotOff, '.')
+        } else s.append(dv).append('.').append('0')
+      }
+      s.toString
+    }
   }
 
   def toString(x: Float): String = {
@@ -193,91 +192,91 @@ object SafeNumbers {
       if (x != x) """"NaN""""
       else if (bits < 0) """"-Infinity""""
       else """"Infinity""""
-    } else
-      {
-        val s = new java.lang.StringBuilder(16)
-        if (bits < 0) s.append('-')
-        if (x == 0.0f) s.append('0').append('.').append('0')
+    } else {
+      val s = new java.lang.StringBuilder(16)
+      if (bits < 0) s.append('-')
+      if (x == 0.0f) s.append('0').append('.').append('0')
+      else {
+        var e       = ieeeExponent - 150
+        var m       = ieeeMantissa | 0x800000
+        var dv, exp = 0
+        if (e == 0) dv = m
+        else if (e >= -23 && e < 0 && m << e == 0) dv = m >> -e
         else {
-          var e       = ieeeExponent - 150
-          var m       = ieeeMantissa | 0x800000
-          var dv, exp = 0
-          if (e == 0) dv = m
-          else if (e >= -23 && e < 0 && m << e == 0) dv = m >> -e
-          else {
-            var expShift, expCorr = 0
-            var cblShift          = 2
-            if (ieeeExponent == 0) {
-              e = -149
-              m = ieeeMantissa
-              if (ieeeMantissa < 8) {
-                m *= 10
-                expShift = 1
-              }
-            } else if (ieeeMantissa == 0 && ieeeExponent > 1) {
-              expCorr = 131007
-              cblShift = 1
+          var expShift, expCorr = 0
+          var cblShift          = 2
+          if (ieeeExponent == 0) {
+            e = -149
+            m = ieeeMantissa
+            if (ieeeMantissa < 8) {
+              m *= 10
+              expShift = 1
             }
-            exp = e * 315653 - expCorr >> 20
-            val g1    = gs(exp + 324 << 1) + 1
-            val h     = (-exp * 108853 >> 15) + e + 1
-            val cb    = m << 2
-            val outm1 = (m & 0x1) - 1
-            val vb    = rop(g1, cb << h)
-            val vbls  = rop(g1, cb - cblShift << h) + outm1
-            val vbrd  = outm1 - rop(g1, cb + 2 << h)
-            val s     = vb >> 2
-            if (
-              s < 100 || {
-                dv = (s * 3435973837L >>> 35).toInt // divide a positive int by 10
-                val sp40 = dv * 40
-                val upin = vbls - sp40
-                ((sp40 + vbrd + 40) ^ upin) >= 0 || {
-                  dv += ~upin >>> 31
-                  exp += 1
-                  false
-                }
-              }
-            ) {
-              val s4  = s << 2
-              val uin = vbls - s4
-              dv = (~ {
-                if (((s4 + vbrd + 4) ^ uin) < 0) uin
-                else (vb & 0x3) + (s & 0x1) - 3
-              } >>> 31) + s
-              exp -= expShift
-            }
+          } else if (ieeeMantissa == 0 && ieeeExponent > 1) {
+            expCorr = 131007
+            cblShift = 1
           }
-          val len = digitCount(dv.toLong)
-          exp += len - 1
-          if (exp < -3 || exp >= 7) {
-            val dotOff = s.length + 1
-            s.append(dv)
-            var i = s.length - 1
-            while (i > dotOff && s.charAt(i) == '0') i -= 1
-            s.setLength(i + 1)
-            s.insert(dotOff, '.').append('E').append(exp)
-          } else if (exp < 0) {
-            s.append('0').append('.')
-            while ({
-              exp += 1
-              exp != 0
-            }) s.append('0')
-            s.append(dv)
-            var i = s.length - 1
-            while (s.charAt(i) == '0') i -= 1
-            s.setLength(i + 1)
-            s
-          } else if (exp + 1 < len) {
-            val dotOff = s.length + exp + 1
-            s.append(dv)
-            var i = s.length - 1
-            while (s.charAt(i) == '0') i -= 1
-            s.setLength(i + 1)
-            s.insert(dotOff, '.')
-          } else s.append(dv).append('.').append('0')
+          exp = e * 315653 - expCorr >> 20
+          val g1    = gs(exp + 324 << 1) + 1
+          val h     = (-exp * 108853 >> 15) + e + 1
+          val cb    = m << 2
+          val outm1 = (m & 0x1) - 1
+          val vb    = rop(g1, cb << h)
+          val vbls  = rop(g1, cb - cblShift << h) + outm1
+          val vbrd  = outm1 - rop(g1, cb + 2 << h)
+          val s     = vb >> 2
+          if (
+            s < 100 || {
+              dv = (s * 3435973837L >>> 35).toInt // divide a positive int by 10
+              val sp40 = dv * 40
+              val upin = vbls - sp40
+              ((sp40 + vbrd + 40) ^ upin) >= 0 || {
+                dv += ~upin >>> 31
+                exp += 1
+                false
+              }
+            }
+          ) {
+            val s4  = s << 2
+            val uin = vbls - s4
+            dv = (~ {
+              if (((s4 + vbrd + 4) ^ uin) < 0) uin
+              else (vb & 0x3) + (s & 0x1) - 3
+            } >>> 31) + s
+            exp -= expShift
+          }
         }
-      }.toString
+        val len = digitCount(dv.toLong)
+        exp += len - 1
+        if (exp < -3 || exp >= 7) {
+          val dotOff = s.length + 1
+          s.append(dv)
+          var i = s.length - 1
+          while (i > dotOff && s.charAt(i) == '0') i -= 1
+          s.setLength(i + 1)
+          s.insert(dotOff, '.').append('E').append(exp)
+        } else if (exp < 0) {
+          s.append('0').append('.')
+          while ({
+            exp += 1
+            exp != 0
+          }) s.append('0')
+          s.append(dv)
+          var i = s.length - 1
+          while (s.charAt(i) == '0') i -= 1
+          s.setLength(i + 1)
+          s
+        } else if (exp + 1 < len) {
+          val dotOff = s.length + exp + 1
+          s.append(dv)
+          var i = s.length - 1
+          while (s.charAt(i) == '0') i -= 1
+          s.setLength(i + 1)
+          s.insert(dotOff, '.')
+        } else s.append(dv).append('.').append('0')
+      }
+      s.toString
+    }
   }
 
   private[this] def rop(g1: Long, g0: Long, cp: Long): Long = {
