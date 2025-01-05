@@ -32,6 +32,6 @@ object DerivedCodecSpec extends ZIOSpecDefault {
       case class Foo(aOrB: "A" | "B", optA: Option["A"]) derives JsonCodec
 
       assertTrue(Foo("A", Some("A")).toJson.fromJson[Foo] == Right(Foo("A", Some("A"))))
-    },
+    }
   )
 }

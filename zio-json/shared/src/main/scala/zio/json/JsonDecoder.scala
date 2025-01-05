@@ -28,8 +28,8 @@ import scala.collection.{ immutable, mutable }
 import scala.util.control.NoStackTrace
 
 /**
- * A `JsonDecoder[A]` instance has the ability to decode JSON to values of type `A`, potentially
- * failing with an error if the JSON content does not encode a value of the given type.
+ * A `JsonDecoder[A]` instance has the ability to decode JSON to values of type `A`, potentially failing with an error
+ * if the JSON content does not encode a value of the given type.
  */
 trait JsonDecoder[A] extends JsonDecoderPlatformSpecific[A] {
   self =>
@@ -60,8 +60,8 @@ trait JsonDecoder[A] extends JsonDecoderPlatformSpecific[A] {
   final def <*[B](that: => JsonDecoder[B]): JsonDecoder[A] = self.zipLeft(that)
 
   /**
-   * Attempts to decode a value of type `A` from the specified `CharSequence`, but may fail with
-   * a human-readable error message if the provided text does not encode a value of this type.
+   * Attempts to decode a value of type `A` from the specified `CharSequence`, but may fail with a human-readable error
+   * message if the provided text does not encode a value of this type.
    *
    * Note: This method may not entirely consume the specified character sequence.
    */
@@ -79,13 +79,11 @@ trait JsonDecoder[A] extends JsonDecoderPlatformSpecific[A] {
   final def widen[B >: A]: JsonDecoder[B] = self.asInstanceOf[JsonDecoder[B]]
 
   /**
-   * Returns a new codec that combines this codec and the specified codec using fallback semantics:
-   * such that if this codec fails, the specified codec will be tried instead.
-   * This method may be unsafe from a security perspective: it can use more memory than hand coded
-   * alternative and so lead to DOS.
+   * Returns a new codec that combines this codec and the specified codec using fallback semantics: such that if this
+   * codec fails, the specified codec will be tried instead. This method may be unsafe from a security perspective: it
+   * can use more memory than hand coded alternative and so lead to DOS.
    *
-   * For example, in the case of an alternative between `Int` and `Boolean`, a hand coded
-   * alternative would look like:
+   * For example, in the case of an alternative between `Int` and `Boolean`, a hand coded alternative would look like:
    *
    * ```
    * val decoder: JsonDecoder[AnyVal] = JsonDecoder.peekChar[AnyVal] {
@@ -127,8 +125,8 @@ trait JsonDecoder[A] extends JsonDecoderPlatformSpecific[A] {
     }
 
   /**
-   * Returns a new codec that combines this codec and the specified codec using fallback semantics:
-   * such that if this codec fails, the specified codec will be tried instead.
+   * Returns a new codec that combines this codec and the specified codec using fallback semantics: such that if this
+   * codec fails, the specified codec will be tried instead.
    */
   final def orElseEither[B](that: => JsonDecoder[B]): JsonDecoder[Either[A, B]] =
     self.map(Left(_)).orElse(that.map(Right(_)))
@@ -151,8 +149,8 @@ trait JsonDecoder[A] extends JsonDecoderPlatformSpecific[A] {
     }
 
   /**
-   * Returns a new codec whose decoded values will be mapped by the specified function, which may
-   * itself decide to fail with some type of error.
+   * Returns a new codec whose decoded values will be mapped by the specified function, which may itself decide to fail
+   * with some type of error.
    */
   final def mapOrFail[B](f: A => Either[String, B]): JsonDecoder[B] =
     new JsonDecoder[B] {
@@ -180,8 +178,8 @@ trait JsonDecoder[A] extends JsonDecoderPlatformSpecific[A] {
     }
 
   /**
-   * Returns a new codec that combines this codec and the specified codec into a single codec that
-   * decodes a tuple of the values decoded by the respective codecs.
+   * Returns a new codec that combines this codec and the specified codec into a single codec that decodes a tuple of
+   * the values decoded by the respective codecs.
    */
   final def zip[B](that: => JsonDecoder[B]): JsonDecoder[(A, B)] = JsonDecoder.tuple2(this, that)
 
@@ -205,8 +203,8 @@ trait JsonDecoder[A] extends JsonDecoderPlatformSpecific[A] {
     throw JsonDecoder.UnsafeJson(JsonError.Message("missing") :: trace)
 
   /**
-   * Low-level, unsafe method to decode a value or throw an exception. This method should not be
-   * called in application code, although it can be implemented for user-defined data structures.
+   * Low-level, unsafe method to decode a value or throw an exception. This method should not be called in application
+   * code, although it can be implemented for user-defined data structures.
    */
   def unsafeDecode(trace: List[JsonError], in: RetractReader): A
 
@@ -216,8 +214,8 @@ trait JsonDecoder[A] extends JsonDecoderPlatformSpecific[A] {
   /**
    * Decode a value from an already parsed Json AST.
    *
-   * The default implementation encodes the Json to a byte stream and uses decode to parse that.
-   * Override to provide a more performant implementation.
+   * The default implementation encodes the Json to a byte stream and uses decode to parse that. Override to provide a
+   * more performant implementation.
    */
   final def fromJsonAST(json: Json): Either[String, A] =
     try Right(unsafeFromJsonAST(Nil, json))
@@ -236,10 +234,9 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority1 with 
   def apply[A](implicit a: JsonDecoder[A]): JsonDecoder[A] = a
 
   /**
-   * Design note: we could require the position in the stream here to improve
-   * debugging messages. But the cost would be that the RetractReader would need
-   * to keep track and any wrappers would need to preserve the position. It may
-   * still be desirable to do this but at the moment it is not necessary.
+   * Design note: we could require the position in the stream here to improve debugging messages. But the cost would be
+   * that the RetractReader would need to keep track and any wrappers would need to preserve the position. It may still
+   * be desirable to do this but at the moment it is not necessary.
    */
   final case class UnsafeJson(trace: List[JsonError])
       extends Exception("If you see this, a developer made a mistake using JsonDecoder")

@@ -10,8 +10,7 @@ import scala.annotation._
 import scala.language.experimental.macros
 
 /**
- * If used on a case class field, determines the name of the JSON field.
- * Defaults to the case class field name.
+ * If used on a case class field, determines the name of the JSON field. Defaults to the case class field name.
  */
 final case class jsonField(name: String) extends Annotation
 
@@ -28,17 +27,14 @@ final class jsonExplicitNull extends Annotation
 final case class jsonExplicitEmptyCollection(enabled: Boolean = true) extends Annotation
 
 /**
- * If used on a sealed class, will determine the name of the field for
- * disambiguating classes.
+ * If used on a sealed class, will determine the name of the field for disambiguating classes.
  *
- * The default is to not use a typehint field and instead
- * have an object with a single key that is the class name.
+ * The default is to not use a typehint field and instead have an object with a single key that is the class name.
  *
- * Note that using a discriminator is less performant, uses more memory, and may
- * be prone to DOS attacks that are impossible with the default encoding. In
- * addition, there is slightly less type safety when using custom product
- * encoders (which must write an unenforced object type). Only use this option
- * if you must model an externally defined schema.
+ * Note that using a discriminator is less performant, uses more memory, and may be prone to DOS attacks that are
+ * impossible with the default encoding. In addition, there is slightly less type safety when using custom product
+ * encoders (which must write an unenforced object type). Only use this option if you must model an externally defined
+ * schema.
  */
 final case class jsonDiscriminator(name: String) extends Annotation
 // TODO a strategy where the constructor is inferred from the field names, only
@@ -83,16 +79,14 @@ object ziojson_03 {
 }
 
 /**
- * If used on a case class, determines the strategy of member names
- * transformation during serialization and deserialization. Four common
- * strategies are provided above and a custom one to support specific use cases.
+ * If used on a case class, determines the strategy of member names transformation during serialization and
+ * deserialization. Four common strategies are provided above and a custom one to support specific use cases.
  */
 final case class jsonMemberNames(format: JsonMemberFormat) extends Annotation
 private[json] object jsonMemberNames {
 
   /**
-   * ~~Stolen~~ Borrowed from jsoniter-scala by Andriy Plokhotnyuk
-   * (he even granted permission for this, imagine that!)
+   * ~~Stolen~~ Borrowed from jsoniter-scala by Andriy Plokhotnyuk (he even granted permission for this, imagine that!)
    */
 
   import java.lang.Character._
@@ -175,27 +169,26 @@ private[json] object jsonMemberNames {
 }
 
 /**
- * If used on a case class will determine the type hint value for disambiguating
- * sealed traits. Defaults to the short type name.
+ * If used on a case class will determine the type hint value for disambiguating sealed traits. Defaults to the short
+ * type name.
  */
 final case class jsonHint(name: String) extends Annotation
 
 /**
- * If used on a sealed class will determine the strategy of type hint value transformation for disambiguating
- * classes during serialization and deserialization. Same strategies are provided as for [[jsonMemberNames]].
+ * If used on a sealed class will determine the strategy of type hint value transformation for disambiguating classes
+ * during serialization and deserialization. Same strategies are provided as for [[jsonMemberNames]].
  */
 final case class jsonHintNames(format: JsonMemberFormat) extends Annotation
 
 /**
- * If used on a case class, will exit early if any fields are in the JSON that
- * do not correspond to field names in the case class.
+ * If used on a case class, will exit early if any fields are in the JSON that do not correspond to field names in the
+ * case class.
  *
- * This adds extra protections against a DOS attacks but means that changes in
- * the schema will result in a hard error rather than silently ignoring those
- * fields.
+ * This adds extra protections against a DOS attacks but means that changes in the schema will result in a hard error
+ * rather than silently ignoring those fields.
  *
- * Cannot be combined with `@jsonDiscriminator` since it is considered an extra
- * field from the perspective of the case class.
+ * Cannot be combined with `@jsonDiscriminator` since it is considered an extra field from the perspective of the case
+ * class.
  */
 final class jsonNoExtraFields extends Annotation
 

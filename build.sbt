@@ -1,4 +1,4 @@
-import BuildHelper._
+import BuildHelper.*
 import explicitdeps.ExplicitDepsPlugin.autoImport.moduleFilterRemoveValue
 import sbtcrossproject.CrossPlugin.autoImport.crossProject
 
@@ -7,8 +7,8 @@ Global / onChangedBuildSource := IgnoreSourceChanges
 inThisBuild(
   List(
     organization := "dev.zio",
-    homepage := Some(url("https://zio.dev/zio-json/")),
-    licenses := List("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0")),
+    homepage     := Some(url("https://zio.dev/zio-json/")),
+    licenses     := List("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0")),
     developers := List(
       Developer(
         "jdegoes",
@@ -390,9 +390,9 @@ lazy val docs = project
     crossScalaVersions -= ScalaDotty,
     moduleName := "zio-json-docs",
     scalacOptions += "-Ymacro-annotations",
-    projectName := "ZIO JSON",
+    projectName    := "ZIO JSON",
     mainModuleName := (zioJsonJVM / moduleName).value,
-    projectStage := ProjectStage.ProductionReady,
+    projectStage   := ProjectStage.ProductionReady,
     ScalaUnidoc / unidoc / unidocProjectFilter := inProjects(
       zioJsonJVM,
       zioJsonYaml,

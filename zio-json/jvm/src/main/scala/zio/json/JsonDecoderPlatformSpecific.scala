@@ -20,12 +20,13 @@ trait JsonDecoderPlatformSpecific[A] { self: JsonDecoder[A] =>
     }
 
   /**
-   * Attempts to decode a stream of bytes using the user supplied Charset into a single value of type `A`, but may fail with
-   * a human-readable exception if the stream does not encode a value of this type.
+   * Attempts to decode a stream of bytes using the user supplied Charset into a single value of type `A`, but may fail
+   * with a human-readable exception if the stream does not encode a value of this type.
    *
    * Note: This method may not consume the full string.
    *
-   * @see [[decodeJsonStream]] For a `Char` stream variant
+   * @see
+   *   [[decodeJsonStream]] For a `Char` stream variant
    */
   final def decodeJsonStreamInput[R](
     stream: ZStream[R, Throwable, Byte],
@@ -41,12 +42,13 @@ trait JsonDecoderPlatformSpecific[A] { self: JsonDecoder[A] =>
     }
 
   /**
-   * Attempts to decode a stream of characters into a single value of type `A`, but may fail with
-   * a human-readable exception if the stream does not encode a value of this type.
+   * Attempts to decode a stream of characters into a single value of type `A`, but may fail with a human-readable
+   * exception if the stream does not encode a value of this type.
    *
    * Note: This method may not consume the full string.
    *
-   * @see also [[decodeJsonStreamInput]]
+   * @see
+   *   also [[decodeJsonStreamInput]]
    */
   final def decodeJsonStream[R](stream: ZStream[R, Throwable, Char]): ZIO[R, Throwable, A] =
     ZIO.scoped[R](stream.toReader.flatMap(readAll))

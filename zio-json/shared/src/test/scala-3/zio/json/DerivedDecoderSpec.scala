@@ -22,7 +22,7 @@ object DerivedDecoderSpec extends ZIOSpecDefault {
         case Qux
 
       val result = "\"Qux\"".fromJson[Foo]
-    
+
       assertTrue(result == Right(Foo.Qux))
     },
     test("Derives for a sum sealed trait Enumeration type") {
@@ -33,7 +33,7 @@ object DerivedDecoderSpec extends ZIOSpecDefault {
         case object Qux extends Foo
 
       val result = "\"Qux\"".fromJson[Foo]
-    
+
       assertTrue(result == Right(Foo.Qux))
     },
     test("Derives for a sum sealed trait Enumeration type with discriminator") {
@@ -45,7 +45,7 @@ object DerivedDecoderSpec extends ZIOSpecDefault {
         case object Qux extends Foo
 
       val result = """{"$type":"Qux"}""".fromJson[Foo]
-    
+
       assertTrue(result == Right(Foo.Qux))
     },
     test("Derives for a sum ADT type") {

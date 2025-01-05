@@ -15,7 +15,7 @@ private[json] object IsUnionOf:
 
   private def deriveImpl[T, A](using quotes: Quotes, t: Type[T], a: Type[A]): Expr[IsUnionOf[T, A]] =
     import quotes.reflect.*
-    val tpe: TypeRepr = TypeRepr.of[A]
+    val tpe: TypeRepr   = TypeRepr.of[A]
     val bound: TypeRepr = TypeRepr.of[T]
 
     def validateTypes(tpe: TypeRepr): Unit =

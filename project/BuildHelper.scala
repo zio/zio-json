@@ -1,16 +1,17 @@
-import explicitdeps.ExplicitDepsPlugin.autoImport._
-import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport._
-import sbt.Keys._
-import sbt._
-import sbtbuildinfo.BuildInfoKeys._
-import sbtbuildinfo._
-import sbtcrossproject.CrossPlugin.autoImport._
+import explicitdeps.ExplicitDepsPlugin.autoImport.*
+import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport.*
+import sbt.*
+import sbt.Keys.*
+import sbtbuildinfo.*
+import sbtbuildinfo.BuildInfoKeys.*
+import sbtcrossproject.CrossPlugin.autoImport.*
 
 object BuildHelper {
   private val versions: Map[String, String] = {
     import org.snakeyaml.engine.v2.api.{ Load, LoadSettings }
-    import java.util.{ List => JList, Map => JMap }
-    import scala.jdk.CollectionConverters._
+
+    import java.util.{ List as JList, Map as JMap }
+    import scala.jdk.CollectionConverters.*
 
     val doc = new Load(LoadSettings.builder().build())
       .loadFromReader(scala.io.Source.fromFile(".github/workflows/ci.yml").bufferedReader())
@@ -59,7 +60,7 @@ object BuildHelper {
 
   def buildInfoSettings(packageName: String) =
     Seq(
-      buildInfoKeys := Seq[BuildInfoKey](organization, moduleName, name, version, scalaVersion, sbtVersion, isSnapshot),
+      buildInfoKeys    := Seq[BuildInfoKey](organization, moduleName, name, version, scalaVersion, sbtVersion, isSnapshot),
       buildInfoPackage := packageName
     )
 
@@ -212,8 +213,8 @@ object BuildHelper {
   )
 
   def stdSettings(prjName: String) = Seq(
-    name := s"$prjName",
-    crossScalaVersions := Seq(Scala212, Scala213, ScalaDotty),
+    name                     := s"$prjName",
+    crossScalaVersions       := Seq(Scala212, Scala213, ScalaDotty),
     ThisBuild / scalaVersion := Scala213,
     scalacOptions ++= stdOptions ++ extraOptions(scalaVersion.value, optimize = !isSnapshot.value),
     libraryDependencies ++= {
@@ -230,7 +231,7 @@ object BuildHelper {
     },
     semanticdbEnabled := scalaVersion.value != ScalaDotty, // enable SemanticDB
     semanticdbOptions += "-P:semanticdb:synthetics:on",
-    semanticdbVersion := "4.10.2",
+    semanticdbVersion        := "4.10.2",
     Test / parallelExecution := true,
     incOptions ~= (_.withLogRecompileOnMacro(false)),
     autoAPIMappings := true,
@@ -274,8 +275,8 @@ object BuildHelper {
     )
 
   def nativeSettings = Seq(
-    Test / skip := true,
-    doc / skip := true,
+    Test / skip             := true,
+    doc / skip              := true,
     Compile / doc / sources := Seq.empty
   )
 

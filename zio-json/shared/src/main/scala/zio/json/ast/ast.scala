@@ -24,19 +24,15 @@ import zio.json.internal._
 import scala.annotation._
 
 /**
- * This AST of JSON is made available so that arbitrary JSON may be included as
- * part of a business object, it is not used as an intermediate representation,
- * unlike most other JSON libraries. It is not advised to `.map` or `.mapOrFail`
+ * This AST of JSON is made available so that arbitrary JSON may be included as part of a business object, it is not
+ * used as an intermediate representation, unlike most other JSON libraries. It is not advised to `.map` or `.mapOrFail`
  * from these decoders, since a higher performance decoder is often available.
  *
- * Beware of the potential for DOS attacks, since an attacker can provide much
- * more data than is perhaps needed.
+ * Beware of the potential for DOS attacks, since an attacker can provide much more data than is perhaps needed.
  *
- * Also beware of converting `Num` (a `BigDecimal`) into any other kind of
- * number, since many of the stdlib functions are non-total or are known DOS
- * vectors (e.g. calling `.toBigInteger` on a "1e214748364" will consume an
- * excessive amount of heap memory).
- * JsonValue / Json / JValue
+ * Also beware of converting `Num` (a `BigDecimal`) into any other kind of number, since many of the stdlib functions
+ * are non-total or are known DOS vectors (e.g. calling `.toBigInteger` on a "1e214748364" will consume an excessive
+ * amount of heap memory). JsonValue / Json / JValue
  */
 sealed abstract class Json { self =>
   final def as[A](implicit decoder: JsonDecoder[A]): Either[String, A] = decoder.fromJsonAST(self)
@@ -70,8 +66,10 @@ sealed abstract class Json { self =>
 
   /**
    * Deletes json node specified by given cursor
-   * @param cursor Cursor which specifies node to delete
-   * @return Json without specified node if node specified by cursor exists, error otherwise
+   * @param cursor
+   *   Cursor which specifies node to delete
+   * @return
+   *   Json without specified node if node specified by cursor exists, error otherwise
    */
   final def delete(cursor: JsonCursor[_, _]): Either[String, Json] = {
     val c = cursor.asInstanceOf[JsonCursor[_, Json]]
@@ -189,10 +187,11 @@ sealed abstract class Json { self =>
     }
 
   /**
-   * Intersects JSON values. If both values are `Obj` or `Arr` method returns intersections of its fields/elements, otherwise
-   * it returns error
+   * Intersects JSON values. If both values are `Obj` or `Arr` method returns intersections of its fields/elements,
+   * otherwise it returns error
    * @param that
-   * @return Intersected json if type are compatible, error otherwise
+   * @return
+   *   Intersected json if type are compatible, error otherwise
    */
   final def intersect(that: Json): Either[String, Json] =
     (self, that) match {
@@ -204,12 +203,12 @@ sealed abstract class Json { self =>
     }
 
   /**
-   * - merging objects results in a new objects with all pairs of both sides, with the right hand
-   *   side being used on key conflicts
+   *   - merging objects results in a new objects with all pairs of both sides, with the right hand side being used on
+   *     key conflicts
    *
-   * - merging arrays results in all of the individual elements being merged
+   *   - merging arrays results in all of the individual elements being merged
    *
-   * - scalar values will be replaced by the right hand side
+   *   - scalar values will be replaced by the right hand side
    */
   final def merge(that: Json): Json =
     (self, that) match {
@@ -221,10 +220,14 @@ sealed abstract class Json { self =>
   /**
    * Relocates Json node from location specified by `from` cursor to location specified by `to` cursor.
    *
-   * @param from Cursor which specifies node to relocate
-   * @return Json without specified node if node specified by cursor exists, error otherwise
-   * @param to Cursor which specifies location where to relocate node
-   * @return Json with relocated node if node specified by cursors exist, error otherwise
+   * @param from
+   *   Cursor which specifies node to relocate
+   * @return
+   *   Json without specified node if node specified by cursor exists, error otherwise
+   * @param to
+   *   Cursor which specifies location where to relocate node
+   * @return
+   *   Json with relocated node if node specified by cursors exist, error otherwise
    */
   final def relocate(from: JsonCursor[_, _], to: JsonCursor[_, _]): Either[String, Json] = {
     val f = from.asInstanceOf[JsonCursor[_, Json]]
@@ -234,10 +237,14 @@ sealed abstract class Json { self =>
 
   /**
    * Transforms json node specified by given cursor
-   * @param cursor Cursor which specifies node to transform
-   * @param f Function used to transform node
-   * @tparam A refined node type
-   * @return Json with transformed node if node specified by cursor exists, error otherwise
+   * @param cursor
+   *   Cursor which specifies node to transform
+   * @param f
+   *   Function used to transform node
+   * @tparam A
+   *   refined node type
+   * @return
+   *   Json with transformed node if node specified by cursor exists, error otherwise
    */
   final def transformAt[A <: Json](cursor: JsonCursor[_, A])(f: A => Json): Either[String, Json] =
     transformOrDelete(cursor, delete = false)(x => Right(f(x)))
