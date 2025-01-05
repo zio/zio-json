@@ -6,6 +6,8 @@ import sbtbuildinfo.BuildInfoKeys._
 import sbtbuildinfo._
 import sbtcrossproject.CrossPlugin.autoImport._
 
+import scala.scalanative.sbtplugin.ScalaNativePlugin.autoImport._
+
 object BuildHelper {
   private val versions: Map[String, String] = {
     import org.snakeyaml.engine.v2.api.{ Load, LoadSettings }
@@ -274,9 +276,16 @@ object BuildHelper {
     )
 
   def nativeSettings = Seq(
-    Test / skip := true,
-    doc / skip := true,
-    Compile / doc / sources := Seq.empty
+    nativeConfig ~= { cfg =>
+      import scala.scalanative.build.{ GC, Mode }
+
+      val os = System.getProperty("os.name").toLowerCase
+      // For some unknown reason, we can't run the test suites in debug mode on MacOS
+      if (os.contains("mac")) cfg.withMode(Mode.releaseFast)
+      else cfg.withGC(GC.boehm) // See https://github.com/scala-native/scala-native/issues/4032
+    },
+    scalacOptions += "-P:scalanative:genStaticForwardersForNonTopLevelObjects",
+    Test / fork := false
   )
 
   val scalaReflectTestSettings: List[Setting[_]] = List(

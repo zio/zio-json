@@ -250,12 +250,11 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform, NativePlatform)
       }
     }
   )
-  .nativeSettings(Test / fork := false)
+  .nativeSettings(nativeSettings)
   .nativeSettings(
     libraryDependencies ++= Seq(
       "io.github.cquiroz" %%% "scala-java-time" % scalaJavaTimeVersion
-    ),
-    nativeConfig ~= { _.withMultithreading(false) }
+    )
   )
   .enablePlugins(BuildInfoPlugin)
 
@@ -315,9 +314,8 @@ lazy val zioJsonMacros = crossProject(JSPlatform, JVMPlatform, NativePlatform)
       "dev.zio"      %%% "zio-test-sbt"  % zioVersion         % "test"
     ),
     testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework"),
-    nativeConfig ~= { _.withMultithreading(false) }
   )
-  .nativeSettings(Test / fork := false)
+  .nativeSettings(nativeSettings)
 
 lazy val zioJsonMacrosJVM = zioJsonMacros.jvm.dependsOn(zioJsonJVM)
 
