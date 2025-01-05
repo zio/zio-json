@@ -74,9 +74,9 @@ trait JsonEncoderPlatformSpecific[A] { self: JsonEncoder[A] =>
       }
     }
 
-  final val encodeJsonLinesPipeline: ZPipeline[Any, Throwable, A, Char] =
+  final lazy val encodeJsonLinesPipeline: ZPipeline[Any, Throwable, A, Char] =
     encodeJsonDelimitedPipeline(None, Some('\n'), None)
 
-  final val encodeJsonArrayPipeline: ZPipeline[Any, Throwable, A, Char] =
+  final lazy val encodeJsonArrayPipeline: ZPipeline[Any, Throwable, A, Char] =
     encodeJsonDelimitedPipeline(Some('['), Some(','), Some(']'))
 }
