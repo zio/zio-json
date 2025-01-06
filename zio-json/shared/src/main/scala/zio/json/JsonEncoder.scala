@@ -29,8 +29,8 @@ trait JsonEncoder[A] extends JsonEncoderPlatformSpecific[A] {
   self =>
 
   /**
-   * Returns a new encoder, with a new input type, which can be transformed to the old input type
-   * by the specified user-defined function.
+   * Returns a new encoder, with a new input type, which can be transformed to the old input type by the specified
+   * user-defined function.
    */
   final def contramap[B](f: B => A): JsonEncoder[B] = new JsonEncoder[B] {
 
@@ -46,25 +46,22 @@ trait JsonEncoder[A] extends JsonEncoderPlatformSpecific[A] {
   }
 
   /**
-   * Returns a new encoder that can accepts an `Either[A, B]` to either, and uses either this
-   * encoder or the specified encoder to encode the two different types of values.
+   * Returns a new encoder that can accepts an `Either[A, B]` to either, and uses either this encoder or the specified
+   * encoder to encode the two different types of values.
    */
   final def either[B](that: => JsonEncoder[B]): JsonEncoder[Either[A, B]] = JsonEncoder.either[A, B](self, that)
 
   /**
-   * Returns a new encoder that can accepts an `Either[A, B]` to either, and uses either this
-   * encoder or the specified encoder to encode the two different types of values.
-   * The difference with the classic `either` encoder is that the resulting JSON has no field
-   * `Left` or `Right`.
-   * What should be: `{"Right": "John Doe"}` is encoded as `"John Doe"`
+   * Returns a new encoder that can accepts an `Either[A, B]` to either, and uses either this encoder or the specified
+   * encoder to encode the two different types of values. The difference with the classic `either` encoder is that the
+   * resulting JSON has no field `Left` or `Right`. What should be: `{"Right": "John Doe"}` is encoded as `"John Doe"`
    */
   final def orElseEither[B](that: => JsonEncoder[B]): JsonEncoder[Either[A, B]] =
     JsonEncoder.orElseEither[A, B](self, that)
 
   /**
-   * Returns a new encoder with a new input type, which can be transformed to either the input
-   * type of this encoder, or the input type of the specified encoder, using the user-defined
-   * transformation function.
+   * Returns a new encoder with a new input type, which can be transformed to either the input type of this encoder, or
+   * the input type of the specified encoder, using the user-defined transformation function.
    */
   final def eitherWith[B, C](that: => JsonEncoder[B])(f: C => Either[A, B]): JsonEncoder[C] =
     self.either(that).contramap(f)
@@ -79,14 +76,12 @@ trait JsonEncoder[A] extends JsonEncoderPlatformSpecific[A] {
   }
 
   /**
-   * This default may be overridden when this value may be missing within a JSON object and still
-   * be encoded.
+   * This default may be overridden when this value may be missing within a JSON object and still be encoded.
    */
   def isNothing(a: A): Boolean = false
 
   /**
-   * This default may be overridden when this value may be empty within a JSON object and still
-   * be encoded.
+   * This default may be overridden when this value may be empty within a JSON object and still be encoded.
    */
   def isEmpty(a: A): Boolean = false
 
@@ -100,22 +95,20 @@ trait JsonEncoder[A] extends JsonEncoderPlatformSpecific[A] {
   /**
    * Converts a value to a Json AST
    *
-   * The default implementation encodes the value to a Json byte stream and
-   * uses decode to parse that back to an AST. Override to provide a more performant
-   * implementation.
+   * The default implementation encodes the value to a Json byte stream and uses decode to parse that back to an AST.
+   * Override to provide a more performant implementation.
    */
   def toJsonAST(a: A): Either[String, Json] = Json.decoder.decodeJson(encodeJson(a, None))
 
   /**
-   * Returns a new encoder that is capable of encoding a tuple containing the values of this
-   * encoder and the specified encoder.
+   * Returns a new encoder that is capable of encoding a tuple containing the values of this encoder and the specified
+   * encoder.
    */
   final def zip[B](that: => JsonEncoder[B]): JsonEncoder[(A, B)] = JsonEncoder.tuple2(self, that)
 
   /**
-   * Returns a new encoder that is capable of encoding a user-defined value, which is create from
-   * a tuple of the values of this encoder and the specified encoder, from the specified user-
-   * defined function.
+   * Returns a new encoder that is capable of encoding a user-defined value, which is create from a tuple of the values
+   * of this encoder and the specified encoder, from the specified user- defined function.
    */
   final def zipWith[B, C](that: => JsonEncoder[B])(f: C => (A, B)): JsonEncoder[C] = self.zip(that).contramap(f)
 }

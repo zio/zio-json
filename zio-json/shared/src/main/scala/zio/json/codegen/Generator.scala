@@ -16,8 +16,7 @@ import scala.util.Try
 object Generator {
 
   /**
-   * Renders the JSON string as a series of Scala case classes derived from the
-   * structure of the JSON.
+   * Renders the JSON string as a series of Scala case classes derived from the structure of the JSON.
    *
    * For example, the following JSON:
    *

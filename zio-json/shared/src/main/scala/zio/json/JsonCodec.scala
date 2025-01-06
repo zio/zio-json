@@ -20,20 +20,17 @@ import zio.{ Chunk, NonEmptyChunk }
 import scala.collection.immutable
 
 /**
- * A `JsonCodec[A]` instance has the ability to encode values of type `A` into JSON, together with
- * the ability to decode such JSON into values of type `A`.
+ * A `JsonCodec[A]` instance has the ability to encode values of type `A` into JSON, together with the ability to decode
+ * such JSON into values of type `A`.
  *
- * Instances of this trait should satisfy round-tripping laws: that is, for every value, instances
- * must be able to successfully encode the value into JSON, and then successfully decode the same
- * value from such JSON.
+ * Instances of this trait should satisfy round-tripping laws: that is, for every value, instances must be able to
+ * successfully encode the value into JSON, and then successfully decode the same value from such JSON.
  *
  * For more information, see [[JsonDecoder]] and [[JsonEncoder]].
  *
- * {{
- * val intCodec: JsonCodec[Int] = JsonCodec[Int]
+ * {{ val intCodec: JsonCodec[Int] = JsonCodec[Int]
  *
- * intCodec.encodeJson(intCodec.encodeJson(42)) == Right(42)
- * }}
+ * intCodec.encodeJson(intCodec.encodeJson(42)) == Right(42) }}
  */
 final case class JsonCodec[A](encoder: JsonEncoder[A], decoder: JsonDecoder[A]) { self =>
 

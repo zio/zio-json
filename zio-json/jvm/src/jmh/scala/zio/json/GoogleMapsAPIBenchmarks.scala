@@ -62,8 +62,8 @@ class GoogleMapsAPIBenchmarks {
 
   @Setup
   def setup(): Unit = {
-    //Distance Matrix API call for top-10 by population cities in US:
-    //https://maps.googleapis.com/maps/api/distancematrix/json?origins=New+York|Los+Angeles|Chicago|Houston|Phoenix+AZ|Philadelphia|San+Antonio|San+Diego|Dallas|San+Jose&destinations=New+York|Los+Angeles|Chicago|Houston|Phoenix+AZ|Philadelphia|San+Antonio|San+Diego|Dallas|San+Jose
+    // Distance Matrix API call for top-10 by population cities in US:
+    // https://maps.googleapis.com/maps/api/distancematrix/json?origins=New+York|Los+Angeles|Chicago|Houston|Phoenix+AZ|Philadelphia|San+Antonio|San+Diego|Dallas|San+Jose&destinations=New+York|Los+Angeles|Chicago|Houston|Phoenix+AZ|Philadelphia|San+Antonio|San+Diego|Dallas|San+Jose
     jsonString = getResourceAsString("google_maps_api_response.json")
     jsonChars = asChars(jsonString)
     jsonStringCompact = getResourceAsString(

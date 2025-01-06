@@ -1,7 +1,7 @@
 package zio.json.golden
 
 import java.io.{ File, IOException }
-import java.nio.file.{ Path }
+import java.nio.file.Path
 import zio.{ test => _, _ }
 import zio.json._
 

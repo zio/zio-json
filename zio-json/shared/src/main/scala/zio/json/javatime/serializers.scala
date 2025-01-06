@@ -57,9 +57,9 @@ private[json] object serializers {
     val epochDay =
       (if (epochSecond >= 0) epochSecond
        else epochSecond - 86399) / 86400 // 86400 == seconds per day
-    val secsOfDay    = (epochSecond - epochDay * 86400).toInt
-    var marchZeroDay = epochDay + 719468 // 719468 == 719528 - 60 == days 0000 to 1970 - days 1st Jan to 1st Mar
-    var adjustYear   = 0
+    val secsOfDay             = (epochSecond - epochDay * 86400).toInt
+    var marchZeroDay          = epochDay + 719468 // 719468 == 719528 - 60 == days 0000 to 1970 - days 1st Jan to 1st Mar
+    var adjustYear            = 0
     if (marchZeroDay < 0) { // adjust negative years to positive for calculation
       val adjust400YearCycles = to400YearCycle(marchZeroDay + 1) - 1
       adjustYear = adjust400YearCycles * 400

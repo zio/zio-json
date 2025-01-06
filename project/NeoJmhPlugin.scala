@@ -1,9 +1,8 @@
 package fommil
 
-import sbt._
-import sbt.Keys._
+import sbt.*
+import sbt.Keys.*
 
-import scala.collection.immutable.Set
 import scala.util.Try
 
 object NeoJmhKeys {
@@ -27,11 +26,10 @@ object NeoJmhKeys {
 }
 
 /**
- * https://github.com/ktoso/sbt-jmh/ rewritten as an idiomatic sbt
- * Configuration (not requiring a separate Project).
+ * https://github.com/ktoso/sbt-jmh/ rewritten as an idiomatic sbt Configuration (not requiring a separate Project).
  */
 object NeoJmhPlugin extends AutoPlugin {
-  import NeoJmhKeys._
+  import NeoJmhKeys.*
   val autoImport = NeoJmhKeys
 
   val JmhInternal = (config("jmh-internal") extend Test).hide
@@ -45,16 +43,16 @@ object NeoJmhPlugin extends AutoPlugin {
   override def projectConfigurations = Seq(Jmh, JmhInternal)
 
   override def buildSettings = Seq(
-    jmhVersion := "1.36",
+    jmhVersion       := "1.36",
     jmhExtrasVersion := "0.3.7"
   )
 
   override def projectSettings =
     inConfig(Jmh)(
       Defaults.testSettings ++ Seq(
-        run := (JmhInternal / run).evaluated,
+        run             := (JmhInternal / run).evaluated,
         neoJmhGenerator := "reflection",
-        neoJmhYourkit := Nil,
+        neoJmhYourkit   := Nil,
         javaOptions ++= Seq(
           "-XX:+PerfDisableSharedMem",
           "-XX:+AlwaysPreTouch",
@@ -71,10 +69,10 @@ object NeoJmhPlugin extends AutoPlugin {
       )
     ) ++ inConfig(JmhInternal)(
       Defaults.testSettings ++ Seq(
-        javaOptions := (Jmh / javaOptions).value,
-        envVars := (Jmh / envVars).value,
+        javaOptions     := (Jmh / javaOptions).value,
+        envVars         := (Jmh / envVars).value,
         run / mainClass := Some("org.openjdk.jmh.Main"),
-        run / fork := true,
+        run / fork      := true,
         dependencyClasspath ++= (Jmh / fullClasspath).value,
         sourceGenerators += generateJmhSourcesAndResources.map { case (sources, _) =>
           sources

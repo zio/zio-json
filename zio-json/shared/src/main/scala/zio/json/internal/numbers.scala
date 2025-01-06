@@ -21,28 +21,22 @@ import scala.util.control.NoStackTrace
 /**
  * Total, fast, number parsing.
  *
- * The Java and Scala standard libraries throw exceptions when we attempt to
- * parse an invalid number. Unfortunately, exceptions are very expensive, and
- * untrusted data can be maliciously constructed to DOS a server.
+ * The Java and Scala standard libraries throw exceptions when we attempt to parse an invalid number. Unfortunately,
+ * exceptions are very expensive, and untrusted data can be maliciously constructed to DOS a server.
  *
- * This suite of functions mitigates against such attacks by building up the
- * numbers one character at a time, which has been shown through extensive
- * benchmarking to be orders of magnitude faster than exception-throwing stdlib
- * parsers, for valid and invalid inputs. This approach, proposed by alexknvl,
- * was also benchmarked against regexp-based pre-validation.
+ * This suite of functions mitigates against such attacks by building up the numbers one character at a time, which has
+ * been shown through extensive benchmarking to be orders of magnitude faster than exception-throwing stdlib parsers,
+ * for valid and invalid inputs. This approach, proposed by alexknvl, was also benchmarked against regexp-based
+ * pre-validation.
  *
- * Note that although the behaviour is identical to the Java stdlib when given
- * the canonical form of a primitive (i.e. the .toString) of a number there may
- * be differences in behaviour for non-canonical forms. e.g. the Java stdlib
- * may reject "1.0" when parsed as an `BigInteger` but we may parse it as a
- * `1`, although "1.1" would be rejected. Parsing of `BigDecimal` preserves the
- * trailing zeros on the right but not on the left, e.g. "000.00001000" will be
- * "1.000e-5", which is useful in cases where the trailing zeros denote
- * measurement accuracy.
+ * Note that although the behaviour is identical to the Java stdlib when given the canonical form of a primitive (i.e.
+ * the .toString) of a number there may be differences in behaviour for non-canonical forms. e.g. the Java stdlib may
+ * reject "1.0" when parsed as an `BigInteger` but we may parse it as a `1`, although "1.1" would be rejected. Parsing
+ * of `BigDecimal` preserves the trailing zeros on the right but not on the left, e.g. "000.00001000" will be
+ * "1.000e-5", which is useful in cases where the trailing zeros denote measurement accuracy.
  *
- * `BigInteger`, `BigDecimal`, `Float` and `Double` have a configurable bit
- * limit on the size of the significand, to avoid OOM style attacks, which is
- * 128 bits by default.
+ * `BigInteger`, `BigDecimal`, `Float` and `Double` have a configurable bit limit on the size of the significand, to
+ * avoid OOM style attacks, which is 128 bits by default.
  *
  * Results are contained in a specialisation of Option that avoids boxing.
  */
@@ -186,7 +180,8 @@ object SafeNumbers {
           s.insert(dotOff, '.')
         } else s.append(dv).append('.').append('0')
       }
-    }.toString
+      s.toString
+    }
   }
 
   def toString(x: Float): String = {
@@ -280,7 +275,8 @@ object SafeNumbers {
           s.insert(dotOff, '.')
         } else s.append(dv).append('.').append('0')
       }
-    }.toString
+      s.toString
+    }
   }
 
   private[this] def rop(g1: Long, g0: Long, cp: Long): Long = {
