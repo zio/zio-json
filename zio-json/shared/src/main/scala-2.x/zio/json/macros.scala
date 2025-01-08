@@ -435,7 +435,7 @@ object DeriveJsonEncoder {
   def join[A](ctx: CaseClass[JsonEncoder, A])(implicit config: JsonCodecConfiguration): JsonEncoder[A] =
     if (ctx.parameters.isEmpty)
       new JsonEncoder[A] {
-        
+
         override def isEmpty(a: A): Boolean = true
 
         def unsafeEncode(a: A, indent: Option[Int], out: Write): Unit = out.write("{}")
@@ -531,7 +531,8 @@ object DeriveJsonEncoder {
                 param.typeclass.toJsonAST(param.dereference(a)).map { value =>
                   if (
                     (!writeNulls && value == Json.Null) ||
-                    (!writeEmptyCollections && (value.asArray.exists(_.isEmpty) || (value.asObject.exists(_.fields.isEmpty))))
+                    (!writeEmptyCollections && (value.asArray
+                      .exists(_.isEmpty) || (value.asObject.exists(_.fields.isEmpty))))
                   ) chunk
                   else chunk :+ name -> value
                 }
