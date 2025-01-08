@@ -214,6 +214,8 @@ object DeriveJsonDecoder {
 
     if (ctx.parameters.isEmpty)
       new JsonDecoder[A] {
+        override def unsafeDecodeMissing(trace: List[JsonError]): A = ctx.rawConstruct(Nil)
+
         def unsafeDecode(trace: List[JsonError], in: RetractReader): A = {
           if (no_extra) {
             Lexer.char(trace, in, '{')
@@ -433,6 +435,9 @@ object DeriveJsonEncoder {
   def join[A](ctx: CaseClass[JsonEncoder, A])(implicit config: JsonCodecConfiguration): JsonEncoder[A] =
     if (ctx.parameters.isEmpty)
       new JsonEncoder[A] {
+        
+        override def isEmpty(a: A): Boolean = true
+
         def unsafeEncode(a: A, indent: Option[Int], out: Write): Unit = out.write("{}")
 
         override final def toJsonAST(a: A): Either[String, Json] =
@@ -525,8 +530,8 @@ object DeriveJsonEncoder {
               c.flatMap { chunk =>
                 param.typeclass.toJsonAST(param.dereference(a)).map { value =>
                   if (
-                    (value == Json.Null && !writeNulls) ||
-                    (value.asObject.exists(_.fields.isEmpty) && !writeEmptyCollections)
+                    (!writeNulls && value == Json.Null) ||
+                    (!writeEmptyCollections && (value.asArray.exists(_.isEmpty) || (value.asObject.exists(_.fields.isEmpty))))
                   ) chunk
                   else chunk :+ name -> value
                 }

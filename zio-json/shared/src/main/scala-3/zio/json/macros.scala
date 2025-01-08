@@ -223,6 +223,8 @@ private class CaseObjectDecoder[Typeclass[*], A](val ctx: CaseClass[Typeclass, A
     ctx.rawConstruct(Nil)
   }
 
+  override def unsafeDecodeMissing(trace: List[JsonError]): A = ctx.rawConstruct(Nil)
+
   override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): A =
     json match {
       case Json.Obj(_) => ctx.rawConstruct(Nil)
@@ -470,6 +472,9 @@ sealed class JsonDecoderDerivation(config: JsonCodecConfiguration) extends Deriv
 }
 
 private lazy val caseObjectEncoder = new JsonEncoder[Any] {
+
+  override def isEmpty(a: Any): Boolean = true
+
   def unsafeEncode(a: Any, indent: Option[Int], out: Write): Unit =
     out.write("{}")
 
@@ -572,8 +577,8 @@ sealed class JsonEncoderDerivation(config: JsonCodecConfiguration) extends Deriv
               c.flatMap { chunk =>
                 param.typeclass.toJsonAST(param.deref(a)).map { value =>
                   if (
-                    (value == Json.Null && !writeNulls) ||
-                    (value.asObject.exists(_.fields.isEmpty) && !writeEmptyCollections)
+                    (!writeNulls && value == Json.Null) ||
+                    (!writeEmptyCollections && (value.asArray.exists(_.isEmpty) || (value.asObject.exists(_.fields.isEmpty))))
                   ) chunk
                   else chunk :+ name -> value
                 }

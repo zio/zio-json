@@ -164,7 +164,7 @@ object AnnotationsCodecSpec extends ZIOSpecDefault {
           @jsonExplicitEmptyCollection(false)
           case class EmptySeq(a: Seq[Int])
 
-          val jsonAST     = Json.Obj("a" -> Json.Arr())
+          val jsonAST     = Json.Obj()
           val expectedObj = EmptySeq(Seq.empty)
 
           implicit val codec: JsonCodec[EmptySeq] = DeriveJsonCodec.gen

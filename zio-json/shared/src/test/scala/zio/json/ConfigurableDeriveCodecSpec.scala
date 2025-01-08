@@ -122,12 +122,14 @@ object ConfigurableDeriveCodecSpec extends ZIOSpecDefault {
           )
         },
         test("write empty collections by default") {
-          case class EmptySeq(a: Seq[Int])
+          case class Empty()
+          case class EmptySeq(a: Seq[Int], b: Empty)
 
-          val jsonAST     = Json.Obj("a" -> Json.Arr())
-          val expectedObj = EmptySeq(Seq.empty)
+          val jsonAST     = Json.Obj("a" -> Json.Arr(), "b" -> Json.Obj())
+          val expectedObj = EmptySeq(Seq.empty, Empty())
 
-          implicit val codec: JsonCodec[EmptySeq] = DeriveJsonCodec.gen
+          implicit val emptyCodec: JsonCodec[Empty] = DeriveJsonCodec.gen
+          implicit val codec: JsonCodec[EmptySeq]   = DeriveJsonCodec.gen
 
           assertTrue(
             jsonAST.as[EmptySeq].toOption.get == expectedObj,
@@ -202,14 +204,16 @@ object ConfigurableDeriveCodecSpec extends ZIOSpecDefault {
           )
         },
         test("do not write empty collections") {
-          case class EmptySeq(a: Seq[Int])
+          case class Empty()
+          case class EmptySeq(a: Seq[Int], b: Empty)
 
           val expectedStr = """{}"""
-          val expectedObj = EmptySeq(Seq.empty)
+          val expectedObj = EmptySeq(Seq.empty, Empty())
 
           implicit val config: JsonCodecConfiguration =
             JsonCodecConfiguration(explicitEmptyCollections = false)
-          implicit val codec: JsonCodec[EmptySeq] = DeriveJsonCodec.gen
+          implicit val emptyCodec: JsonCodec[Empty] = DeriveJsonCodec.gen
+          implicit val codec: JsonCodec[EmptySeq]   = DeriveJsonCodec.gen
 
           assertTrue(expectedStr.fromJson[EmptySeq].toOption.get == expectedObj, expectedObj.toJson == expectedStr)
         }
@@ -263,14 +267,16 @@ object ConfigurableDeriveCodecSpec extends ZIOSpecDefault {
           assertTrue(jsonAST.as[OptionalField].toOption.get == expectedObj, expectedObj.toJsonAST == Right(jsonAST))
         },
         test("do not write empty collections") {
-          case class EmptySeq(a: Seq[Int])
+          case class Empty()
+          case class EmptySeq(a: Seq[Int], b: Empty)
 
-          val jsonAST     = Json.Obj("a" -> Json.Arr())
-          val expectedObj = EmptySeq(Seq.empty)
+          val jsonAST     = Json.Obj()
+          val expectedObj = EmptySeq(Seq.empty, Empty())
 
           implicit val config: JsonCodecConfiguration =
             JsonCodecConfiguration(explicitEmptyCollections = false)
-          implicit val codec: JsonCodec[EmptySeq] = DeriveJsonCodec.gen
+          implicit val emptyCodec: JsonCodec[Empty] = DeriveJsonCodec.gen
+          implicit val codec: JsonCodec[EmptySeq]   = DeriveJsonCodec.gen
 
           assertTrue(jsonAST.as[EmptySeq].toOption.get == expectedObj, expectedObj.toJsonAST == Right(jsonAST))
         }
