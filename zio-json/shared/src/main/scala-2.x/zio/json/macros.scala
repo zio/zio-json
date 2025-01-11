@@ -270,6 +270,9 @@ object DeriveJsonDecoder {
         lazy val namesMap: Map[String, Int] =
           (names.zipWithIndex ++ aliases).toMap
 
+        private[this] def error(message: String, trace: List[JsonError]): Nothing =
+          throw UnsafeJson(JsonError.Message(message) :: trace)
+
         def unsafeDecode(trace: List[JsonError], in: RetractReader): A = {
           Lexer.char(trace, in, '{')
 
@@ -280,36 +283,31 @@ object DeriveJsonDecoder {
           // of noting that things have been initialised), which can be called
           // to instantiate the case class. Would also require JsonDecoder to be
           // specialised.
-          val ps: Array[Any] = Array.ofDim(len)
-
+          val ps = new Array[Any](len)
           if (Lexer.firstField(trace, in))
             do {
-              var trace_ = trace
-              val field  = Lexer.field(trace, in, matrix)
+              val field = Lexer.field(trace, in, matrix)
               if (field != -1) {
-                trace_ = spans(field) :: trace
-                if (ps(field) != null)
-                  throw UnsafeJson(JsonError.Message("duplicate") :: trace)
-                if (defaults(field).isDefined) {
-                  val opt = JsonDecoder.option(tcs(field)).unsafeDecode(trace_, in)
-                  ps(field) = opt.getOrElse(defaults(field).get)
-                } else
-                  ps(field) = tcs(field).unsafeDecode(trace_, in)
-              } else if (no_extra) {
-                throw UnsafeJson(
-                  JsonError.Message(s"invalid extra field") :: trace
-                )
-              } else
-                Lexer.skipValue(trace_, in)
+                if (ps(field) != null) error("duplicate", trace)
+                val default = defaults(field)
+                ps(field) =
+                  if (
+                    (default eq None) || in.nextNonWhitespace() != 'n' && {
+                      in.retract()
+                      true
+                    }
+                  ) tcs(field).unsafeDecode(spans(field) :: trace, in)
+                  else if (in.readChar() == 'u' && in.readChar() == 'l' && in.readChar() == 'l') default.get
+                  else error("expected 'null'", spans(field) :: trace)
+              } else if (no_extra) error("invalid extra field", trace)
+              else Lexer.skipValue(trace, in)
             } while (Lexer.nextField(trace, in))
-
           var i = 0
           while (i < len) {
             if (ps(i) == null) {
-              if (defaults(i).isDefined)
-                ps(i) = defaults(i).get
-              else
-                ps(i) = tcs(i).unsafeDecodeMissing(spans(i) :: trace)
+              ps(i) =
+                if (defaults(i) ne None) defaults(i).get
+                else tcs(i).unsafeDecodeMissing(spans(i) :: trace)
             }
             i += 1
           }
@@ -320,51 +318,30 @@ object DeriveJsonDecoder {
         override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): A =
           json match {
             case Json.Obj(fields) =>
-              val ps: Array[Any] = Array.ofDim(len)
-
-              if (aliases.nonEmpty) {
-                val present = fields.map { case (key, _) => namesMap(key) }
-                if (present.distinct.size != present.size) {
-                  throw UnsafeJson(
-                    JsonError.Message("duplicate") :: trace
-                  )
-                }
-              }
-
+              val ps = new Array[Any](len)
               for ((key, value) <- fields) {
                 namesMap.get(key) match {
                   case Some(field) =>
-                    val trace_ = JsonError.ObjectAccess(key) :: trace
-                    if (defaults(field).isDefined) {
-                      val opt = JsonDecoder.option(tcs(field)).unsafeFromJsonAST(trace_, value)
-                      ps(field) = opt.getOrElse(defaults(field).get)
-                    } else {
-                      ps(field) = tcs(field).unsafeFromJsonAST(trace_, value)
+                    if (ps(field) != null) error("duplicate", trace)
+                    ps(field) = {
+                      if ((value eq Json.Null) && (defaults(field) ne None)) defaults(field).get
+                      else tcs(field).unsafeFromJsonAST(spans(field) :: trace, value)
                     }
-                  case None =>
-                    if (no_extra) {
-                      throw UnsafeJson(
-                        JsonError.Message(s"invalid extra field") :: trace
-                      )
-                    }
+                  case _ =>
+                    if (no_extra) error("invalid extra field", trace)
                 }
               }
-
               var i = 0
               while (i < len) {
                 if (ps(i) == null) {
-                  if (defaults(i).isDefined) {
-                    ps(i) = defaults(i).get
-                  } else {
-                    ps(i) = tcs(i).unsafeDecodeMissing(JsonError.ObjectAccess(names(i)) :: trace)
-                  }
+                  ps(i) =
+                    if (defaults(i) ne None) defaults(i).get
+                    else tcs(i).unsafeDecodeMissing(spans(i) :: trace)
                 }
                 i += 1
               }
-
               ctx.rawConstruct(new ArraySeq(ps))
-
-            case _ => throw UnsafeJson(JsonError.Message("Not an object") :: trace)
+            case _ => error("Not an object", trace)
           }
       }
   }

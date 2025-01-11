@@ -347,26 +347,23 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority1 with 
   // use a newtype wrapper.
   implicit def option[A](implicit A: JsonDecoder[A]): JsonDecoder[Option[A]] =
     new JsonDecoder[Option[A]] { self =>
-      private[this] val ull: Array[Char] = "ull".toCharArray
-
-      override def unsafeDecodeMissing(trace: List[JsonError]): Option[A] =
-        Option.empty
+      override def unsafeDecodeMissing(trace: List[JsonError]): Option[A] = None
 
       def unsafeDecode(trace: List[JsonError], in: RetractReader): Option[A] =
-        (in.nextNonWhitespace(): @switch) match {
-          case 'n' =>
-            Lexer.readChars(trace, in, ull, "null")
-            None
-          case _ =>
-            in.retract()
-            Some(A.unsafeDecode(trace, in))
+        if (in.nextNonWhitespace() == 'n') {
+          if (in.readChar() != 'u' || in.readChar() != 'l' || in.readChar() != 'l') error(trace)
+          None
+        } else {
+          in.retract()
+          new Some(A.unsafeDecode(trace, in))
         }
 
       override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): Option[A] =
-        json match {
-          case Json.Null => None
-          case _         => Some(A.unsafeFromJsonAST(trace, json))
-        }
+        if (json eq Json.Null) None
+        else new Some(A.unsafeFromJsonAST(trace, json))
+
+      private[this] def error(trace: List[JsonError]): Option[A] =
+        throw UnsafeJson(JsonError.Message("expected 'null'") :: trace)
     }
 
   // supports multiple representations for compatibility with other libraries,
