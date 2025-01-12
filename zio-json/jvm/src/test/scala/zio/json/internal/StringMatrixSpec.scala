@@ -7,7 +7,7 @@ import zio.test._
 object StringMatrixSpec extends ZIOSpecDefault {
   val spec: Spec[Environment, Any] = suite("StringMatrix")(
     test("basic positive succeeds") {
-      val names   = List("a", "b")
+      val names   = List("\uD83D\uDE00" /* a surrogate pair for the grinning face */, "a", "b")
       val aliases = List("c" -> 0, "d" -> 1)
       val asserts =
         names.map(s => matcher(names, aliases, s).contains(s)) ++

@@ -426,7 +426,7 @@ final class StringMatrix(val xs: Array[String], aliases: Array[(String, Int)] = 
       val len       = s.length
       var char: Int = 0
       while (char < len) {
-        m(width * char + string) = s.codePointAt(char)
+        m(width * char + string) = s.charAt(char)
         char += 1
       }
       string += 1
