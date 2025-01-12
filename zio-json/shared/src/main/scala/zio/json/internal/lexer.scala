@@ -15,7 +15,7 @@
  */
 package zio.json.internal
 
-import zio.json.JsonDecoder.{JsonError, UnsafeJson, int}
+import zio.json.JsonDecoder.{ JsonError, UnsafeJson, int }
 
 import scala.annotation._
 
@@ -416,10 +416,9 @@ final class StringMatrix(val xs: Array[String], aliases: Array[(String, Int)] = 
 
   require(width <= 64)
 
-  val lengths: Array[Int] = Array.tabulate[Int](width) {
-    string =>
-      if (string < xs.length) xs(string).length
-      else aliases(string - xs.length)._1.length
+  val lengths: Array[Int] = Array.tabulate[Int](width) { string =>
+    if (string < xs.length) xs(string).length
+    else aliases(string - xs.length)._1.length
   }
   val height: Int   = lengths.max
   val initial: Long = -1L >>> (64 - width)
@@ -440,10 +439,9 @@ final class StringMatrix(val xs: Array[String], aliases: Array[(String, Int)] = 
     }
     m
   }
-  private val resolve: Array[Int] = Array.tabulate[Int](width) {
-    string =>
-      if (string < xs.length) string
-      else aliases(string - xs.length)._2
+  private val resolve: Array[Int] = Array.tabulate[Int](width) { string =>
+    if (string < xs.length) string
+    else aliases(string - xs.length)._2
   }
 
   // must be called with increasing `char` (starting with bitset obtained from a
