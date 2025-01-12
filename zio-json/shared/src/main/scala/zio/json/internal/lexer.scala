@@ -409,7 +409,7 @@ private final class EscapedString(trace: List[JsonError], in: OneCharReader) ext
 final class StringMatrix(val xs: Array[String], aliases: Array[(String, Int)] = Array.empty) {
   require(xs.forall(_.nonEmpty))
   require(xs.nonEmpty)
-  require(xs.length + aliases.length < 64)
+  require(xs.length + aliases.length <= 64)
   require(aliases.forall(_._1.nonEmpty))
   require(aliases.forall(p => p._2 >= 0 && p._2 < xs.length))
 

@@ -115,15 +115,15 @@ object StringMatrixSpec extends ZIOSpecDefault {
 
   val genTestStrings =
     for {
-      n  <- Gen.int(1, 63)
+      n  <- Gen.int(1, 64)
       xs <- Gen.setOfN(n)(genNonEmptyString)
     } yield xs.toList
 
   val genTestStringsAndAliases =
     for {
-      xsn    <- Gen.int(1, 63)
+      xsn    <- Gen.int(1, 64)
       xs     <- Gen.setOfN(xsn)(genNonEmptyString)
-      an     <- Gen.int(0, 63 - xsn)
+      an     <- Gen.int(0, 64 - xsn)
       aliasF <- Gen.setOfN(an)(genNonEmptyString.filter(a => !xs.contains(a))).map(_.toList)
       aliasN <- Gen.listOfN(an)(Gen.int(0, xsn - 1))
     } yield (xs.toList, aliasF zip aliasN)
