@@ -15,7 +15,7 @@
  */
 package zio.json.internal
 
-import zio.json.JsonDecoder.{ JsonError, UnsafeJson, int }
+import zio.json.JsonDecoder.{ JsonError, UnsafeJson }
 
 import scala.annotation._
 
