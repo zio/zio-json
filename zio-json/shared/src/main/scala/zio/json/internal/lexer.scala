@@ -439,9 +439,9 @@ final class StringMatrix(val xs: Array[String], aliases: Array[(String, Int)] = 
     }
     m
   }
-  private val resolve: Array[Int] = Array.tabulate[Int](width) { string =>
-    if (string < xs.length) string
-    else aliases(string - xs.length)._2
+  private val resolve: Array[Byte] = Array.tabulate[Byte](width) { string =>
+    if (string < xs.length) string.toByte
+    else aliases(string - xs.length)._2.toByte
   }
 
   // must be called with increasing `char` (starting with bitset obtained from a
