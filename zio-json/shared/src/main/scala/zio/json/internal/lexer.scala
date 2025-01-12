@@ -15,7 +15,7 @@
  */
 package zio.json.internal
 
-import zio.json.JsonDecoder.{ JsonError, UnsafeJson }
+import zio.json.JsonDecoder.{JsonError, UnsafeJson, int}
 
 import scala.annotation._
 
@@ -409,22 +409,29 @@ private final class EscapedString(trace: List[JsonError], in: OneCharReader) ext
 final class StringMatrix(val xs: Array[String], aliases: Array[(String, Int)] = Array.empty) {
   require(xs.forall(_.nonEmpty))
   require(xs.nonEmpty)
-  require(xs.length + aliases.length <= 64)
   require(aliases.forall(_._1.nonEmpty))
   require(aliases.forall(p => p._2 >= 0 && p._2 < xs.length))
 
-  val width               = xs.length + aliases.length
-  val height: Int         = xs.map(_.length).max max (if (aliases.isEmpty) 0 else aliases.map(_._1.length).max)
-  val lengths: Array[Int] = xs.map(_.length) ++ aliases.map(_._1.length)
-  val initial: Long       = (0 until width).foldLeft(0L)((bs, r) => bs | (1L << r))
+  val width: Int = xs.length + aliases.length
 
+  require(width <= 64)
+
+  val lengths: Array[Int] = Array.tabulate[Int](width) {
+    string =>
+      if (string < xs.length) xs(string).length
+      else aliases(string - xs.length)._1.length
+  }
+  val height: Int   = lengths.max
+  val initial: Long = -1L >>> (64 - width)
   private val matrix: Array[Char] = {
-    val m           = Array.fill[Char](width * height)(0xFFFF)
-    var string: Int = 0
+    val m      = Array.fill[Char](width * height)(0xffff)
+    var string = 0
     while (string < width) {
-      val s         = if (string < xs.length) xs(string) else aliases(string - xs.length)._1
-      val len       = s.length
-      var char: Int = 0
+      val s =
+        if (string < xs.length) xs(string)
+        else aliases(string - xs.length)._1
+      val len  = s.length
+      var char = 0
       while (char < len) {
         m(width * char + string) = s.charAt(char)
         char += 1
@@ -433,11 +440,10 @@ final class StringMatrix(val xs: Array[String], aliases: Array[(String, Int)] = 
     }
     m
   }
-
-  private val resolve: Array[Int] = {
-    val r = Array.tabulate[Int](xs.length + aliases.length)(identity)
-    aliases.zipWithIndex.foreach { case ((_, pi), i) => r(xs.length + i) = pi }
-    r
+  private val resolve: Array[Int] = Array.tabulate[Int](width) {
+    string =>
+      if (string < xs.length) string
+      else aliases(string - xs.length)._2
   }
 
   // must be called with increasing `char` (starting with bitset obtained from a
@@ -446,27 +452,23 @@ final class StringMatrix(val xs: Array[String], aliases: Array[(String, Int)] = 
     if (char >= height) 0L    // too long
     else if (bitset == 0L) 0L // everybody lost
     else {
-      var latest: Long = bitset
-      val base: Int    = width * char
-
+      var latest = bitset
+      val base   = width * char
       if (bitset == initial) { // special case when it is dense since it is simple
-        var string: Int = 0
+        var string = 0
         while (string < width) {
-          if (matrix(base + string) != c)
-            latest = latest ^ (1L << string)
+          if (matrix(base + string) != c) latest ^= 1L << string
           string += 1
         }
       } else {
-        var remaining: Long = bitset
+        var remaining = bitset
         while (remaining != 0L) {
-          val string: Int = java.lang.Long.numberOfTrailingZeros(remaining)
-          val bit: Long   = 1L << string
-          if (matrix(base + string) != c)
-            latest = latest ^ bit
-          remaining = remaining ^ bit
+          val string = java.lang.Long.numberOfTrailingZeros(remaining)
+          val bit    = 1L << string
+          if (matrix(base + string) != c) latest ^= bit
+          remaining ^= bit
         }
       }
-
       latest
     }
 
@@ -474,14 +476,13 @@ final class StringMatrix(val xs: Array[String], aliases: Array[(String, Int)] = 
   def exact(bitset: Long, length: Int): Long =
     if (length > height) 0L // too long
     else {
-      var latest: Long    = bitset
-      var remaining: Long = bitset
+      var latest    = bitset
+      var remaining = bitset
       while (remaining != 0L) {
-        val string: Int = java.lang.Long.numberOfTrailingZeros(remaining)
-        val bit: Long   = 1L << string
-        if (lengths(string) != length)
-          latest = latest ^ bit
-        remaining = remaining ^ bit
+        val string = java.lang.Long.numberOfTrailingZeros(remaining)
+        val bit    = 1L << string
+        if (lengths(string) != length) latest ^= bit
+        remaining ^= bit
       }
       latest
     }
