@@ -205,9 +205,7 @@ sealed abstract class Json { self =>
   /**
    *   - merging objects results in a new objects with all pairs of both sides, with the right hand side being used on
    *     key conflicts
-   *
    *   - merging arrays results in all of the individual elements being merged
-   *
    *   - scalar values will be replaced by the right hand side
    */
   final def merge(that: Json): Json =

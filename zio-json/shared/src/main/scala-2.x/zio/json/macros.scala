@@ -638,7 +638,8 @@ private[this] final class NestedWriter(out: Write, indent: Option[Int]) extends 
       var i = 0
       while (i < s.length) {
         val c = s.charAt(i)
-        if (c == ' ' || c == '\n') {} else if (first && c == '{') {
+        if (c == ' ' || c == '\n') {}
+        else if (first && c == '{') {
           first = false
         } else if (second) {
           second = false

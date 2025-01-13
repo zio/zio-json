@@ -3,8 +3,8 @@ val ZioJsonVersion = "0.1.3+8-6eb41b5a-SNAPSHOT"
 
 lazy val zioJsonHttp4sExample = (project in file("."))
   .settings(
-    name := "zio-json-http4s-example",
-    version := "1.0",
+    name         := "zio-json-http4s-example",
+    version      := "1.0",
     scalaVersion := "2.13.5",
     scalacOptions ++= Seq("-Xlint:_"),
     // Only required when using a zio-json snapshot
