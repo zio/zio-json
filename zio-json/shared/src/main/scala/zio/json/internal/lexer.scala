@@ -103,32 +103,17 @@ object Lexer {
     matrix.first(bs)
   }
 
-  private[this] val ull: Array[Char]  = "ull".toCharArray
   private[this] val alse: Array[Char] = "alse".toCharArray
   private[this] val rue: Array[Char]  = "rue".toCharArray
 
   def skipValue(trace: List[JsonError], in: RetractReader): Unit =
     (in.nextNonWhitespace(): @switch) match {
-      case 'n' => readChars(trace, in, ull, "null")
-      case 'f' => readChars(trace, in, alse, "false")
-      case 't' => readChars(trace, in, rue, "true")
-      case '{' =>
-        if (firstField(trace, in)) {
-          while ({
-            {
-              char(trace, in, '"')
-              skipString(trace, in)
-              char(trace, in, ':')
-              skipValue(trace, in)
-            }; nextField(trace, in)
-          }) ()
-        }
-      case '[' =>
-        if (firstArrayElement(in)) {
-          while ({ skipValue(trace, in); nextArrayElement(trace, in) }) ()
-        }
+      case 'n' | 't' => skipFixedChars(in, 3)
+      case 'f'       => skipFixedChars(in, 4)
+      case '{'       => skipObject(in, 0)
+      case '['       => skipArray(in, 0)
       case '"' =>
-        skipString(trace, in)
+        skipString(in, evenBackSlashes = true)
       case '-' | '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' =>
         skipNumber(in)
       case c => throw UnsafeJson(JsonError.Message(s"unexpected '$c'") :: trace)
@@ -139,10 +124,43 @@ object Lexer {
     in.retract()
   }
 
-  def skipString(trace: List[JsonError], in: OneCharReader): Unit = {
-    val stream = new EscapedString(trace, in)
-    var i: Int = 0
-    while ({ i = stream.read(); i != -1 }) ()
+  def skipString(trace: List[JsonError], in: OneCharReader): Unit =
+    skipString(in, evenBackSlashes = true)
+
+  @tailrec
+  private def skipFixedChars(in: OneCharReader, n: Int): Unit =
+    if (n > 0) {
+      in.readChar()
+      skipFixedChars(in, n - 1)
+    }
+
+  @tailrec
+  private def skipString(in: OneCharReader, evenBackSlashes: Boolean): Unit =
+    if (evenBackSlashes) {
+      val ch = in.readChar()
+      if (ch != '"') skipString(in, ch != '\\')
+    } else skipString(in, evenBackSlashes = true)
+
+  @tailrec
+  private def skipObject(in: OneCharReader, level: Int): Unit = {
+    val ch = in.readChar()
+    if (ch == '"') {
+      skipString(in, evenBackSlashes = true)
+      skipObject(in, level)
+    } else if (ch == '{') skipObject(in, level + 1)
+    else if (ch != '}') skipObject(in, level)
+    else if (level != 0) skipObject(in, level - 1)
+  }
+
+  @tailrec
+  private def skipArray(in: OneCharReader, level: Int): Unit = {
+    val b = in.readChar()
+    if (b == '"') {
+      skipString(in, evenBackSlashes = true)
+      skipArray(in, level)
+    } else if (b == '[') skipArray(in, level + 1)
+    else if (b != ']') skipArray(in, level)
+    else if (level != 0) skipArray(in, level - 1)
   }
 
   // useful for embedded documents, e.g. CSV contained inside JSON
