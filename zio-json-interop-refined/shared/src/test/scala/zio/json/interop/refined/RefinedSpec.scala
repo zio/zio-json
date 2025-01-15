@@ -1,8 +1,8 @@
 package zio.json.interop.refined
 
 import eu.timepit.refined.api.Refined
-import eu.timepit.refined.auto._
 import eu.timepit.refined.collection.NonEmpty
+import eu.timepit.refined.types.string.NonEmptyString
 import zio.json._
 import zio.test.Assertion._
 import zio.test._
@@ -11,9 +11,11 @@ object RefinedSpec extends ZIOSpecDefault {
   val spec: Spec[Environment, Any] =
     suite("Refined")(
       test("Refined") {
+        val person = Person(NonEmptyString.unsafeFrom("fommil"))
+        val validJson = """{"name":"fommil"}"""
         assert("""{"name":""}""".fromJson[Person])(isLeft(equalTo(".name(Predicate isEmpty() did not fail.)"))) &&
-        assert("""{"name":"fommil"}""".fromJson[Person])(isRight(equalTo(Person("fommil")))) &&
-        assert(Person("fommil").toJson)(equalTo("""{"name":"fommil"}"""))
+        assert(validJson.fromJson[Person])(isRight(equalTo(person))) &&
+        assert(person.toJson)(equalTo(validJson))
       }
     )
 
