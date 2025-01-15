@@ -3,7 +3,6 @@ package zio.json.data.googlemaps
 import com.github.ghik.silencer.silent
 import com.github.plokhotnyuk.jsoniter_scala.macros.named
 import io.circe
-import play.api.libs.{ json => Play }
 import zio.json._
 
 final case class Value(
@@ -34,27 +33,6 @@ object Value {
     circe.generic.extras.semiauto.deriveConfiguredDecoder[Value]
   implicit val circeEncoder: circe.Encoder[Value] =
     circe.generic.extras.semiauto.deriveConfiguredEncoder[Value]
-
-  // play macros don't support custom field
-  // implicit val playJsonDecoder: Play.Reads[Value] = Play.Json.reads[Value]
-
-  implicit val playJsonDecoder: Play.Reads[Value] = {
-    import play.api.libs.functional.syntax._
-    import play.api.libs.json.Reads._
-    import play.api.libs.json._
-
-    ((JsPath \ "text").read[String].and((JsPath \ "value").read[Int]))(
-      Value.apply _
-    )
-  }
-  implicit val playEncoder: Play.Writes[Value] = {
-    import play.api.libs.functional.syntax._
-    import play.api.libs.json.Writes._
-    import play.api.libs.json._
-
-    ((JsPath \ "text").write[String].and((JsPath \ "value").write[Int]))(unlift(Value.unapply))
-  }
-
 }
 @silent("Block result was adapted via implicit conversion")
 object Elements {
@@ -67,10 +45,6 @@ object Elements {
     circe.generic.extras.semiauto.deriveConfiguredDecoder[Elements]
   implicit val circeEncoder: circe.Encoder[Elements] =
     circe.generic.extras.semiauto.deriveConfiguredEncoder[Elements]
-
-  implicit val playJsonDecoder: Play.Reads[Elements] = Play.Json.reads[Elements]
-  implicit val playEncoder: Play.Writes[Elements]    = Play.Json.writes[Elements]
-
 }
 @silent("Block result was adapted via implicit conversion")
 object Rows {
@@ -83,10 +57,6 @@ object Rows {
     circe.generic.extras.semiauto.deriveConfiguredDecoder[Rows]
   implicit val circeEncoder: circe.Encoder[Rows] =
     circe.generic.extras.semiauto.deriveConfiguredEncoder[Rows]
-
-  implicit val playJsonDecoder: Play.Reads[Rows] = Play.Json.reads[Rows]
-  implicit val playEncoder: Play.Writes[Rows]    = Play.Json.writes[Rows]
-
 }
 @silent("Block result was adapted via implicit conversion")
 object DistanceMatrix {
@@ -101,10 +71,4 @@ object DistanceMatrix {
     circe.generic.extras.semiauto.deriveConfiguredDecoder[DistanceMatrix]
   implicit val circeEncoder: circe.Encoder[DistanceMatrix] =
     circe.generic.extras.semiauto.deriveConfiguredEncoder[DistanceMatrix]
-
-  implicit val playJsonDecoder: Play.Reads[DistanceMatrix] =
-    Play.Json.reads[DistanceMatrix]
-  implicit val playEncoder: Play.Writes[DistanceMatrix] =
-    Play.Json.writes[DistanceMatrix]
-
 }

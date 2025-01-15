@@ -112,7 +112,8 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform, NativePlatform)
       "dev.zio"                %%% "zio-test-sbt"            % zioVersion   % "test",
       "io.circe"               %%% "circe-core"              % circeVersion % "test",
       "io.circe"               %%% "circe-generic"           % circeVersion % "test",
-      "io.circe"               %%% "circe-parser"            % circeVersion % "test"
+      "io.circe"               %%% "circe-parser"            % circeVersion % "test",
+      "org.typelevel"          %%% "jawn-ast"                % "1.6.0"      % "test"
     ),
     // scala version specific dependencies
     libraryDependencies ++= {
@@ -223,34 +224,6 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform, NativePlatform)
       "io.github.cquiroz" %%% "scala-java-time"      % scalaJavaTimeVersion,
       "io.github.cquiroz" %%% "scala-java-time-tzdb" % scalaJavaTimeVersion
     )
-  )
-  .jvmSettings(
-    libraryDependencies ++= {
-      CrossVersion.partialVersion(scalaVersion.value) match {
-        case Some((3, _)) =>
-          Vector(
-            "org.typelevel" %% "jawn-ast" % "1.6.0" % "test"
-          )
-
-        case Some((2, n)) =>
-          if (n >= 13) {
-            Seq(
-              "com.particeep"      %% "play-json-extensions" % "0.43.1" % "test",
-              "com.typesafe.play" %%% "play-json"            % "2.10.6" % "test",
-              "org.typelevel"      %% "jawn-ast"             % "1.6.0"  % "test"
-            )
-          } else {
-            Seq(
-              "ai.x"               %% "play-json-extensions" % "0.42.0" % "test",
-              "com.typesafe.play" %%% "play-json"            % "2.10.6" % "test",
-              "org.typelevel"      %% "jawn-ast"             % "1.6.0"  % "test"
-            )
-          }
-
-        case _ =>
-          Seq.empty
-      }
-    }
   )
   .nativeSettings(nativeSettings)
   .nativeSettings(

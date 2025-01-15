@@ -1,13 +1,8 @@
 package zio.json.data.geojson
 
-import ai.x.play.json.Encoders.encoder
-import ai.x.play.json.{ Jsonx => Playx }
 import io.circe
-import play.api.libs.{ json => Play }
 import zio.json._
 import zio.json.ast._
-
-object playtuples extends Play.GeneratedReads with Play.GeneratedWrites
 
 package generated {
 
@@ -46,17 +41,6 @@ package generated {
       circe.generic.extras.semiauto.deriveConfiguredDecoder[Geometry]
     implicit lazy val circeEncoder: circe.Encoder[Geometry] =
       circe.generic.extras.semiauto.deriveConfiguredEncoder[Geometry]
-
-    // it's not clear why this needs the extras package...
-    implicit val playPoint: Play.Format[Point]                                = Playx.formatCaseClass[Point]
-    implicit val playMultiPoint: Play.Format[MultiPoint]                      = Play.Json.format[MultiPoint]
-    implicit val playLineString: Play.Format[LineString]                      = Play.Json.format[LineString]
-    implicit val playMultiLineString: Play.Format[MultiLineString]            = Play.Json.format[MultiLineString]
-    implicit val playPolygon: Play.Format[Polygon]                            = Play.Json.format[Polygon]
-    implicit val playMultiPolygon: Play.Format[MultiPolygon]                  = Play.Json.format[MultiPolygon]
-    implicit lazy val playGeometryCollection: Play.Format[GeometryCollection] = Play.Json.format[GeometryCollection]
-    implicit val playFormatter: Play.Format[Geometry]                         = Playx.formatSealed[Geometry]
-
   }
   @silent("Block result was adapted via implicit conversion")
   object GeoJSON {
@@ -72,11 +56,6 @@ package generated {
       circe.generic.extras.semiauto.deriveConfiguredDecoder[GeoJSON]
     implicit lazy val circeEncoder: circe.Encoder[GeoJSON] =
       circe.generic.extras.semiauto.deriveConfiguredEncoder[GeoJSON]
-
-    implicit val playFeature: Play.Format[Feature]                          = Play.Json.format[Feature]
-    implicit lazy val playFeatureCollection: Play.Format[FeatureCollection] = Play.Json.format[FeatureCollection]
-    implicit val playFormatter: Play.Format[GeoJSON]                        = Playx.formatSealed[GeoJSON]
-
   }
 }
 
@@ -250,15 +229,6 @@ package handrolled {
       circe.generic.extras.semiauto.deriveConfiguredDecoder[Geometry]
     implicit lazy val circeEncoder: circe.Encoder[Geometry] =
       circe.generic.extras.semiauto.deriveConfiguredEncoder[Geometry]
-    implicit val playPoint: Play.Format[Point]                                = Playx.formatCaseClass[Point]
-    implicit val playMultiPoint: Play.Format[MultiPoint]                      = Play.Json.format[MultiPoint]
-    implicit val playLineString: Play.Format[LineString]                      = Play.Json.format[LineString]
-    implicit val playMultiLineString: Play.Format[MultiLineString]            = Play.Json.format[MultiLineString]
-    implicit val playPolygon: Play.Format[Polygon]                            = Play.Json.format[Polygon]
-    implicit val playMultiPolygon: Play.Format[MultiPolygon]                  = Play.Json.format[MultiPolygon]
-    implicit lazy val playGeometryCollection: Play.Format[GeometryCollection] = Play.Json.format[GeometryCollection]
-    implicit val playFormatter: Play.Format[Geometry]                         = Playx.formatSealed[Geometry]
-
   }
   @silent("Block result was adapted via implicit conversion")
   object GeoJSON {
@@ -364,11 +334,5 @@ package handrolled {
       circe.generic.extras.semiauto.deriveConfiguredDecoder[GeoJSON]
     implicit lazy val circeEncoder: circe.Encoder[GeoJSON] =
       circe.generic.extras.semiauto.deriveConfiguredEncoder[GeoJSON]
-
-    implicit val playFeature: Play.Format[Feature]                          = Play.Json.format[Feature]
-    implicit lazy val playFeatureCollection: Play.Format[FeatureCollection] = Play.Json.format[FeatureCollection]
-
-    implicit val playFormatter: Play.Format[GeoJSON] = Playx.formatSealed[GeoJSON]
-
   }
 }

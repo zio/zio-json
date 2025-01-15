@@ -1,10 +1,7 @@
 package zio.json.data.twitter
 
-import ai.x.play.json.Encoders.encoder
-import ai.x.play.json.{ Jsonx => Playx }
 import com.github.ghik.silencer.silent
 import io.circe
-import play.api.libs.{ json => Play }
 import zio.json._
 
 case class Urls(
@@ -23,7 +20,6 @@ object Urls {
     circe.generic.extras.semiauto.deriveConfiguredDecoder[Urls]
   implicit val circeEncoder: circe.Encoder[Urls] =
     circe.generic.extras.semiauto.deriveConfiguredEncoder[Urls]
-  implicit val playFormatter: Play.Format[Urls] = Play.Json.format[Urls]
 }
 case class Url(urls: List[Urls])
 @silent("Block result was adapted via implicit conversion")
@@ -36,7 +32,6 @@ object Url {
     circe.generic.extras.semiauto.deriveConfiguredDecoder[Url]
   implicit val circeEncoder: circe.Encoder[Url] =
     circe.generic.extras.semiauto.deriveConfiguredEncoder[Url]
-  implicit val playFormatter: Play.Format[Url] = Play.Json.format[Url]
 }
 
 case class UserEntities(url: Url, description: Url)
@@ -50,8 +45,6 @@ object UserEntities {
     circe.generic.extras.semiauto.deriveConfiguredDecoder[UserEntities]
   implicit val circeEncoder: circe.Encoder[UserEntities] =
     circe.generic.extras.semiauto.deriveConfiguredEncoder[UserEntities]
-  implicit val playFormatter: Play.Format[UserEntities] =
-    Play.Json.format[UserEntities]
 }
 
 case class UserMentions(
@@ -71,8 +64,6 @@ object UserMentions {
     circe.generic.extras.semiauto.deriveConfiguredDecoder[UserMentions]
   implicit val circeEncoder: circe.Encoder[UserMentions] =
     circe.generic.extras.semiauto.deriveConfiguredEncoder[UserMentions]
-  implicit val playFormatter: Play.Format[UserMentions] =
-    Play.Json.format[UserMentions]
 }
 
 case class User(
@@ -129,7 +120,6 @@ object User {
     circe.generic.extras.semiauto.deriveConfiguredDecoder[User]
   implicit val circeEncoder: circe.Encoder[User] =
     circe.generic.extras.semiauto.deriveConfiguredEncoder[User]
-  implicit val playFormatter: Play.Format[User] = Playx.formatCaseClass[User]
 }
 
 case class Entities(
@@ -148,7 +138,6 @@ object Entities {
     circe.generic.extras.semiauto.deriveConfiguredDecoder[Entities]
   implicit val circeEncoder: circe.Encoder[Entities] =
     circe.generic.extras.semiauto.deriveConfiguredEncoder[Entities]
-  implicit val playFormatter: Play.Format[Entities] = Play.Json.format[Entities]
 }
 
 case class RetweetedStatus(
@@ -189,8 +178,6 @@ object RetweetedStatus {
     circe.generic.extras.semiauto.deriveConfiguredDecoder[RetweetedStatus]
   implicit val circeEncoder: circe.Encoder[RetweetedStatus] =
     circe.generic.extras.semiauto.deriveConfiguredEncoder[RetweetedStatus]
-  implicit val playFormatter: Play.Format[RetweetedStatus] =
-    Playx.formatCaseClass[RetweetedStatus]
 }
 
 case class Tweet(
@@ -231,5 +218,4 @@ object Tweet {
     circe.generic.extras.semiauto.deriveConfiguredDecoder[Tweet]
   implicit val circeEncoder: circe.Encoder[Tweet] =
     circe.generic.extras.semiauto.deriveConfiguredEncoder[Tweet]
-  implicit val playFormatter: Play.Format[Tweet] = Playx.formatCaseClass[Tweet]
 }
