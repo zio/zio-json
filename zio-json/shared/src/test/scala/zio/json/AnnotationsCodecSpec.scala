@@ -1,6 +1,5 @@
 package zio.json
 
-import zio.json.JsonCodecConfiguration.SumTypeHandling.DiscriminatorField
 import zio.json.ast.Json
 import zio.test._
 import zio.Chunk

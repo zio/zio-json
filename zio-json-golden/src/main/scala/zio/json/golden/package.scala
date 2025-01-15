@@ -1,7 +1,5 @@
 package zio.json
 
-import scala.annotation.nowarn
-
 import zio.Tag
 import zio.{ test => _, _ }
 import zio.json.golden.filehelpers._
