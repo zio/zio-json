@@ -11,6 +11,5 @@ addSbtPlugin("org.scalameta"      % "sbt-scalafmt"                  % "2.5.3")
 addSbtPlugin("pl.project13.scala" % "sbt-jcstress"                  % "0.2.0")
 addSbtPlugin("org.scoverage"      % "sbt-scoverage"                 % "2.3.0")
 addSbtPlugin("dev.zio"            % "zio-sbt-website"               % "0.4.0-alpha.30")
-addSbtPlugin("com.timushev.sbt"   % "sbt-updates"                   % "0.6.4")
 
 libraryDependencies += "org.snakeyaml" % "snakeyaml-engine" % "2.8"
