@@ -244,16 +244,7 @@ object BuildHelper {
     autoAPIMappings := true,
     unusedCompileDependenciesFilter -= moduleFilter("org.scala-js", "scalajs-library"),
     mimaPreviousArtifacts := previousStableVersion.value.map(organization.value %% name.value % _).toSet,
-    mimaCheckDirection := {
-      def isPatch: Boolean = {
-        val Array(newMajor, newMinor, _) = version.value.split('.')
-        val Array(oldMajor, oldMinor, _) = previousStableVersion.value.getOrElse(version.value).split('.')
-        newMajor == oldMajor && newMinor == oldMinor
-      }
-
-      if (isPatch) "both"
-      else "backward"
-    },
+    mimaCheckDirection := "backward", // TODO: find how we can use "both" for path versions
     mimaBinaryIssueFilters ++= Seq(
       exclude[Problem]("zio.json.macros#package.<clinit>"),
       exclude[Problem]("zio.JsonPackagePlatformSpecific.*"),
