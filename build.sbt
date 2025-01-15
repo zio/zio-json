@@ -28,32 +28,32 @@ addCommandAlias("prepare", "fmt")
 
 addCommandAlias(
   "testJVM",
-  "zioJsonJVM/test; zioJsonYaml/test; zioJsonInteropHttp4s/test; zioJsonInteropScalaz7xJVM/test; zioJsonGolden/test"
-)
-
-addCommandAlias(
-  "testScala2JVM",
-  "zioJsonMacrosJVM/test; zioJsonInteropRefinedJVM/test"
-)
-
-addCommandAlias(
-  "testScala2JS",
-  "zioJsonMacrosJS/test; zioJsonInteropRefinedJS/test"
-)
-
-addCommandAlias(
-  "testScala2Native",
-  "zioJsonMacrosNative/test; zioJsonInteropRefinedNative/test"
+  "zioJsonJVM/test; zioJsonYaml/test; zioJsonInteropHttp4s/test; zioJsonInteropScalaz7xJVM/test; zioJsonGolden/test; zioJsonInteropRefinedJVM/test"
 )
 
 addCommandAlias(
   "testJS",
-  "zioJsonJS/test; zioJsonInteropScalaz7xJS/test"
+  "zioJsonJS/test; zioJsonInteropScalaz7xJS/test; zioJsonInteropRefinedJS/test"
 )
 
 addCommandAlias(
   "testNative",
-  "zioJsonNative/test; zioJsonInteropScalaz7xNative/test"
+  "zioJsonNative/test; zioJsonInteropScalaz7xNative/test; zioJsonInteropRefinedNative/test"
+)
+
+addCommandAlias(
+  "testScala2JVM",
+  "zioJsonMacrosJVM/test"
+)
+
+addCommandAlias(
+  "testScala2JS",
+  "zioJsonMacrosJS/test"
+)
+
+addCommandAlias(
+  "testScala2Native",
+  "zioJsonMacrosNative/test"
 )
 
 val zioVersion = "2.1.14"
@@ -351,7 +351,7 @@ lazy val zioJsonInteropRefined = crossProject(JSPlatform, JVMPlatform, NativePla
   .settings(buildInfoSettings("zio.json.interop.refined"))
   .settings(
     libraryDependencies ++= Seq(
-      "eu.timepit" %%% "refined"      % "0.11.2",
+      "eu.timepit" %%% "refined"      % "0.11.3",
       "dev.zio"    %%% "zio-test"     % zioVersion % "test",
       "dev.zio"    %%% "zio-test-sbt" % zioVersion % "test"
     ),
