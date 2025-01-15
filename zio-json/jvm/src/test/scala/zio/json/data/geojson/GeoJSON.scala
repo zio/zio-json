@@ -1,12 +1,13 @@
 package zio.json.data.geojson
 
-import io.circe
 import zio.json._
 import zio.json.ast._
+import com.github.ghik.silencer.silent
+import io.circe.{ Codec, Decoder, Encoder }
+import io.circe.generic.semiauto.deriveCodec
+import io.circe.syntax.EncoderOps
 
 package generated {
-
-  import com.github.ghik.silencer.silent
 
   @jsonDiscriminator("type")
   sealed abstract class Geometry
@@ -34,13 +35,37 @@ package generated {
     implicit lazy val zioJsonEncoder: JsonEncoder[Geometry] =
       DeriveJsonEncoder.gen[Geometry]
 
-    implicit val customConfig: circe.generic.extras.Configuration =
-      circe.generic.extras.Configuration.default
-        .copy(discriminator = Some("type"))
-    implicit lazy val circeJsonDecoder: circe.Decoder[Geometry] =
-      circe.generic.extras.semiauto.deriveConfiguredDecoder[Geometry]
-    implicit lazy val circeEncoder: circe.Encoder[Geometry] =
-      circe.generic.extras.semiauto.deriveConfiguredEncoder[Geometry]
+    implicit lazy val circeJsonCodec: Codec[Geometry] = {
+      implicit val c1: Codec[Point]              = deriveCodec
+      implicit val c2: Codec[MultiPoint]         = deriveCodec
+      implicit val c3: Codec[LineString]         = deriveCodec
+      implicit val c4: Codec[MultiLineString]    = deriveCodec
+      implicit val c5: Codec[Polygon]            = deriveCodec
+      implicit val c6: Codec[MultiPolygon]       = deriveCodec
+      implicit val c8: Codec[GeometryCollection] = deriveCodec
+      Codec.from(
+        Decoder.instance(c =>
+          c.downField("type").as[String].flatMap {
+            case "Point"              => c.as[Point]
+            case "MultiPoint"         => c.as[MultiPoint]
+            case "LineString"         => c.as[LineString]
+            case "MultiLineString"    => c.as[MultiLineString]
+            case "Polygon"            => c.as[Polygon]
+            case "MultiPolygon"       => c.as[MultiPolygon]
+            case "GeometryCollection" => c.as[GeometryCollection]
+          }
+        ),
+        Encoder.instance {
+          case x: Point              => x.asJson.mapObject(_.+:("type" -> "Point".asJson))
+          case x: MultiPoint         => x.asJson.mapObject(_.+:("type" -> "MultiPoint".asJson))
+          case x: LineString         => x.asJson.mapObject(_.+:("type" -> "LineString".asJson))
+          case x: MultiLineString    => x.asJson.mapObject(_.+:("type" -> "MultiLineString".asJson))
+          case x: Polygon            => x.asJson.mapObject(_.+:("type" -> "Polygon".asJson))
+          case x: MultiPolygon       => x.asJson.mapObject(_.+:("type" -> "MultiPolygon".asJson))
+          case x: GeometryCollection => x.asJson.mapObject(_.+:("type" -> "GeometryCollection".asJson))
+        }
+      )
+    }
   }
   @silent("Block result was adapted via implicit conversion")
   object GeoJSON {
@@ -49,13 +74,22 @@ package generated {
     implicit lazy val zioJsonEncoder: JsonEncoder[GeoJSON] =
       DeriveJsonEncoder.gen[GeoJSON]
 
-    implicit val customConfig: circe.generic.extras.Configuration =
-      circe.generic.extras.Configuration.default
-        .copy(discriminator = Some("type"))
-    implicit lazy val circeJsonDecoder: circe.Decoder[GeoJSON] =
-      circe.generic.extras.semiauto.deriveConfiguredDecoder[GeoJSON]
-    implicit lazy val circeEncoder: circe.Encoder[GeoJSON] =
-      circe.generic.extras.semiauto.deriveConfiguredEncoder[GeoJSON]
+    implicit lazy val circeCodec: Codec[GeoJSON] = {
+      implicit val c1: Codec[Feature]           = deriveCodec
+      implicit val c2: Codec[FeatureCollection] = deriveCodec
+      Codec.from(
+        Decoder.instance(c =>
+          c.downField("type").as[String].flatMap {
+            case "Feature"           => c.as[Feature]
+            case "FeatureCollection" => c.as[FeatureCollection]
+          }
+        ),
+        Encoder.instance {
+          case x: Feature           => x.asJson.mapObject(_.+:("type" -> "Feature".asJson))
+          case x: FeatureCollection => x.asJson.mapObject(_.+:("type" -> "FeatureCollection".asJson))
+        }
+      )
+    }
   }
 }
 
@@ -93,10 +127,10 @@ package handrolled {
     implicit lazy val zioJsonJsonDecoder: JsonDecoder[Geometry] =
       new JsonDecoder[Geometry] {
         import zio.json._
-      import JsonDecoder.{ JsonError, UnsafeJson }
-      import internal._
+        import JsonDecoder.{ JsonError, UnsafeJson }
+        import internal._
 
-      import scala.annotation._
+        import scala.annotation._
 
         val names: Array[String]    = Array("type", "coordinates", "geometries")
         val matrix: StringMatrix    = new StringMatrix(names)
@@ -167,7 +201,7 @@ package handrolled {
           var subtype: Int               = -1
 
           if (Lexer.firstField(trace, in))
-            do {
+            while ({
               val field = Lexer.field(trace, in, matrix)
               if (field == -1) Lexer.skipValue(trace, in)
               else {
@@ -188,7 +222,8 @@ package handrolled {
                     geometries = geometriesD.unsafeDecode(trace_, in)
                 }
               }
-            } while (Lexer.nextField(trace, in))
+              Lexer.nextField(trace, in)
+            }) ()
 
           if (subtype == -1)
             throw UnsafeJson(
@@ -221,14 +256,37 @@ package handrolled {
       }
     implicit lazy val zioJsonEncoder: JsonEncoder[Geometry] =
       DeriveJsonEncoder.gen[Geometry]
-
-    implicit val customConfig: circe.generic.extras.Configuration =
-      circe.generic.extras.Configuration.default
-        .copy(discriminator = Some("type"))
-    implicit lazy val circeJsonDecoder: circe.Decoder[Geometry] =
-      circe.generic.extras.semiauto.deriveConfiguredDecoder[Geometry]
-    implicit lazy val circeEncoder: circe.Encoder[Geometry] =
-      circe.generic.extras.semiauto.deriveConfiguredEncoder[Geometry]
+    implicit lazy val circeJsonCodec: Codec[Geometry] = {
+      implicit val c1: Codec[Point]              = deriveCodec
+      implicit val c2: Codec[MultiPoint]         = deriveCodec
+      implicit val c3: Codec[LineString]         = deriveCodec
+      implicit val c4: Codec[MultiLineString]    = deriveCodec
+      implicit val c5: Codec[Polygon]            = deriveCodec
+      implicit val c6: Codec[MultiPolygon]       = deriveCodec
+      implicit val c8: Codec[GeometryCollection] = deriveCodec
+      Codec.from(
+        Decoder.instance(c =>
+          c.downField("type").as[String].flatMap {
+            case "Point"              => c.as[Point]
+            case "MultiPoint"         => c.as[MultiPoint]
+            case "LineString"         => c.as[LineString]
+            case "MultiLineString"    => c.as[MultiLineString]
+            case "Polygon"            => c.as[Polygon]
+            case "MultiPolygon"       => c.as[MultiPolygon]
+            case "GeometryCollection" => c.as[GeometryCollection]
+          }
+        ),
+        Encoder.instance {
+          case x: Point              => x.asJson.mapObject(_.+:("type" -> "Point".asJson))
+          case x: MultiPoint         => x.asJson.mapObject(_.+:("type" -> "MultiPoint".asJson))
+          case x: LineString         => x.asJson.mapObject(_.+:("type" -> "LineString".asJson))
+          case x: MultiLineString    => x.asJson.mapObject(_.+:("type" -> "MultiLineString".asJson))
+          case x: Polygon            => x.asJson.mapObject(_.+:("type" -> "Polygon".asJson))
+          case x: MultiPolygon       => x.asJson.mapObject(_.+:("type" -> "MultiPolygon".asJson))
+          case x: GeometryCollection => x.asJson.mapObject(_.+:("type" -> "GeometryCollection".asJson))
+        }
+      )
+    }
   }
   @silent("Block result was adapted via implicit conversion")
   object GeoJSON {
@@ -240,10 +298,10 @@ package handrolled {
     implicit lazy val zioJsonJsonDecoder: JsonDecoder[GeoJSON] =
       new JsonDecoder[GeoJSON] {
         import zio.json._
-      import JsonDecoder.{ JsonError, UnsafeJson }
-      import internal._
+        import JsonDecoder.{ JsonError, UnsafeJson }
+        import internal._
 
-      import scala.annotation._
+        import scala.annotation._
 
         val names: Array[String] =
           Array("type", "properties", "geometry", "features")
@@ -267,7 +325,7 @@ package handrolled {
           var subtype: Int                    = -1
 
           if (Lexer.firstField(trace, in))
-            do {
+            while ({
               val field = Lexer.field(trace, in, matrix)
               if (field == -1) Lexer.skipValue(trace, in)
               else {
@@ -295,7 +353,8 @@ package handrolled {
                     features = featuresD.unsafeDecode(trace_, in)
                 }
               }
-            } while (Lexer.nextField(trace, in))
+              Lexer.nextField(trace, in)
+            }) ()
 
           if (subtype == -1)
             // we could infer the type but that would mean accepting invalid data
@@ -326,13 +385,21 @@ package handrolled {
       }
     implicit lazy val zioJsonEncoder: JsonEncoder[GeoJSON] =
       DeriveJsonEncoder.gen[GeoJSON]
-
-    implicit val customConfig: circe.generic.extras.Configuration =
-      circe.generic.extras.Configuration.default
-        .copy(discriminator = Some("type"))
-    implicit lazy val circeJsonDecoder: circe.Decoder[GeoJSON] =
-      circe.generic.extras.semiauto.deriveConfiguredDecoder[GeoJSON]
-    implicit lazy val circeEncoder: circe.Encoder[GeoJSON] =
-      circe.generic.extras.semiauto.deriveConfiguredEncoder[GeoJSON]
+    implicit lazy val circeCodec: Codec[GeoJSON] = {
+      implicit val c1: Codec[Feature]           = deriveCodec
+      implicit val c2: Codec[FeatureCollection] = deriveCodec
+      Codec.from(
+        Decoder.instance(c =>
+          c.downField("type").as[String].flatMap {
+            case "Feature"           => c.as[Feature]
+            case "FeatureCollection" => c.as[FeatureCollection]
+          }
+        ),
+        Encoder.instance {
+          case x: Feature           => x.asJson.mapObject(_.+:("type" -> "Feature".asJson))
+          case x: FeatureCollection => x.asJson.mapObject(_.+:("type" -> "FeatureCollection".asJson))
+        }
+      )
+    }
   }
 }

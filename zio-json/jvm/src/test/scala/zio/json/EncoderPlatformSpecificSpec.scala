@@ -1,12 +1,12 @@
 package zio.json
 
 import io.circe
+import zio.Chunk
 import zio.json.TestUtils._
+import zio.json.ast.Json
 import zio.json.data.geojson.generated._
 import zio.json.data.googlemaps._
 import zio.json.data.twitter._
-import zio.Chunk
-import zio.json.ast.Json
 import zio.stream.{ ZSink, ZStream }
 import zio.test.Assertion._
 import zio.test.{ ZIOSpecDefault, assert, _ }

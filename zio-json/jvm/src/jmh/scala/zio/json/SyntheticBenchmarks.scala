@@ -19,18 +19,10 @@ object Nested {
     DeriveJsonDecoder.gen
   implicit lazy val zioJsonEncoder: JsonEncoder[Nested] =
     DeriveJsonEncoder.gen
-
-  implicit val customConfig: circe.generic.extras.Configuration =
-    circe.generic.extras.Configuration.default
-      .copy(discriminator = Some("type"))
-  implicit lazy val circeJsonDecoder: circe.Decoder[Nested] =
-    circe.generic.extras.semiauto.deriveConfiguredDecoder[Nested]
-  implicit lazy val circeEncoder: circe.Encoder[Nested] =
-    circe.generic.extras.semiauto.deriveConfiguredEncoder[Nested]
-
+  implicit lazy val circeCodec: Codec[Nested] =
+    deriveCodec
   implicit lazy val playFormatter: Play.Format[Nested] =
     Play.Json.format[Nested]
-
 }
 
 @State(Scope.Thread)

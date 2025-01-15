@@ -2,6 +2,8 @@ package zio.json.data.twitter
 
 import com.github.ghik.silencer.silent
 import io.circe
+import io.circe.Codec
+import io.circe.generic.semiauto.deriveCodec
 import zio.json._
 
 case class Urls(
@@ -14,24 +16,16 @@ case class Urls(
 object Urls {
   implicit val jJsonDecoder: JsonDecoder[Urls] = DeriveJsonDecoder.gen[Urls]
   implicit val jEncoder: JsonEncoder[Urls]     = DeriveJsonEncoder.gen[Urls]
-  implicit val customConfig: circe.generic.extras.Configuration =
-    circe.generic.extras.Configuration.default
-  implicit val circeJsonDecoder: circe.Decoder[Urls] =
-    circe.generic.extras.semiauto.deriveConfiguredDecoder[Urls]
-  implicit val circeEncoder: circe.Encoder[Urls] =
-    circe.generic.extras.semiauto.deriveConfiguredEncoder[Urls]
+
+  implicit val circeCodec: Codec[Urls] = deriveCodec
 }
 case class Url(urls: List[Urls])
 @silent("Block result was adapted via implicit conversion")
 object Url {
   implicit val jJsonDecoder: JsonDecoder[Url] = DeriveJsonDecoder.gen[Url]
   implicit val jEncoder: JsonEncoder[Url]     = DeriveJsonEncoder.gen[Url]
-  implicit val customConfig: circe.generic.extras.Configuration =
-    circe.generic.extras.Configuration.default
-  implicit val circeJsonDecoder: circe.Decoder[Url] =
-    circe.generic.extras.semiauto.deriveConfiguredDecoder[Url]
-  implicit val circeEncoder: circe.Encoder[Url] =
-    circe.generic.extras.semiauto.deriveConfiguredEncoder[Url]
+
+  implicit val circeCodec: Codec[Url] = deriveCodec
 }
 
 case class UserEntities(url: Url, description: Url)
@@ -39,12 +33,8 @@ case class UserEntities(url: Url, description: Url)
 object UserEntities {
   implicit val jJsonDecoder: JsonDecoder[UserEntities] = DeriveJsonDecoder.gen[UserEntities]
   implicit val jEncoder: JsonEncoder[UserEntities]     = DeriveJsonEncoder.gen[UserEntities]
-  implicit val customConfig: circe.generic.extras.Configuration =
-    circe.generic.extras.Configuration.default
-  implicit val circeJsonDecoder: circe.Decoder[UserEntities] =
-    circe.generic.extras.semiauto.deriveConfiguredDecoder[UserEntities]
-  implicit val circeEncoder: circe.Encoder[UserEntities] =
-    circe.generic.extras.semiauto.deriveConfiguredEncoder[UserEntities]
+
+  implicit val circeCodec: Codec[UserEntities] = deriveCodec
 }
 
 case class UserMentions(
@@ -58,12 +48,8 @@ case class UserMentions(
 object UserMentions {
   implicit val jJsonDecoder: JsonDecoder[UserMentions] = DeriveJsonDecoder.gen[UserMentions]
   implicit val jEncoder: JsonEncoder[UserMentions]     = DeriveJsonEncoder.gen[UserMentions]
-  implicit val customConfig: circe.generic.extras.Configuration =
-    circe.generic.extras.Configuration.default
-  implicit val circeJsonDecoder: circe.Decoder[UserMentions] =
-    circe.generic.extras.semiauto.deriveConfiguredDecoder[UserMentions]
-  implicit val circeEncoder: circe.Encoder[UserMentions] =
-    circe.generic.extras.semiauto.deriveConfiguredEncoder[UserMentions]
+
+  implicit val circeCodec: Codec[UserMentions] = deriveCodec
 }
 
 case class User(
@@ -114,12 +100,8 @@ case class User(
 object User {
   implicit val jJsonDecoder: JsonDecoder[User] = DeriveJsonDecoder.gen[User]
   implicit val jEncoder: JsonEncoder[User]     = DeriveJsonEncoder.gen[User]
-  implicit val customConfig: circe.generic.extras.Configuration =
-    circe.generic.extras.Configuration.default
-  implicit val circeJsonDecoder: circe.Decoder[User] =
-    circe.generic.extras.semiauto.deriveConfiguredDecoder[User]
-  implicit val circeEncoder: circe.Encoder[User] =
-    circe.generic.extras.semiauto.deriveConfiguredEncoder[User]
+
+  implicit val circeCodec: Codec[User] = deriveCodec
 }
 
 case class Entities(
@@ -132,12 +114,8 @@ case class Entities(
 object Entities {
   implicit val jJsonDecoder: JsonDecoder[Entities] = DeriveJsonDecoder.gen[Entities]
   implicit val jEncoder: JsonEncoder[Entities]     = DeriveJsonEncoder.gen[Entities]
-  implicit val customConfig: circe.generic.extras.Configuration =
-    circe.generic.extras.Configuration.default
-  implicit val circeJsonDecoder: circe.Decoder[Entities] =
-    circe.generic.extras.semiauto.deriveConfiguredDecoder[Entities]
-  implicit val circeEncoder: circe.Encoder[Entities] =
-    circe.generic.extras.semiauto.deriveConfiguredEncoder[Entities]
+
+  implicit val circeCodec: Codec[Entities] = deriveCodec
 }
 
 case class RetweetedStatus(
@@ -172,12 +150,8 @@ object RetweetedStatus {
     DeriveJsonDecoder.gen[RetweetedStatus]
   implicit val jEncoder: JsonEncoder[RetweetedStatus] =
     DeriveJsonEncoder.gen[RetweetedStatus]
-  implicit val customConfig: circe.generic.extras.Configuration =
-    circe.generic.extras.Configuration.default
-  implicit val circeJsonDecoder: circe.Decoder[RetweetedStatus] =
-    circe.generic.extras.semiauto.deriveConfiguredDecoder[RetweetedStatus]
-  implicit val circeEncoder: circe.Encoder[RetweetedStatus] =
-    circe.generic.extras.semiauto.deriveConfiguredEncoder[RetweetedStatus]
+
+  implicit val circeCodec: Codec[RetweetedStatus] = deriveCodec
 }
 
 case class Tweet(
@@ -212,10 +186,6 @@ case class Tweet(
 object Tweet {
   implicit val zioJsonJsonDecoder: JsonDecoder[Tweet] = DeriveJsonDecoder.gen[Tweet]
   implicit val zioJsonEncoder: JsonEncoder[Tweet]     = DeriveJsonEncoder.gen[Tweet]
-  implicit val customConfig: circe.generic.extras.Configuration =
-    circe.generic.extras.Configuration.default
-  implicit val circeJsonDecoder: circe.Decoder[Tweet] =
-    circe.generic.extras.semiauto.deriveConfiguredDecoder[Tweet]
-  implicit val circeEncoder: circe.Encoder[Tweet] =
-    circe.generic.extras.semiauto.deriveConfiguredEncoder[Tweet]
+
+  implicit val circeCodec: Codec[Tweet] = deriveCodec
 }

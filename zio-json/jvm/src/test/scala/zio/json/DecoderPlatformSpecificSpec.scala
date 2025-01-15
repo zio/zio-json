@@ -2,11 +2,11 @@ package zio.json
 
 import io.circe
 import org.typelevel.jawn.{ ast => jawn }
+import zio._
 import zio.json.TestUtils._
+import zio.json.ast._
 import zio.json.data.googlemaps._
 import zio.json.data.twitter._
-import zio._
-import zio.json.ast._
 import zio.stream.ZStream
 import zio.test.Assertion._
 import zio.test.TestAspect._
@@ -337,7 +337,7 @@ object DecoderPlatformSpecificSpec extends ZIOSpecDefault {
   // Helper function because Circe and Zio-JSON’s Left differ, making tests unnecessary verbose
   def matchesCirceDecoded[A](
     expected: String
-  )(implicit cDecoder: circe.Decoder[A], eq: Eql[A, A]): Assertion[Either[String, A]] = {
+  )(implicit cDecoder: circe.Decoder[A]): Assertion[Either[String, A]] = {
 
     val cDecoded = circe.parser.decode(expected).left.map(_.toString)
 
