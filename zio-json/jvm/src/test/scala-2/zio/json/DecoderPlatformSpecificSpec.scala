@@ -1,12 +1,11 @@
-package testzio.json
+package zio.json
 
 import io.circe
 import org.typelevel.jawn.{ ast => jawn }
-import testzio.json.TestUtils._
-import testzio.json.data.googlemaps._
-import testzio.json.data.twitter._
+import zio.json.TestUtils._
+import zio.json.data.googlemaps._
+import zio.json.data.twitter._
 import zio._
-import zio.json._
 import zio.json.ast._
 import zio.stream.ZStream
 import zio.test.Assertion._
@@ -65,28 +64,28 @@ object DecoderPlatformSpecificSpec extends ZIOSpecDefault {
         }
       },
       test("geojson1") {
-        import testzio.json.data.geojson.generated._
+        import zio.json.data.geojson.generated._
 
         getResourceAsStringM("che.geo.json").map { str =>
           assert(str.fromJson[GeoJSON])(matchesCirceDecoded[GeoJSON](str))
         }
       },
       test("geojson1 alt") {
-        import testzio.json.data.geojson.handrolled._
+        import zio.json.data.geojson.handrolled._
 
         getResourceAsStringM("che.geo.json").map { str =>
           assert(str.fromJson[GeoJSON])(matchesCirceDecoded[GeoJSON](str))
         }
       },
       test("geojson2") {
-        import testzio.json.data.geojson.generated._
+        import zio.json.data.geojson.generated._
 
         getResourceAsStringM("che-2.geo.json").map { str =>
           assert(str.fromJson[GeoJSON])(matchesCirceDecoded[GeoJSON](str))
         }
       },
       test("geojson2 lowlevel") {
-        import testzio.json.data.geojson.generated._
+        import zio.json.data.geojson.generated._
         // this uses a lower level Reader to ensure that the more general recorder
         // impl is covered by the tests
 

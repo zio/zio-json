@@ -1,13 +1,11 @@
-package testzio.json
+package zio.json
 
 import zio._
-import zio.json._
 import zio.json.ast.Json
 import zio.test.Assertion._
 import zio.test.TestAspect.jvmOnly
 import zio.test._
 
-import java.math.BigInteger
 import scala.collection.immutable
 
 object CodecSpec extends ZIOSpecDefault {

@@ -1,8 +1,7 @@
-package testzio.json
+package zio.json
 
-import testzio.json.TestUtils._
+import zio.json.TestUtils._
 import zio._
-import zio.json._
 import zio.json.ast.Json
 import zio.test.Assertion._
 import zio.test.TestAspect._

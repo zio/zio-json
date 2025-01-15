@@ -1,4 +1,4 @@
-package testzio.json
+package zio.json
 
 import zio._
 import zio.stream._

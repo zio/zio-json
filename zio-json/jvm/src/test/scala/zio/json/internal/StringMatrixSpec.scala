@@ -1,6 +1,5 @@
-package testzio.json.internal
+package zio.json.internal
 
-import zio.json.internal._
 import zio.test.Assertion._
 import zio.test._
 

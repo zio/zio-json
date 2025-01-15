@@ -1,7 +1,6 @@
-package testzio.json
+package zio.json
 
 import zio._
-import zio.json._
 import zio.json.ast.Json
 import zio.test.Assertion._
 import zio.test.TestAspect.jvmOnly
@@ -98,10 +97,10 @@ object DecoderSpec extends ZIOSpecDefault {
                        DeriveJsonDecoder.gen[Mango]
                      }.flip
           } yield assertTrue(
-            // Class name in Scala 2: testzio.json.DecoderSpec.spec.Mango
-            // Class name in Scala 3: testzio.json.DecoderSpec.spec.$anonfun.Mango
+            // Class name in Scala 2: zio.json.DecoderSpec.spec.Mango
+            // Class name in Scala 3: zio.json.DecoderSpec.spec.$anonfun.Mango
             error.getMessage.matches(
-              "Field names and aliases in case class testzio.json.DecoderSpec.spec(.\\$anonfun)?.Mango must be distinct, alias\\(es\\) r collide with a field or another alias"
+              "Field names and aliases in case class zio.json.DecoderSpec.spec(.\\$anonfun)?.Mango must be distinct, alias\\(es\\) r collide with a field or another alias"
             )
           )
         },
@@ -113,7 +112,7 @@ object DecoderSpec extends ZIOSpecDefault {
                      }.flip
           } yield assertTrue(
             error.getMessage.matches(
-              "Field names and aliases in case class testzio.json.DecoderSpec.spec(.\\$anonfun)?.Mango must be distinct, alias\\(es\\) r collide with a field or another alias"
+              "Field names and aliases in case class zio.json.DecoderSpec.spec(.\\$anonfun)?.Mango must be distinct, alias\\(es\\) r collide with a field or another alias"
             )
           )
         },
@@ -125,7 +124,7 @@ object DecoderSpec extends ZIOSpecDefault {
                      }.flip
           } yield assertTrue(
             error.getMessage.matches(
-              "Field names and aliases in case class testzio.json.DecoderSpec.spec(.\\$anonfun)?.Mango must be distinct, alias\\(es\\) r collide with a field or another alias"
+              "Field names and aliases in case class zio.json.DecoderSpec.spec(.\\$anonfun)?.Mango must be distinct, alias\\(es\\) r collide with a field or another alias"
             )
           )
         },

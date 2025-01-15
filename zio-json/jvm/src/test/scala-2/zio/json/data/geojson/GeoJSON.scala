@@ -1,4 +1,4 @@
-package testzio.json.data.geojson
+package zio.json.data.geojson
 
 import ai.x.play.json.Encoders.encoder
 import ai.x.play.json.{ Jsonx => Playx }
@@ -8,7 +8,6 @@ import zio.json._
 import zio.json.ast._
 
 object playtuples extends Play.GeneratedReads with Play.GeneratedWrites
-import playtuples._
 
 package generated {
 
@@ -114,8 +113,11 @@ package handrolled {
     // custom decoder (below) which is necessary to avert a DOS attack.
     implicit lazy val zioJsonJsonDecoder: JsonDecoder[Geometry] =
       new JsonDecoder[Geometry] {
-        import zio.json._, internal._, JsonDecoder.{ JsonError, UnsafeJson }
-        import scala.annotation._
+        import zio.json._
+      import JsonDecoder.{ JsonError, UnsafeJson }
+      import internal._
+
+      import scala.annotation._
 
         val names: Array[String]    = Array("type", "coordinates", "geometries")
         val matrix: StringMatrix    = new StringMatrix(names)
@@ -267,8 +269,11 @@ package handrolled {
     // of a corner case.
     implicit lazy val zioJsonJsonDecoder: JsonDecoder[GeoJSON] =
       new JsonDecoder[GeoJSON] {
-        import zio.json._, internal._, JsonDecoder.{ JsonError, UnsafeJson }
-        import scala.annotation._
+        import zio.json._
+      import JsonDecoder.{ JsonError, UnsafeJson }
+      import internal._
+
+      import scala.annotation._
 
         val names: Array[String] =
           Array("type", "properties", "geometry", "features")

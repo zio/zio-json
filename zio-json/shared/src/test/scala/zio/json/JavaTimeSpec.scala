@@ -1,13 +1,12 @@
-package testzio.json
+package zio.json
 
-import zio.json._
 import zio.test.Assertion._
 import zio.test._
 
 import java.time._
 import java.time.format.DateTimeFormatter
 
-// zioJsonJVM/testOnly testzio.json.JavaTimeSpec
+// zioJsonJVM/testOnly zio.json.JavaTimeSpec
 object JavaTimeSpec extends ZIOSpecDefault {
 
   private def stringify(s: Any): String = s""" "${s.toString}" """

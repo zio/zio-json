@@ -1,4 +1,4 @@
-package testzio.json.data.twitter
+package zio.json.data.twitter
 
 import ai.x.play.json.Encoders.encoder
 import ai.x.play.json.{ Jsonx => Playx }

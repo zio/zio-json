@@ -1,4 +1,4 @@
-package testzio.json.data.googlemaps
+package zio.json.data.googlemaps
 
 import com.github.ghik.silencer.silent
 import com.github.plokhotnyuk.jsoniter_scala.macros.named
@@ -39,18 +39,18 @@ object Value {
   // implicit val playJsonDecoder: Play.Reads[Value] = Play.Json.reads[Value]
 
   implicit val playJsonDecoder: Play.Reads[Value] = {
-    import play.api.libs.json._
-    import play.api.libs.json.Reads._
     import play.api.libs.functional.syntax._
+    import play.api.libs.json.Reads._
+    import play.api.libs.json._
 
     ((JsPath \ "text").read[String].and((JsPath \ "value").read[Int]))(
       Value.apply _
     )
   }
   implicit val playEncoder: Play.Writes[Value] = {
-    import play.api.libs.json._
-    import play.api.libs.json.Writes._
     import play.api.libs.functional.syntax._
+    import play.api.libs.json.Writes._
+    import play.api.libs.json._
 
     ((JsPath \ "text").write[String].and((JsPath \ "value").write[Int]))(unlift(Value.unapply))
   }

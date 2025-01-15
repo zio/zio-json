@@ -6,8 +6,8 @@ import java.util.concurrent.TimeUnit
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.github.plokhotnyuk.jsoniter_scala.macros._
 import io.circe
-import testzio.json.TestUtils._
-import testzio.json.data.twitter._
+import zio.json.TestUtils._
+import zio.json.data.twitter._
 import org.openjdk.jmh.annotations._
 import play.api.libs.{ json => Play }
 import TwitterAPIBenchmarks._

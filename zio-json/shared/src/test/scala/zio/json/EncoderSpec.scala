@@ -1,6 +1,5 @@
-package testzio.json
+package zio.json
 
-import zio.json._
 import zio.json.ast.Json
 import zio.test.Assertion._
 import zio.test.TestAspect.jvmOnly
@@ -10,7 +9,7 @@ import zio.{ Chunk, NonEmptyChunk }
 import java.util.UUID
 import scala.collection.{ immutable, mutable }
 
-// zioJsonJVM/testOnly testzio.json.EncoderSpec
+// zioJsonJVM/testOnly zio.json.EncoderSpec
 object EncoderSpec extends ZIOSpecDefault {
 
   val spec: Spec[Environment, Any] =
