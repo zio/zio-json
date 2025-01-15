@@ -244,7 +244,7 @@ object BuildHelper {
     autoAPIMappings := true,
     unusedCompileDependenciesFilter -= moduleFilter("org.scala-js", "scalajs-library"),
     mimaPreviousArtifacts := previousStableVersion.value.map(organization.value %% name.value % _).toSet,
-    mimaCheckDirection := "backward", // TODO: find how we can use "both" for path versions
+    mimaCheckDirection    := "backward", // TODO: find how we can use "both" for path versions
     mimaBinaryIssueFilters ++= Seq(
       exclude[Problem]("zio.json.macros#package.<clinit>"),
       exclude[Problem]("zio.JsonPackagePlatformSpecific.*"),
