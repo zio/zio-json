@@ -11,7 +11,7 @@ object RefinedSpec extends ZIOSpecDefault {
   val spec: Spec[Environment, Any] =
     suite("Refined")(
       test("Refined") {
-        val person = Person(NonEmptyString.unsafeFrom("fommil"))
+        val person    = Person(NonEmptyString.unsafeFrom("fommil"))
         val validJson = """{"name":"fommil"}"""
         assert("""{"name":""}""".fromJson[Person])(isLeft(equalTo(".name(Predicate isEmpty() did not fail.)"))) &&
         assert(validJson.fromJson[Person])(isRight(equalTo(person))) &&
