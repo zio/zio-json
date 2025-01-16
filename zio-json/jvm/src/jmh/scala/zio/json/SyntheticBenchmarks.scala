@@ -29,7 +29,7 @@ object Nested {
 @Fork(value = 1)
 class SyntheticBenchmarks {
   // @Param(Array("100", "1000"))
-  var size: Int               = 500
+  var size: Int               = 100
   var jsonString: String      = _
   var jsonChars: CharSequence = _
   var decoded: Nested         = _
