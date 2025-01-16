@@ -10,7 +10,6 @@ import scala.collection.{ SortedMap, immutable }
 @State(Scope.Thread)
 @Warmup(iterations = 5, time = 1, timeUnit = TimeUnit.SECONDS)
 @Measurement(iterations = 5, time = 1, timeUnit = TimeUnit.SECONDS)
-@OutputTimeUnit(TimeUnit.MILLISECONDS)
 @Fork(value = 1)
 class CollectionEncoderBenchmarks {
   private[this] var stringsChunk: Chunk[String]                   = null

@@ -10,7 +10,6 @@ import scala.collection.immutable
 @State(Scope.Thread)
 @Warmup(iterations = 5, time = 1, timeUnit = TimeUnit.SECONDS)
 @Measurement(iterations = 5, time = 1, timeUnit = TimeUnit.SECONDS)
-@OutputTimeUnit(TimeUnit.MILLISECONDS)
 @Fork(value = 1)
 class CollectionDecoderBenchmarks {
   private[this] var encodedArray: String  = null
