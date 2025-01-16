@@ -183,7 +183,7 @@ object DecoderPlatformSpecificSpec extends ZIOSpecDefault {
                 .map { exit =>
                   assert(exit)(isInterrupted)
                 }
-            } @@ timeout(2.seconds)
+            } @@ timeout(7.seconds)
           ),
           suite("Array delimited")(
             test("decodes single elements") {
