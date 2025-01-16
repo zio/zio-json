@@ -1,15 +1,15 @@
 package zio.json
 
-import java.nio.charset.StandardCharsets.UTF_8
 import java.util.concurrent.TimeUnit
 
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.github.plokhotnyuk.jsoniter_scala.macros._
 import io.circe
+import io.circe.Codec
+import io.circe.generic.semiauto.deriveCodec
 import zio.json.SyntheticBenchmarks._
 import zio.json.TestUtils._
 import org.openjdk.jmh.annotations._
-import play.api.libs.{ json => Play }
 
 import scala.util.Try
 
@@ -21,8 +21,6 @@ object Nested {
     DeriveJsonEncoder.gen
   implicit lazy val circeCodec: Codec[Nested] =
     deriveCodec
-  implicit lazy val playFormatter: Play.Format[Nested] =
-    Play.Json.format[Nested]
 }
 
 @State(Scope.Thread)
@@ -52,13 +50,11 @@ class SyntheticBenchmarks {
     assert(decodeJsoniterSuccess() == decodeZioSuccess())
 
     assert(decodeCirceSuccess() == decodeZioSuccess())
-
-    assert(decodePlaySuccess() == decodeZioSuccess())
   }
 
   @Benchmark
   def decodeJsoniterSuccess(): Either[String, Nested] =
-    Try(readFromArray(jsonString.getBytes(UTF_8)))
+    Try(readFromString(jsonString))
       .fold(t => Left(t.toString), Right(_))
 
   @Benchmark
@@ -73,22 +69,12 @@ class SyntheticBenchmarks {
   }
 
   @Benchmark
-  def decodePlaySuccess(): Either[String, Nested] =
-    Try(Play.Json.parse(jsonString).as[Nested])
-      .fold(t => Left(t.toString), Right.apply)
-
-  @Benchmark
-  def encodePlay(): String =
-    Play.Json.stringify(implicitly[Play.Writes[Nested]].writes(decoded))
-
-  @Benchmark
   def decodeZioSuccess(): Either[String, Nested] =
     jsonChars.fromJson[Nested]
 
   @Benchmark
   def encodeZio(): CharSequence =
     JsonEncoder[Nested].encodeJson(decoded, None)
-
 }
 
 object SyntheticBenchmarks {

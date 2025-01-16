@@ -1,6 +1,5 @@
 package zio.json
 
-import java.util.Arrays
 import java.util.concurrent.TimeUnit
 
 import com.github.plokhotnyuk.jsoniter_scala.core._
@@ -9,7 +8,7 @@ import io.circe
 import zio.json.TestUtils._
 import zio.json.data.googlemaps._
 import org.openjdk.jmh.annotations._
-import play.api.libs.{ json => Play }
+import zio.json.GoogleMapsAPIBenchmarks._
 
 import scala.util.Try
 
@@ -94,51 +93,46 @@ class GoogleMapsAPIBenchmarks {
 
     assert(decodeCirceSuccess1() == decodeZioSuccess1())
     assert(decodeCirceSuccess2() == decodeZioSuccess2())
-    assert(decodeCirceSuccess1() == decodePlaySuccess1())
-    assert(decodeCirceSuccess2() == decodePlaySuccess2())
 
     assert(decodeCirceSuccess1() == decodeCirceAttack0())
     assert(decodeCirceSuccess1() == decodeZioAttack0())
-    assert(decodeCirceSuccess1() == decodePlayAttack0())
 
     assert(decodeCirceSuccess1() == decodeCirceAttack1())
     assert(decodeCirceSuccess1() == decodeZioAttack1())
-    assert(decodeCirceSuccess1() == decodePlayAttack1())
 
     assert(decodeCirceSuccess1() == decodeCirceAttack2())
     assert(decodeCirceSuccess1() == decodeZioAttack2())
-    assert(decodeCirceSuccess1() == decodePlayAttack2())
   }
 
-  // @Benchmark
-  // def decodeJsoniterSuccess1(): Either[String, DistanceMatrix] =
-  //   Try(readFromArray(jsonString.getBytes(UTF_8)))
-  //     .fold(t => Left(t.toString), Right.apply)
+  @Benchmark
+  def decodeJsoniterSuccess1(): Either[String, DistanceMatrix] =
+    Try(readFromString(jsonString))
+      .fold(t => Left(t.toString), Right.apply(_))
 
-  // @Benchmark
-  // def decodeJsoniterSuccess2(): Either[String, DistanceMatrix] =
-  //   Try(readFromArray(jsonStringCompact.getBytes(UTF_8)))
-  //     .fold(t => Left(t.toString), Right.apply)
+  @Benchmark
+  def decodeJsoniterSuccess2(): Either[String, DistanceMatrix] =
+    Try(readFromString(jsonStringCompact))
+      .fold(t => Left(t.toString), Right.apply(_))
 
-  // @Benchmark
-  // def decodeJsoniterError(): Either[String, DistanceMatrix] =
-  //   Try(readFromArray(jsonStringErr.getBytes(UTF_8)))
-  //     .fold(t => Left(t.toString), Right.apply)
+  @Benchmark
+  def decodeJsoniterError(): Either[String, DistanceMatrix] =
+    Try(readFromString(jsonStringErr))
+      .fold(t => Left(t.toString), Right.apply(_))
 
-  // @Benchmark
-  // def decodeJsoniterAttack1(): Either[String, DistanceMatrix] =
-  //   Try(readFromArray(jsonStringAttack1.getBytes(UTF_8)))
-  //     .fold(t => Left(t.toString), Right.apply)
+  @Benchmark
+  def decodeJsoniterAttack1(): Either[String, DistanceMatrix] =
+    Try(readFromString(jsonStringAttack1))
+      .fold(t => Left(t.toString), Right.apply(_))
 
-  // @Benchmark
-  // def decodeJsoniterAttack2(): Either[String, DistanceMatrix] =
-  //   Try(readFromArray(jsonStringAttack2.getBytes(UTF_8)))
-  //     .fold(t => Left(t.toString), Right.apply)
+  @Benchmark
+  def decodeJsoniterAttack2(): Either[String, DistanceMatrix] =
+    Try(readFromString(jsonStringAttack2))
+      .fold(t => Left(t.toString), Right.apply(_))
 
-  // @Benchmark
-  // def decodeJsoniterAttack3(): Either[String, DistanceMatrix] =
-  //   Try(readFromArray(jsonStringAttack3.getBytes(UTF_8)))
-  //     .fold(t => Left(t.toString), Right.apply)
+  @Benchmark
+  def decodeJsoniterAttack3(): Either[String, DistanceMatrix] =
+    Try(readFromString(jsonStringAttack3))
+      .fold(t => Left(t.toString), Right.apply(_))
 
   @Benchmark
   def decodeCirceSuccess1(): Either[circe.Error, DistanceMatrix] =
@@ -182,56 +176,6 @@ class GoogleMapsAPIBenchmarks {
   @Benchmark
   def decodeCirceAttack3(): Either[circe.Error, DistanceMatrix] =
     circe.parser.decode[DistanceMatrix](jsonStringAttack3)
-
-  def playDecode[A](
-    str: String
-  )(implicit R: Play.Reads[A]): Either[String, A] =
-    Try(Play.Json.parse(str).as[A]).fold(
-      // if we don't access the stacktrace then the JVM can optimise it away in
-      // these tight loop perf tests, which would cover up a real bottleneck
-      err => Left(Arrays.toString(err.getStackTrace().asInstanceOf[Array[Object]])),
-      a => Right(a)
-    )
-
-  @Benchmark
-  def decodePlaySuccess1(): Either[String, DistanceMatrix] =
-    playDecode[DistanceMatrix](jsonString)
-
-  @Benchmark
-  def decodePlaySuccess2(): Either[String, DistanceMatrix] =
-    playDecode[DistanceMatrix](jsonStringCompact)
-
-  @Benchmark
-  def encodePlay(): String =
-    Play.Json.stringify(implicitly[Play.Writes[DistanceMatrix]].writes(decoded))
-
-  // @Benchmark
-  // def decodePlayError(): Either[String, DistanceMatrix] =
-  //   playDecode[DistanceMatrix](jsonStringErr)
-
-  @Benchmark
-  def decodePlayErrorParse(): Either[String, DistanceMatrix] =
-    playDecode[DistanceMatrix](jsonStringErrParse)
-
-  @Benchmark
-  def decodePlayErrorNumber(): Either[String, DistanceMatrix] =
-    playDecode[DistanceMatrix](jsonStringErrNumber)
-
-  @Benchmark
-  def decodePlayAttack0(): Either[String, DistanceMatrix] =
-    playDecode[DistanceMatrix](jsonStringAttack0)
-
-  @Benchmark
-  def decodePlayAttack1(): Either[String, DistanceMatrix] =
-    playDecode[DistanceMatrix](jsonStringAttack1)
-
-  @Benchmark
-  def decodePlayAttack2(): Either[String, DistanceMatrix] =
-    playDecode[DistanceMatrix](jsonStringAttack2)
-
-  @Benchmark
-  def decodePlayAttack3(): Either[String, DistanceMatrix] =
-    playDecode[DistanceMatrix](jsonStringAttack3)
 
   @Benchmark
   def decodeZioSuccess1(): Either[String, DistanceMatrix] =

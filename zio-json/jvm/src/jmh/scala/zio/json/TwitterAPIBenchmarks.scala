@@ -1,6 +1,5 @@
 package zio.json
 
-import java.nio.charset.StandardCharsets.UTF_8
 import java.util.concurrent.TimeUnit
 
 import com.github.plokhotnyuk.jsoniter_scala.core._
@@ -9,8 +8,7 @@ import io.circe
 import zio.json.TestUtils._
 import zio.json.data.twitter._
 import org.openjdk.jmh.annotations._
-import play.api.libs.{ json => Play }
-import TwitterAPIBenchmarks._
+import zio.json.TwitterAPIBenchmarks._
 
 import scala.util.Try
 
@@ -44,27 +42,23 @@ class TwitterAPIBenchmarks {
     assert(decodeCirceSuccess2() == decodeZioSuccess2())
     assert(decodeCirceError().isLeft)
 
-    assert(decodePlaySuccess1() == decodeZioSuccess1())
-    assert(decodePlaySuccess2() == decodeZioSuccess2())
-    assert(decodePlayError().isLeft)
-
     assert(decodeZioError().isLeft)
   }
 
   @Benchmark
   def decodeJsoniterSuccess1(): Either[String, List[Tweet]] =
-    Try(readFromArray(jsonString.getBytes(UTF_8)))
-      .fold(t => Left(t.toString), Right.apply)
+    Try(readFromString(jsonString))
+      .fold(t => Left(t.toString), Right.apply(_))
 
   @Benchmark
   def decodeJsoniterSuccess2(): Either[String, List[Tweet]] =
-    Try(readFromArray(jsonStringCompact.getBytes(UTF_8)))
-      .fold(t => Left(t.toString), Right.apply)
+    Try(readFromString(jsonStringCompact))
+      .fold(t => Left(t.toString), Right.apply(_))
 
   @Benchmark
   def decodeJsoniterError(): Either[String, List[Tweet]] =
-    Try(readFromArray(jsonStringErr.getBytes(UTF_8)))
-      .fold(t => Left(t.toString), Right.apply)
+    Try(readFromString(jsonStringErr))
+      .fold(t => Left(t.toString), Right.apply(_))
 
   @Benchmark
   def decodeCirceSuccess1(): Either[circe.Error, List[Tweet]] =
@@ -84,25 +78,6 @@ class TwitterAPIBenchmarks {
   @Benchmark
   def decodeCirceError(): Either[circe.Error, List[Tweet]] =
     circe.parser.decode[List[Tweet]](jsonStringErr)
-
-  @Benchmark
-  def decodePlaySuccess1(): Either[String, List[Tweet]] =
-    Try(Play.Json.parse(jsonString).as[List[Tweet]])
-      .fold(t => Left(t.toString), Right.apply)
-
-  @Benchmark
-  def decodePlaySuccess2(): Either[String, List[Tweet]] =
-    Try(Play.Json.parse(jsonStringCompact).as[List[Tweet]])
-      .fold(t => Left(t.toString), Right.apply)
-
-  @Benchmark
-  def encodePlay(): String =
-    Play.Json.stringify(implicitly[Play.Writes[List[Tweet]]].writes(decoded))
-
-  @Benchmark
-  def decodePlayError(): Either[String, List[Tweet]] =
-    Try(Play.Json.parse(jsonStringErr).as[List[Tweet]])
-      .fold(t => Left(t.toString), Right.apply)
 
   @Benchmark
   def decodeZioSuccess1(): Either[String, List[Tweet]] =

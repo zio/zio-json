@@ -1,6 +1,5 @@
 package zio.json
 
-import java.nio.charset.StandardCharsets._
 import java.util.concurrent.TimeUnit
 
 import com.github.plokhotnyuk.jsoniter_scala.core._
@@ -10,7 +9,6 @@ import zio.json.GeoJSONBenchmarks._
 import zio.json.TestUtils._
 import zio.json.data.geojson.handrolled._
 import org.openjdk.jmh.annotations._
-import play.api.libs.{ json => Play }
 
 import scala.util.Try
 
@@ -42,30 +40,23 @@ class GeoJSONBenchmarks {
     assert(decodeCirceSuccess2() == decodeZioSuccess2())
     assert(decodeCirceError().isLeft)
 
-    // these are failing because of a bug in play-json, but they succeed
-    // assert(decodeCirceSuccess1() == decodePlaySuccess1(), decodePlaySuccess1().toString)
-    // assert(decodeCirceSuccess2() == decodePlaySuccess2())
-    assert(decodePlaySuccess1().isRight)
-    assert(decodePlaySuccess2().isRight)
-    assert(decodePlayError().isLeft)
-
     assert(decodeZioError().isLeft)
   }
 
   @Benchmark
   def decodeJsoniterSuccess1(): Either[String, GeoJSON] =
-    Try(readFromArray(jsonString1.getBytes(UTF_8)))
-      .fold(t => Left(t.toString), Right.apply)
+    Try(readFromString(jsonString1))
+      .fold(t => Left(t.toString), Right.apply(_))
 
   @Benchmark
   def decodeJsoniterSuccess2(): Either[String, GeoJSON] =
-    Try(readFromArray(jsonString2.getBytes(UTF_8)))
-      .fold(t => Left(t.toString), Right.apply)
+    Try(readFromString(jsonString2))
+      .fold(t => Left(t.toString), Right.apply(_))
 
   @Benchmark
   def decodeJsoniterError(): Either[String, GeoJSON] =
-    Try(readFromArray(jsonStringErr.getBytes(UTF_8)))
-      .fold(t => Left(t.toString), Right.apply)
+    Try(readFromString(jsonStringErr))
+      .fold(t => Left(t.toString), Right.apply(_))
 
   @Benchmark
   def decodeCirceSuccess1(): Either[circe.Error, GeoJSON] =
@@ -87,25 +78,6 @@ class GeoJSONBenchmarks {
     circe.parser.decode[GeoJSON](jsonStringErr)
 
   @Benchmark
-  def decodePlaySuccess1(): Either[String, GeoJSON] =
-    Try(Play.Json.parse(jsonString1).as[GeoJSON])
-      .fold(t => Left(t.toString), Right.apply)
-
-  @Benchmark
-  def decodePlaySuccess2(): Either[String, GeoJSON] =
-    Try(Play.Json.parse(jsonString2).as[GeoJSON])
-      .fold(t => Left(t.toString), Right.apply)
-
-  @Benchmark
-  def encodePlay(): String =
-    Play.Json.stringify(implicitly[Play.Writes[GeoJSON]].writes(decoded))
-
-  @Benchmark
-  def decodePlayError(): Either[String, GeoJSON] =
-    Try(Play.Json.parse(jsonStringErr).as[GeoJSON])
-      .fold(t => Left(t.toString), Right.apply)
-
-  @Benchmark
   def decodeZioSuccess1(): Either[String, GeoJSON] =
     jsonChars1.fromJson[GeoJSON]
 
@@ -120,7 +92,6 @@ class GeoJSONBenchmarks {
   @Benchmark
   def decodeZioError(): Either[String, GeoJSON] =
     jsonCharsErr.fromJson[GeoJSON]
-
 }
 
 object GeoJSONBenchmarks {
