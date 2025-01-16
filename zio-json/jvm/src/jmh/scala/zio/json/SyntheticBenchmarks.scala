@@ -58,6 +58,9 @@ class SyntheticBenchmarks {
       .fold(t => Left(t.toString), Right(_))
 
   @Benchmark
+  def encodeJsoniter(): String = writeToString(decoded)
+
+  @Benchmark
   def decodeCirceSuccess(): Either[circe.Error, Nested] =
     circe.parser.decode[Nested](jsonString)
 

@@ -135,6 +135,9 @@ class GoogleMapsAPIBenchmarks {
       .fold(t => Left(t.toString), Right.apply(_))
 
   @Benchmark
+  def encodeJsoniter(): String = writeToString(decoded)
+
+  @Benchmark
   def decodeCirceSuccess1(): Either[circe.Error, DistanceMatrix] =
     circe.parser.decode[DistanceMatrix](jsonString)
 

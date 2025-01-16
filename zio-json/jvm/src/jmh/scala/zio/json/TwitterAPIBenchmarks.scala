@@ -61,6 +61,9 @@ class TwitterAPIBenchmarks {
       .fold(t => Left(t.toString), Right.apply(_))
 
   @Benchmark
+  def encodeJsoniter(): String = writeToString(decoded)
+
+  @Benchmark
   def decodeCirceSuccess1(): Either[circe.Error, List[Tweet]] =
     circe.parser.decode[List[Tweet]](jsonString)
 

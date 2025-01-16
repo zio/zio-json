@@ -59,6 +59,9 @@ class GeoJSONBenchmarks {
       .fold(t => Left(t.toString), Right.apply(_))
 
   @Benchmark
+  def encodeJsoniter(): String = writeToString(decoded)
+
+  @Benchmark
   def decodeCirceSuccess1(): Either[circe.Error, GeoJSON] =
     circe.parser.decode[GeoJSON](jsonString1)
 
