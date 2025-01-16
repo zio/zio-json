@@ -424,86 +424,103 @@ private final class EscapedString(trace: List[JsonError], in: OneCharReader) ext
 // A data structure encoding a simple algorithm for Trie pruning: Given a list
 // of strings, and a sequence of incoming characters, find the strings that
 // match, by manually maintaining a bitset. Empty strings are not allowed.
-final class StringMatrix(val xs: Array[String], aliases: Array[(String, Int)] = Array.empty) {
-  require(xs.forall(_.nonEmpty))
+final class StringMatrix(xs: Array[String], aliases: Array[(String, Int)] = Array.empty) {
   require(xs.nonEmpty)
-  require(aliases.forall(_._1.nonEmpty))
-  require(aliases.forall(p => p._2 >= 0 && p._2 < xs.length))
 
-  val width: Int = xs.length + aliases.length
+  private[this] val width: Int = xs.length + aliases.length
 
   require(width <= 64)
 
-  val lengths: Array[Int] = Array.tabulate[Int](width) { string =>
-    if (string < xs.length) xs(string).length
-    else aliases(string - xs.length)._1.length
-  }
-  val height: Int   = lengths.max
   val initial: Long = -1L >>> (64 - width)
-  private val matrix: Array[Char] = {
-    val m      = Array.fill[Char](width * height)(0xffff)
+
+  private[this] val lengths: Array[Int] = {
+    val ls     = new Array[Int](width)
+    val xsLen  = xs.length
     var string = 0
-    while (string < width) {
+    while (string < xsLen) {
+      val l = xs(string).length
+      if (l == 0) require(false)
+      ls(string) = l
+      string += 1
+    }
+    while (string < ls.length) {
+      val l = aliases(string - xsLen)._1.length
+      if (l == 0) require(false)
+      ls(string) = l
+      string += 1
+    }
+    ls
+  }
+  private[this] val height: Int = lengths.max
+  private[this] val matrix: Array[Char] = {
+    var w      = width
+    val m      = new Array[Char](height * w)
+    val xsLen  = xs.length
+    var string = 0
+    while (string < w) {
       val s =
-        if (string < xs.length) xs(string)
-        else aliases(string - xs.length)._1
-      val len  = s.length
-      var char = 0
+        if (string < xsLen) xs(string)
+        else aliases(string - xsLen)._1
+      val len        = s.length
+      var char, base = 0
       while (char < len) {
-        m(width * char + string) = s.charAt(char)
+        m(base + string) = s.charAt(char)
+        base += w
         char += 1
       }
       string += 1
     }
     m
   }
-  private val resolve: Array[Byte] = Array.tabulate[Byte](width) { string =>
-    if (string < xs.length) string.toByte
-    else aliases(string - xs.length)._2.toByte
+  private[this] val resolvers: Array[Byte] = {
+    val rs     = new Array[Byte](width)
+    val xsLen  = xs.length
+    var string = 0
+    while (string < xsLen) {
+      rs(string) = string.toByte
+      string += 1
+    }
+    while (string < rs.length) {
+      val x = aliases(string - xsLen)._2
+      if (x < 0 || x > xsLen) require(false)
+      rs(string) = x.toByte
+      string += 1
+    }
+    rs
   }
 
   // must be called with increasing `char` (starting with bitset obtained from a
   // call to 'initial', char = 0)
   def update(bitset: Long, char: Int, c: Int): Long =
-    if (char >= height) 0L    // too long
-    else if (bitset == 0L) 0L // everybody lost
-    else {
-      var latest = bitset
-      val base   = width * char
-      if (bitset == initial) { // special case when it is dense since it is simple
-        var string = 0
-        while (string < width) {
-          if (matrix(base + string) != c) latest ^= 1L << string
-          string += 1
-        }
-      } else {
-        var remaining = bitset
-        while (remaining != 0L) {
-          val string = java.lang.Long.numberOfTrailingZeros(remaining)
-          val bit    = 1L << string
-          if (matrix(base + string) != c) latest ^= bit
-          remaining ^= bit
-        }
-      }
-      latest
-    }
-
-  // excludes entries that are not the given exact length
-  def exact(bitset: Long, length: Int): Long =
-    if (length > height) 0L // too long
-    else {
-      var latest    = bitset
-      var remaining = bitset
+    if (char < height) {
+      var remaining, latest = bitset
+      val w                 = width
+      val m                 = matrix
+      val base              = char * w
       while (remaining != 0L) {
         val string = java.lang.Long.numberOfTrailingZeros(remaining)
         val bit    = 1L << string
-        if (lengths(string) != length) latest ^= bit
         remaining ^= bit
+        if (m(base + string) != c) latest ^= bit
       }
       latest
-    }
+    } else 0L // too long
+
+  // excludes entries that are not the given exact length
+  def exact(bitset: Long, length: Int): Long =
+    if (length <= height) {
+      var remaining, latest = bitset
+      val ls                = lengths
+      while (remaining != 0L) {
+        val string = java.lang.Long.numberOfTrailingZeros(remaining)
+        val bit    = 1L << string
+        remaining ^= bit
+        if (ls(string) != length) latest ^= bit
+      }
+      latest
+    } else 0L // too long
 
   def first(bitset: Long): Int =
-    if (bitset == 0L) -1
-    else resolve(java.lang.Long.numberOfTrailingZeros(bitset)) // never returns 64
+    if (bitset != 0L) resolvers(java.lang.Long.numberOfTrailingZeros(bitset)).toInt // never returns 64
+    else -1
 }
