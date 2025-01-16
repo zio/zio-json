@@ -48,7 +48,7 @@ object StringMatrixSpec extends ZIOSpecDefault {
         val asserts = xs.indices.map { i =>
           val test = xs(i)
           var bs = test.zipWithIndex.foldLeft(m.initial) { case (bs, (c, i)) =>
-            m.update(bs, i, c.toInt)
+            m.update(bs, i, c)
           }
           bs = m.exact(bs, test.length)
           m.first(bs) == i
@@ -102,7 +102,7 @@ object StringMatrixSpec extends ZIOSpecDefault {
         val asserts = aliases.indices.map { i =>
           val test = aliases(i)._1
           var bs = test.zipWithIndex.foldLeft(m.initial) { case (bs, (c, i)) =>
-            m.update(bs, i, c.toInt)
+            m.update(bs, i, c)
           }
           bs = m.exact(bs, test.length)
           m.first(bs) == aliases(i)._2
@@ -135,7 +135,7 @@ object StringMatrixSpec extends ZIOSpecDefault {
     var bs = test.foldLeft(m.initial) {
       var i = 0
       (bs, c) =>
-        val nm = m.update(bs, i, c.toInt)
+        val nm = m.update(bs, i, c)
         i += 1
         nm
     }

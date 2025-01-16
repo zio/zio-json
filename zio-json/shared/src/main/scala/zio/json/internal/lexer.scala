@@ -28,6 +28,18 @@ object Lexer {
 
   val NumberMaxBits: Int = 256
 
+  @noinline
+  def error(msg: String, trace: List[JsonError]): Nothing =
+    throw UnsafeJson(JsonError.Message(msg) :: trace)
+
+  @noinline
+  private[json] def error(expected: String, got: Char, trace: List[JsonError]): Nothing =
+    throw UnsafeJson(JsonError.Message(s"expected $expected got '$got'") :: trace)
+
+  @noinline
+  private[json] def error(c: Char, trace: List[JsonError]): Nothing =
+    error(s"invalid '\\$c' in string", trace)
+
   // True if we got a string (implies a retraction), False for }
   def firstField(trace: List[JsonError], in: RetractReader): Boolean =
     (in.nextNonWhitespace(): @switch) match {
@@ -35,10 +47,7 @@ object Lexer {
         in.retract()
         true
       case '}' => false
-      case c =>
-        throw UnsafeJson(
-          JsonError.Message(s"expected string or '}' got '$c'") :: trace
-        )
+      case c   => error("string or '}'", c, trace)
     }
 
   // True if we got a comma, and False for }
@@ -46,10 +55,7 @@ object Lexer {
     (in.nextNonWhitespace(): @switch) match {
       case ',' => true
       case '}' => false
-      case c =>
-        throw UnsafeJson(
-          JsonError.Message(s"expected ',' or '}' got '$c'") :: trace
-        )
+      case c   => error("',' or '}'", c, trace)
     }
 
   // True if we got anything besides a ], False for ]
@@ -65,10 +71,7 @@ object Lexer {
     (in.nextNonWhitespace(): @switch) match {
       case ',' => true
       case ']' => false
-      case c =>
-        throw UnsafeJson(
-          JsonError.Message(s"expected ',' or ']' got '$c'") :: trace
-        )
+      case c   => error("',' or ']'", c, trace)
     }
 
   // avoids allocating lots of strings (they are often the bulk of incoming
@@ -90,21 +93,34 @@ object Lexer {
     in: OneCharReader,
     matrix: StringMatrix
   ): Int = {
-    val stream = streamingString(trace, in)
-
-    var i: Int   = 0
-    var bs: Long = matrix.initial
-    var c: Int   = -1
-    while ({ c = stream.read(); c != -1 }) {
+    var c = in.nextNonWhitespace()
+    if (c != '"') error("'\"'", c, trace)
+    var bs = matrix.initial
+    var i  = 0
+    while ({
+      c = in.readChar()
+      c != '"'
+    }) {
+      if (c == '\\') {
+        (in.readChar(): @switch) match {
+          case '"'  => c = '"'
+          case '\\' => c = '\\'
+          case '/'  => c = '/'
+          case 'b'  => c = '\b'
+          case 'f'  => c = '\f'
+          case 'n'  => c = '\n'
+          case 'r'  => c = '\r'
+          case 't'  => c = '\t'
+          case 'u'  => c = nextHex4(trace, in)
+          case _    => error(c, trace)
+        }
+      } else if (c < ' ') error("invalid control in string", trace)
       bs = matrix.update(bs, i, c)
       i += 1
     }
     bs = matrix.exact(bs, i)
     matrix.first(bs)
   }
-
-  private[this] val alse: Array[Char] = "alse".toCharArray
-  private[this] val rue: Array[Char]  = "rue".toCharArray
 
   def skipValue(trace: List[JsonError], in: RetractReader): Unit =
     (in.nextNonWhitespace(): @switch) match {
@@ -116,7 +132,7 @@ object Lexer {
         skipString(in, evenBackSlashes = true)
       case '-' | '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' =>
         skipNumber(in)
-      case c => throw UnsafeJson(JsonError.Message(s"unexpected '$c'") :: trace)
+      case c => error(s"unexpected '$c'", trace)
     }
 
   def skipNumber(in: RetractReader): Unit = {
@@ -169,36 +185,104 @@ object Lexer {
     in: OneCharReader
   ): java.io.Reader = {
     char(trace, in, '"')
-    new EscapedString(trace, in)
+    new OneCharReader {
+      def close(): Unit = in.close()
+
+      private[this] var escaped = false
+
+      @tailrec
+      override def read(): Int = {
+        val c = in.readChar()
+        if (escaped) {
+          escaped = false
+          ((c: @switch) match {
+            case '"' | '\\' | '/' => c
+            case 'b'              => '\b'
+            case 'f'              => '\f'
+            case 'n'              => '\n'
+            case 'r'              => '\r'
+            case 't'              => '\t'
+            case 'u'              => Lexer.nextHex4(trace, in)
+            case _                => Lexer.error(c, trace)
+          }).toInt
+        } else if (c == '\\') {
+          escaped = true
+          read()
+        } else if (c == '"') -1 // this is the EOS for the caller
+        else if (c < ' ') Lexer.error("invalid control in string", trace)
+        else c.toInt
+      }
+
+      // callers expect to get an EOB so this is rare
+      def readChar(): Char = {
+        val v = read()
+        if (v == -1) throw new UnexpectedEnd
+        v.toChar
+      }
+    }
   }
 
   def string(trace: List[JsonError], in: OneCharReader): CharSequence = {
-    char(trace, in, '"')
-    val stream = new EscapedString(trace, in)
-
+    var c = in.nextNonWhitespace()
+    if (c != '"') error("'\"'", c, trace)
     val sb = new FastStringBuilder(64)
-    while (true) {
-      val c = stream.read()
-      if (c == -1)
-        return sb.buffer // mutable thing escapes, but cannot be changed
-      sb.append(c.toChar)
+    while ({
+      c = in.readChar()
+      c != '"'
+    }) {
+      if (c == '\\') {
+        (in.readChar(): @switch) match {
+          case '"'  => c = '"'
+          case '\\' => c = '\\'
+          case '/'  => c = '/'
+          case 'b'  => c = '\b'
+          case 'f'  => c = '\f'
+          case 'n'  => c = '\n'
+          case 'r'  => c = '\r'
+          case 't'  => c = '\t'
+          case 'u'  => c = nextHex4(trace, in)
+          case _    => error(c, trace)
+        }
+      } else if (c < ' ') error("invalid control in string", trace)
+      sb.append(c)
     }
-    throw UnsafeJson(JsonError.Message("impossible string") :: trace)
+    sb.buffer
   }
 
-  def boolean(trace: List[JsonError], in: OneCharReader): Boolean =
-    (in.nextNonWhitespace(): @switch) match {
+  // consumes 4 hex characters after current
+  @noinline
+  def nextHex4(trace: List[JsonError], in: OneCharReader): Char = {
+    var i, accum = 0
+    while (i < 4) {
+      val c = in.readChar()
+      accum <<= 4
+      accum += {
+        if ('0' <= c && c <= '9') c - '0'
+        else if ('A' <= c && c <= 'F') c - 'A' + 10
+        else if ('a' <= c && c <= 'f') c - 'a' + 10
+        else error("invalid charcode in string", trace)
+      }
+      i += 1
+    }
+    accum.toChar
+  }
+
+  def boolean(trace: List[JsonError], in: OneCharReader): Boolean = {
+    val c1 = in.nextNonWhitespace()
+    val c2 = in.readChar()
+    val c3 = in.readChar()
+    val c4 = in.readChar()
+    (c1: @switch) match {
       case 't' =>
-        readChars(trace, in, rue, "true")
+        if (c2 != 'r' || c3 != 'u' || c4 != 'e') error(s"expected 'true'", trace)
         true
       case 'f' =>
-        readChars(trace, in, alse, "false")
+        if (in.readChar() != 'e' || c2 != 'a' || c3 != 'l' || c4 != 's') error(s"expected 'false'", trace)
         false
       case c =>
-        throw UnsafeJson(
-          JsonError.Message(s"expected 'true' or 'false' got $c") :: trace
-        )
+        error("'true' or 'false'", c, trace)
     }
+  }
 
   def byte(trace: List[JsonError], in: RetractReader): Byte = {
     checkNumber(trace, in)
@@ -207,8 +291,7 @@ object Lexer {
       in.retract()
       i
     } catch {
-      case UnsafeNumbers.UnsafeNumber =>
-        throw UnsafeJson(JsonError.Message("expected a Byte") :: trace)
+      case UnsafeNumbers.UnsafeNumber => error("expected a Byte", trace)
     }
   }
 
@@ -219,8 +302,7 @@ object Lexer {
       in.retract()
       i
     } catch {
-      case UnsafeNumbers.UnsafeNumber =>
-        throw UnsafeJson(JsonError.Message("expected a Short") :: trace)
+      case UnsafeNumbers.UnsafeNumber => error("expected a Short", trace)
     }
   }
 
@@ -231,8 +313,7 @@ object Lexer {
       in.retract()
       i
     } catch {
-      case UnsafeNumbers.UnsafeNumber =>
-        throw UnsafeJson(JsonError.Message("expected an Int") :: trace)
+      case UnsafeNumbers.UnsafeNumber => error("expected an Int", trace)
     }
   }
 
@@ -243,8 +324,7 @@ object Lexer {
       in.retract()
       i
     } catch {
-      case UnsafeNumbers.UnsafeNumber =>
-        throw UnsafeJson(JsonError.Message("expected a Long") :: trace)
+      case UnsafeNumbers.UnsafeNumber => error("expected a Long", trace)
     }
   }
 
@@ -258,8 +338,7 @@ object Lexer {
       in.retract()
       i
     } catch {
-      case UnsafeNumbers.UnsafeNumber =>
-        throw UnsafeJson(JsonError.Message(s"expected a $NumberMaxBits bit BigInteger") :: trace)
+      case UnsafeNumbers.UnsafeNumber => error(s"expected a $NumberMaxBits bit BigInteger", trace)
     }
   }
 
@@ -270,8 +349,7 @@ object Lexer {
       in.retract()
       i
     } catch {
-      case UnsafeNumbers.UnsafeNumber =>
-        throw UnsafeJson(JsonError.Message("expected a Float") :: trace)
+      case UnsafeNumbers.UnsafeNumber => error("expected a Float", trace)
     }
   }
 
@@ -282,8 +360,7 @@ object Lexer {
       in.retract()
       i
     } catch {
-      case UnsafeNumbers.UnsafeNumber =>
-        throw UnsafeJson(JsonError.Message("expected a Double") :: trace)
+      case UnsafeNumbers.UnsafeNumber => error("expected a Double", trace)
     }
   }
 
@@ -297,8 +374,7 @@ object Lexer {
       in.retract()
       i
     } catch {
-      case UnsafeNumbers.UnsafeNumber =>
-        throw UnsafeJson(JsonError.Message(s"expected a $NumberMaxBits BigDecimal") :: trace)
+      case UnsafeNumbers.UnsafeNumber => error(s"expected a $NumberMaxBits BigDecimal", trace)
     }
   }
 
@@ -306,10 +382,7 @@ object Lexer {
   private def checkNumber(trace: List[JsonError], in: RetractReader): Unit = {
     (in.nextNonWhitespace(): @switch) match {
       case '-' | '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' => ()
-      case c =>
-        throw UnsafeJson(
-          JsonError.Message(s"expected a number, got $c") :: trace
-        )
+      case c                                                               => error("a number,", c, trace)
     }
     in.retract()
   }
@@ -317,8 +390,7 @@ object Lexer {
   // optional whitespace and then an expected character
   @inline def char(trace: List[JsonError], in: OneCharReader, c: Char): Unit = {
     val got = in.nextNonWhitespace()
-    if (got != c)
-      throw UnsafeJson(JsonError.Message(s"expected '$c' got '$got'") :: trace)
+    if (got != c) error(s"'$c'", got, trace)
   }
 
   @inline def charOnly(
@@ -327,8 +399,7 @@ object Lexer {
     c: Char
   ): Unit = {
     val got = in.readChar()
-    if (got != c)
-      throw UnsafeJson(JsonError.Message(s"expected '$c' got '$got'") :: trace)
+    if (got != c) error(s"'$c'", got, trace)
   }
 
   // non-positional for performance
@@ -347,78 +418,10 @@ object Lexer {
   ): Unit = {
     var i: Int = 0
     while (i < expect.length) {
-      if (in.readChar() != expect(i))
-        throw UnsafeJson(JsonError.Message(s"expected '$errMsg'") :: trace)
+      if (in.readChar() != expect(i)) error(s"expected '$errMsg'", trace)
       i += 1
     }
   }
-
-}
-
-// A Reader for the contents of a string, taking care of the escaping.
-//
-// `read` can throw extra exceptions on badly formed input.
-private final class EscapedString(trace: List[JsonError], in: OneCharReader) extends java.io.Reader with OneCharReader {
-
-  def close(): Unit = in.close()
-
-  private[this] var escaped = false
-
-  override def read(): Int = {
-    val c = in.readChar()
-    if (escaped) {
-      escaped = false
-      (c: @switch) match {
-        case '"' | '\\' | '/' => c.toInt
-        case 'b'              => '\b'.toInt
-        case 'f'              => '\f'.toInt
-        case 'n'              => '\n'.toInt
-        case 'r'              => '\r'.toInt
-        case 't'              => '\t'.toInt
-        case 'u'              => nextHex4()
-        case _ =>
-          throw UnsafeJson(
-            JsonError.Message(s"invalid '\\${c.toChar}' in string") :: trace
-          )
-      }
-    } else if (c == '\\') {
-      escaped = true
-      read()
-    } else if (c == '"') -1 // this is the EOS for the caller
-    else if (c < ' ')
-      throw UnsafeJson(JsonError.Message("invalid control in string") :: trace)
-    else c.toInt
-  }
-
-  // callers expect to get an EOB so this is rare
-  def readChar(): Char = {
-    val v = read()
-    if (v == -1) throw new UnexpectedEnd
-    v.toChar
-  }
-
-  // consumes 4 hex characters after current
-  def nextHex4(): Int = {
-    var i: Int     = 0
-    var accum: Int = 0
-    while (i < 4) {
-      var c: Int = in.read()
-      if (c == -1)
-        throw UnsafeJson(JsonError.Message("unexpected EOB in string") :: trace)
-      c =
-        if ('0' <= c && c <= '9') c - '0'
-        else if ('A' <= c && c <= 'F') c - 'A' + 10
-        else if ('a' <= c && c <= 'f') c - 'a' + 10
-        else
-          throw UnsafeJson(
-            JsonError.Message("invalid charcode in string") :: trace
-          )
-      accum = accum * 16 + c
-      i += 1
-    }
-    accum
-  }
-
 }
 
 // A data structure encoding a simple algorithm for Trie pruning: Given a list
@@ -453,7 +456,7 @@ final class StringMatrix(xs: Array[String], aliases: Array[(String, Int)] = Arra
   }
   private[this] val height: Int = lengths.max
   private[this] val matrix: Array[Char] = {
-    var w      = width
+    val w      = width
     val m      = new Array[Char](height * w)
     val xsLen  = xs.length
     var string = 0
@@ -491,17 +494,26 @@ final class StringMatrix(xs: Array[String], aliases: Array[(String, Int)] = Arra
 
   // must be called with increasing `char` (starting with bitset obtained from a
   // call to 'initial', char = 0)
-  def update(bitset: Long, char: Int, c: Int): Long =
+  def update(bitset: Long, char: Int, c: Char): Long =
     if (char < height) {
-      var remaining, latest = bitset
-      val w                 = width
-      val m                 = matrix
-      val base              = char * w
-      while (remaining != 0L) {
-        val string = java.lang.Long.numberOfTrailingZeros(remaining)
-        val bit    = 1L << string
-        remaining ^= bit
-        if (m(base + string) != c) latest ^= bit
+      val w      = width
+      val m      = matrix
+      val base   = char * w
+      var latest = bitset
+      if (initial == bitset) { // special case when it is dense since it is simple
+        var string = 0
+        while (string < w) {
+          if (m(base + string) != c) latest ^= 1L << string
+          string += 1
+        }
+      } else {
+        var remaining = bitset
+        while (remaining != 0L) {
+          val string = java.lang.Long.numberOfTrailingZeros(remaining)
+          val bit    = 1L << string
+          remaining ^= bit
+          if (m(base + string) != c) latest ^= bit
+        }
       }
       latest
     } else 0L // too long

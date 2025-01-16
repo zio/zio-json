@@ -48,9 +48,9 @@ private[zio] final class FastStringBuilder(initial: Int) {
   private[this] var chars: Array[Char] = new Array[Char](initial)
   private[this] var i: Int             = 0
 
+  @inline
   def append(c: Char): Unit = {
-    if (i == chars.length)
-      chars = Arrays.copyOf(chars, chars.length * 2)
+    if (i == chars.length) chars = Arrays.copyOf(chars, chars.length << 1)
     chars(i) = c
     i += 1
   }

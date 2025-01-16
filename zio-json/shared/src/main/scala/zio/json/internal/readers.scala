@@ -101,21 +101,21 @@ private[zio] final class FastStringReader(s: CharSequence) extends RetractReader
   override def read(): Int = {
     i += 1
     if (i > len) -1
-    else history(i - 1).toInt // -1 is faster than assigning a temp value
+    else s.charAt(i - 1).toInt // -1 is faster than assigning a temp value
   }
   override def readChar(): Char = {
     i += 1
     if (i > len) throw new UnexpectedEnd
-    else history(i - 1)
+    s.charAt(i - 1)
   }
   override def nextNonWhitespace(): Char = {
     while ({
       {
         i += 1
         if (i > len) throw new UnexpectedEnd
-      }; isWhitespace(history(i - 1))
+      }; isWhitespace(s.charAt(i - 1))
     }) ()
-    history(i - 1)
+    s.charAt(i - 1)
   }
 
   def retract(): Unit = i -= 1
@@ -179,7 +179,7 @@ private[zio] sealed trait PlaybackReader extends OneCharReader {
 private[zio] final class WithRecordingReader(in: OneCharReader, initial: Int)
     extends RecordingReader
     with PlaybackReader {
-  private[this] var tape: Array[Char] = Array.ofDim(Math.max(initial, 1))
+  private[this] var tape: Array[Char] = new Array(Math.max(initial, 1))
   private[this] var eob: Int          = -1
   private[this] var writing: Int      = 0
   private[this] var reading: Int      = -1
@@ -209,7 +209,7 @@ private[zio] final class WithRecordingReader(in: OneCharReader, initial: Int)
         tape(writing) = v
         writing += 1
         if (writing == tape.length)
-          tape = Arrays.copyOf(tape, tape.length * 2)
+          tape = Arrays.copyOf(tape, tape.length << 1)
       }
       v
     }

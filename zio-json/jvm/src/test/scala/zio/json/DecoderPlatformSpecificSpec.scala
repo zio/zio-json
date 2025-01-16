@@ -266,7 +266,7 @@ object DecoderPlatformSpecificSpec extends ZIOSpecDefault {
             }
             assert(decoder.decodeJson("true"))(equalTo(Right(true.asInstanceOf[AnyVal]))) &&
             assert(decoder.decodeJson("42"))(equalTo(Right(42.asInstanceOf[AnyVal]))) &&
-            assert(decoder.decodeJson("\"a string\""))(equalTo(Left("(expected a number, got a)")))
+            assert(decoder.decodeJson("\"a string\""))(equalTo(Left("(expected a number, got 'a')")))
           }
         )
       )
