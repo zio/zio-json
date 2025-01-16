@@ -23,7 +23,9 @@ object StringMatrixSpec extends ZIOSpecDefault {
       }
     },
     test("negative fails") {
-      check(genTestStrings.filterNot(_.startsWith("wibble")))(xs => assert(matcher(xs, Array.empty, "wibble").toVector)(isEmpty))
+      check(genTestStrings.filterNot(_.startsWith("wibble")))(xs =>
+        assert(matcher(xs, Array.empty, "wibble").toVector)(isEmpty)
+      )
     },
     test("substring fails") {
       check(genTestStrings.filter(_.length > 1))(xs => assert(matcher(xs, Array.empty, xs.mkString).toVector)(isEmpty))
@@ -143,7 +145,7 @@ object StringMatrixSpec extends ZIOSpecDefault {
 
   private def matches(xsAndAliases: Array[String], bitset: Long): Array[String] = {
     val hits = Array.newBuilder[String]
-    var i                  = 0
+    var i    = 0
     while (i < xsAndAliases.length) {
       if (((bitset >>> i) & 1L) != 0) hits += xsAndAliases(i)
       i += 1
