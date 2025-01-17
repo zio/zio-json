@@ -22,9 +22,70 @@ final case class JsonCodecConfiguration(
   sumTypeMapping: JsonMemberFormat = IdentityFormat,
   explicitNulls: Boolean = false,
   explicitEmptyCollections: Boolean = true
-)
+) {
+  def this(
+    sumTypeHandling: SumTypeHandling,
+    fieldNameMapping: JsonMemberFormat,
+    allowExtraFields: Boolean,
+    sumTypeMapping: JsonMemberFormat,
+    explicitNulls: Boolean
+  ) = this(
+    sumTypeHandling,
+    fieldNameMapping,
+    allowExtraFields,
+    sumTypeMapping,
+    explicitNulls,
+    true
+  )
+
+  def copy(
+    sumTypeHandling: SumTypeHandling = WrapperWithClassNameField.asInstanceOf[SumTypeHandling],
+    fieldNameMapping: JsonMemberFormat = IdentityFormat.asInstanceOf[JsonMemberFormat],
+    allowExtraFields: Boolean = true,
+    sumTypeMapping: JsonMemberFormat = IdentityFormat.asInstanceOf[JsonMemberFormat],
+    explicitNulls: Boolean = false,
+    explicitEmptyCollections: Boolean = true
+  ) = new JsonCodecConfiguration(
+    sumTypeHandling,
+    fieldNameMapping,
+    allowExtraFields,
+    sumTypeMapping,
+    explicitNulls,
+    explicitEmptyCollections
+  )
+
+  def copy(
+    sumTypeHandling: SumTypeHandling,
+    fieldNameMapping: JsonMemberFormat,
+    allowExtraFields: Boolean,
+    sumTypeMapping: JsonMemberFormat,
+    explicitNulls: Boolean
+  ) = new JsonCodecConfiguration(
+    sumTypeHandling,
+    fieldNameMapping,
+    allowExtraFields,
+    sumTypeMapping,
+    explicitNulls,
+    true
+  )
+}
 
 object JsonCodecConfiguration {
+  def apply(
+    sumTypeHandling: SumTypeHandling,
+    fieldNameMapping: JsonMemberFormat,
+    allowExtraFields: Boolean,
+    sumTypeMapping: JsonMemberFormat,
+    explicitNulls: Boolean
+  ) = new JsonCodecConfiguration(
+    sumTypeHandling,
+    fieldNameMapping,
+    allowExtraFields,
+    sumTypeMapping,
+    explicitNulls,
+    true
+  )
+
   implicit val default: JsonCodecConfiguration = JsonCodecConfiguration()
 
   sealed trait SumTypeHandling {

@@ -233,7 +233,7 @@ private class CaseObjectDecoder[Typeclass[*], A](val ctx: CaseClass[Typeclass, A
           }
       }
 
-final class JsonDecoderDerivation(config: JsonCodecConfiguration) extends Derivation[JsonDecoder] { self =>
+sealed class JsonDecoderDerivation(config: JsonCodecConfiguration) extends Derivation[JsonDecoder] { self =>
   def join[A](ctx: CaseClass[Typeclass, A]): JsonDecoder[A] = {
     val (transformNames, nameTransform): (Boolean, String => String) =
       ctx.annotations.collectFirst { case jsonMemberNames(format) => format }
@@ -518,14 +518,20 @@ private lazy val caseObjectEncoder = new JsonEncoder[Any] {
     Right(Json.Obj(Chunk.empty))
 }
 
-object DeriveJsonDecoder {
+object DeriveJsonDecoder extends JsonDecoderDerivation(JsonCodecConfiguration.default) { self =>
   inline def gen[A](using config: JsonCodecConfiguration, mirror: Mirror.Of[A]) = {
     val derivation = new JsonDecoderDerivation(config)
     derivation.derived[A]
   }
+
+  // Backcompat for 2.12, otherwise we'd use ArraySeq.unsafeWrapArray
+  private final class ArraySeq(p: Array[Any]) extends IndexedSeq[Any] {
+    def apply(i: Int): Any = p(i)
+    def length: Int        = p.length
+  }
 }
 
-final class JsonEncoderDerivation(config: JsonCodecConfiguration) extends Derivation[JsonEncoder] { self =>
+sealed class JsonEncoderDerivation(config: JsonCodecConfiguration) extends Derivation[JsonEncoder] { self =>
    def join[A](ctx: CaseClass[Typeclass, A]): JsonEncoder[A] =
     if (ctx.params.isEmpty) {
       caseObjectEncoder.narrow[A]
@@ -772,7 +778,7 @@ final class JsonEncoderDerivation(config: JsonCodecConfiguration) extends Deriva
   }
 }
 
-object DeriveJsonEncoder {
+object DeriveJsonEncoder extends JsonEncoderDerivation(JsonCodecConfiguration.default) { self =>
   inline def gen[A](using config: JsonCodecConfiguration, mirror: Mirror.Of[A]) = {
     val derivation = new JsonEncoderDerivation(config)
     derivation.derived[A]

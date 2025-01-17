@@ -243,8 +243,11 @@ object BuildHelper {
     incOptions ~= (_.withLogRecompileOnMacro(false)),
     autoAPIMappings := true,
     unusedCompileDependenciesFilter -= moduleFilter("org.scala-js", "scalajs-library"),
-    mimaPreviousArtifacts := previousStableVersion.value.map(organization.value %% name.value % _).toSet,
-    mimaCheckDirection    := "backward", // TODO: find how we can use "both" for path versions
+    mimaPreviousArtifacts := {
+      previousStableVersion.value.map(organization.value %% name.value % _).toSet ++
+        Set(organization.value %% name.value % "0.7.3")
+    },
+    mimaCheckDirection := "backward", // TODO: find how we can use "both" for path versions
     mimaBinaryIssueFilters ++= Seq(
       exclude[Problem]("zio.json.macros#package.<clinit>"),
       exclude[Problem]("zio.JsonPackagePlatformSpecific.*"),
