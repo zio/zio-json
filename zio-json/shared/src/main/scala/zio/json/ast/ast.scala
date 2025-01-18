@@ -16,7 +16,7 @@
 package zio.json.ast
 
 import zio.Chunk
-import zio.json.JsonDecoder.{ JsonError, UnsafeJson }
+import zio.json.JsonDecoder.JsonError
 import zio.json._
 import zio.json.ast.Json._
 import zio.json.internal._
@@ -388,7 +388,7 @@ object Json {
       override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): Obj =
         json match {
           case obj @ Obj(_) => obj
-          case _            => throw UnsafeJson(JsonError.Message(s"Not an object") :: trace)
+          case _            => Lexer.error("Not an object", trace)
         }
     }
     private lazy val obje = JsonEncoder.keyValueChunk[String, Json]
@@ -433,7 +433,7 @@ object Json {
       override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): Arr =
         json match {
           case arr @ Arr(_) => arr
-          case _            => throw UnsafeJson(JsonError.Message(s"Not an array") :: trace)
+          case _            => Lexer.error("Not an array", trace)
         }
     }
     private lazy val arre = JsonEncoder.chunk[Json]
@@ -462,7 +462,7 @@ object Json {
       override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): Bool =
         json match {
           case b @ Bool(_) => b
-          case _           => throw UnsafeJson(JsonError.Message(s"Not a bool value") :: trace)
+          case _           => Lexer.error("Not a bool value", trace)
         }
     }
     implicit val encoder: JsonEncoder[Bool] = new JsonEncoder[Bool] {
@@ -486,7 +486,7 @@ object Json {
       override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): Str =
         json match {
           case s @ Str(_) => s
-          case _          => throw UnsafeJson(JsonError.Message(s"Not a string value") :: trace)
+          case _          => Lexer.error("Not a string value", trace)
         }
     }
     implicit val encoder: JsonEncoder[Str] = new JsonEncoder[Str] {
@@ -518,7 +518,7 @@ object Json {
       override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): Num =
         json match {
           case n @ Num(_) => n
-          case _          => throw UnsafeJson(JsonError.Message(s"Not a number") :: trace)
+          case _          => Lexer.error("Not a number", trace)
         }
     }
     implicit val encoder: JsonEncoder[Num] = new JsonEncoder[Num] {
@@ -542,7 +542,7 @@ object Json {
       override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): Null.type =
         json match {
           case Null => Null
-          case _    => throw UnsafeJson(JsonError.Message(s"Not null") :: trace)
+          case _    => Lexer.error("Not null", trace)
         }
     }
     implicit val encoder: JsonEncoder[Null.type] = new JsonEncoder[Null.type] {
@@ -570,7 +570,7 @@ object Json {
         case '-' | '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' =>
           Num.decoder.unsafeDecode(trace, in)
         case c =>
-          throw UnsafeJson(JsonError.Message(s"unexpected '$c'") :: trace)
+          Lexer.error(s"unexpected '$c'", trace)
       }
     }
 

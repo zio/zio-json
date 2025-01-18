@@ -2,7 +2,7 @@ package zio.json
 
 import magnolia1._
 import zio.Chunk
-import zio.json.JsonDecoder.{ JsonError, UnsafeJson }
+import zio.json.JsonDecoder.JsonError
 import zio.json.ast.Json
 import zio.json.internal.{ Lexer, RetractReader, StringMatrix, Write }
 
@@ -228,21 +228,24 @@ object DeriveJsonDecoder {
           json match {
             case Json.Obj(_) => ctx.rawConstruct(Nil)
             case Json.Null   => ctx.rawConstruct(Nil)
-            case _           => throw UnsafeJson(JsonError.Message("Not an object") :: trace)
+            case _           => Lexer.error("Not an object", trace)
           }
       }
     else
       new JsonDecoder[A] {
         val (names, aliases): (Array[String], Array[(String, Int)]) = {
-          val names          = Array.ofDim[String](ctx.parameters.size)
+          val names          = new Array[String](ctx.parameters.size)
           val aliasesBuilder = Array.newBuilder[(String, Int)]
-          ctx.parameters.zipWithIndex.foreach { case (p, i) =>
-            names(i) = p.annotations.collectFirst { case jsonField(name) => name }
-              .getOrElse(if (transformNames) nameTransform(p.label) else p.label)
-            aliasesBuilder ++= p.annotations.flatMap {
-              case jsonAliases(alias, aliases @ _*) => (alias +: aliases).map(_ -> i)
-              case _                                => Seq.empty
-            }
+          ctx.parameters.foreach {
+            var i = 0
+            p =>
+              names(i) = p.annotations.collectFirst { case jsonField(name) => name }
+                .getOrElse(if (transformNames) nameTransform(p.label) else p.label)
+              aliasesBuilder ++= p.annotations.flatMap {
+                case jsonAliases(alias, aliases @ _*) => (alias +: aliases).map(_ -> i)
+                case _                                => Seq.empty
+              }
+              i += 1
           }
           val aliases = aliasesBuilder.result()
 
@@ -270,9 +273,6 @@ object DeriveJsonDecoder {
         lazy val namesMap: Map[String, Int] =
           (names.zipWithIndex ++ aliases).toMap
 
-        private[this] def error(message: String, trace: List[JsonError]): Nothing =
-          throw UnsafeJson(JsonError.Message(message) :: trace)
-
         def unsafeDecode(trace: List[JsonError], in: RetractReader): A = {
           Lexer.char(trace, in, '{')
 
@@ -288,7 +288,7 @@ object DeriveJsonDecoder {
             do {
               val field = Lexer.field(trace, in, matrix)
               if (field != -1) {
-                if (ps(field) != null) error("duplicate", trace)
+                if (ps(field) != null) Lexer.error("duplicate", trace)
                 val default = defaults(field)
                 ps(field) =
                   if (
@@ -298,8 +298,8 @@ object DeriveJsonDecoder {
                     }
                   ) tcs(field).unsafeDecode(spans(field) :: trace, in)
                   else if (in.readChar() == 'u' && in.readChar() == 'l' && in.readChar() == 'l') default.get
-                  else error("expected 'null'", spans(field) :: trace)
-              } else if (no_extra) error("invalid extra field", trace)
+                  else Lexer.error("expected 'null'", spans(field) :: trace)
+              } else if (no_extra) Lexer.error("invalid extra field", trace)
               else Lexer.skipValue(trace, in)
             } while (Lexer.nextField(trace, in))
           var i = 0
@@ -322,13 +322,13 @@ object DeriveJsonDecoder {
               for ((key, value) <- fields) {
                 namesMap.get(key) match {
                   case Some(field) =>
-                    if (ps(field) != null) error("duplicate", trace)
+                    if (ps(field) != null) Lexer.error("duplicate", trace)
                     ps(field) = {
                       if ((value eq Json.Null) && (defaults(field) ne None)) defaults(field).get
                       else tcs(field).unsafeFromJsonAST(spans(field) :: trace, value)
                     }
                   case _ =>
-                    if (no_extra) error("invalid extra field", trace)
+                    if (no_extra) Lexer.error("invalid extra field", trace)
                 }
               }
               var i = 0
@@ -341,7 +341,7 @@ object DeriveJsonDecoder {
                 i += 1
               }
               ctx.rawConstruct(new ArraySeq(ps))
-            case _ => error("Not an object", trace)
+            case _ => Lexer.error("Not an object", trace)
           }
       }
   }
@@ -374,14 +374,8 @@ object DeriveJsonDecoder {
               val a      = tcs(field).unsafeDecode(trace_, in).asInstanceOf[A]
               Lexer.char(trace, in, '}')
               a
-            } else
-              throw UnsafeJson(
-                JsonError.Message("invalid disambiguator") :: trace
-              )
-          } else
-            throw UnsafeJson(
-              JsonError.Message("expected non-empty object") :: trace
-            )
+            } else Lexer.error("invalid disambiguator", trace)
+          } else Lexer.error("expected non-empty object", trace)
         }
 
         override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): A =
@@ -391,10 +385,10 @@ object DeriveJsonDecoder {
               namesMap.get(key) match {
                 case Some(idx) =>
                   tcs(idx).unsafeFromJsonAST(JsonError.ObjectAccess(key) :: trace, inner).asInstanceOf[A]
-                case None => throw UnsafeJson(JsonError.Message("Invalid disambiguator") :: trace)
+                case None => Lexer.error("Invalid disambiguator", trace)
               }
-            case Json.Obj(_) => throw UnsafeJson(JsonError.Message("Not an object with a single field") :: trace)
-            case _           => throw UnsafeJson(JsonError.Message("Not an object") :: trace)
+            case Json.Obj(_) => Lexer.error("Not an object with a single field", trace)
+            case _           => Lexer.error("Not an object", trace)
           }
       }
     else
@@ -410,20 +404,14 @@ object DeriveJsonDecoder {
             do {
               if (Lexer.field(trace, in_, hintmatrix) != -1) {
                 val field = Lexer.enumeration(trace, in_, matrix)
-                if (field == -1)
-                  throw UnsafeJson(
-                    JsonError.Message(s"invalid disambiguator") :: trace
-                  )
+                if (field == -1) Lexer.error("invalid disambiguator", trace)
                 in_.rewind()
                 val trace_ = spans(field) :: trace
                 return tcs(field).unsafeDecode(trace_, in_).asInstanceOf[A]
               } else
                 Lexer.skipValue(trace, in_)
             } while (Lexer.nextField(trace, in_))
-
-          throw UnsafeJson(
-            JsonError.Message(s"missing hint '$hintfield'") :: trace
-          )
+          Lexer.error(s"missing hint '$hintfield'", trace)
         }
 
         override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): A =
@@ -433,14 +421,12 @@ object DeriveJsonDecoder {
                 case Some((_, Json.Str(name))) =>
                   namesMap.get(name) match {
                     case Some(idx) => tcs(idx).unsafeFromJsonAST(trace, json).asInstanceOf[A]
-                    case None      => throw UnsafeJson(JsonError.Message("Invalid disambiguator") :: trace)
+                    case _         => Lexer.error("Invalid disambiguator", trace)
                   }
-                case Some(_) =>
-                  throw UnsafeJson(JsonError.Message(s"Non-string hint '$hintfield'") :: trace)
-                case None =>
-                  throw UnsafeJson(JsonError.Message(s"Missing hint '$hintfield'") :: trace)
+                case Some(_) => Lexer.error(s"Non-string hint '$hintfield'", trace)
+                case _       => Lexer.error(s"Missing hint '$hintfield'", trace)
               }
-            case _ => throw UnsafeJson(JsonError.Message("Not an object") :: trace)
+            case _ => Lexer.error("Not an object", trace)
           }
       }
   }

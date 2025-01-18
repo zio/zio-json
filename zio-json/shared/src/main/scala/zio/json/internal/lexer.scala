@@ -34,7 +34,7 @@ object Lexer {
 
   @noinline
   private[json] def error(expected: String, got: Char, trace: List[JsonError]): Nothing =
-    throw UnsafeJson(JsonError.Message(s"expected $expected got '$got'") :: trace)
+    error(s"expected $expected got '$got'", trace)
 
   @noinline
   private[json] def error(c: Char, trace: List[JsonError]): Nothing =
@@ -274,10 +274,10 @@ object Lexer {
     val c4 = in.readChar()
     (c1: @switch) match {
       case 't' =>
-        if (c2 != 'r' || c3 != 'u' || c4 != 'e') error(s"expected 'true'", trace)
+        if (c2 != 'r' || c3 != 'u' || c4 != 'e') error("expected 'true'", trace)
         true
       case 'f' =>
-        if (in.readChar() != 'e' || c2 != 'a' || c3 != 'l' || c4 != 's') error(s"expected 'false'", trace)
+        if (in.readChar() != 'e' || c2 != 'a' || c3 != 'l' || c4 != 's') error("expected 'false'", trace)
         false
       case c =>
         error("'true' or 'false'", c, trace)

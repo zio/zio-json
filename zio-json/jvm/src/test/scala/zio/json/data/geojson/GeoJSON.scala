@@ -127,7 +127,7 @@ package handrolled {
     implicit lazy val zioJsonJsonDecoder: JsonDecoder[Geometry] =
       new JsonDecoder[Geometry] {
         import zio.json._
-        import JsonDecoder.{ JsonError, UnsafeJson }
+        import JsonDecoder.JsonError
         import internal._
 
         import scala.annotation._
@@ -157,10 +157,7 @@ package handrolled {
             case Json.Arr(chunk)
                 if chunk.length == 2 && chunk(0).isInstanceOf[Json.Num] && chunk(1).isInstanceOf[Json.Num] =>
               (chunk(0).asInstanceOf[Json.Num].value.doubleValue(), chunk(1).asInstanceOf[Json.Num].value.doubleValue())
-            case _ =>
-              throw UnsafeJson(
-                JsonError.Message("expected coordinates") :: trace
-              )
+            case _ => Lexer.error("expected coordinates", trace)
           }
         def coordinates1(
           trace: List[JsonError],
@@ -168,8 +165,7 @@ package handrolled {
         ): List[(Double, Double)] =
           js.elements.map {
             case js1: Json.Arr => coordinates0(trace, js1)
-            case _ =>
-              throw UnsafeJson(JsonError.Message("expected list") :: trace)
+            case _ => Lexer.error("expected list", trace)
           }.toList
         def coordinates2(
           trace: List[JsonError],
@@ -177,8 +173,7 @@ package handrolled {
         ): List[List[(Double, Double)]] =
           js.elements.map {
             case js1: Json.Arr => coordinates1(trace, js1)
-            case _ =>
-              throw UnsafeJson(JsonError.Message("expected list") :: trace)
+            case _ => Lexer.error("expected list", trace)
           }.toList
         def coordinates3(
           trace: List[JsonError],
@@ -186,8 +181,7 @@ package handrolled {
         ): List[List[List[(Double, Double)]]] =
           js.elements.map {
             case js1: Json.Arr => coordinates2(trace, js1)
-            case _ =>
-              throw UnsafeJson(JsonError.Message("expected list") :: trace)
+            case _ => Lexer.error("expected list", trace)
           }.toList
 
         def unsafeDecode(
@@ -208,40 +202,25 @@ package handrolled {
                 val trace_ = spans(field) :: trace
                 (field: @switch) match {
                   case 0 =>
-                    if (subtype != -1)
-                      throw UnsafeJson(JsonError.Message("duplicate") :: trace_)
+                    if (subtype != -1) Lexer.error("duplicate", trace_)
                     subtype = Lexer.enumeration(trace_, in, subtypes)
                   case 1 =>
-                    if (coordinates != null)
-                      throw UnsafeJson(JsonError.Message("duplicate") :: trace_)
+                    if (coordinates != null) Lexer.error("duplicate", trace_)
                     coordinates = coordinatesD.unsafeDecode(trace_, in)
                   case 2 =>
-                    if (geometries != null)
-                      throw UnsafeJson(JsonError.Message("duplicate") :: trace_)
-
+                    if (geometries != null) Lexer.error("duplicate", trace_)
                     geometries = geometriesD.unsafeDecode(trace_, in)
                 }
               }
               Lexer.nextField(trace, in)
             }) ()
 
-          if (subtype == -1)
-            throw UnsafeJson(
-              JsonError.Message("missing discriminator") :: trace
-            )
-
+          if (subtype == -1) Lexer.error("missing discriminator", trace)
           if (subtype == 6) {
-            if (geometries == null)
-              throw UnsafeJson(
-                JsonError.Message("missing 'geometries' field") :: trace
-              )
+            if (geometries == null) Lexer.error("missing 'geometries' field", trace)
             else GeometryCollection(geometries)
           }
-
-          if (coordinates == null)
-            throw UnsafeJson(
-              JsonError.Message("missing 'coordinates' field") :: trace
-            )
+          if (coordinates == null) Lexer.error("missing 'coordinates' field", trace)
           val trace_ = spans(1) :: trace
           (subtype: @switch) match {
             case 0 => Point(coordinates0(trace_, coordinates))
@@ -298,7 +277,7 @@ package handrolled {
     implicit lazy val zioJsonJsonDecoder: JsonDecoder[GeoJSON] =
       new JsonDecoder[GeoJSON] {
         import zio.json._
-        import JsonDecoder.{ JsonError, UnsafeJson }
+        import JsonDecoder.JsonError
         import internal._
 
         import scala.annotation._
@@ -332,52 +311,30 @@ package handrolled {
                 val trace_ = spans(field) :: trace
                 (field: @switch) match {
                   case 0 =>
-                    if (subtype != -1)
-                      throw UnsafeJson(JsonError.Message("duplicate") :: trace_)
-
+                    if (subtype != -1) Lexer.error("duplicate", trace_)
                     subtype = Lexer.enumeration(trace_, in, subtypes)
                   case 1 =>
-                    if (properties != null)
-                      throw UnsafeJson(JsonError.Message("duplicate") :: trace_)
-
+                    if (properties != null) Lexer.error("duplicate", trace_)
                     properties = propertyD.unsafeDecode(trace_, in)
                   case 2 =>
-                    if (geometry != null)
-                      throw UnsafeJson(JsonError.Message("duplicate") :: trace_)
-
+                    if (geometry != null) Lexer.error("duplicate", trace_)
                     geometry = geometryD.unsafeDecode(trace_, in)
                   case 3 =>
-                    if (features != null)
-                      throw UnsafeJson(JsonError.Message("duplicate") :: trace_)
-
+                    if (features != null) Lexer.error("duplicate", trace_)
                     features = featuresD.unsafeDecode(trace_, in)
                 }
               }
               Lexer.nextField(trace, in)
             }) ()
 
-          if (subtype == -1)
-            // we could infer the type but that would mean accepting invalid data
-            throw UnsafeJson(
-              JsonError.Message("missing required fields") :: trace
-            )
-
+          // we could infer the type but that would mean accepting invalid data
+          if (subtype == -1) Lexer.error("missing required fields", trace)
           if (subtype == 0) {
-            if (properties == null)
-              throw UnsafeJson(
-                JsonError.Message("missing 'properties' field") :: trace
-              )
-            if (geometry == null)
-              throw UnsafeJson(
-                JsonError.Message("missing 'geometry' field") :: trace
-              )
+            if (properties == null) Lexer.error("missing 'properties' field", trace)
+            if (geometry == null) Lexer.error("missing 'geometry' field", trace)
             Feature(properties, geometry)
           } else {
-
-            if (features == null)
-              throw UnsafeJson(
-                JsonError.Message("missing 'features' field") :: trace
-              )
+            if (features == null) Lexer.error("missing 'features' field", trace)
             FeatureCollection(features)
           }
         }

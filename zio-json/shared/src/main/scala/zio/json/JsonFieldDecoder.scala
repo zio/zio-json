@@ -15,6 +15,7 @@
  */
 package zio.json
 
+import zio.json.internal.Lexer
 import zio.json.uuid.UUIDParser
 
 /** When decoding a JSON Object, we only allow the keys that implement this interface. */
@@ -33,8 +34,7 @@ trait JsonFieldDecoder[+A] {
 
       def unsafeDecodeField(trace: List[JsonError], in: String): B =
         f(self.unsafeDecodeField(trace, in)) match {
-          case Left(err) =>
-            throw JsonDecoder.UnsafeJson(JsonError.Message(err) :: trace)
+          case Left(err) => Lexer.error(err, trace)
           case Right(b) => b
         }
     }
@@ -80,7 +80,7 @@ object JsonFieldDecoder {
     new JsonFieldDecoder[A] {
       def unsafeDecodeField(trace: List[JsonError], in: String): A =
         f(string.unsafeDecodeField(trace, in)) match {
-          case Left(err)    => throw JsonDecoder.UnsafeJson(JsonError.Message(err) :: trace)
+          case Left(err)    => Lexer.error(err, trace)
           case Right(value) => value
         }
     }

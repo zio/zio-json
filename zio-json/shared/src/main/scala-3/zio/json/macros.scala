@@ -8,7 +8,7 @@ import scala.compiletime.*
 import scala.reflect.*
 import zio.Chunk
 
-import zio.json.JsonDecoder.{ JsonError, UnsafeJson }
+import zio.json.JsonDecoder.JsonError
 import zio.json.ast.Json
 import zio.json.internal.{ Lexer, RetractReader, StringMatrix, Write }
 
@@ -229,7 +229,7 @@ private class CaseObjectDecoder[Typeclass[*], A](val ctx: CaseClass[Typeclass, A
           json match {
             case Json.Obj(_) => ctx.rawConstruct(Nil)
             case Json.Null   => ctx.rawConstruct(Nil)
-            case _           => throw UnsafeJson(JsonError.Message("Not an object") :: trace)
+            case _           => Lexer.error("Not an object", trace)
           }
       }
 
@@ -295,9 +295,6 @@ sealed class JsonDecoderDerivation(config: JsonCodecConfiguration) extends Deriv
         lazy val namesMap: Map[String, Int] =
           (names.zipWithIndex ++ aliases).toMap
 
-        private[this] def error(message: String, trace: List[JsonError]): Nothing =
-          throw UnsafeJson(JsonError.Message(message) :: trace)
-
         def unsafeDecode(trace: List[JsonError], in: RetractReader): A = {
           Lexer.char(trace, in, '{')
           val ps = new Array[Any](len)
@@ -305,15 +302,15 @@ sealed class JsonDecoderDerivation(config: JsonCodecConfiguration) extends Deriv
             while({
               val field  = Lexer.field(trace, in, matrix)
               if (field != -1) {
-                if (ps(field) != null) error("duplicate", trace)
+                if (ps(field) != null) Lexer.error("duplicate", trace)
                 val default = defaults(field)
                 ps(field) = if ((default eq None) || in.nextNonWhitespace() != 'n' && {
                   in.retract()
                   true
                 }) tcs(field).unsafeDecode(spans(field) :: trace, in)
                 else if (in.readChar() == 'u' && in.readChar() == 'l' && in.readChar() == 'l') default.get
-                else error("expected 'null'", spans(field) :: trace)
-              } else if (no_extra) error("invalid extra field", trace)
+                else Lexer.error("expected 'null'", spans(field) :: trace)
+              } else if (no_extra) Lexer.error("invalid extra field", trace)
               else Lexer.skipValue(trace, in)
               Lexer.nextField(trace, in)
             }) ()
@@ -336,13 +333,13 @@ sealed class JsonDecoderDerivation(config: JsonCodecConfiguration) extends Deriv
               for ((key, value) <- fields) {
                 namesMap.get(key) match {
                   case Some(field) =>
-                    if (ps(field) != null) error("duplicate", trace)
+                    if (ps(field) != null) Lexer.error("duplicate", trace)
                     ps(field) = {
                       if ((value eq Json.Null) && (defaults(field) ne None)) defaults(field).get
                       else tcs(field).unsafeFromJsonAST(spans(field) :: trace, value)
                     }
                   case _ =>
-                    if (no_extra) error("invalid extra field", trace)
+                    if (no_extra) Lexer.error("invalid extra field", trace)
                 }
               }
               var i = 0
@@ -355,7 +352,7 @@ sealed class JsonDecoderDerivation(config: JsonCodecConfiguration) extends Deriv
                 i += 1
               }
               ctx.rawConstruct(new ArraySeq(ps))
-            case _ => error("Not an object", trace)
+            case _ => Lexer.error("Not an object", trace)
           }
       }
     }
@@ -391,7 +388,7 @@ sealed class JsonDecoderDerivation(config: JsonCodecConfiguration) extends Deriv
           val typeName = Lexer.string(trace, in).toString()
           namesMap.find(_._1 == typeName) match {
             case Some((_, idx)) => tcs(idx).asInstanceOf[CaseObjectDecoder[JsonDecoder, A]].ctx.rawConstruct(Nil)
-            case None      => throw UnsafeJson(JsonError.Message(s"Invalid enumeration value $typeName") :: trace)
+            case None      => Lexer.error(s"Invalid enumeration value $typeName", trace)
           }
         }
 
@@ -400,9 +397,9 @@ sealed class JsonDecoderDerivation(config: JsonCodecConfiguration) extends Deriv
             case Json.Str(typeName) =>
               ctx.subtypes.find(_.typeInfo.short == typeName) match {
                 case Some(sub) => sub.typeclass.asInstanceOf[CaseObjectDecoder[JsonDecoder, A]].ctx.rawConstruct(Nil)
-                case None      => throw UnsafeJson(JsonError.Message(s"Invalid enumeration value $typeName") :: trace)
+                case None      => Lexer.error(s"Invalid enumeration value $typeName", trace)
               }
-            case _ => throw UnsafeJson(JsonError.Message("Not a string") :: trace)
+            case _ => Lexer.error("Not a string", trace)
           }
         }
       }
@@ -422,14 +419,8 @@ sealed class JsonDecoderDerivation(config: JsonCodecConfiguration) extends Deriv
               val a      = tcs(field).unsafeDecode(trace_, in).asInstanceOf[A]
               Lexer.char(trace, in, '}')
               a
-            } else
-              throw UnsafeJson(
-                JsonError.Message("invalid disambiguator") :: trace
-              )
-          } else
-            throw UnsafeJson(
-              JsonError.Message("expected non-empty object") :: trace
-            )
+            } else Lexer.error("invalid disambiguator", trace)
+          } else Lexer.error("expected non-empty object", trace)
         }
 
         override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): A = {
@@ -438,10 +429,10 @@ sealed class JsonDecoderDerivation(config: JsonCodecConfiguration) extends Deriv
               val (key, inner) = chunk.head
               namesMap.get(key) match {
                 case Some(idx) => tcs(idx).unsafeFromJsonAST(JsonError.ObjectAccess(key) :: trace, inner).asInstanceOf[A]
-                case None      => throw UnsafeJson(JsonError.Message("Invalid disambiguator") :: trace)
+                case None      => Lexer.error("Invalid disambiguator", trace)
               }
-            case Json.Obj(_) => throw UnsafeJson(JsonError.Message("Not an object with a single field") :: trace)
-            case _           => throw UnsafeJson(JsonError.Message("Not an object") :: trace)
+            case Json.Obj(_) => Lexer.error("Not an object with a single field", trace)
+            case _           => Lexer.error("Not an object", trace)
           }
         }
       }
@@ -453,31 +444,20 @@ sealed class JsonDecoderDerivation(config: JsonCodecConfiguration) extends Deriv
 
         def unsafeDecode(trace: List[JsonError], in: RetractReader): A = {
           val in_ = zio.json.internal.RecordingReader(in)
-
           Lexer.char(trace, in_, '{')
-
           if (Lexer.firstField(trace, in_)) {
-            while({
+            while ({
               if (Lexer.field(trace, in_, hintmatrix) != -1) {
                 val field = Lexer.enumeration(trace, in_, matrix)
-
-                if (field == -1) {
-                  throw UnsafeJson(JsonError.Message(s"invalid disambiguator") :: trace)
-                }
-
+                if (field == -1) Lexer.error("invalid disambiguator", trace)
                 in_.rewind()
                 val trace_ = spans(field) :: trace
-
                 return tcs(field).unsafeDecode(trace_, in_).asInstanceOf[A]
-              } else {
-                Lexer.skipValue(trace, in_)
-              }
-
+              } else Lexer.skipValue(trace, in_)
               Lexer.nextField(trace, in_)
             }) ()
           }
-
-          throw UnsafeJson(JsonError.Message(s"missing hint '$hintfield'") :: trace)
+          Lexer.error(s"missing hint '$hintfield'", trace)
         }
 
         override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): A = {
@@ -487,14 +467,14 @@ sealed class JsonDecoderDerivation(config: JsonCodecConfiguration) extends Deriv
                 case Some((_, Json.Str(name))) =>
                   namesMap.get(name) match {
                     case Some(idx) => tcs(idx).unsafeFromJsonAST(JsonError.ObjectAccess(name) :: trace, json).asInstanceOf[A]
-                    case None      => throw UnsafeJson(JsonError.Message("Invalid disambiguator") :: trace)
+                    case None      => Lexer.error("Invalid disambiguator", trace)
                   }
                 case Some(_) =>
-                  throw UnsafeJson(JsonError.Message(s"Non-string hint '$hintfield'") :: trace)
+                  Lexer.error(s"Non-string hint '$hintfield'", trace)
                 case None =>
-                  throw UnsafeJson(JsonError.Message(s"Missing hint '$hintfield'") :: trace)
+                  Lexer.error(s"Missing hint '$hintfield'", trace)
               }
-            case _ => throw UnsafeJson(JsonError.Message("Not an object") :: trace)
+            case _ => Lexer.error("Not an object", trace)
           }
         }
       }
