@@ -165,7 +165,7 @@ package handrolled {
         ): List[(Double, Double)] =
           js.elements.map {
             case js1: Json.Arr => coordinates0(trace, js1)
-            case _ => Lexer.error("expected list", trace)
+            case _             => Lexer.error("expected list", trace)
           }.toList
         def coordinates2(
           trace: List[JsonError],
@@ -173,7 +173,7 @@ package handrolled {
         ): List[List[(Double, Double)]] =
           js.elements.map {
             case js1: Json.Arr => coordinates1(trace, js1)
-            case _ => Lexer.error("expected list", trace)
+            case _             => Lexer.error("expected list", trace)
           }.toList
         def coordinates3(
           trace: List[JsonError],
@@ -181,7 +181,7 @@ package handrolled {
         ): List[List[List[(Double, Double)]]] =
           js.elements.map {
             case js1: Json.Arr => coordinates2(trace, js1)
-            case _ => Lexer.error("expected list", trace)
+            case _             => Lexer.error("expected list", trace)
           }.toList
 
         def unsafeDecode(

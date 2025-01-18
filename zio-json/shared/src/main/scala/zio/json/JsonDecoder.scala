@@ -158,7 +158,7 @@ trait JsonDecoder[A] extends JsonDecoderPlatformSpecific[A] {
       def unsafeDecode(trace: List[JsonError], in: RetractReader): B =
         f(self.unsafeDecode(trace, in)) match {
           case Left(err) => Lexer.error(err, trace)
-          case Right(b) => b
+          case Right(b)  => b
         }
 
       override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): B =
@@ -170,7 +170,7 @@ trait JsonDecoder[A] extends JsonDecoderPlatformSpecific[A] {
       override def unsafeDecodeMissing(trace: List[JsonError]): B =
         f(self.unsafeDecodeMissing(trace)) match {
           case Left(err) => Lexer.error(err, trace)
-          case Right(b) => b
+          case Right(b)  => b
         }
 
     }

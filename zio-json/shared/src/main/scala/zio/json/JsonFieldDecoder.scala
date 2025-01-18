@@ -35,7 +35,7 @@ trait JsonFieldDecoder[+A] {
       def unsafeDecodeField(trace: List[JsonError], in: String): B =
         f(self.unsafeDecodeField(trace, in)) match {
           case Left(err) => Lexer.error(err, trace)
-          case Right(b) => b
+          case Right(b)  => b
         }
     }
 
