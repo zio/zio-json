@@ -138,18 +138,18 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform, NativePlatform)
         val tparams   = (1 to i).map(p => s"A$p").mkString(", ")
         val implicits = (1 to i).map(p => s"A$p: JsonDecoder[A$p]").mkString(", ")
         val work = (1 to i)
-          .map(p => s"val a$p = A$p.unsafeDecode(trace :+ traces($p), in)")
+          .map(p => s"val a$p = A$p.unsafeDecode(traces(${p - 1}) :: trace, in)")
           .mkString("\n        Lexer.char(trace, in, ',')\n        ")
         val returns = (1 to i).map(p => s"a$p").mkString(", ")
 
         s"""implicit def tuple$i[$tparams](implicit $implicits): JsonDecoder[Tuple$i[$tparams]] =
            |    new JsonDecoder[Tuple$i[$tparams]] {
-           |      val traces: Array[JsonError] = (0 to $i).map(JsonError.ArrayAccess(_)).toArray
+           |      private[this] val traces: Array[JsonError] = (0 to ${i - 1}).map(JsonError.ArrayAccess(_)).toArray
            |      def unsafeDecode(trace: List[JsonError], in: RetractReader): Tuple$i[$tparams] = {
            |        Lexer.char(trace, in, '[')
            |        $work
            |        Lexer.char(trace, in, ']')
-           |        Tuple$i($returns)
+           |        new Tuple$i($returns)
            |      }
            |    }""".stripMargin
       }

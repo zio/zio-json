@@ -54,6 +54,13 @@ object DecoderSpec extends ZIOSpecDefault {
             forall(isRight(isRight(equalTo(2))))
           )
         },
+        test("tuples") {
+          assert("""["a",3]""".fromJson[(String, Int)])(isRight(equalTo(("a", 3))))
+          assert("""["a","b"]""".fromJson[(String, Int)])(isLeft(equalTo("[1](expected a number, got 'b')")))
+          assert("""[[0.1,0.2],[0.3,0.4],[-0.3,-]]""".fromJson[Seq[(Double, Double)]])(
+            isLeft(equalTo("[2][1](expected a Double)"))
+          )
+        },
         test("parameterless products") {
           import exampleproducts._
 
