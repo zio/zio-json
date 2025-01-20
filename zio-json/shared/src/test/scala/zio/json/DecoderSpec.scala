@@ -256,6 +256,18 @@ object DecoderSpec extends ZIOSpecDefault {
           val jsonStr  = JsonEncoder[Map[String, String]].encodeJson(expected, None)
           assert(jsonStr.fromJson[Map[String, String]])(isRight(equalTo(expected)))
         },
+        test("Map with Int keys") {
+          assert("""{"1234567890": "value"}""".fromJson[Map[Int, String]])(
+            isRight(equalTo(Map(1234567890 -> "value")))
+          ) &&
+          assert("""{"xxx": "value"}""".fromJson[Map[Int, String]])(isLeft(containsString("Invalid Int: xxx")))
+        },
+        test("Map with Long keys") {
+          assert("""{"1234567890123456789": "value"}""".fromJson[Map[Long, String]])(
+            isRight(equalTo(Map(1234567890123456789L -> "value")))
+          ) &&
+          assert("""{"xxx": "value"}""".fromJson[Map[Long, String]])(isLeft(containsString("Invalid Long: xxx")))
+        },
         test("Map with UUID keys") {
           def expectedMap(str: String): Map[UUID, String] = Map(UUID.fromString(str) -> "value")
 
@@ -376,6 +388,19 @@ object DecoderSpec extends ZIOSpecDefault {
       suite("fromJsonAST")(
         test("BigDecimal") {
           assert(Json.Num(123).as[BigDecimal])(isRight(equalTo(BigDecimal(123))))
+        },
+        test("boolean") {
+          assert(Json.Bool(true).as[Boolean])(isRight(equalTo(true))) &&
+          assert(Json.Str("true").as[Boolean])(isLeft(equalTo("(expected boolean)")))
+        },
+        test("string") {
+          assert(Json.Str("xxx").as[String])(isRight(equalTo("xxx"))) &&
+          assert(Json.Bool(true).as[String])(isLeft(equalTo("(expected string)")))
+        },
+        test("char") {
+          assert(Json.Str("x").as[Char])(isRight(equalTo('x'))) &&
+          assert(Json.Str("xxx").as[Char])(isLeft(equalTo("(expected single character string)"))) &&
+          assert(Json.Bool(true).as[Char])(isLeft(equalTo("(expected single character string)")))
         },
         test("eithers") {
           val bernies =
