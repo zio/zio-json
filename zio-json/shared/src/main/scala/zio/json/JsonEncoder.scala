@@ -120,8 +120,26 @@ object JsonEncoder extends GeneratedTupleEncoders with EncoderLowPriority1 with 
 
     override def unsafeEncode(a: String, indent: Option[Int], out: Write): Unit = {
       out.write('"')
-      var i   = 0
       val len = a.length
+      var i   = 0
+      while (i < len) {
+        val c = a.charAt(i)
+        i += 1
+        if (c == '"' || c == '\\' || c < ' ') {
+          writeEncoded(a, out)
+          return
+        }
+      }
+      out.write(a)
+      out.write('"')
+    }
+
+    override final def toJsonAST(a: String): Either[String, Json] =
+      Right(Json.Str(a))
+
+    private[this] def writeEncoded(a: String, out: Write): Unit = {
+      val len = a.length
+      var i   = 0
       while (i < len) {
         (a.charAt(i): @switch) match {
           case '"'  => out.write("\\\"")
@@ -140,8 +158,6 @@ object JsonEncoder extends GeneratedTupleEncoders with EncoderLowPriority1 with 
       out.write('"')
     }
 
-    override final def toJsonAST(a: String): Either[String, Json] =
-      Right(Json.Str(a))
   }
 
   implicit val char: JsonEncoder[Char] = new JsonEncoder[Char] {
@@ -151,6 +167,11 @@ object JsonEncoder extends GeneratedTupleEncoders with EncoderLowPriority1 with 
       (a: @switch) match {
         case '"'  => out.write("\\\"")
         case '\\' => out.write("\\\\")
+        case '\b' => out.write("\\b")
+        case '\f' => out.write("\\f")
+        case '\n' => out.write("\\n")
+        case '\r' => out.write("\\r")
+        case '\t' => out.write("\\t")
         case c =>
           if (c < ' ') out.write("\\u%04x".format(c.toInt))
           else out.write(c)
