@@ -1572,6 +1572,7 @@ private[json] object parsers {
 
   private[this] def charError(ch: Char, pos: Int) = error(s"expected '$ch'", pos)
 
-  private[this] def error(msg: String, pos: Int) =
+  @noinline
+  private[this] def error(msg: String, pos: Int): Nothing =
     throw new DateTimeException(msg + " at index " + pos) with NoStackTrace
 }

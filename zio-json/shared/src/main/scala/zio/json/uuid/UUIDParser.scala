@@ -16,6 +16,7 @@
 package zio.json.uuid
 
 import scala.annotation.nowarn
+import scala.util.control.NoStackTrace
 
 // A port of https://github.com/openjdk/jdk/commit/ebadfaeb2e1cc7b5ce5f101cd8a539bc5478cf5b with optimizations applied
 private[json] object UUIDParser {
@@ -89,7 +90,7 @@ private[json] object UUIDParser {
 
   private[this] def unsafeParseExtended(input: String): java.util.UUID = {
     val len = input.length
-    if (len > 36) throw new IllegalArgumentException("UUID string too large")
+    if (len > 36) invalidUUIDError("UUID string too large")
     val dash1 = input.indexOf('-', 0)
     val dash2 = input.indexOf('-', dash1 + 1)
     val dash3 = input.indexOf('-', dash2 + 1)
@@ -131,6 +132,7 @@ private[json] object UUIDParser {
     result
   }
 
-  private[this] def invalidUUIDError(input: String): IllegalArgumentException =
-    throw new IllegalArgumentException(input)
+  @noinline
+  private[this] def invalidUUIDError(input: String): Nothing =
+    throw new IllegalArgumentException(input) with NoStackTrace
 }
