@@ -280,7 +280,9 @@ object DecoderSpec extends ZIOSpecDefault {
             isRight(equalTo(expectedMap("00000000-0000-0000-0000-000000000000")))
           ) &&
           assert(bad1.fromJson[Map[UUID, String]])(isLeft(containsString("Invalid UUID: "))) &&
-          assert(bad2.fromJson[Map[UUID, String]])(isLeft(containsString("Invalid UUID: UUID string too large"))) &&
+          assert(bad2.fromJson[Map[UUID, String]])(
+            isLeft(containsString("Invalid UUID: 64d7c38d-2afd-4514-9832-4e70afe4b0f80"))
+          ) &&
           assert(bad3.fromJson[Map[UUID, String]])(
             isLeft(containsString("Invalid UUID: 64d7c38d-2afd-4514-983-4e70afe4b0f80"))
           ) &&
@@ -328,7 +330,7 @@ object DecoderSpec extends ZIOSpecDefault {
           assert(ok2.fromJson[UUID])(isRight(equalTo(UUID.fromString("64D7C38D-00FD-0014-0032-0070AfE4B0f8")))) &&
           assert(ok3.fromJson[UUID])(isRight(equalTo(UUID.fromString("00000000-0000-0000-0000-000000000000")))) &&
           assert(bad1.fromJson[UUID])(isLeft(containsString("Invalid UUID: "))) &&
-          assert(bad2.fromJson[UUID])(isLeft(containsString("Invalid UUID: UUID string too large"))) &&
+          assert(bad2.fromJson[UUID])(isLeft(containsString("Invalid UUID: 64d7c38d-2afd-4514-9832-4e70afe4b0f80"))) &&
           assert(bad3.fromJson[UUID])(isLeft(containsString("Invalid UUID: 64d7c38d-2afd-4514-983-4e70afe4b0f80"))) &&
           assert(bad4.fromJson[UUID])(isLeft(containsString("Invalid UUID: 64d7c38d-2afd--9832-4e70afe4b0f8"))) &&
           assert(bad5.fromJson[UUID])(isLeft(containsString("Invalid UUID: 64d7c38d-2afd-XXXX-9832-4e70afe4b0f8"))) &&
@@ -405,7 +407,7 @@ object DecoderSpec extends ZIOSpecDefault {
           import exampleproducts._
 
           assert(Json.Obj("is" -> Json.Arr(Json.Obj("str" -> Json.Num(1)))).as[Outer])(
-            isLeft(equalTo(".is[0].str(Not a string value)"))
+            isLeft(equalTo(".is[0].str(expected string)"))
           )
         },
         test("default field value") {
@@ -549,7 +551,7 @@ object DecoderSpec extends ZIOSpecDefault {
           assert(ok2.as[UUID])(isRight(equalTo(UUID.fromString("64D7C38D-00FD-0014-0032-0070AFE4B0f8")))) &&
           assert(ok3.as[UUID])(isRight(equalTo(UUID.fromString("00000000-0000-0000-0000-000000000000")))) &&
           assert(bad1.as[UUID])(isLeft(containsString("Invalid UUID: "))) &&
-          assert(bad2.as[UUID])(isLeft(containsString("Invalid UUID: UUID string too large"))) &&
+          assert(bad2.as[UUID])(isLeft(containsString("Invalid UUID: 64d7c38d-2afd-4514-9832-4e70afe4b0f80"))) &&
           assert(bad3.as[UUID])(isLeft(containsString("Invalid UUID: 64d7c38d-2afd-4514-983-4e70afe4b0f80"))) &&
           assert(bad4.as[UUID])(isLeft(containsString("Invalid UUID: 64d7c38d-2afd--9832-4e70afe4b0f8"))) &&
           assert(bad5.as[UUID])(isLeft(containsString("Invalid UUID: 64d7c38d-2afd-XXXX-9832-4e70afe4b0f8"))) &&

@@ -73,7 +73,7 @@ private[json] object UUIDParser {
       val lsb2 = parseNibbles(ch2n, input, 24)
       val lsb3 = parseNibbles(ch2n, input, 28)
       val lsb4 = parseNibbles(ch2n, input, 32)
-      if ((msb1 | msb2 | msb3 | msb4 | lsb1 | lsb2 | lsb3 | lsb4) < 0) invalidUUIDError(input)
+      if ((msb1 | msb2 | msb3 | msb4 | lsb1 | lsb2 | lsb3 | lsb4) < 0) invalidUUIDError()
       new java.util.UUID(msb1 << 48 | msb2 << 32 | msb3 << 16 | msb4, lsb1 << 48 | lsb2 << 32 | lsb3 << 16 | lsb4)
     }
 
@@ -90,7 +90,7 @@ private[json] object UUIDParser {
 
   private[this] def unsafeParseExtended(input: String): java.util.UUID = {
     val len = input.length
-    if (len > 36) invalidUUIDError("UUID string too large")
+    if (len > 36) invalidUUIDError()
     val dash1 = input.indexOf('-', 0)
     val dash2 = input.indexOf('-', dash1 + 1)
     val dash3 = input.indexOf('-', dash2 + 1)
@@ -102,7 +102,7 @@ private[json] object UUIDParser {
     // - if dash1 is -1, dash4 will be -1
     // - if dash1 is positive but dash2 is -1, dash4 will be -1
     // - if dash1 and dash2 is positive, dash3 will be -1, dash4 will be positive, but so will dash5
-    if (dash4 < 0 || dash5 >= 0) invalidUUIDError(input)
+    if (dash4 < 0 || dash5 >= 0) invalidUUIDError()
 
     val ch2n     = CharToNumeric
     val section1 = parseSection(ch2n, input, 0, dash1, 0xfffffff00000000L)
@@ -121,18 +121,18 @@ private[json] object UUIDParser {
     endIndex: Int,
     zeroMask: Long
   ): Long = {
-    if (beginIndex >= endIndex || beginIndex + 16 < endIndex) invalidUUIDError(input)
+    if (beginIndex >= endIndex || beginIndex + 16 < endIndex) invalidUUIDError()
     var result = 0L
     var i      = beginIndex
     while (i < endIndex) {
       result = (result << 4) | ch2n(input.charAt(i))
       i += 1
     }
-    if ((result & zeroMask) != 0) invalidUUIDError(input)
+    if ((result & zeroMask) != 0) invalidUUIDError()
     result
   }
 
   @noinline
-  private[this] def invalidUUIDError(input: String): Nothing =
-    throw new IllegalArgumentException(input) with NoStackTrace
+  private[this] def invalidUUIDError(): Nothing =
+    throw new IllegalArgumentException with NoStackTrace
 }
