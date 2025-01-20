@@ -157,20 +157,20 @@ trait JsonDecoder[A] extends JsonDecoderPlatformSpecific[A] {
 
       def unsafeDecode(trace: List[JsonError], in: RetractReader): B =
         f(self.unsafeDecode(trace, in)) match {
-          case Left(err) => Lexer.error(err, trace)
           case Right(b)  => b
+          case Left(err) => Lexer.error(err, trace)
         }
 
       override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): B =
         f(self.unsafeFromJsonAST(trace, json)) match {
-          case Left(err) => Lexer.error(err, trace)
           case Right(b)  => b
+          case Left(err) => Lexer.error(err, trace)
         }
 
       override def unsafeDecodeMissing(trace: List[JsonError]): B =
         f(self.unsafeDecodeMissing(trace)) match {
-          case Left(err) => Lexer.error(err, trace)
           case Right(b)  => b
+          case Left(err) => Lexer.error(err, trace)
         }
 
     }
@@ -271,7 +271,7 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority1 with 
     override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): String =
       json match {
         case Json.Str(value) => value
-        case _               => Lexer.error("Not a string value", trace)
+        case _               => Lexer.error("expected string", trace)
       }
   }
 
@@ -283,14 +283,24 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority1 with 
     override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): Boolean =
       json match {
         case Json.Bool(value) => value
-        case _                => Lexer.error("Not a bool value", trace)
+        case _                => Lexer.error("expected boolean", trace)
       }
   }
 
-  implicit val char: JsonDecoder[Char] = string.mapOrFail {
-    case str if str.length == 1 => Right(str(0))
-    case _                      => Left("expected one character")
+  implicit val char: JsonDecoder[Char] = new JsonDecoder[Char] {
+    def unsafeDecode(trace: List[JsonError], in: RetractReader): Char = {
+      val s = Lexer.string(trace, in)
+      if (s.length == 1) s.charAt(0)
+      else Lexer.error("expected single character string", trace)
+    }
+
+    override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): Char =
+      json match {
+        case Json.Str(s) if s.length == 1 => s.charAt(0)
+        case _                            => Lexer.error("expected single character string", trace)
+      }
   }
+
   implicit val symbol: JsonDecoder[Symbol] = string.map(Symbol(_))
 
   implicit val byte: JsonDecoder[Byte]                       = number(Lexer.byte, _.byteValueExact())
@@ -481,10 +491,10 @@ private[json] trait DecoderLowPriority1 extends DecoderLowPriority2 {
 
   implicit def chunk[A: JsonDecoder]: JsonDecoder[Chunk[A]] =
     new JsonDecoder[Chunk[A]] {
+      private[this] val decoder = JsonDecoder[A]
 
       override def unsafeDecodeMissing(trace: List[JsonError]): Chunk[A] = Chunk.empty
 
-      val decoder = JsonDecoder[A]
       def unsafeDecode(trace: List[JsonError], in: RetractReader): Chunk[A] =
         builder(trace, in, zio.ChunkBuilder.make[A]())
 
@@ -688,8 +698,6 @@ private[json] trait DecoderLowPriority3 extends DecoderLowPriority4 {
   this: JsonDecoder.type =>
 
   import java.time.{ DateTimeException, _ }
-  import java.time.format.DateTimeParseException
-  import java.time.zone.ZoneRulesException
 
   implicit val dayOfWeek: JsonDecoder[DayOfWeek]           = javaTimeDecoder(s => DayOfWeek.valueOf(s.toUpperCase))
   implicit val duration: JsonDecoder[Duration]             = javaTimeDecoder(parsers.unsafeParseDuration)
@@ -710,64 +718,75 @@ private[json] trait DecoderLowPriority3 extends DecoderLowPriority4 {
 
   private[this] def javaTimeDecoder[A](f: String => A): JsonDecoder[A] = new JsonDecoder[A] {
     def unsafeDecode(trace: List[JsonError], in: RetractReader): A =
-      parseJavaTime(trace, string.unsafeDecode(trace, in))
+      parseJavaTime(trace, Lexer.string(trace, in).toString)
 
-    override def unsafeFromJsonAST(trace: List[JsonError], json: Json): A =
-      parseJavaTime(trace, string.unsafeFromJsonAST(trace, json))
+    override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): A =
+      json match {
+        case Json.Str(value) => parseJavaTime(trace, value)
+        case _               => Lexer.error("expected string", trace)
+      }
 
     // Commonized handling for decoding from string to java.time Class
     @inline
     private[this] def parseJavaTime(trace: List[JsonError], s: String): A =
       try f(s)
       catch {
-        case zre: ZoneRulesException => Lexer.error(s"$s is not a valid ISO-8601 format, ${zre.getMessage}", trace)
-        case dtpe: DateTimeParseException =>
-          Lexer.error(s"$s is not a valid ISO-8601 format, ${dtpe.getMessage}", trace)
-        case dte: DateTimeException => Lexer.error(s"$s is not a valid ISO-8601 format, ${dte.getMessage}", trace)
-        case ex: Exception          => Lexer.error(ex.getMessage, trace)
+        case ex: DateTimeException =>
+          Lexer.error(s"${strip(s)} is not a valid ISO-8601 format, ${ex.getMessage}", trace)
+        case _: IllegalArgumentException =>
+          Lexer.error(s"${strip(s)} is not a valid ISO-8601 format", trace)
       }
   }
 
   // Commonized handling for decoding from string to java.time Class
   private[json] def parseJavaTime[A](f: String => A, s: String): Either[String, A] =
-    try {
-      Right(f(s))
-    } catch {
-      case zre: ZoneRulesException      => Left(s"$s is not a valid ISO-8601 format, ${zre.getMessage}")
-      case dtpe: DateTimeParseException => Left(s"$s is not a valid ISO-8601 format, ${dtpe.getMessage}")
-      case dte: DateTimeException       => Left(s"$s is not a valid ISO-8601 format, ${dte.getMessage}")
-      case ex: Exception                => Left(ex.getMessage)
+    try Right(f(s))
+    catch {
+      case ex: DateTimeException =>
+        Left(s"${strip(s)} is not a valid ISO-8601 format, ${ex.getMessage}")
+      case _: IllegalArgumentException =>
+        Left(s"${strip(s)} is not a valid ISO-8601 format")
     }
 
   implicit val uuid: JsonDecoder[UUID] = new JsonDecoder[UUID] {
     def unsafeDecode(trace: List[JsonError], in: RetractReader): UUID =
-      parseUUID(trace, string.unsafeDecode(trace, in))
+      parseUUID(trace, Lexer.string(trace, in).toString)
 
-    override def unsafeFromJsonAST(trace: List[JsonError], json: Json): UUID =
-      parseUUID(trace, string.unsafeFromJsonAST(trace, json))
+    override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): UUID =
+      json match {
+        case Json.Str(value) => parseUUID(trace, value)
+        case _               => Lexer.error("expected string", trace)
+      }
 
     @inline
     private[this] def parseUUID(trace: List[JsonError], s: String): UUID =
       try UUIDParser.unsafeParse(s)
       catch {
-        case iae: IllegalArgumentException => Lexer.error(s"Invalid UUID: ${iae.getMessage}", trace)
+        case _: IllegalArgumentException => Lexer.error(s"Invalid UUID: ${strip(s)}", trace)
       }
   }
 
   implicit val currency: JsonDecoder[java.util.Currency] = new JsonDecoder[java.util.Currency] {
     def unsafeDecode(trace: List[JsonError], in: RetractReader): java.util.Currency =
-      parseCurrency(trace, string.unsafeDecode(trace, in))
+      parseCurrency(trace, Lexer.string(trace, in).toString)
 
-    override def unsafeFromJsonAST(trace: List[JsonError], json: Json): java.util.Currency =
-      parseCurrency(trace, string.unsafeFromJsonAST(trace, json))
+    override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): java.util.Currency =
+      json match {
+        case Json.Str(value) => parseCurrency(trace, value)
+        case _               => Lexer.error("expected string", trace)
+      }
 
     @inline
     private[this] def parseCurrency(trace: List[JsonError], s: String): java.util.Currency =
       try java.util.Currency.getInstance(s)
       catch {
-        case iae: IllegalArgumentException => Lexer.error(s"Invalid Currency: ${iae.getMessage}", trace)
+        case _: IllegalArgumentException => Lexer.error(s"Invalid Currency: ${strip(s)}", trace)
       }
   }
+
+  private[json] def strip(s: String, len: Int = 50): String =
+    if (s.length <= len) s
+    else s.substring(0, len) + "..."
 }
 
 private[json] trait DecoderLowPriority4 extends DecoderLowPriorityVersionSpecific {
