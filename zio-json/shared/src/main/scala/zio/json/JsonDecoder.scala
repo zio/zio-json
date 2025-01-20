@@ -698,8 +698,6 @@ private[json] trait DecoderLowPriority3 extends DecoderLowPriority4 {
   this: JsonDecoder.type =>
 
   import java.time.{ DateTimeException, _ }
-  import java.time.format.DateTimeParseException
-  import java.time.zone.ZoneRulesException
 
   implicit val dayOfWeek: JsonDecoder[DayOfWeek]           = javaTimeDecoder(s => DayOfWeek.valueOf(s.toUpperCase))
   implicit val duration: JsonDecoder[Duration]             = javaTimeDecoder(parsers.unsafeParseDuration)
@@ -733,15 +731,11 @@ private[json] trait DecoderLowPriority3 extends DecoderLowPriority4 {
     private[this] def parseJavaTime(trace: List[JsonError], s: String): A =
       try f(s)
       catch {
-        case ex: DateTimeException       => error(s, ex, trace)
-        case ex: DateTimeParseException  => error(s, ex, trace)
-        case ex: ZoneRulesException      => error(s, ex, trace)
-        case _: IllegalArgumentException => Lexer.error(s"${strip(s)} is not a valid ISO-8601 format", trace)
+        case ex: DateTimeException =>
+          Lexer.error(s"${strip(s)} is not a valid ISO-8601 format, ${ex.getMessage}", trace)
+        case _: IllegalArgumentException =>
+          Lexer.error(s"${strip(s)} is not a valid ISO-8601 format", trace)
       }
-
-    @noinline
-    private[this] def error(s: String, ex: Exception, trace: List[JsonError]): Nothing =
-      Lexer.error(s"${strip(s)} is not a valid ISO-8601 format, ${ex.getMessage}", trace)
   }
 
   // Commonized handling for decoding from string to java.time Class
@@ -749,10 +743,6 @@ private[json] trait DecoderLowPriority3 extends DecoderLowPriority4 {
     try Right(f(s))
     catch {
       case ex: DateTimeException =>
-        Left(s"${strip(s)} is not a valid ISO-8601 format, ${ex.getMessage}")
-      case ex: DateTimeParseException =>
-        Left(s"${strip(s)} is not a valid ISO-8601 format, ${ex.getMessage}")
-      case ex: ZoneRulesException =>
         Left(s"${strip(s)} is not a valid ISO-8601 format, ${ex.getMessage}")
       case _: IllegalArgumentException =>
         Left(s"${strip(s)} is not a valid ISO-8601 format")
