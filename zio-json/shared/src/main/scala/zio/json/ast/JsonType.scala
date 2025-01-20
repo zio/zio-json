@@ -24,7 +24,7 @@ object JsonType {
     def get(json: Json): Either[String, Json.Null] =
       json match {
         case Json.Null => Right(Json.Null)
-        case _         => Left("Expected null but found " + json)
+        case _         => Left("expected null")
       }
   }
 
@@ -32,7 +32,7 @@ object JsonType {
     def get(json: Json): Either[String, Json.Bool] =
       json match {
         case x @ Json.Bool(_) => Right(x)
-        case _                => Left("Expected boolean but found " + json)
+        case _                => Left("expected boolean")
       }
   }
 
@@ -40,7 +40,7 @@ object JsonType {
     def get(json: Json): Either[String, Json.Obj] =
       json match {
         case x @ Json.Obj(_) => Right(x)
-        case _               => Left("Expected object but found " + json)
+        case _               => Left("expected object")
       }
   }
 
@@ -48,7 +48,7 @@ object JsonType {
     def get(json: Json): Either[String, Json.Arr] =
       json match {
         case x @ Json.Arr(_) => Right(x)
-        case _               => Left("Expected array but found " + json)
+        case _               => Left("expected array")
       }
   }
 
@@ -56,7 +56,7 @@ object JsonType {
     def get(json: Json): Either[String, Json.Str] =
       json match {
         case x @ Json.Str(_) => Right(x)
-        case _               => Left("Expected string but found " + json)
+        case _               => Left("expected string")
       }
   }
 
@@ -64,7 +64,7 @@ object JsonType {
     def get(json: Json): Either[String, Json.Num] =
       json match {
         case x @ Json.Num(_) => Right(x)
-        case _               => Left("Expected number but found " + json)
+        case _               => Left("expected number")
       }
   }
 }
