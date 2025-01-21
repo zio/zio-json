@@ -266,6 +266,30 @@ object ConfigurableDeriveCodecSpec extends ZIOSpecDefault {
 
           assertTrue(jsonAST.as[OptionalField].toOption.get == expectedObj, expectedObj.toJsonAST == Right(jsonAST))
         },
+        test("fail on decoding missing explicit nulls") {
+          val jsonStr = """{}"""
+
+          implicit val config: JsonCodecConfiguration =
+            JsonCodecConfiguration(explicitNulls = true)
+          implicit val codec: JsonCodec[OptionalField] = DeriveJsonCodec.gen
+
+          assertTrue(jsonStr.fromJson[OptionalField].isLeft)
+        } @@ TestAspect.ignore,
+        test("fail on decoding missing explicit empty collections") {
+          case class Empty(z: Option[Int])
+          case class EmptyObj(a: Empty)
+          case class EmptySeq(a: Seq[Int])
+
+          implicit val config: JsonCodecConfiguration     = JsonCodecConfiguration(explicitEmptyCollections = true)
+          implicit val codecEmpty: JsonCodec[Empty]       = DeriveJsonCodec.gen[Empty]
+          implicit val codecEmptyObj: JsonCodec[EmptyObj] = DeriveJsonCodec.gen[EmptyObj]
+          implicit val codecEmptySeq: JsonCodec[EmptySeq] = DeriveJsonCodec.gen[EmptySeq]
+
+          assertTrue(
+            """{}""".fromJson[EmptyObj] == Left(".a(missing)"),
+            """{}""".fromJson[EmptySeq] == Left(".a(missing)")
+          )
+        },
         test("do not write empty collections") {
           case class Empty()
           case class EmptySeq(a: Seq[Int], b: Empty)

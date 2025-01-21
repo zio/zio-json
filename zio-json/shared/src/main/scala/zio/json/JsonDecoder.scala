@@ -122,6 +122,12 @@ trait JsonDecoder[A] extends JsonDecoderPlatformSpecific[A] {
           case _: Throwable => that.unsafeDecodeMissing(trace)
         }
 
+      override def unsafeDecodeMissing(trace: List[JsonError], config: JsonCodecConfiguration): A1 =
+        try self.unsafeDecodeMissing(trace, config)
+        catch {
+          case _: Throwable => that.unsafeDecodeMissing(trace, config)
+        }
+
     }
 
   /**
@@ -145,6 +151,9 @@ trait JsonDecoder[A] extends JsonDecoderPlatformSpecific[A] {
 
       override def unsafeDecodeMissing(trace: List[JsonError]): B =
         f(self.unsafeDecodeMissing(trace))
+
+      override def unsafeDecodeMissing(trace: List[JsonError], config: JsonCodecConfiguration): B =
+        f(self.unsafeDecodeMissing(trace, config))
 
     }
 
@@ -173,6 +182,12 @@ trait JsonDecoder[A] extends JsonDecoderPlatformSpecific[A] {
           case Left(err) => Lexer.error(err, trace)
         }
 
+      override def unsafeDecodeMissing(trace: List[JsonError], config: JsonCodecConfiguration): B =
+        f(self.unsafeDecodeMissing(trace, config)) match {
+          case Left(err) => Lexer.error(err, trace)
+          case Right(b)  => b
+        }
+
     }
 
   /**
@@ -197,7 +212,11 @@ trait JsonDecoder[A] extends JsonDecoderPlatformSpecific[A] {
   final def zipWith[B, C](that: => JsonDecoder[B])(f: (A, B) => C): JsonDecoder[C] =
     self.zip(that).map(f.tupled)
 
+  @deprecated("Use `unsafeDecodeMissing` instead", "0.7.5")
   def unsafeDecodeMissing(trace: List[JsonError]): A =
+    Lexer.error("missing", trace)
+
+  def unsafeDecodeMissing(trace: List[JsonError], config: JsonCodecConfiguration): A =
     Lexer.error("missing", trace)
 
   /**
@@ -259,6 +278,9 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority1 with 
         decoder.unsafeDecode(trace, in)
 
       override def unsafeDecodeMissing(trace: List[JsonError]): A = decoder.unsafeDecodeMissing(trace)
+
+      override def unsafeDecodeMissing(trace: List[JsonError], config: JsonCodecConfiguration): A =
+        decoder.unsafeDecodeMissing(trace, config)
 
       override def unsafeFromJsonAST(trace: List[JsonError], json: Json): A = decoder.unsafeFromJsonAST(trace, json)
     }
@@ -354,6 +376,9 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority1 with 
   implicit def option[A](implicit A: JsonDecoder[A]): JsonDecoder[Option[A]] =
     new JsonDecoder[Option[A]] { self =>
       override def unsafeDecodeMissing(trace: List[JsonError]): Option[A] = None
+
+      override def unsafeDecodeMissing(trace: List[JsonError], config: JsonCodecConfiguration): Option[A] =
+        None // TODO, fail on missing null when explicitNulls. This is a breaking behaviour change
 
       def unsafeDecode(trace: List[JsonError], in: RetractReader): Option[A] =
         if (in.nextNonWhitespace() == 'n') {
@@ -475,6 +500,10 @@ private[json] trait DecoderLowPriority1 extends DecoderLowPriority2 {
 
       override def unsafeDecodeMissing(trace: List[JsonError]): Array[A] = Array.empty
 
+      override def unsafeDecodeMissing(trace: List[JsonError], config: JsonCodecConfiguration): Array[A] =
+        if (!config.explicitEmptyCollections) Array.empty
+        else super.unsafeDecodeMissing(trace, config)
+
       def unsafeDecode(trace: List[JsonError], in: RetractReader): Array[A] =
         builder(trace, in, Array.newBuilder[A])
     }
@@ -485,6 +514,10 @@ private[json] trait DecoderLowPriority1 extends DecoderLowPriority2 {
       override def unsafeDecodeMissing(trace: List[JsonError]): Seq[A] =
         Seq.empty
 
+      override def unsafeDecodeMissing(trace: List[JsonError], config: JsonCodecConfiguration): Seq[A] =
+        if (!config.explicitEmptyCollections) immutable.Seq.empty
+        else super.unsafeDecodeMissing(trace, config)
+
       def unsafeDecode(trace: List[JsonError], in: RetractReader): Seq[A] =
         builder(trace, in, immutable.Seq.newBuilder[A])
     }
@@ -494,6 +527,10 @@ private[json] trait DecoderLowPriority1 extends DecoderLowPriority2 {
       private[this] val decoder = JsonDecoder[A]
 
       override def unsafeDecodeMissing(trace: List[JsonError]): Chunk[A] = Chunk.empty
+
+      override def unsafeDecodeMissing(trace: List[JsonError], config: JsonCodecConfiguration): Chunk[A] =
+        if (!config.explicitEmptyCollections) Chunk.empty
+        else super.unsafeDecodeMissing(trace, config)
 
       def unsafeDecode(trace: List[JsonError], in: RetractReader): Chunk[A] =
         builder(trace, in, zio.ChunkBuilder.make[A]())
@@ -520,6 +557,10 @@ private[json] trait DecoderLowPriority1 extends DecoderLowPriority2 {
 
       override def unsafeDecodeMissing(trace: List[JsonError]): IndexedSeq[A] = IndexedSeq.empty
 
+      override def unsafeDecodeMissing(trace: List[JsonError], config: JsonCodecConfiguration): IndexedSeq[A] =
+        if (!config.explicitEmptyCollections) IndexedSeq.empty
+        else super.unsafeDecodeMissing(trace, config)
+
       def unsafeDecode(trace: List[JsonError], in: RetractReader): IndexedSeq[A] =
         builder(trace, in, IndexedSeq.newBuilder[A])
     }
@@ -529,6 +570,10 @@ private[json] trait DecoderLowPriority1 extends DecoderLowPriority2 {
 
       override def unsafeDecodeMissing(trace: List[JsonError]): immutable.LinearSeq[A] =
         immutable.LinearSeq.empty
+
+      override def unsafeDecodeMissing(trace: List[JsonError], config: JsonCodecConfiguration): immutable.LinearSeq[A] =
+        if (!config.explicitEmptyCollections) immutable.LinearSeq.empty
+        else super.unsafeDecodeMissing(trace, config)
 
       def unsafeDecode(trace: List[JsonError], in: RetractReader): LinearSeq[A] =
         builder(trace, in, immutable.LinearSeq.newBuilder[A])
@@ -540,6 +585,10 @@ private[json] trait DecoderLowPriority1 extends DecoderLowPriority2 {
       override def unsafeDecodeMissing(trace: List[JsonError]): immutable.ListSet[A] =
         immutable.ListSet.empty
 
+      override def unsafeDecodeMissing(trace: List[JsonError], config: JsonCodecConfiguration): immutable.ListSet[A] =
+        if (!config.explicitEmptyCollections) immutable.ListSet.empty
+        else super.unsafeDecodeMissing(trace, config)
+
       def unsafeDecode(trace: List[JsonError], in: RetractReader): ListSet[A] =
         builder(trace, in, immutable.ListSet.newBuilder[A])
     }
@@ -550,6 +599,10 @@ private[json] trait DecoderLowPriority1 extends DecoderLowPriority2 {
       override def unsafeDecodeMissing(trace: List[JsonError]): immutable.TreeSet[A] =
         immutable.TreeSet.empty
 
+      override def unsafeDecodeMissing(trace: List[JsonError], config: JsonCodecConfiguration): immutable.TreeSet[A] =
+        if (!config.explicitEmptyCollections) immutable.TreeSet.empty
+        else super.unsafeDecodeMissing(trace, config)
+
       def unsafeDecode(trace: List[JsonError], in: RetractReader): TreeSet[A] =
         builder(trace, in, immutable.TreeSet.newBuilder[A])
     }
@@ -558,6 +611,10 @@ private[json] trait DecoderLowPriority1 extends DecoderLowPriority2 {
     new JsonDecoder[List[A]] {
 
       override def unsafeDecodeMissing(trace: List[JsonError]): List[A] = List.empty
+
+      override def unsafeDecodeMissing(trace: List[JsonError], config: JsonCodecConfiguration): List[A] =
+        if (!config.explicitEmptyCollections) List.empty
+        else super.unsafeDecodeMissing(trace, config)
 
       def unsafeDecode(trace: List[JsonError], in: RetractReader): List[A] =
         builder(trace, in, new mutable.ListBuffer[A])
@@ -569,6 +626,10 @@ private[json] trait DecoderLowPriority1 extends DecoderLowPriority2 {
       override def unsafeDecodeMissing(trace: List[JsonError]): Vector[A] =
         Vector.empty
 
+      override def unsafeDecodeMissing(trace: List[JsonError], config: JsonCodecConfiguration): Vector[A] =
+        if (!config.explicitEmptyCollections) Vector.empty
+        else super.unsafeDecodeMissing(trace, config)
+
       def unsafeDecode(trace: List[JsonError], in: RetractReader): Vector[A] =
         builder(trace, in, immutable.Vector.newBuilder[A])
     }
@@ -577,6 +638,10 @@ private[json] trait DecoderLowPriority1 extends DecoderLowPriority2 {
     new JsonDecoder[Set[A]] {
 
       override def unsafeDecodeMissing(trace: List[JsonError]): Set[A] = Set.empty
+
+      override def unsafeDecodeMissing(trace: List[JsonError], config: JsonCodecConfiguration): Set[A] =
+        if (!config.explicitEmptyCollections) Set.empty
+        else super.unsafeDecodeMissing(trace, config)
 
       def unsafeDecode(trace: List[JsonError], in: RetractReader): Set[A] =
         builder(trace, in, Set.newBuilder[A])
@@ -588,6 +653,10 @@ private[json] trait DecoderLowPriority1 extends DecoderLowPriority2 {
       override def unsafeDecodeMissing(trace: List[JsonError]): immutable.HashSet[A] =
         immutable.HashSet.empty
 
+      override def unsafeDecodeMissing(trace: List[JsonError], config: JsonCodecConfiguration): immutable.HashSet[A] =
+        if (!config.explicitEmptyCollections) immutable.HashSet.empty
+        else super.unsafeDecodeMissing(trace, config)
+
       def unsafeDecode(trace: List[JsonError], in: RetractReader): immutable.HashSet[A] =
         builder(trace, in, immutable.HashSet.newBuilder[A])
     }
@@ -596,6 +665,10 @@ private[json] trait DecoderLowPriority1 extends DecoderLowPriority2 {
     new JsonDecoder[Map[K, V]] {
 
       override def unsafeDecodeMissing(trace: List[JsonError]): Map[K, V] = Map.empty
+
+      override def unsafeDecodeMissing(trace: List[JsonError], config: JsonCodecConfiguration): Map[K, V] =
+        if (!config.explicitEmptyCollections) Map.empty
+        else super.unsafeDecodeMissing(trace, config)
 
       def unsafeDecode(trace: List[JsonError], in: RetractReader): Map[K, V] =
         keyValueBuilder(trace, in, Map.newBuilder[K, V])
@@ -607,6 +680,13 @@ private[json] trait DecoderLowPriority1 extends DecoderLowPriority2 {
       override def unsafeDecodeMissing(trace: List[JsonError]): immutable.HashMap[K, V] =
         immutable.HashMap.empty
 
+      override def unsafeDecodeMissing(
+        trace: List[JsonError],
+        config: JsonCodecConfiguration
+      ): immutable.HashMap[K, V] =
+        if (!config.explicitEmptyCollections) immutable.HashMap.empty
+        else super.unsafeDecodeMissing(trace, config)
+
       def unsafeDecode(trace: List[JsonError], in: RetractReader): immutable.HashMap[K, V] =
         keyValueBuilder(trace, in, immutable.HashMap.newBuilder[K, V])
     }
@@ -615,6 +695,10 @@ private[json] trait DecoderLowPriority1 extends DecoderLowPriority2 {
     new JsonDecoder[mutable.Map[K, V]] {
 
       override def unsafeDecodeMissing(trace: List[JsonError]): mutable.Map[K, V] = mutable.Map.empty
+
+      override def unsafeDecodeMissing(trace: List[JsonError], config: JsonCodecConfiguration): mutable.Map[K, V] =
+        if (!config.explicitEmptyCollections) mutable.Map.empty
+        else super.unsafeDecodeMissing(trace, config)
 
       def unsafeDecode(trace: List[JsonError], in: RetractReader): mutable.Map[K, V] =
         keyValueBuilder(trace, in, mutable.Map.newBuilder[K, V])
@@ -626,6 +710,10 @@ private[json] trait DecoderLowPriority1 extends DecoderLowPriority2 {
       override def unsafeDecodeMissing(trace: List[JsonError]): immutable.SortedSet[A] =
         immutable.SortedSet.empty
 
+      override def unsafeDecodeMissing(trace: List[JsonError], config: JsonCodecConfiguration): immutable.SortedSet[A] =
+        if (!config.explicitEmptyCollections) immutable.SortedSet.empty
+        else super.unsafeDecodeMissing(trace, config)
+
       def unsafeDecode(trace: List[JsonError], in: RetractReader): immutable.SortedSet[A] =
         builder(trace, in, immutable.SortedSet.newBuilder[A])
     }
@@ -636,6 +724,13 @@ private[json] trait DecoderLowPriority1 extends DecoderLowPriority2 {
       override def unsafeDecodeMissing(trace: List[JsonError]): collection.SortedMap[K, V] =
         collection.SortedMap.empty
 
+      override def unsafeDecodeMissing(
+        trace: List[JsonError],
+        config: JsonCodecConfiguration
+      ): collection.SortedMap[K, V] =
+        if (!config.explicitEmptyCollections) collection.SortedMap.empty
+        else super.unsafeDecodeMissing(trace, config)
+
       def unsafeDecode(trace: List[JsonError], in: RetractReader): collection.SortedMap[K, V] =
         keyValueBuilder(trace, in, collection.SortedMap.newBuilder[K, V])
     }
@@ -645,6 +740,13 @@ private[json] trait DecoderLowPriority1 extends DecoderLowPriority2 {
 
       override def unsafeDecodeMissing(trace: List[JsonError]): immutable.ListMap[K, V] =
         immutable.ListMap.empty
+
+      override def unsafeDecodeMissing(
+        trace: List[JsonError],
+        config: JsonCodecConfiguration
+      ): immutable.ListMap[K, V] =
+        if (!config.explicitEmptyCollections) immutable.ListMap.empty
+        else super.unsafeDecodeMissing(trace, config)
 
       def unsafeDecode(trace: List[JsonError], in: RetractReader): immutable.ListMap[K, V] =
         keyValueBuilder(trace, in, immutable.ListMap.newBuilder[K, V])
@@ -670,6 +772,10 @@ private[json] trait DecoderLowPriority2 extends DecoderLowPriority3 {
 
       override def unsafeDecodeMissing(trace: List[JsonError]): Iterable[A] = Iterable.empty
 
+      override def unsafeDecodeMissing(trace: List[JsonError], config: JsonCodecConfiguration): Iterable[A] =
+        if (!config.explicitEmptyCollections) Iterable.empty
+        else super.unsafeDecodeMissing(trace, config)
+
       def unsafeDecode(trace: List[JsonError], in: RetractReader): Iterable[A] =
         builder(trace, in, immutable.Iterable.newBuilder[A])
     }
@@ -683,6 +789,10 @@ private[json] trait DecoderLowPriority2 extends DecoderLowPriority3 {
 
       override def unsafeDecodeMissing(trace: List[JsonError]): Chunk[(K, A)] =
         Chunk.empty
+
+      override def unsafeDecodeMissing(trace: List[JsonError], config: JsonCodecConfiguration): Chunk[(K, A)] =
+        if (!config.explicitEmptyCollections) Chunk.empty
+        else super.unsafeDecodeMissing(trace, config)
 
       def unsafeDecode(trace: List[JsonError], in: RetractReader): Chunk[(K, A)] =
         keyValueBuilder[K, A, ({ type lambda[X, Y] = Chunk[(X, Y)] })#lambda](

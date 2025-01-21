@@ -225,6 +225,10 @@ private class CaseObjectDecoder[Typeclass[*], A](val ctx: CaseClass[Typeclass, A
 
   override def unsafeDecodeMissing(trace: List[JsonError]): A = ctx.rawConstruct(Nil)
 
+  override def unsafeDecodeMissing(trace: List[JsonError], config: JsonCodecConfiguration): A =
+    if (!config.explicitEmptyCollections) ctx.rawConstruct(Nil)
+    else super.unsafeDecodeMissing(trace, config)
+
   override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): A =
     json match {
       case Json.Obj(_) => ctx.rawConstruct(Nil)
@@ -290,7 +294,34 @@ sealed class JsonDecoderDerivation(config: JsonCodecConfiguration) extends Deriv
           IArray.genericWrapArray(ctx.params.map(_.typeclass)).toArray.asInstanceOf[Array[JsonDecoder[Any]]]
         private lazy val namesMap = (names.zipWithIndex ++ aliases).toMap
 
-        def unsafeDecode(trace: List[JsonError], in: RetractReader): A = {
+        private[this] val explicitNulls =
+          config.explicitNulls || ctx.annotations.collectFirst { case jsonExplicitNull => () }.isDefined
+        private[this] val explicitEmptyCollections =
+          ctx.annotations.collectFirst { case jsonExplicitEmptyCollection(enabled) =>
+            enabled
+          }.getOrElse(config.explicitEmptyCollections)
+
+        val finalConfig =
+          config.copy(explicitNulls = explicitNulls, explicitEmptyCollections = explicitEmptyCollections)
+
+        override def unsafeDecodeMissing(trace: List[JsonError], config: JsonCodecConfiguration): A =
+          if (!config.explicitEmptyCollections) {
+            val ps = new Array[Any](len)
+            var idx = 0
+            while (idx < len) {
+              if (ps(idx) == null) {
+                val default = defaults(idx)
+                ps(idx) =
+                  if (default ne None) default.get
+                  else tcs(idx).unsafeDecodeMissing(spans(idx) :: trace, finalConfig)
+              }
+              idx += 1
+            }
+            ctx.rawConstruct(new ArraySeq(ps))
+          }
+          else super.unsafeDecodeMissing(trace, config)
+
+        override def unsafeDecode(trace: List[JsonError], in: RetractReader): A = {
           Lexer.char(trace, in, '{')
           val ps = new Array[Any](len)
           if (Lexer.firstField(trace, in))
@@ -315,7 +346,7 @@ sealed class JsonDecoderDerivation(config: JsonCodecConfiguration) extends Deriv
               val default = defaults(idx)
               ps(idx) =
                 if (default ne None) default.get
-                else tcs(idx).unsafeDecodeMissing(spans(idx) :: trace)
+                else tcs(idx).unsafeDecodeMissing(spans(idx) :: trace, finalConfig)
             }
             idx += 1
           }
