@@ -167,23 +167,15 @@ object DecoderSpec extends ZIOSpecDefault {
             implicit lazy val decoder: JsonDecoder[DefaultDynamic] = DeriveJsonDecoder.gen[DefaultDynamic]
           }
 
-          val res1 = """{}""".stripMargin.fromJson[DefaultDynamic]
-          val res2 = """{}""".stripMargin.fromJson[DefaultDynamic]
-          val res = ZIO.fromEither {
-            for {
-              json1 <- res1
-              json2 <- res2
-            } yield (json1, json2)
-          }
+          def res = """{}""".stripMargin.fromJson[DefaultDynamic]
 
           for {
-            dynamics <- res
-            finalRes <-
-              assert(res1)(isRight) && assert(res2)(isRight) &&
-                assertTrue(dynamics._1.randomNumber != dynamics._2.randomNumber) &&
-                assertTrue(dynamics._1.instant != dynamics._2.instant)
-          } yield finalRes
-        },
+            dynamics1 <- ZIO.fromEither(res)
+            _         <- ZIO.sleep(2.millis)
+            dynamics2 <- ZIO.fromEither(res)
+          } yield assertTrue(dynamics1.randomNumber != dynamics2.randomNumber) &&
+            assertTrue(dynamics1.instant != dynamics2.instant)
+        } @@ TestAspect.withLiveClock,
         test("sum encoding") {
           import examplesum._
 
