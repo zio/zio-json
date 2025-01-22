@@ -33,6 +33,11 @@ final case class jsonAliases(alias: String, aliases: String*) extends Annotation
 final class jsonExplicitNull extends Annotation
 
 /**
+ * When disabled keys with empty collections will be omitted from the JSON.
+ */
+final case class jsonExplicitEmptyCollection(enabled: Boolean = true) extends Annotation
+
+/**
  * If used on a sealed class, will determine the name of the field for
  * disambiguating classes.
  *
@@ -209,7 +214,7 @@ final class jsonNoExtraFields extends Annotation
  */
 final class jsonExclude extends Annotation
 
-private class CaseObjectDecoder[Typeclass[*], A](val ctx: CaseClass[Typeclass, A], no_extra: Boolean) extends JsonDecoder[A] {
+private class CaseObjectDecoder[Typeclass[*], A](val ctx: CaseClass[Typeclass, A], no_extra: Boolean) extends CollectionJsonDecoder[A] {
   def unsafeDecode(trace: List[JsonError], in: RetractReader): A = {
     if (no_extra) {
       Lexer.char(trace, in, '{')
@@ -217,6 +222,8 @@ private class CaseObjectDecoder[Typeclass[*], A](val ctx: CaseClass[Typeclass, A
     } else Lexer.skipValue(trace, in)
     ctx.rawConstruct(Nil)
   }
+
+  override def unsafeDecodeMissing(trace: List[JsonError]): A = ctx.rawConstruct(Nil)
 
   override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): A =
     json match {
@@ -243,7 +250,7 @@ sealed class JsonDecoderDerivation(config: JsonCodecConfiguration) extends Deriv
     if (ctx.params.isEmpty) {
       new CaseObjectDecoder(ctx, no_extra)
     } else {
-      new JsonDecoder[A] {
+      new CollectionJsonDecoder[A] {
         private val (names, aliases): (Array[String], Array[(String, Int)]) = {
           val names = Array.ofDim[String](ctx.params.size)
           val aliasesBuilder = Array.newBuilder[(String, Int)]
@@ -283,6 +290,43 @@ sealed class JsonDecoderDerivation(config: JsonCodecConfiguration) extends Deriv
           IArray.genericWrapArray(ctx.params.map(_.typeclass)).toArray.asInstanceOf[Array[JsonDecoder[Any]]]
         private lazy val namesMap = (names.zipWithIndex ++ aliases).toMap
 
+        // private[this] val explicitNulls =
+        //   config.explicitNulls || ctx.annotations.collectFirst { case jsonExplicitNull => () }.isDefined
+        private[this] val explicitEmptyCollections =
+          ctx.annotations.collectFirst { case jsonExplicitEmptyCollection(enabled) =>
+            enabled
+          }.getOrElse(config.explicitEmptyCollections)
+
+        private[this] def allowMissingValueDecoder(d: JsonDecoder[_]): Boolean = d match {
+          case d: CollectionJsonDecoder[_] if !explicitEmptyCollections => true
+          // case d: OptionJsonDecoder[_] if !explicitNulls => true
+          case d: OptionJsonDecoder[_] => true
+          case d: MappedJsonDecoder[_] => allowMissingValueDecoder(d.underlying)
+          case d                       => false
+        }
+
+        private[this] val missingValueDecoder = 
+          if (!explicitEmptyCollections) (idx: Int, trace: List[JsonError]) => tcs(idx).unsafeDecodeMissing(spans(idx) :: trace)
+          else {
+            lazy val missingValueDecoderMap = tcs.map(d => if (allowMissingValueDecoder(d)) Some(d) else None).toIndexedSeq
+            (idx: Int, trace: List[JsonError]) => missingValueDecoderMap(idx).map(_.unsafeDecodeMissing(spans(idx) :: trace)).getOrElse(Lexer.error("missing", spans(idx) :: trace))
+          }
+
+        override def unsafeDecodeMissing(trace: List[JsonError]): A = {
+          val ps  = new Array[Any](len)
+          var idx = 0
+          while (idx < len) {
+            if (ps(idx) == null) {
+              val default = defaults(idx)
+              ps(idx) =
+                if (default ne None) default.get
+                else missingValueDecoder(idx, trace)
+            }
+            idx += 1
+          }
+          ctx.rawConstruct(new ArraySeq(ps))
+        }
+          
         override def unsafeDecode(trace: List[JsonError], in: RetractReader): A = {
           Lexer.char(trace, in, '{')
           val ps = new Array[Any](len)
@@ -308,7 +352,7 @@ sealed class JsonDecoderDerivation(config: JsonCodecConfiguration) extends Deriv
               val default = defaults(idx)
               ps(idx) =
                 if (default ne None) default.get()
-                else tcs(idx).unsafeDecodeMissing(spans(idx) :: trace)
+                else missingValueDecoder(idx, trace)
             }
             idx += 1
           }
@@ -337,7 +381,7 @@ sealed class JsonDecoderDerivation(config: JsonCodecConfiguration) extends Deriv
                   val default = defaults(idx)
                   ps(idx) =
                     if (default ne None) default.get()
-                    else tcs(idx).unsafeDecodeMissing(spans(idx) :: trace)
+                    else missingValueDecoder(idx, trace)
                 }
                 idx += 1
               }
@@ -466,6 +510,8 @@ sealed class JsonDecoderDerivation(config: JsonCodecConfiguration) extends Deriv
 
 private lazy val caseObjectEncoder = new JsonEncoder[Any] {
 
+  override def isEmpty(a: Any): Boolean = true
+
   def unsafeEncode(a: Any, indent: Option[Int], out: Write): Unit =
     out.write("{}")
 
@@ -506,19 +552,78 @@ sealed class JsonEncoderDerivation(config: JsonCodecConfiguration) extends Deriv
             case jsonField(name) => name
           }.getOrElse(if (transformNames) nameTransform(p.label) else p.label)
         }.toArray
+
         private val explicitNulls = config.explicitNulls || ctx.annotations.exists(_.isInstanceOf[jsonExplicitNull])
-        private lazy val fields = params.map {
-          var idx = 0
-          p =>
-            val field = (
-              p, 
-              names(idx), 
-              p.typeclass.asInstanceOf[JsonEncoder[Any]],
-              explicitNulls || p.annotations.exists(_.isInstanceOf[jsonExplicitNull])
-            )
-            idx += 1
-            field
-        }.toArray
+        private val explicitEmptyCollections = ctx.annotations.collectFirst { case jsonExplicitEmptyCollection(enabled) =>
+          enabled
+        }.getOrElse(config.explicitEmptyCollections)
+        
+        private[this] class Field[T](
+          val p: CaseClass.Param[JsonEncoder, A],
+          val name: String,
+          val encoder: JsonEncoder[T],
+          withExplicitNulls: Boolean,
+          withExplicitEmptyCollections: Boolean
+        ) {
+          private[this] val _encodeOrSkip: T => (() => Unit) => Unit =
+            (withExplicitNulls, withExplicitEmptyCollections) match {
+              case (true, true) => _ => encode => encode()
+              case (false, false) => { t => encode =>
+                if (!encoder.isEmpty(t) && !encoder.isNothing(t)) encode() else ()
+              }
+              case (true, false) => { t => encode =>
+                if (!encoder.isEmpty(t)) encode() else ()
+              }
+              case (false, true) => { t => encode =>
+                if (!encoder.isNothing(t)) encode() else ()
+              }
+            }
+          def encodeOrSkip(t: T)(encode: () => Unit): Unit = _encodeOrSkip(t)(encode)
+
+          private[this] val _encodeOrDefault: T => (
+            Either[String, Chunk[(String, Json)]],
+            () => Either[String, Chunk[(String, Json)]]
+          ) => Either[String, Chunk[(String, Json)]] =
+            (withExplicitNulls, withExplicitEmptyCollections) match {
+              case (true, true) => _ => (_, encode) => encode()
+              case (false, false) => { t => (default, encode) =>
+                if (!encoder.isEmpty(t) && !encoder.isNothing(t)) encode() else default
+              }
+              case (true, false) => { t => (default, encode) =>
+                if (!encoder.isEmpty(t)) encode() else default
+              }
+              case (false, true) => { t => (default, encode) =>
+                if (!encoder.isNothing(t)) encode() else default
+              }
+            }
+          def encodeOrDefault(t: T)(
+            encode: () => Either[String, Chunk[(String, Json)]],
+            default: Either[String, Chunk[(String, Json)]]
+          ): Either[String, Chunk[(String, Json)]] =
+            _encodeOrDefault(t)(default, encode)
+        }
+
+        private[this] lazy val fields: Array[Field[Any]] = params.map { p =>
+          val name = p.annotations.collectFirst { case jsonField(name) =>
+            name
+          }.getOrElse(if (transformNames) nameTransform(p.label) else p.label)
+          val withExplicitNulls = explicitNulls || p.annotations.exists(_.isInstanceOf[jsonExplicitNull])
+          val withExplicitEmptyCollections = p.annotations.collectFirst { case jsonExplicitEmptyCollection(enabled) =>
+            enabled
+          }.getOrElse(explicitEmptyCollections)
+          new Field(
+            p,
+            name,
+            p.typeclass.asInstanceOf[JsonEncoder[Any]],
+            withExplicitNulls = withExplicitNulls,
+            withExplicitEmptyCollections = withExplicitEmptyCollections
+          )
+        }
+
+        override def isEmpty(a: A): Boolean =           fields.forall { field =>
+            val paramValue = field.p.deref(a)
+            field.encoder.isEmpty(paramValue) || field.encoder.isNothing(paramValue)
+          }
 
         def unsafeEncode(a: A, indent: Option[Int], out: Write): Unit = {
           out.write('{')
@@ -529,20 +634,17 @@ sealed class JsonEncoderDerivation(config: JsonCodecConfiguration) extends Deriv
           var prevFields = false
           while (idx < fields.length) {
             val field = fields(idx)
-            val p     = field._1.deref(a)
-            if ({
-              val isNothing = field._3.isNothing(p)
-              !isNothing || field._4
-            }) {
+            val p     = field.p.deref(a)
+            field.encodeOrSkip(p) { () =>
               // if we have at least one field already, we need a comma
               if (prevFields) {
                 out.write(',')
                 JsonEncoder.pad(indent_, out)
               }
-              JsonEncoder.string.unsafeEncode(field._2, indent_, out)
+              JsonEncoder.string.unsafeEncode(field.name, indent_, out)
               if (indent.isEmpty) out.write(':')
               else out.write(" : ")
-              field._3.unsafeEncode(p, indent_, out)
+              field.encoder.unsafeEncode(p, indent_, out)
               prevFields = true // at least one field so far
             }
             idx += 1
@@ -552,18 +654,17 @@ sealed class JsonEncoderDerivation(config: JsonCodecConfiguration) extends Deriv
         }
 
         override final def toJsonAST(a: A): Either[String, Json] = {
-          ctx.params
-            .foldLeft[Either[String, Chunk[(String, Json)]]](Right(Chunk.empty)) { case (c, param) =>
-              val name = param.annotations.collectFirst { case jsonField(name) =>
-                name
-              }.getOrElse(nameTransform(param.label))
-              val writeNulls = explicitNulls || param.annotations.exists(_.isInstanceOf[jsonExplicitNull])
-              c.flatMap { chunk =>
-                param.typeclass.toJsonAST(param.deref(a)).map { value =>
-                  if (!writeNulls && value == Json.Null) chunk
-                  else chunk :+ name -> value
-                }
-              }
+          fields
+            .foldLeft[Either[String, Chunk[(String, Json)]]](Right(Chunk.empty)) { case (c, field) =>
+              val param = field.p
+              val paramValue = param.deref(a)
+              field.encodeOrDefault(paramValue)(
+                () =>
+                  c.flatMap { chunk =>
+                    param.typeclass.toJsonAST(paramValue).map(value => chunk :+ field.name -> value)
+                  },
+                c
+              )
             }
             .map(Json.Obj.apply)
         }
