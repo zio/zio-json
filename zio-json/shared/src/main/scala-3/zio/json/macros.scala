@@ -225,7 +225,7 @@ private class CaseObjectDecoder[Typeclass[*], A](val ctx: CaseClass[Typeclass, A
 
   override def unsafeDecodeMissing(trace: List[JsonError]): A = ctx.rawConstruct(Nil)
 
-  override def unsafeDecodeMissing(trace: List[JsonError], config: JsonCodecConfiguration): A =
+  override protected[json] def unsafeDecodeMissing(trace: List[JsonError], config: JsonCodecConfiguration): A =
     if (!config.explicitEmptyCollections) ctx.rawConstruct(Nil)
     else super.unsafeDecodeMissing(trace, config)
 
@@ -304,7 +304,7 @@ sealed class JsonDecoderDerivation(config: JsonCodecConfiguration) extends Deriv
         val finalConfig =
           config.copy(explicitNulls = explicitNulls, explicitEmptyCollections = explicitEmptyCollections)
 
-        override def unsafeDecodeMissing(trace: List[JsonError], config: JsonCodecConfiguration): A =
+        override protected[json] def unsafeDecodeMissing(trace: List[JsonError], config: JsonCodecConfiguration): A =
           if (!config.explicitEmptyCollections) {
             val ps = new Array[Any](len)
             var idx = 0
