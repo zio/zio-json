@@ -19,12 +19,10 @@ final case class jsonField(name: String) extends Annotation
  */
 final case class jsonAliases(alias: String, aliases: String*) extends Annotation
 
-final class jsonExplicitNull extends Annotation
-
 /**
- * When disabled keys with empty collections will be omitted from the JSON.
+ * Empty option fields will be encoded as `null`.
  */
-final case class jsonExplicitEmptyCollection(enabled: Boolean = true) extends Annotation
+final class jsonExplicitNull extends Annotation
 
 /**
  * If used on a sealed class, will determine the name of the field for disambiguating classes.
@@ -214,6 +212,7 @@ object DeriveJsonDecoder {
 
     if (ctx.parameters.isEmpty)
       new JsonDecoder[A] {
+
         def unsafeDecode(trace: List[JsonError], in: RetractReader): A = {
           if (no_extra) {
             Lexer.char(trace, in, '{')
@@ -268,7 +267,7 @@ object DeriveJsonDecoder {
           ctx.parameters.map(_.typeclass).toArray.asInstanceOf[Array[JsonDecoder[Any]]]
         private[this] lazy val namesMap = (names.zipWithIndex ++ aliases).toMap
 
-        def unsafeDecode(trace: List[JsonError], in: RetractReader): A = {
+        override def unsafeDecode(trace: List[JsonError], in: RetractReader): A = {
           Lexer.char(trace, in, '{')
 
           // TODO it would be more efficient to have a solution that didn't box
@@ -433,6 +432,7 @@ object DeriveJsonEncoder {
   def join[A](ctx: CaseClass[JsonEncoder, A])(implicit config: JsonCodecConfiguration): JsonEncoder[A] =
     if (ctx.parameters.isEmpty)
       new JsonEncoder[A] {
+
         def unsafeEncode(a: A, indent: Option[Int], out: Write): Unit = out.write("{}")
 
         override final def toJsonAST(a: A): Either[String, Json] =
@@ -457,10 +457,6 @@ object DeriveJsonEncoder {
           }
         private[this] val explicitNulls =
           config.explicitNulls || ctx.annotations.exists(_.isInstanceOf[jsonExplicitNull])
-        private[this] val explicitEmptyCollections =
-          ctx.annotations.collectFirst { case jsonExplicitEmptyCollection(enabled) =>
-            enabled
-          }.getOrElse(config.explicitEmptyCollections)
         private[this] lazy val fields = params.map {
           var idx = 0
           p =>
@@ -468,16 +464,11 @@ object DeriveJsonEncoder {
               p,
               names(idx),
               p.typeclass.asInstanceOf[JsonEncoder[Any]],
-              explicitNulls || p.annotations.exists(_.isInstanceOf[jsonExplicitNull]),
-              p.annotations.collectFirst { case jsonExplicitEmptyCollection(enabled) =>
-                enabled
-              }.getOrElse(explicitEmptyCollections)
+              explicitNulls || p.annotations.exists(_.isInstanceOf[jsonExplicitNull])
             )
             idx += 1
             field
         }
-
-        override def isEmpty(a: A): Boolean = params.forall(p => p.typeclass.isEmpty(p.dereference(a)))
 
         def unsafeEncode(a: A, indent: Option[Int], out: Write): Unit = {
           out.write('{')
@@ -491,8 +482,7 @@ object DeriveJsonEncoder {
             val p     = field._1.dereference(a)
             if ({
               val isNothing = field._3.isNothing(p)
-              val isEmpty   = field._3.isEmpty(p)
-              (!isNothing && !isEmpty) || (isNothing && field._4) || (isEmpty && field._5)
+              !isNothing || field._4
             }) {
               // if we have at least one field already, we need a comma
               if (prevFields) {
@@ -518,16 +508,9 @@ object DeriveJsonEncoder {
                 name
               }.getOrElse(nameTransform(param.label))
               val writeNulls = explicitNulls || param.annotations.exists(_.isInstanceOf[jsonExplicitNull])
-              val writeEmptyCollections =
-                param.annotations.collectFirst { case jsonExplicitEmptyCollection(enabled) =>
-                  enabled
-                }.getOrElse(explicitEmptyCollections)
               c.flatMap { chunk =>
                 param.typeclass.toJsonAST(param.dereference(a)).map { value =>
-                  if (
-                    (value == Json.Null && !writeNulls) ||
-                    (value.asObject.exists(_.fields.isEmpty) && !writeEmptyCollections)
-                  ) chunk
+                  if (!writeNulls && value == Json.Null) chunk
                   else chunk :+ name -> value
                 }
               }
