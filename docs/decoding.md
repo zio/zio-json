@@ -36,7 +36,7 @@ Now we can parse JSON into our object
 
 ### Automatic Derivation and case class default field values
 
-If a case class field is defined with a default value and the field is not present or `null`, the default value will be used.
+If a case class field is defined with a default value and the field is not present or `null`, the default value will be used (or evaluated when it is a method).
 
 Say we have a Scala `case class`
 
