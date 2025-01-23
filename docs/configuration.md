@@ -197,6 +197,14 @@ The following two expressions result in an equal value:
 
 The `@jsonAliases` annotation supports multiple aliases. The annotation has no effect on encoding.
 
+## Nulls, explicitNulls
+
+By default `null` values are omitted from the JSON output. This behavior can be changed by using the `@jsonExplicitNulls` annotation on a case class or settings `JsonCodecConfiguration.explicitNulls` to `true`.
+
+## Empty Collections, explicitEmptyCollections
+
+By default `empty collections` (all supported collection types and case classes) are included from the JSON output an decoding requires empty collections to be present. This behavior can be changed by using the `@jsonExplicitEmptyCollections(false)` annotation on a case class or settings `JsonCodecConfiguration.explicitEmptyCollections` to `false`. The result is that empty collections are omitted from the JSON output and when decoding empty collections are created.
+
 ## @jsonDerive
 
 **Requires zio-json-macros**
