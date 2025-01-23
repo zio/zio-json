@@ -91,7 +91,7 @@ object AnnotationsCodecSpec extends ZIOSpecDefault {
         )
       },
       test("do not write empty collections") {
-        @jsonExplicitEmptyCollection(false)
+        @jsonExplicitEmptyCollections(false)
         case class EmptySeq(a: Seq[Int])
 
         val expectedStr = """{}"""
@@ -160,7 +160,7 @@ object AnnotationsCodecSpec extends ZIOSpecDefault {
         assertTrue(jsonAST.as[OptionalField].toOption.get == expectedObj, expectedObj.toJsonAST == Right(jsonAST))
       },
       test("do not write empty collections") {
-        @jsonExplicitEmptyCollection(false)
+        @jsonExplicitEmptyCollections(false)
         case class EmptySeq(a: Seq[Int])
 
         val jsonAST     = Json.Obj()
@@ -174,7 +174,7 @@ object AnnotationsCodecSpec extends ZIOSpecDefault {
     suite("explicit empty collections")(
       suite("should write empty collections if set to true")(
         test("for an array") {
-          @jsonExplicitEmptyCollection(true)
+          @jsonExplicitEmptyCollections(true)
           case class EmptyArray(a: Array[Int])
           val expectedStr = """{"a":[]}"""
           val expectedObj = EmptyArray(Array.empty)
@@ -184,7 +184,7 @@ object AnnotationsCodecSpec extends ZIOSpecDefault {
           assertTrue(expectedStr.fromJson[EmptyArray].toOption.get.a.isEmpty, expectedObj.toJson == expectedStr)
         },
         test("for a seq") {
-          @jsonExplicitEmptyCollection(true)
+          @jsonExplicitEmptyCollections(true)
           case class EmptySeq(a: Seq[Int])
           val expectedStr = """{"a":[]}"""
           val expectedObj = EmptySeq(Seq.empty)
@@ -194,7 +194,7 @@ object AnnotationsCodecSpec extends ZIOSpecDefault {
           assertTrue(expectedStr.fromJson[EmptySeq].toOption.get == expectedObj, expectedObj.toJson == expectedStr)
         },
         test("for a chunk") {
-          @jsonExplicitEmptyCollection(true)
+          @jsonExplicitEmptyCollections(true)
           case class EmptyChunk(a: Chunk[Int])
           val expectedStr = """{"a":[]}"""
           val expectedObj = EmptyChunk(Chunk.empty)
@@ -216,7 +216,7 @@ object AnnotationsCodecSpec extends ZIOSpecDefault {
           )
         },
         test("for a linear seq") {
-          @jsonExplicitEmptyCollection(true)
+          @jsonExplicitEmptyCollections(true)
           case class EmptyLinearSeq(a: immutable.LinearSeq[Int])
           val expectedStr = """{"a":[]}"""
           val expectedObj = EmptyLinearSeq(immutable.LinearSeq.empty)
@@ -229,7 +229,7 @@ object AnnotationsCodecSpec extends ZIOSpecDefault {
           )
         },
         test("for a list set") {
-          @jsonExplicitEmptyCollection(true)
+          @jsonExplicitEmptyCollections(true)
           case class EmptyListSet(a: immutable.ListSet[Int])
           val expectedStr = """{"a":[]}"""
           val expectedObj = EmptyListSet(immutable.ListSet.empty)
@@ -239,7 +239,7 @@ object AnnotationsCodecSpec extends ZIOSpecDefault {
           assertTrue(expectedStr.fromJson[EmptyListSet].toOption.get == expectedObj, expectedObj.toJson == expectedStr)
         },
         test("for a tree set") {
-          @jsonExplicitEmptyCollection(true)
+          @jsonExplicitEmptyCollections(true)
           case class EmptyTreeSet(a: immutable.TreeSet[Int])
           val expectedStr = """{"a":[]}"""
           val expectedObj = EmptyTreeSet(immutable.TreeSet.empty)
@@ -249,7 +249,7 @@ object AnnotationsCodecSpec extends ZIOSpecDefault {
           assertTrue(expectedStr.fromJson[EmptyTreeSet].toOption.get == expectedObj, expectedObj.toJson == expectedStr)
         },
         test("for a list") {
-          @jsonExplicitEmptyCollection(true)
+          @jsonExplicitEmptyCollections(true)
           case class EmptyList(a: List[Int])
           val expectedStr = """{"a":[]}"""
           val expectedObj = EmptyList(List.empty)
@@ -259,7 +259,7 @@ object AnnotationsCodecSpec extends ZIOSpecDefault {
           assertTrue(expectedStr.fromJson[EmptyList].toOption.get == expectedObj, expectedObj.toJson == expectedStr)
         },
         test("for a vector") {
-          @jsonExplicitEmptyCollection(true)
+          @jsonExplicitEmptyCollections(true)
           case class EmptyVector(a: Vector[Int])
           val expectedStr = """{"a":[]}"""
           val expectedObj = EmptyVector(Vector.empty)
@@ -269,7 +269,7 @@ object AnnotationsCodecSpec extends ZIOSpecDefault {
           assertTrue(expectedStr.fromJson[EmptyVector].toOption.get == expectedObj, expectedObj.toJson == expectedStr)
         },
         test("for a set") {
-          @jsonExplicitEmptyCollection(true)
+          @jsonExplicitEmptyCollections(true)
           case class EmptySet(a: Set[Int])
           val expectedStr = """{"a":[]}"""
           val expectedObj = EmptySet(Set.empty)
@@ -279,7 +279,7 @@ object AnnotationsCodecSpec extends ZIOSpecDefault {
           assertTrue(expectedStr.fromJson[EmptySet].toOption.get == expectedObj, expectedObj.toJson == expectedStr)
         },
         test("for a hash set") {
-          @jsonExplicitEmptyCollection(true)
+          @jsonExplicitEmptyCollections(true)
           case class EmptyHashSet(a: immutable.HashSet[Int])
           val expectedStr = """{"a":[]}"""
           val expectedObj = EmptyHashSet(immutable.HashSet.empty)
@@ -289,7 +289,7 @@ object AnnotationsCodecSpec extends ZIOSpecDefault {
           assertTrue(expectedStr.fromJson[EmptyHashSet].toOption.get == expectedObj, expectedObj.toJson == expectedStr)
         },
         test("for a sorted set") {
-          @jsonExplicitEmptyCollection(true)
+          @jsonExplicitEmptyCollections(true)
           case class EmptySortedSet(a: immutable.SortedSet[Int])
           val expectedStr = """{"a":[]}"""
           val expectedObj = EmptySortedSet(immutable.SortedSet.empty)
@@ -302,7 +302,7 @@ object AnnotationsCodecSpec extends ZIOSpecDefault {
           )
         },
         test("for a map") {
-          @jsonExplicitEmptyCollection(true)
+          @jsonExplicitEmptyCollections(true)
           case class EmptyMap(a: Map[String, String])
           val expectedStr = """{"a":{}}"""
           val expectedObj = EmptyMap(Map.empty)
@@ -312,7 +312,7 @@ object AnnotationsCodecSpec extends ZIOSpecDefault {
           assertTrue(expectedStr.fromJson[EmptyMap].toOption.get == expectedObj, expectedObj.toJson == expectedStr)
         },
         test("for a hash map") {
-          @jsonExplicitEmptyCollection(true)
+          @jsonExplicitEmptyCollections(true)
           case class EmptyHashMap(a: immutable.HashMap[String, String])
           val expectedStr = """{"a":{}}"""
           val expectedObj = EmptyHashMap(immutable.HashMap.empty)
@@ -322,7 +322,7 @@ object AnnotationsCodecSpec extends ZIOSpecDefault {
           assertTrue(expectedStr.fromJson[EmptyHashMap].toOption.get == expectedObj, expectedObj.toJson == expectedStr)
         },
         test("for a mutable map") {
-          @jsonExplicitEmptyCollection(true)
+          @jsonExplicitEmptyCollections(true)
           case class EmptyMutableMap(a: mutable.Map[String, String])
           val expectedStr = """{"a":{}}"""
           val expectedObj = EmptyMutableMap(mutable.Map.empty)
@@ -335,7 +335,7 @@ object AnnotationsCodecSpec extends ZIOSpecDefault {
           )
         },
         test("for a sorted map") {
-          @jsonExplicitEmptyCollection(true)
+          @jsonExplicitEmptyCollections(true)
           case class EmptySortedMap(a: collection.SortedMap[String, String])
           val expectedStr = """{"a":{}}"""
           val expectedObj = EmptySortedMap(collection.SortedMap.empty)
@@ -348,7 +348,7 @@ object AnnotationsCodecSpec extends ZIOSpecDefault {
           )
         },
         test("for a list map") {
-          @jsonExplicitEmptyCollection(true)
+          @jsonExplicitEmptyCollections(true)
           case class EmptyListMap(a: immutable.ListMap[String, String])
           val expectedStr = """{"a":{}}"""
           val expectedObj = EmptyListMap(immutable.ListMap.empty)
@@ -360,7 +360,7 @@ object AnnotationsCodecSpec extends ZIOSpecDefault {
       ),
       suite("should not write empty collections if set to false")(
         test("for an array") {
-          @jsonExplicitEmptyCollection(false)
+          @jsonExplicitEmptyCollections(false)
           case class EmptyArray(a: Array[Int])
           val expectedStr = """{}"""
           val expectedObj = EmptyArray(Array.empty)
@@ -370,7 +370,7 @@ object AnnotationsCodecSpec extends ZIOSpecDefault {
           assertTrue(expectedStr.fromJson[EmptyArray].toOption.get.a.isEmpty, expectedObj.toJson == expectedStr)
         },
         test("for a seq") {
-          @jsonExplicitEmptyCollection(false)
+          @jsonExplicitEmptyCollections(false)
           case class EmptySeq(a: Seq[Int])
           val expectedStr = """{}"""
           val expectedObj = EmptySeq(Seq.empty)
@@ -380,7 +380,7 @@ object AnnotationsCodecSpec extends ZIOSpecDefault {
           assertTrue(expectedStr.fromJson[EmptySeq].toOption.get == expectedObj, expectedObj.toJson == expectedStr)
         },
         test("for a chunk") {
-          @jsonExplicitEmptyCollection(false)
+          @jsonExplicitEmptyCollections(false)
           case class EmptyChunk(a: Chunk[Int])
           val expectedStr = """{}"""
           val expectedObj = EmptyChunk(Chunk.empty)
@@ -390,7 +390,7 @@ object AnnotationsCodecSpec extends ZIOSpecDefault {
           assertTrue(expectedStr.fromJson[EmptyChunk].toOption.get == expectedObj, expectedObj.toJson == expectedStr)
         },
         test("for an indexed seq") {
-          @jsonExplicitEmptyCollection(false)
+          @jsonExplicitEmptyCollections(false)
           case class EmptyIndexedSeq(a: IndexedSeq[Int])
           val expectedStr = """{}"""
           val expectedObj = EmptyIndexedSeq(IndexedSeq.empty)
@@ -403,7 +403,7 @@ object AnnotationsCodecSpec extends ZIOSpecDefault {
           )
         },
         test("for a linear seq") {
-          @jsonExplicitEmptyCollection(false)
+          @jsonExplicitEmptyCollections(false)
           case class EmptyLinearSeq(a: immutable.LinearSeq[Int])
           val expectedStr = """{}"""
           val expectedObj = EmptyLinearSeq(immutable.LinearSeq.empty)
@@ -416,7 +416,7 @@ object AnnotationsCodecSpec extends ZIOSpecDefault {
           )
         },
         test("for a list set") {
-          @jsonExplicitEmptyCollection(false)
+          @jsonExplicitEmptyCollections(false)
           case class EmptyListSet(a: immutable.ListSet[Int])
           val expectedStr = """{}"""
           val expectedObj = EmptyListSet(immutable.ListSet.empty)
@@ -426,7 +426,7 @@ object AnnotationsCodecSpec extends ZIOSpecDefault {
           assertTrue(expectedStr.fromJson[EmptyListSet].toOption.get == expectedObj, expectedObj.toJson == expectedStr)
         },
         test("for a treeSet") {
-          @jsonExplicitEmptyCollection(false)
+          @jsonExplicitEmptyCollections(false)
           case class EmptyTreeSet(a: immutable.TreeSet[Int])
           val expectedStr = """{}"""
           val expectedObj = EmptyTreeSet(immutable.TreeSet.empty)
@@ -436,7 +436,7 @@ object AnnotationsCodecSpec extends ZIOSpecDefault {
           assertTrue(expectedStr.fromJson[EmptyTreeSet].toOption.get == expectedObj, expectedObj.toJson == expectedStr)
         },
         test("for a list") {
-          @jsonExplicitEmptyCollection(false)
+          @jsonExplicitEmptyCollections(false)
           case class EmptyList(a: List[Int])
           val expectedStr = """{}"""
           val expectedObj = EmptyList(List.empty)
@@ -449,7 +449,7 @@ object AnnotationsCodecSpec extends ZIOSpecDefault {
           )
         },
         test("for a vector") {
-          @jsonExplicitEmptyCollection(false)
+          @jsonExplicitEmptyCollections(false)
           case class EmptyVector(a: Vector[Int])
           val expectedStr = """{}"""
           val expectedObj = EmptyVector(Vector.empty)
@@ -459,7 +459,7 @@ object AnnotationsCodecSpec extends ZIOSpecDefault {
           assertTrue(expectedStr.fromJson[EmptyVector].toOption.get == expectedObj, expectedObj.toJson == expectedStr)
         },
         test("for a set") {
-          @jsonExplicitEmptyCollection(false)
+          @jsonExplicitEmptyCollections(false)
           case class EmptySet(a: Set[Int])
           val expectedStr = """{}"""
           val expectedObj = EmptySet(Set.empty)
@@ -469,7 +469,7 @@ object AnnotationsCodecSpec extends ZIOSpecDefault {
           assertTrue(expectedStr.fromJson[EmptySet].toOption.get == expectedObj, expectedObj.toJson == expectedStr)
         },
         test("for a hash set") {
-          @jsonExplicitEmptyCollection(false)
+          @jsonExplicitEmptyCollections(false)
           case class EmptyHashSet(a: immutable.HashSet[Int])
           val expectedStr = """{}"""
           val expectedObj = EmptyHashSet(immutable.HashSet.empty)
@@ -479,7 +479,7 @@ object AnnotationsCodecSpec extends ZIOSpecDefault {
           assertTrue(expectedStr.fromJson[EmptyHashSet].toOption.get == expectedObj, expectedObj.toJson == expectedStr)
         },
         test("for a sorted set") {
-          @jsonExplicitEmptyCollection(false)
+          @jsonExplicitEmptyCollections(false)
           case class EmptySortedSet(a: immutable.SortedSet[Int])
           val expectedStr = """{}"""
           val expectedObj = EmptySortedSet(immutable.SortedSet.empty)
@@ -492,7 +492,7 @@ object AnnotationsCodecSpec extends ZIOSpecDefault {
           )
         },
         test("for a map") {
-          @jsonExplicitEmptyCollection(false)
+          @jsonExplicitEmptyCollections(false)
           case class EmptyMap(a: Map[String, String])
           val expectedStr = """{}"""
           val expectedObj = EmptyMap(Map.empty)
@@ -505,7 +505,7 @@ object AnnotationsCodecSpec extends ZIOSpecDefault {
           )
         },
         test("for a hashMap") {
-          @jsonExplicitEmptyCollection(false)
+          @jsonExplicitEmptyCollections(false)
           case class EmptyHashMap(a: immutable.HashMap[String, String])
           val expectedStr = """{}"""
           val expectedObj = EmptyHashMap(immutable.HashMap.empty)
@@ -515,7 +515,7 @@ object AnnotationsCodecSpec extends ZIOSpecDefault {
           assertTrue(expectedStr.fromJson[EmptyHashMap].toOption.get == expectedObj, expectedObj.toJson == expectedStr)
         },
         test("for a mutable map") {
-          @jsonExplicitEmptyCollection(false)
+          @jsonExplicitEmptyCollections(false)
           case class EmptyMutableMap(a: mutable.Map[String, String])
           val expectedStr = """{}"""
           val expectedObj = EmptyMutableMap(mutable.Map.empty)
@@ -528,7 +528,7 @@ object AnnotationsCodecSpec extends ZIOSpecDefault {
           )
         },
         test("for a sorted map") {
-          @jsonExplicitEmptyCollection(false)
+          @jsonExplicitEmptyCollections(false)
           case class EmptySortedMap(a: collection.SortedMap[String, String])
           val expectedStr = """{}"""
           val expectedObj = EmptySortedMap(collection.SortedMap.empty)
@@ -541,7 +541,7 @@ object AnnotationsCodecSpec extends ZIOSpecDefault {
           )
         },
         test("for a list map") {
-          @jsonExplicitEmptyCollection(false)
+          @jsonExplicitEmptyCollections(false)
           case class EmptyListMap(a: immutable.ListMap[String, String])
           val expectedStr = """{}"""
           val expectedObj = EmptyListMap(immutable.ListMap.empty)
