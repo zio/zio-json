@@ -259,10 +259,10 @@ object DeriveJsonDecoder {
           }
           (names, aliases)
         }
-        private[this] val len      = names.length
-        private[this] val matrix   = new StringMatrix(names, aliases)
-        private[this] val spans    = names.map(JsonError.ObjectAccess)
-        private[this] val defaults = ctx.parameters.map(_.default).toArray
+        private[this] val len           = names.length
+        private[this] val matrix        = new StringMatrix(names, aliases)
+        private[this] val spans         = names.map(JsonError.ObjectAccess)
+        private[this] lazy val defaults = ctx.parameters.map(_.evaluateDefault).toArray
         private[this] lazy val tcs =
           ctx.parameters.map(_.typeclass).toArray.asInstanceOf[Array[JsonDecoder[Any]]]
         private[this] lazy val namesMap = (names.zipWithIndex ++ aliases).toMap
@@ -291,7 +291,7 @@ object DeriveJsonDecoder {
                       true
                     }
                   ) tcs(idx).unsafeDecode(spans(idx) :: trace, in)
-                  else if (in.readChar() == 'u' && in.readChar() == 'l' && in.readChar() == 'l') default.get
+                  else if (in.readChar() == 'u' && in.readChar() == 'l' && in.readChar() == 'l') default.get()
                   else Lexer.error("expected 'null'", spans(idx) :: trace)
               } else if (no_extra) Lexer.error("invalid extra field", trace)
               else Lexer.skipValue(trace, in)
@@ -301,7 +301,7 @@ object DeriveJsonDecoder {
             if (ps(idx) == null) {
               val default = defaults(idx)
               ps(idx) =
-                if (default ne None) default.get
+                if (default ne None) default.get()
                 else tcs(idx).unsafeDecodeMissing(spans(idx) :: trace)
             }
             idx += 1
@@ -320,7 +320,7 @@ object DeriveJsonDecoder {
                     if (ps(idx) != null) Lexer.error("duplicate", trace)
                     val default = defaults(idx)
                     ps(idx) =
-                      if ((default ne None) && (value eq Json.Null)) default.get
+                      if ((default ne None) && (value eq Json.Null)) default.get()
                       else tcs(idx).unsafeFromJsonAST(spans(idx) :: trace, value)
                   case _ =>
                     if (no_extra) Lexer.error("invalid extra field", trace)
@@ -331,7 +331,7 @@ object DeriveJsonDecoder {
                 if (ps(idx) == null) {
                   val default = defaults(idx)
                   ps(idx) =
-                    if (default ne None) default.get
+                    if (default ne None) default.get()
                     else tcs(idx).unsafeDecodeMissing(spans(idx) :: trace)
                 }
                 idx += 1

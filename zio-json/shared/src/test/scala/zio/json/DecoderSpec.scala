@@ -157,6 +157,25 @@ object DecoderSpec extends ZIOSpecDefault {
           assert("""{}""".fromJson[DefaultString])(isRight(equalTo(DefaultString("")))) &&
           assert("""{"s": null}""".fromJson[DefaultString])(isRight(equalTo(DefaultString(""))))
         },
+        test("dynamic default value") {
+          case class DefaultDynamic(
+            randomNumber: Double = scala.math.random(),
+            instant: java.time.Instant = java.time.Instant.now()
+          )
+
+          object DefaultDynamic {
+            implicit lazy val decoder: JsonDecoder[DefaultDynamic] = DeriveJsonDecoder.gen[DefaultDynamic]
+          }
+
+          def res = """{}""".stripMargin.fromJson[DefaultDynamic]
+
+          for {
+            dynamics1 <- ZIO.fromEither(res)
+            _         <- ZIO.sleep(2.millis)
+            dynamics2 <- ZIO.fromEither(res)
+          } yield assertTrue(dynamics1.randomNumber != dynamics2.randomNumber) &&
+            assertTrue(dynamics1.instant != dynamics2.instant)
+        } @@ TestAspect.withLiveClock,
         test("sum encoding") {
           import examplesum._
 
@@ -441,6 +460,25 @@ object DecoderSpec extends ZIOSpecDefault {
           assert(Json.Obj().as[DefaultString])(isRight(equalTo(DefaultString("")))) &&
           assert(Json.Obj("s" -> Json.Null).as[DefaultString])(isRight(equalTo(DefaultString(""))))
         },
+        test("dynamic default value") {
+          case class DefaultDynamic(
+            randomNumber: Double = scala.math.random(),
+            instant: java.time.Instant = java.time.Instant.now()
+          )
+
+          object DefaultDynamic {
+            implicit lazy val decoder: JsonDecoder[DefaultDynamic] = DeriveJsonDecoder.gen[DefaultDynamic]
+          }
+
+          for {
+            dynamics1 <- ZIO.fromEither(Json.Obj().as[DefaultDynamic])
+            _         <- ZIO.sleep(2.millis) // ensure java.time.Instant is different
+            dynamics2 <- ZIO.fromEither(Json.Obj().as[DefaultDynamic])
+          } yield assertTrue(
+            dynamics1.randomNumber != dynamics2.randomNumber,
+            dynamics1.instant != dynamics2.instant
+          )
+        } @@ TestAspect.withLiveClock,
         test("aliases") {
           import exampleproducts._
 
