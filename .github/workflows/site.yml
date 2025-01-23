@@ -89,4 +89,5 @@ jobs:
         branch: zio-sbt-website/update-readme
         commit-message: Update README.md
         delete-branch: true
+        base: series/2.x
         title: Update README.md
