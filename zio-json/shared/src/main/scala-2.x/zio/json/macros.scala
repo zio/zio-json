@@ -259,10 +259,10 @@ object DeriveJsonDecoder {
           }
           (names, aliases)
         }
-        private[this] val len           = names.length
-        private[this] val matrix        = new StringMatrix(names, aliases)
-        private[this] val spans         = names.map(JsonError.ObjectAccess)
-        private[this] lazy val defaults = ctx.parameters.map(_.evaluateDefault).toArray
+        private[this] val len      = names.length
+        private[this] val matrix   = new StringMatrix(names, aliases)
+        private[this] val spans    = names.map(JsonError.ObjectAccess)
+        private[this] val defaults = ctx.parameters.map(_.evaluateDefault).toArray
         private[this] lazy val tcs =
           ctx.parameters.map(_.typeclass).toArray.asInstanceOf[Array[JsonDecoder[Any]]]
         private[this] lazy val namesMap = (names.zipWithIndex ++ aliases).toMap

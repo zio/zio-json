@@ -278,7 +278,7 @@ sealed class JsonDecoderDerivation(config: JsonCodecConfiguration) extends Deriv
         private val len = names.length
         private val matrix = new StringMatrix(names, aliases)
         private val spans = names.map(JsonError.ObjectAccess(_))
-        private lazy val defaults = IArray.genericWrapArray(ctx.params.map(_.evaluateDefault)).toArray
+        private val defaults = IArray.genericWrapArray(ctx.params.map(_.evaluateDefault)).toArray
         private lazy val tcs =
           IArray.genericWrapArray(ctx.params.map(_.typeclass)).toArray.asInstanceOf[Array[JsonDecoder[Any]]]
         private lazy val namesMap = (names.zipWithIndex ++ aliases).toMap
