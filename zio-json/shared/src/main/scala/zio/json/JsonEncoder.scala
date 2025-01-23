@@ -39,8 +39,6 @@ trait JsonEncoder[A] extends JsonEncoderPlatformSpecific[A] {
 
     override def isNothing(b: B): Boolean = self.isNothing(f(b))
 
-    override def isEmpty(b: B): Boolean = self.isEmpty(f(b))
-
     override final def toJsonAST(b: B): Either[String, Json] =
       self.toJsonAST(f(b))
   }
@@ -79,11 +77,6 @@ trait JsonEncoder[A] extends JsonEncoderPlatformSpecific[A] {
    * This default may be overridden when this value may be missing within a JSON object and still be encoded.
    */
   def isNothing(a: A): Boolean = false
-
-  /**
-   * This default may be overridden when this value may be empty within a JSON object and still be encoded.
-   */
-  def isEmpty(a: A): Boolean = false
 
   /**
    * Returns this encoder but narrowed to the its given sub-type
@@ -209,8 +202,6 @@ object JsonEncoder extends GeneratedTupleEncoders with EncoderLowPriority1 with 
 
       override def isNothing(a: A): Boolean = encoder.isNothing(a)
 
-      override def isEmpty(a: A): Boolean = encoder.isEmpty(a)
-
       override def toJsonAST(a: A): Either[String, Json] = encoder.toJsonAST(a)
     }
 
@@ -320,14 +311,8 @@ object JsonEncoder extends GeneratedTupleEncoders with EncoderLowPriority1 with 
 private[json] trait EncoderLowPriority1 extends EncoderLowPriority2 {
   this: JsonEncoder.type =>
 
-  implicit def array[A](implicit
-    A: JsonEncoder[A],
-    classTag: ClassTag[A]
-  ): JsonEncoder[Array[A]] =
+  implicit def array[A](implicit A: JsonEncoder[A], classTag: ClassTag[A]): JsonEncoder[Array[A]] =
     new JsonEncoder[Array[A]] {
-
-      override def isEmpty(as: Array[A]): Boolean = as.isEmpty
-
       def unsafeEncode(as: Array[A], indent: Option[Int], out: Write): Unit =
         if (as.isEmpty) out.write("[]")
         else {
@@ -389,11 +374,9 @@ private[json] trait EncoderLowPriority1 extends EncoderLowPriority2 {
 
   implicit def vector[A: JsonEncoder]: JsonEncoder[Vector[A]] = iterable[A, Vector]
 
-  implicit def set[A: JsonEncoder]: JsonEncoder[Set[A]] =
-    iterable[A, Set]
+  implicit def set[A: JsonEncoder]: JsonEncoder[Set[A]] = iterable[A, Set]
 
-  implicit def hashSet[A: JsonEncoder]: JsonEncoder[immutable.HashSet[A]] =
-    iterable[A, immutable.HashSet]
+  implicit def hashSet[A: JsonEncoder]: JsonEncoder[immutable.HashSet[A]] = iterable[A, immutable.HashSet]
 
   implicit def sortedSet[A: Ordering: JsonEncoder]: JsonEncoder[immutable.SortedSet[A]] =
     iterable[A, immutable.SortedSet]
@@ -417,13 +400,8 @@ private[json] trait EncoderLowPriority1 extends EncoderLowPriority2 {
 private[json] trait EncoderLowPriority2 extends EncoderLowPriority3 {
   this: JsonEncoder.type =>
 
-  implicit def iterable[A, T[X] <: Iterable[X]](implicit
-    A: JsonEncoder[A]
-  ): JsonEncoder[T[A]] =
+  implicit def iterable[A, T[X] <: Iterable[X]](implicit A: JsonEncoder[A]): JsonEncoder[T[A]] =
     new JsonEncoder[T[A]] {
-
-      override def isEmpty(as: T[A]): Boolean = as.isEmpty
-
       def unsafeEncode(as: T[A], indent: Option[Int], out: Write): Unit =
         if (as.isEmpty) out.write("[]")
         else {
@@ -471,9 +449,6 @@ private[json] trait EncoderLowPriority2 extends EncoderLowPriority3 {
     K: JsonFieldEncoder[K],
     A: JsonEncoder[A]
   ): JsonEncoder[T[K, A]] = new JsonEncoder[T[K, A]] {
-
-    override def isEmpty(a: T[K, A]): Boolean = a.isEmpty
-
     def unsafeEncode(kvs: T[K, A], indent: Option[Int], out: Write): Unit =
       if (kvs.isEmpty) out.write("{}")
       else {

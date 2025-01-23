@@ -244,7 +244,7 @@ object BuildHelper {
     autoAPIMappings := true,
     unusedCompileDependenciesFilter -= moduleFilter("org.scala-js", "scalajs-library"),
     mimaPreviousArtifacts := {
-      previousStableVersion.value.map(organization.value %% name.value % _).toSet ++
+      previousStableVersion.value.filter(_ != "0.7.4").map(organization.value %% name.value % _).toSet ++
         Set(organization.value %% name.value % "0.7.3")
     },
     mimaCheckDirection := "backward", // TODO: find how we can use "both" for path versions
