@@ -273,31 +273,34 @@ object DeriveJsonDecoder {
           ctx.parameters.map(_.typeclass).toArray.asInstanceOf[Array[JsonDecoder[Any]]]
         private[this] lazy val namesMap = (names.zipWithIndex ++ aliases).toMap
 
-        // private[this] val explicitNulls =
-        //   config.explicitNulls || ctx.annotations.collectFirst { case jsonExplicitNull => () }.isDefined
         private[this] val explicitEmptyCollections =
           ctx.annotations.collectFirst { case jsonExplicitEmptyCollections(enabled) =>
             enabled
           }.getOrElse(config.explicitEmptyCollections)
 
-        private[this] def allowMissingValueDecoder(d: JsonDecoder[_]): Boolean = d match {
-          case d: CollectionJsonDecoder[_] if !explicitEmptyCollections => true
-          // case d: OptionJsonDecoder[_] if !explicitNulls => true
-          case d: OptionJsonDecoder[_] => true
-          case d: MappedJsonDecoder[_] => allowMissingValueDecoder(d.underlying)
-          case d                       => false
-        }
         private[this] val missingValueDecoder =
-          if (!explicitEmptyCollections)
-            (idx: Int, trace: List[JsonError]) => tcs(idx).unsafeDecodeMissing(spans(idx) :: trace)
-          else {
-            lazy val missingValueDecoderMap =
-              tcs.map(d => if (allowMissingValueDecoder(d)) Some(d) else None).toIndexedSeq
-            (idx: Int, trace: List[JsonError]) =>
-              missingValueDecoderMap(idx)
-                .map(_.unsafeDecodeMissing(spans(idx) :: trace))
-                .getOrElse(Lexer.error("missing", spans(idx) :: trace))
+          if (explicitEmptyCollections) {
+            lazy val missingValueDecoders = tcs.map { d =>
+              if (allowMissingValueDecoder(d)) d
+              else null
+            }
+            (idx: Int, trace: List[JsonError]) => {
+              val trace_  = spans(idx) :: trace
+              val decoder = missingValueDecoders(idx)
+              if (decoder eq null) Lexer.error("missing", trace_)
+              decoder.unsafeDecodeMissing(trace_)
+            }
+          } else { (idx: Int, trace: List[JsonError]) =>
+            tcs(idx).unsafeDecodeMissing(spans(idx) :: trace)
           }
+
+        @tailrec
+        private[this] def allowMissingValueDecoder(d: JsonDecoder[_]): Boolean = d match {
+          case _: OptionJsonDecoder[_]     => true
+          case _: CollectionJsonDecoder[_] => !explicitEmptyCollections
+          case d: MappedJsonDecoder[_]     => allowMissingValueDecoder(d.underlying)
+          case _                           => false
+        }
 
         override def unsafeDecodeMissing(trace: List[JsonError]): A = {
           val ps  = new Array[Any](len)
