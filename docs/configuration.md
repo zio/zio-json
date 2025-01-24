@@ -199,11 +199,40 @@ The `@jsonAliases` annotation supports multiple aliases. The annotation has no e
 
 ## Nulls, explicitNulls
 
-By default `null` values are omitted from the JSON output. This behavior can be changed by using the `@jsonExplicitNulls` annotation on a case class or settings `JsonCodecConfiguration.explicitNulls` to `true`.
+By default `null` values are omitted from the JSON output. This behavior can be changed by using the `@jsonExplicitNull` annotation on a case class, field or setting `JsonCodecConfiguration.explicitNulls` to `true`.
+Missing nulls on decoding are always allowed.
+
+```scala mdoc
+@jsonExplicitNull
+case class Mango(ripeness: Option[Int])
+
+object Mango {
+  implicit val codec: JsonCodec[Mango] = DeriveJsonCodec.gen[Mango]
+}
+```
+The following expression results in a JSON document with a `null` value:
+```scala mdoc
+Mango(None).toJson
+"""{}""".fromJson[Mango]
+```
 
 ## Empty Collections, explicitEmptyCollections
 
-By default `empty collections` (all supported collection types and case classes) are included from the JSON output an decoding requires empty collections to be present. This behavior can be changed by using the `@jsonExplicitEmptyCollections(false)` annotation on a case class or settings `JsonCodecConfiguration.explicitEmptyCollections` to `false`. The result is that empty collections are omitted from the JSON output and when decoding empty collections are created.
+By default `empty collections` (all supported collection types and case classes) are included from the JSON output an decoding requires empty collections to be present. This behavior can be changed by using the `@jsonExplicitEmptyCollections(false)` annotation on a case class, field or setting `JsonCodecConfiguration.explicitEmptyCollections` to `false`. The result is that empty collections are omitted from the JSON output and when decoding empty collections are created.
+
+```scala mdoc
+@jsonExplicitEmptyCollections(false)
+case class Pineapple(leaves: List[String])
+
+object Pineapple {
+  implicit val codec: JsonCodec[Pineapple] = DeriveJsonCodec.gen[Pineapple]
+}
+```
+The following expression results in a JSON document with an empty collection:
+```scala mdoc
+Pineapple(Nil).toJson
+"""{}""".fromJson[Pineapple]
+```
 
 ## @jsonDerive
 
