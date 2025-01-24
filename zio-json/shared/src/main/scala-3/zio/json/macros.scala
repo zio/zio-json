@@ -284,7 +284,7 @@ sealed class JsonDecoderDerivation(config: JsonCodecConfiguration) extends Deriv
         private val len = names.length
         private val matrix = new StringMatrix(names, aliases)
         private val spans = names.map(JsonError.ObjectAccess(_))
-        private val defaults = IArray.genericWrapArray(ctx.params.map(_.evaluateDefault)).toArray
+        private val defaults = IArray.genericWrapArray(ctx.params.map(_.evaluateDefault.orNull)).toArray
         private lazy val tcs =
           IArray.genericWrapArray(ctx.params.map(_.typeclass)).toArray.asInstanceOf[Array[JsonDecoder[Any]]]
         private lazy val namesMap = (names.zipWithIndex ++ aliases).toMap
@@ -325,7 +325,7 @@ sealed class JsonDecoderDerivation(config: JsonCodecConfiguration) extends Deriv
             if (ps(idx) == null) {
               val default = defaults(idx)
               ps(idx) =
-                if (default ne None) default.get
+                if (default ne null) default()
                 else missingValueDecoder(idx, trace)
             }
             idx += 1
@@ -342,11 +342,11 @@ sealed class JsonDecoderDerivation(config: JsonCodecConfiguration) extends Deriv
               if (idx != -1) {
                 if (ps(idx) != null) Lexer.error("duplicate", trace)
                 val default = defaults(idx)
-                ps(idx) = if ((default eq None) || in.nextNonWhitespace() != 'n' && {
+                ps(idx) = if ((default eq null) || in.nextNonWhitespace() != 'n' && {
                   in.retract()
                   true
                 }) tcs(idx).unsafeDecode(spans(idx) :: trace, in)
-                else if (in.readChar() == 'u' && in.readChar() == 'l' && in.readChar() == 'l') default.get()
+                else if (in.readChar() == 'u' && in.readChar() == 'l' && in.readChar() == 'l') default()
                 else Lexer.error("expected 'null'", spans(idx) :: trace)
               } else if (no_extra) Lexer.error("invalid extra field", trace)
               else Lexer.skipValue(trace, in)
@@ -357,7 +357,7 @@ sealed class JsonDecoderDerivation(config: JsonCodecConfiguration) extends Deriv
             if (ps(idx) == null) {
               val default = defaults(idx)
               ps(idx) =
-                if (default ne None) default.get()
+                if (default ne null) default()
                 else missingValueDecoder(idx, trace)
             }
             idx += 1
@@ -375,7 +375,7 @@ sealed class JsonDecoderDerivation(config: JsonCodecConfiguration) extends Deriv
                     if (ps(idx) != null) Lexer.error("duplicate", trace)
                     val default = defaults(idx)
                     ps(idx) =
-                      if ((default ne None) && (value eq Json.Null)) default.get()
+                      if ((default ne null) && (value eq Json.Null)) default()
                       else tcs(idx).unsafeFromJsonAST(spans(idx) :: trace, value)
                   case _ =>
                     if (no_extra) Lexer.error("invalid extra field", trace)
@@ -386,7 +386,7 @@ sealed class JsonDecoderDerivation(config: JsonCodecConfiguration) extends Deriv
                 if (ps(idx) == null) {
                   val default = defaults(idx)
                   ps(idx) =
-                    if (default ne None) default.get()
+                    if (default ne null) default()
                     else missingValueDecoder(idx, trace)
                 }
                 idx += 1
