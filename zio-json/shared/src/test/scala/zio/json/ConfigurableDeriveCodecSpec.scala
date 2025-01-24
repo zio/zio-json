@@ -273,6 +273,23 @@ object ConfigurableDeriveCodecSpec extends ZIOSpecDefault {
           expectedStr.fromJson[EmptyObj] == Right(expectedEmptyObj),
           expectedStr.fromJson[EmptySeq] == Right(expectedEmptySeq)
         )
+      },
+      test("decode missing empty collections with defaults") {
+        case class EmptySeq(b: Seq[Int] = Seq(1))
+        case class EmptyObj(a: EmptySeq)
+
+        val expectedStr = """{}"""
+        val expectedSeq = EmptySeq(Seq(1))
+        val expectedObj = EmptyObj(expectedSeq)
+
+        implicit val config: JsonCodecConfiguration = JsonCodecConfiguration(explicitEmptyCollections = false)
+        implicit val codec: JsonCodec[EmptySeq]     = DeriveJsonCodec.gen
+        implicit val codecObj: JsonCodec[EmptyObj]  = DeriveJsonCodec.gen
+
+        assertTrue(
+          expectedStr.fromJson[EmptySeq].toOption.get == expectedSeq,
+          expectedStr.fromJson[EmptyObj].toOption.get == expectedObj
+        )
       }
     ),
     suite("override AST defaults")(
