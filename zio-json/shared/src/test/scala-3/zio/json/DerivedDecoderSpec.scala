@@ -45,6 +45,28 @@ object DerivedDecoderSpec extends ZIOSpecDefault {
       assertTrue("""{"$type":"Qux"}""".fromJson[Foo] == Right(Foo.Qux))
       assertTrue("""{"$type":"Barrr"}""".fromJson[Foo] == Right(Foo.Bar))
     },
+    test("skip JSON encoded in a string value") {
+      @jsonDiscriminator("type")
+      sealed trait Example derives JsonDecoder {
+        type Content
+        def content: Content
+      }
+      object Example {
+        @jsonHint("JSON")
+        final case class JsonInput(content: String) extends Example {
+          override type Content = String
+        }
+      }
+
+      val json =
+        """
+          |{
+          |  "content": "\"{\\n  \\\"name\\\": \\\"John\\\",\\\"location\\\":\\\"Sydney\\\",\\n  \\\"email\\\": \\\"jdoe@test.com\\\"\\n}\"",
+          |  "type": "JSON"
+          |}
+          |""".stripMargin.trim
+      assertTrue(json.fromJson[Example].isRight)
+    },
     test("Derives for a recursive sum ADT type") {
       enum Foo derives JsonDecoder:
         case Bar
