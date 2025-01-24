@@ -3,10 +3,6 @@ package zio.json
 import zio.json.JsonCodecConfiguration.SumTypeHandling.DiscriminatorField
 import zio.json.ast.Json
 import zio.test._
-import zio.Chunk
-
-import scala.collection.immutable
-import scala.collection.mutable
 
 object ConfigurableDeriveCodecSpec extends ZIOSpecDefault {
   case class ClassWithFields(someField: Int, someOtherField: String)
@@ -54,29 +50,43 @@ object ConfigurableDeriveCodecSpec extends ZIOSpecDefault {
           assertTrue(
             jsonStr.fromJson[ClassWithFields].toOption.get == expectedObj
           )
+        },
+        test("do not write nulls by default, decode missing nulls as None") {
+          val expectedStr = """{}"""
+          val expectedObj = OptionalField(None)
+
+          implicit val codec: JsonCodec[OptionalField] = DeriveJsonCodec.gen
+
+          assertTrue(
+            expectedStr.fromJson[OptionalField].toOption.get == expectedObj,
+            expectedObj.toJson == expectedStr
+          )
+        },
+        test("write empty collections by default") {
+          case class EmptySeq(a: Seq[Int])
+
+          val expectedStr = """{"a":[]}"""
+          val expectedObj = EmptySeq(Seq.empty)
+
+          implicit val codec: JsonCodec[EmptySeq] = DeriveJsonCodec.gen
+
+          assertTrue(expectedStr.fromJson[EmptySeq].toOption.get == expectedObj, expectedObj.toJson == expectedStr)
+        },
+        test("fail on decoding missing empty collections by default") {
+          case class Empty(z: Option[Int])
+          case class EmptyObj(a: Empty)
+          case class EmptySeq(a: Seq[Int])
+
+          implicit val codecEmpty: JsonCodec[Empty]       = DeriveJsonCodec.gen[Empty]
+          implicit val codecEmptyObj: JsonCodec[EmptyObj] = DeriveJsonCodec.gen[EmptyObj]
+          implicit val codecEmptySeq: JsonCodec[EmptySeq] = DeriveJsonCodec.gen[EmptySeq]
+
+          assertTrue(
+            """{}""".fromJson[EmptyObj] == Left(".a(missing)"),
+            """{}""".fromJson[EmptySeq] == Left(".a(missing)")
+          )
         }
       ),
-      test("do not write nulls by default") {
-        val expectedStr = """{}"""
-        val expectedObj = OptionalField(None)
-
-        implicit val codec: JsonCodec[OptionalField] = DeriveJsonCodec.gen
-
-        assertTrue(
-          expectedStr.fromJson[OptionalField].toOption.get == expectedObj,
-          expectedObj.toJson == expectedStr
-        )
-      },
-      test("write empty collections by default") {
-        case class EmptySeq(a: Seq[Int])
-
-        val expectedStr = """{"a":[]}"""
-        val expectedObj = EmptySeq(Seq.empty)
-
-        implicit val codec: JsonCodec[EmptySeq] = DeriveJsonCodec.gen
-
-        assertTrue(expectedStr.fromJson[EmptySeq].toOption.get == expectedObj, expectedObj.toJson == expectedStr)
-      },
       suite("AST")(
         test("should not map field names by default") {
           val expectedAST = Json.Obj("someField" -> Json.Num(1), "someOtherField" -> Json.Str("a"))
@@ -122,12 +132,14 @@ object ConfigurableDeriveCodecSpec extends ZIOSpecDefault {
           )
         },
         test("write empty collections by default") {
-          case class EmptySeq(a: Seq[Int])
+          case class Empty()
+          case class EmptySeq(a: Seq[Int], b: Empty)
 
-          val jsonAST     = Json.Obj("a" -> Json.Arr())
-          val expectedObj = EmptySeq(Seq.empty)
+          val jsonAST     = Json.Obj("a" -> Json.Arr(), "b" -> Json.Obj())
+          val expectedObj = EmptySeq(Seq.empty, Empty())
 
-          implicit val codec: JsonCodec[EmptySeq] = DeriveJsonCodec.gen
+          implicit val emptyCodec: JsonCodec[Empty] = DeriveJsonCodec.gen
+          implicit val codec: JsonCodec[EmptySeq]   = DeriveJsonCodec.gen
 
           assertTrue(
             jsonAST.as[EmptySeq].toOption.get == expectedObj,
@@ -200,18 +212,6 @@ object ConfigurableDeriveCodecSpec extends ZIOSpecDefault {
             expectedStr.fromJson[OptionalField].toOption.get == expectedObj,
             expectedObj.toJson == expectedStr
           )
-        },
-        test("do not write empty collections") {
-          case class EmptySeq(a: Seq[Int])
-
-          val expectedStr = """{}"""
-          val expectedObj = EmptySeq(Seq.empty)
-
-          implicit val config: JsonCodecConfiguration =
-            JsonCodecConfiguration(explicitEmptyCollections = false)
-          implicit val codec: JsonCodec[EmptySeq] = DeriveJsonCodec.gen
-
-          assertTrue(expectedStr.fromJson[EmptySeq].toOption.get == expectedObj, expectedObj.toJson == expectedStr)
         }
       ),
       suite("AST")(
@@ -262,434 +262,15 @@ object ConfigurableDeriveCodecSpec extends ZIOSpecDefault {
 
           assertTrue(jsonAST.as[OptionalField].toOption.get == expectedObj, expectedObj.toJsonAST == Right(jsonAST))
         },
-        test("do not write empty collections") {
-          case class EmptySeq(a: Seq[Int])
-
-          val jsonAST     = Json.Obj("a" -> Json.Arr())
-          val expectedObj = EmptySeq(Seq.empty)
+        test("fail on decoding missing explicit nulls") {
+          val jsonStr = """{}"""
 
           implicit val config: JsonCodecConfiguration =
-            JsonCodecConfiguration(explicitEmptyCollections = false)
-          implicit val codec: JsonCodec[EmptySeq] = DeriveJsonCodec.gen
-
-          assertTrue(jsonAST.as[EmptySeq].toOption.get == expectedObj, expectedObj.toJsonAST == Right(jsonAST))
-        }
-      )
-    ),
-    suite("explicit empty collections")(
-      suite("should write empty collections if set to true")(
-        test("for an array") {
-          case class EmptyArray(a: Array[Int])
-          val expectedStr = """{"a":[]}"""
-          val expectedObj = EmptyArray(Array.empty)
-
-          implicit val config: JsonCodecConfiguration =
-            JsonCodecConfiguration(explicitEmptyCollections = true)
-          implicit val codec: JsonCodec[EmptyArray] = DeriveJsonCodec.gen
-
-          assertTrue(expectedStr.fromJson[EmptyArray].toOption.get.a.isEmpty, expectedObj.toJson == expectedStr)
-        },
-        test("for a seq") {
-          case class EmptySeq(a: Seq[Int])
-          val expectedStr = """{"a":[]}"""
-          val expectedObj = EmptySeq(Seq.empty)
-
-          implicit val config: JsonCodecConfiguration =
-            JsonCodecConfiguration(explicitEmptyCollections = true)
-          implicit val codec: JsonCodec[EmptySeq] = DeriveJsonCodec.gen
-
-          assertTrue(expectedStr.fromJson[EmptySeq].toOption.get == expectedObj, expectedObj.toJson == expectedStr)
-        },
-        test("for a chunk") {
-          case class EmptyChunk(a: Chunk[Int])
-          val expectedStr = """{"a":[]}"""
-          val expectedObj = EmptyChunk(Chunk.empty)
-
-          implicit val config: JsonCodecConfiguration =
-            JsonCodecConfiguration(explicitEmptyCollections = true)
-          implicit val codec: JsonCodec[EmptyChunk] = DeriveJsonCodec.gen
-
-          assertTrue(expectedStr.fromJson[EmptyChunk].toOption.get == expectedObj, expectedObj.toJson == expectedStr)
-        },
-        test("for an indexed seq") {
-          case class EmptyIndexedSeq(a: IndexedSeq[Int])
-          val expectedStr = """{"a":[]}"""
-          val expectedObj = EmptyIndexedSeq(IndexedSeq.empty)
-
-          implicit val config: JsonCodecConfiguration =
-            JsonCodecConfiguration(explicitEmptyCollections = true)
-          implicit val codec: JsonCodec[EmptyIndexedSeq] = DeriveJsonCodec.gen
-
-          assertTrue(
-            expectedStr.fromJson[EmptyIndexedSeq].toOption.get == expectedObj,
-            expectedObj.toJson == expectedStr
-          )
-        },
-        test("for a linear seq") {
-          case class EmptyLinearSeq(a: immutable.LinearSeq[Int])
-          val expectedStr = """{"a":[]}"""
-          val expectedObj = EmptyLinearSeq(immutable.LinearSeq.empty)
-
-          implicit val config: JsonCodecConfiguration =
-            JsonCodecConfiguration(explicitEmptyCollections = true)
-          implicit val codec: JsonCodec[EmptyLinearSeq] = DeriveJsonCodec.gen
-
-          assertTrue(
-            expectedStr.fromJson[EmptyLinearSeq].toOption.get == expectedObj,
-            expectedObj.toJson == expectedStr
-          )
-        },
-        test("for a list set") {
-          case class EmptyListSet(a: immutable.ListSet[Int])
-          val expectedStr = """{"a":[]}"""
-          val expectedObj = EmptyListSet(immutable.ListSet.empty)
-
-          implicit val config: JsonCodecConfiguration =
-            JsonCodecConfiguration(explicitEmptyCollections = true)
-          implicit val codec: JsonCodec[EmptyListSet] = DeriveJsonCodec.gen
-
-          assertTrue(expectedStr.fromJson[EmptyListSet].toOption.get == expectedObj, expectedObj.toJson == expectedStr)
-        },
-        test("for a tree set") {
-          case class EmptyTreeSet(a: immutable.TreeSet[Int])
-          val expectedStr = """{"a":[]}"""
-          val expectedObj = EmptyTreeSet(immutable.TreeSet.empty)
-
-          implicit val config: JsonCodecConfiguration =
-            JsonCodecConfiguration(explicitEmptyCollections = true)
-          implicit val codec: JsonCodec[EmptyTreeSet] = DeriveJsonCodec.gen
-
-          assertTrue(expectedStr.fromJson[EmptyTreeSet].toOption.get == expectedObj, expectedObj.toJson == expectedStr)
-        },
-        test("for a list") {
-          case class EmptyList(a: List[Int])
-          val expectedStr = """{"a":[]}"""
-          val expectedObj = EmptyList(List.empty)
-
-          implicit val config: JsonCodecConfiguration =
-            JsonCodecConfiguration(explicitEmptyCollections = true)
-          implicit val codec: JsonCodec[EmptyList] = DeriveJsonCodec.gen
-
-          assertTrue(expectedStr.fromJson[EmptyList].toOption.get == expectedObj, expectedObj.toJson == expectedStr)
-        },
-        test("for a vector") {
-          case class EmptyVector(a: Vector[Int])
-          val expectedStr = """{"a":[]}"""
-          val expectedObj = EmptyVector(Vector.empty)
-
-          implicit val config: JsonCodecConfiguration =
-            JsonCodecConfiguration(explicitEmptyCollections = true)
-          implicit val codec: JsonCodec[EmptyVector] = DeriveJsonCodec.gen
-
-          assertTrue(expectedStr.fromJson[EmptyVector].toOption.get == expectedObj, expectedObj.toJson == expectedStr)
-        },
-        test("for a set") {
-          case class EmptySet(a: Set[Int])
-          val expectedStr = """{"a":[]}"""
-          val expectedObj = EmptySet(Set.empty)
-
-          implicit val config: JsonCodecConfiguration =
-            JsonCodecConfiguration(explicitEmptyCollections = true)
-          implicit val codec: JsonCodec[EmptySet] = DeriveJsonCodec.gen
-
-          assertTrue(expectedStr.fromJson[EmptySet].toOption.get == expectedObj, expectedObj.toJson == expectedStr)
-        },
-        test("for a hash set") {
-          case class EmptyHashSet(a: immutable.HashSet[Int])
-          val expectedStr = """{"a":[]}"""
-          val expectedObj = EmptyHashSet(immutable.HashSet.empty)
-
-          implicit val config: JsonCodecConfiguration =
-            JsonCodecConfiguration(explicitEmptyCollections = true)
-          implicit val codec: JsonCodec[EmptyHashSet] = DeriveJsonCodec.gen
-
-          assertTrue(expectedStr.fromJson[EmptyHashSet].toOption.get == expectedObj, expectedObj.toJson == expectedStr)
-        },
-        test("for a sorted set") {
-          case class EmptySortedSet(a: immutable.SortedSet[Int])
-          val expectedStr = """{"a":[]}"""
-          val expectedObj = EmptySortedSet(immutable.SortedSet.empty)
-
-          implicit val config: JsonCodecConfiguration =
-            JsonCodecConfiguration(explicitEmptyCollections = true)
-          implicit val codec: JsonCodec[EmptySortedSet] = DeriveJsonCodec.gen
-
-          assertTrue(
-            expectedStr.fromJson[EmptySortedSet].toOption.get == expectedObj,
-            expectedObj.toJson == expectedStr
-          )
-        },
-        test("for a map") {
-          case class EmptyMap(a: Map[String, String])
-          val expectedStr = """{"a":{}}"""
-          val expectedObj = EmptyMap(Map.empty)
-
-          implicit val config: JsonCodecConfiguration =
-            JsonCodecConfiguration(explicitEmptyCollections = true)
-          implicit val codec: JsonCodec[EmptyMap] = DeriveJsonCodec.gen
-
-          assertTrue(expectedStr.fromJson[EmptyMap].toOption.get == expectedObj, expectedObj.toJson == expectedStr)
-        },
-        test("for a hash map") {
-          case class EmptyHashMap(a: immutable.HashMap[String, String])
-          val expectedStr = """{"a":{}}"""
-          val expectedObj = EmptyHashMap(immutable.HashMap.empty)
-
-          implicit val config: JsonCodecConfiguration =
-            JsonCodecConfiguration(explicitEmptyCollections = true)
-          implicit val codec: JsonCodec[EmptyHashMap] = DeriveJsonCodec.gen
-
-          assertTrue(expectedStr.fromJson[EmptyHashMap].toOption.get == expectedObj, expectedObj.toJson == expectedStr)
-        },
-        test("for a mutable map") {
-          case class EmptyMutableMap(a: mutable.Map[String, String])
-          val expectedStr = """{"a":{}}"""
-          val expectedObj = EmptyMutableMap(mutable.Map.empty)
-
-          implicit val config: JsonCodecConfiguration =
-            JsonCodecConfiguration(explicitEmptyCollections = true)
-          implicit val codec: JsonCodec[EmptyMutableMap] = DeriveJsonCodec.gen
-
-          assertTrue(
-            expectedStr.fromJson[EmptyMutableMap].toOption.get == expectedObj,
-            expectedObj.toJson == expectedStr
-          )
-        },
-        test("for a sorted map") {
-          case class EmptySortedMap(a: collection.SortedMap[String, String])
-          val expectedStr = """{"a":{}}"""
-          val expectedObj = EmptySortedMap(collection.SortedMap.empty)
-
-          implicit val config: JsonCodecConfiguration =
-            JsonCodecConfiguration(explicitEmptyCollections = true)
-          implicit val codec: JsonCodec[EmptySortedMap] = DeriveJsonCodec.gen
-
-          assertTrue(
-            expectedStr.fromJson[EmptySortedMap].toOption.get == expectedObj,
-            expectedObj.toJson == expectedStr
-          )
-        },
-        test("for a list map") {
-          case class EmptyListMap(a: immutable.ListMap[String, String])
-          val expectedStr = """{"a":{}}"""
-          val expectedObj = EmptyListMap(immutable.ListMap.empty)
-
-          implicit val config: JsonCodecConfiguration =
-            JsonCodecConfiguration(explicitEmptyCollections = true)
-          implicit val codec: JsonCodec[EmptyListMap] = DeriveJsonCodec.gen
-
-          assertTrue(expectedStr.fromJson[EmptyListMap].toOption.get == expectedObj, expectedObj.toJson == expectedStr)
-        }
-      ),
-      suite("should not write empty collections if set to false")(
-        test("for an array") {
-          case class EmptyArray(a: Array[Int])
-          val expectedStr = """{}"""
-          val expectedObj = EmptyArray(Array.empty)
-
-          implicit val config: JsonCodecConfiguration =
-            JsonCodecConfiguration(explicitEmptyCollections = false)
-          implicit val codec: JsonCodec[EmptyArray] = DeriveJsonCodec.gen
-
-          assertTrue(expectedStr.fromJson[EmptyArray].toOption.get.a.isEmpty, expectedObj.toJson == expectedStr)
-        },
-        test("for a seq") {
-          case class EmptySeq(a: Seq[Int])
-          val expectedStr = """{}"""
-          val expectedObj = EmptySeq(Seq.empty)
-
-          implicit val config: JsonCodecConfiguration =
-            JsonCodecConfiguration(explicitEmptyCollections = false)
-          implicit val codec: JsonCodec[EmptySeq] = DeriveJsonCodec.gen
-
-          assertTrue(expectedStr.fromJson[EmptySeq].toOption.get == expectedObj, expectedObj.toJson == expectedStr)
-        },
-        test("for a chunk") {
-          case class EmptyChunk(a: Chunk[Int])
-          val expectedStr = """{}"""
-          val expectedObj = EmptyChunk(Chunk.empty)
-
-          implicit val config: JsonCodecConfiguration =
-            JsonCodecConfiguration(explicitEmptyCollections = false)
-          implicit val codec: JsonCodec[EmptyChunk] = DeriveJsonCodec.gen
-
-          assertTrue(expectedStr.fromJson[EmptyChunk].toOption.get == expectedObj, expectedObj.toJson == expectedStr)
-        },
-        test("for an indexed seq") {
-          case class EmptyIndexedSeq(a: IndexedSeq[Int])
-          val expectedStr = """{}"""
-          val expectedObj = EmptyIndexedSeq(IndexedSeq.empty)
-
-          implicit val config: JsonCodecConfiguration =
-            JsonCodecConfiguration(explicitEmptyCollections = false)
-          implicit val codec: JsonCodec[EmptyIndexedSeq] = DeriveJsonCodec.gen
-
-          assertTrue(
-            expectedStr.fromJson[EmptyIndexedSeq].toOption.get == expectedObj,
-            expectedObj.toJson == expectedStr
-          )
-        },
-        test("for a linear seq") {
-          case class EmptyLinearSeq(a: immutable.LinearSeq[Int])
-          val expectedStr = """{}"""
-          val expectedObj = EmptyLinearSeq(immutable.LinearSeq.empty)
-
-          implicit val config: JsonCodecConfiguration =
-            JsonCodecConfiguration(explicitEmptyCollections = false)
-          implicit val codec: JsonCodec[EmptyLinearSeq] = DeriveJsonCodec.gen
-
-          assertTrue(
-            expectedStr.fromJson[EmptyLinearSeq].toOption.get == expectedObj,
-            expectedObj.toJson == expectedStr
-          )
-        },
-        test("for a list set") {
-          case class EmptyListSet(a: immutable.ListSet[Int])
-          val expectedStr = """{}"""
-          val expectedObj = EmptyListSet(immutable.ListSet.empty)
-
-          implicit val config: JsonCodecConfiguration =
-            JsonCodecConfiguration(explicitEmptyCollections = false)
-          implicit val codec: JsonCodec[EmptyListSet] = DeriveJsonCodec.gen
-
-          assertTrue(expectedStr.fromJson[EmptyListSet].toOption.get == expectedObj, expectedObj.toJson == expectedStr)
-        },
-        test("for a treeSet") {
-          case class EmptyTreeSet(a: immutable.TreeSet[Int])
-          val expectedStr = """{}"""
-          val expectedObj = EmptyTreeSet(immutable.TreeSet.empty)
-
-          implicit val config: JsonCodecConfiguration =
-            JsonCodecConfiguration(explicitEmptyCollections = false)
-          implicit val codec: JsonCodec[EmptyTreeSet] = DeriveJsonCodec.gen
-
-          assertTrue(expectedStr.fromJson[EmptyTreeSet].toOption.get == expectedObj, expectedObj.toJson == expectedStr)
-        },
-        test("for a list") {
-          case class EmptyList(a: List[Int])
-          val expectedStr = """{}"""
-          val expectedObj = EmptyList(List.empty)
-
-          implicit val config: JsonCodecConfiguration =
-            JsonCodecConfiguration(explicitEmptyCollections = false)
-          implicit val codec: JsonCodec[EmptyList] = DeriveJsonCodec.gen
-
-          assertTrue(
-            expectedStr.fromJson[EmptyList].toOption.get == expectedObj,
-            expectedObj.toJson == expectedStr
-          )
-        },
-        test("for a vector") {
-          case class EmptyVector(a: Vector[Int])
-          val expectedStr = """{}"""
-          val expectedObj = EmptyVector(Vector.empty)
-
-          implicit val config: JsonCodecConfiguration =
-            JsonCodecConfiguration(explicitEmptyCollections = false)
-          implicit val codec: JsonCodec[EmptyVector] = DeriveJsonCodec.gen
-
-          assertTrue(expectedStr.fromJson[EmptyVector].toOption.get == expectedObj, expectedObj.toJson == expectedStr)
-        },
-        test("for a set") {
-          case class EmptySet(a: Set[Int])
-          val expectedStr = """{}"""
-          val expectedObj = EmptySet(Set.empty)
-
-          implicit val config: JsonCodecConfiguration =
-            JsonCodecConfiguration(explicitEmptyCollections = false)
-          implicit val codec: JsonCodec[EmptySet] = DeriveJsonCodec.gen
-
-          assertTrue(expectedStr.fromJson[EmptySet].toOption.get == expectedObj, expectedObj.toJson == expectedStr)
-        },
-        test("for a hash set") {
-          case class EmptyHashSet(a: immutable.HashSet[Int])
-          val expectedStr = """{}"""
-          val expectedObj = EmptyHashSet(immutable.HashSet.empty)
-
-          implicit val config: JsonCodecConfiguration =
-            JsonCodecConfiguration(explicitEmptyCollections = false)
-          implicit val codec: JsonCodec[EmptyHashSet] = DeriveJsonCodec.gen
-
-          assertTrue(expectedStr.fromJson[EmptyHashSet].toOption.get == expectedObj, expectedObj.toJson == expectedStr)
-        },
-        test("for a sorted set") {
-          case class EmptySortedSet(a: immutable.SortedSet[Int])
-          val expectedStr = """{}"""
-          val expectedObj = EmptySortedSet(immutable.SortedSet.empty)
-
-          implicit val config: JsonCodecConfiguration =
-            JsonCodecConfiguration(explicitEmptyCollections = false)
-          implicit val codec: JsonCodec[EmptySortedSet] = DeriveJsonCodec.gen
-
-          assertTrue(
-            expectedStr.fromJson[EmptySortedSet].toOption.get == expectedObj,
-            expectedObj.toJson == expectedStr
-          )
-        },
-        test("for a map") {
-          case class EmptyMap(a: Map[String, String])
-          val expectedStr = """{}"""
-          val expectedObj = EmptyMap(Map.empty)
-
-          implicit val config: JsonCodecConfiguration =
-            JsonCodecConfiguration(explicitEmptyCollections = false)
-          implicit val codec: JsonCodec[EmptyMap] = DeriveJsonCodec.gen
-
-          assertTrue(
-            expectedStr.fromJson[EmptyMap].toOption.get == expectedObj,
-            expectedObj.toJson == expectedStr
-          )
-        },
-        test("for a hashMap") {
-          case class EmptyHashMap(a: immutable.HashMap[String, String])
-          val expectedStr = """{}"""
-          val expectedObj = EmptyHashMap(immutable.HashMap.empty)
-
-          implicit val config: JsonCodecConfiguration =
-            JsonCodecConfiguration(explicitEmptyCollections = false)
-          implicit val codec: JsonCodec[EmptyHashMap] = DeriveJsonCodec.gen
-
-          assertTrue(expectedStr.fromJson[EmptyHashMap].toOption.get == expectedObj, expectedObj.toJson == expectedStr)
-        },
-        test("for a mutable map") {
-          case class EmptyMutableMap(a: mutable.Map[String, String])
-          val expectedStr = """{}"""
-          val expectedObj = EmptyMutableMap(mutable.Map.empty)
-
-          implicit val config: JsonCodecConfiguration =
-            JsonCodecConfiguration(explicitEmptyCollections = false)
-          implicit val codec: JsonCodec[EmptyMutableMap] = DeriveJsonCodec.gen
-
-          assertTrue(
-            expectedStr.fromJson[EmptyMutableMap].toOption.get == expectedObj,
-            expectedObj.toJson == expectedStr
-          )
-        },
-        test("for a sorted map") {
-          case class EmptySortedMap(a: collection.SortedMap[String, String])
-          val expectedStr = """{}"""
-          val expectedObj = EmptySortedMap(collection.SortedMap.empty)
-
-          implicit val config: JsonCodecConfiguration =
-            JsonCodecConfiguration(explicitEmptyCollections = false)
-          implicit val codec: JsonCodec[EmptySortedMap] = DeriveJsonCodec.gen
-
-          assertTrue(
-            expectedStr.fromJson[EmptySortedMap].toOption.get == expectedObj,
-            expectedObj.toJson == expectedStr
-          )
-        },
-        test("for a list map") {
-          case class EmptyListMap(a: immutable.ListMap[String, String])
-          val expectedStr = """{}"""
-          val expectedObj = EmptyListMap(immutable.ListMap.empty)
-
-          implicit val config: JsonCodecConfiguration =
-            JsonCodecConfiguration(explicitEmptyCollections = false)
-          implicit val codec: JsonCodec[EmptyListMap] = DeriveJsonCodec.gen
-
-          assertTrue(expectedStr.fromJson[EmptyListMap].toOption.get == expectedObj, expectedObj.toJson == expectedStr)
-        }
+            JsonCodecConfiguration(explicitNulls = true)
+          implicit val codec: JsonCodec[OptionalField] = DeriveJsonCodec.gen
+
+          assertTrue(jsonStr.fromJson[OptionalField].isLeft)
+        } @@ TestAspect.ignore
       )
     )
   )

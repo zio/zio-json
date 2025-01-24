@@ -49,30 +49,28 @@ object JsonFieldDecoder {
     def unsafeDecodeField(trace: List[JsonError], in: String): String = in
   }
 
-  implicit val int: JsonFieldDecoder[Int] =
-    JsonFieldDecoder[String].mapOrFail { str =>
-      try {
-        Right(str.toInt)
-      } catch {
-        case n: NumberFormatException => Left(s"Invalid Int: '$str': $n")
+  implicit val int: JsonFieldDecoder[Int] = new JsonFieldDecoder[Int] {
+    def unsafeDecodeField(trace: List[JsonError], in: String): Int =
+      try in.toInt
+      catch {
+        case _: NumberFormatException => Lexer.error(s"Invalid Int: ${strip(in)}", trace)
       }
-    }
+  }
 
-  implicit val long: JsonFieldDecoder[Long] =
-    JsonFieldDecoder[String].mapOrFail { str =>
-      try {
-        Right(str.toLong)
-      } catch {
-        case n: NumberFormatException => Left(s"Invalid Long: '$str': $n")
+  implicit val long: JsonFieldDecoder[Long] = new JsonFieldDecoder[Long] {
+    def unsafeDecodeField(trace: List[JsonError], in: String): Long =
+      try in.toLong
+      catch {
+        case _: NumberFormatException => Lexer.error(s"Invalid Long: ${strip(in)}", trace)
       }
-    }
+  }
 
-  implicit val uuid: JsonFieldDecoder[java.util.UUID] = mapStringOrFail { str =>
-    try {
-      Right(UUIDParser.unsafeParse(str))
-    } catch {
-      case iae: IllegalArgumentException => Left(s"Invalid UUID: ${iae.getMessage}")
-    }
+  implicit val uuid: JsonFieldDecoder[java.util.UUID] = new JsonFieldDecoder[java.util.UUID] {
+    def unsafeDecodeField(trace: List[JsonError], in: String): java.util.UUID =
+      try UUIDParser.unsafeParse(in)
+      catch {
+        case _: IllegalArgumentException => Lexer.error(s"Invalid UUID: ${strip(in)}", trace)
+      }
   }
 
   // use this instead of `string.mapOrFail` in supertypes (to prevent class initialization error at runtime)
@@ -84,4 +82,8 @@ object JsonFieldDecoder {
           case Right(value) => value
         }
     }
+
+  private[json] def strip(s: String, len: Int = 50): String =
+    if (s.length <= len) s
+    else s.substring(0, len) + "..."
 }

@@ -151,11 +151,12 @@ object Lexer {
     }
 
   @tailrec
-  private def skipString(in: OneCharReader, evenBackSlashes: Boolean): Unit =
+  private def skipString(in: OneCharReader, evenBackSlashes: Boolean): Unit = {
+    val ch = in.readChar()
     if (evenBackSlashes) {
-      val ch = in.readChar()
       if (ch != '"') skipString(in, ch != '\\')
     } else skipString(in, evenBackSlashes = true)
+  }
 
   @tailrec
   private def skipObject(in: OneCharReader, level: Int): Unit = {

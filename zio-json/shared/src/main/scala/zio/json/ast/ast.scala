@@ -378,6 +378,8 @@ object Json {
     override def mapObjectEntries(f: ((String, Json)) => (String, Json)): Json.Obj = Json.Obj(fields.map(f))
   }
   object Obj {
+    val empty: Obj = Obj(Chunk.empty)
+
     def apply(fields: (String, Json)*): Obj = Obj(Chunk(fields: _*))
 
     private lazy val objd = JsonDecoder.keyValueChunk[String, Json]
@@ -423,6 +425,8 @@ object Json {
     override def mapArrayValues(f: Json => Json): Json.Arr         = Json.Arr(elements.map(f))
   }
   object Arr {
+    val empty: Arr = Arr(Chunk.empty)
+
     def apply(elements: Json*): Arr = Arr(Chunk(elements: _*))
 
     private lazy val arrd = JsonDecoder.chunk[Json]

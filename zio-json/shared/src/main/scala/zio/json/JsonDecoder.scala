@@ -157,20 +157,20 @@ trait JsonDecoder[A] extends JsonDecoderPlatformSpecific[A] {
 
       def unsafeDecode(trace: List[JsonError], in: RetractReader): B =
         f(self.unsafeDecode(trace, in)) match {
-          case Left(err) => Lexer.error(err, trace)
           case Right(b)  => b
+          case Left(err) => Lexer.error(err, trace)
         }
 
       override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): B =
         f(self.unsafeFromJsonAST(trace, json)) match {
-          case Left(err) => Lexer.error(err, trace)
           case Right(b)  => b
+          case Left(err) => Lexer.error(err, trace)
         }
 
       override def unsafeDecodeMissing(trace: List[JsonError]): B =
         f(self.unsafeDecodeMissing(trace)) match {
-          case Left(err) => Lexer.error(err, trace)
           case Right(b)  => b
+          case Left(err) => Lexer.error(err, trace)
         }
 
     }
@@ -271,7 +271,7 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority1 with 
     override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): String =
       json match {
         case Json.Str(value) => value
-        case _               => Lexer.error("Not a string value", trace)
+        case _               => Lexer.error("expected string", trace)
       }
   }
 
@@ -283,14 +283,24 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority1 with 
     override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): Boolean =
       json match {
         case Json.Bool(value) => value
-        case _                => Lexer.error("Not a bool value", trace)
+        case _                => Lexer.error("expected boolean", trace)
       }
   }
 
-  implicit val char: JsonDecoder[Char] = string.mapOrFail {
-    case str if str.length == 1 => Right(str(0))
-    case _                      => Left("expected one character")
+  implicit val char: JsonDecoder[Char] = new JsonDecoder[Char] {
+    def unsafeDecode(trace: List[JsonError], in: RetractReader): Char = {
+      val s = Lexer.string(trace, in)
+      if (s.length == 1) s.charAt(0)
+      else Lexer.error("expected single character string", trace)
+    }
+
+    override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): Char =
+      json match {
+        case Json.Str(s) if s.length == 1 => s.charAt(0)
+        case _                            => Lexer.error("expected single character string", trace)
+      }
   }
+
   implicit val symbol: JsonDecoder[Symbol] = string.map(Symbol(_))
 
   implicit val byte: JsonDecoder[Byte]                       = number(Lexer.byte, _.byteValueExact())
@@ -341,6 +351,7 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority1 with 
   //
   // If alternative behaviour is desired, e.g. pass null to the underlying, then
   // use a newtype wrapper.
+
   implicit def option[A](implicit A: JsonDecoder[A]): JsonDecoder[Option[A]] =
     new JsonDecoder[Option[A]] { self =>
       override def unsafeDecodeMissing(trace: List[JsonError]): Option[A] = None
@@ -445,14 +456,14 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority1 with 
     new JsonDecoder[A] {
       def unsafeDecode(trace: List[JsonError], in: RetractReader): A =
         f(string.unsafeDecode(trace, in)) match {
-          case Left(err)    => Lexer.error(err, trace)
           case Right(value) => value
+          case Left(err)    => Lexer.error(err, trace)
         }
 
       override def unsafeFromJsonAST(trace: List[JsonError], json: Json): A =
         f(string.unsafeFromJsonAST(trace, json)) match {
-          case Left(err)    => Lexer.error(err, trace)
           case Right(value) => value
+          case Left(err)    => Lexer.error(err, trace)
         }
     }
 }
@@ -460,55 +471,42 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority1 with 
 private[json] trait DecoderLowPriority1 extends DecoderLowPriority2 {
   this: JsonDecoder.type =>
 
-  implicit def array[A: JsonDecoder: reflect.ClassTag]: JsonDecoder[Array[A]] =
-    new JsonDecoder[Array[A]] {
+  implicit def array[A: JsonDecoder: reflect.ClassTag]: JsonDecoder[Array[A]] = new JsonDecoder[Array[A]] {
 
-      override def unsafeDecodeMissing(trace: List[JsonError]): Array[A] = Array.empty
+    def unsafeDecode(trace: List[JsonError], in: RetractReader): Array[A] =
+      builder(trace, in, Array.newBuilder[A])
+  }
 
-      def unsafeDecode(trace: List[JsonError], in: RetractReader): Array[A] =
-        builder(trace, in, Array.newBuilder[A])
-    }
+  implicit def seq[A: JsonDecoder]: JsonDecoder[Seq[A]] = new JsonDecoder[Seq[A]] {
 
-  implicit def seq[A: JsonDecoder]: JsonDecoder[Seq[A]] =
-    new JsonDecoder[Seq[A]] {
+    def unsafeDecode(trace: List[JsonError], in: RetractReader): Seq[A] =
+      builder(trace, in, immutable.Seq.newBuilder[A])
+  }
 
-      override def unsafeDecodeMissing(trace: List[JsonError]): Seq[A] =
-        Seq.empty
+  implicit def chunk[A: JsonDecoder]: JsonDecoder[Chunk[A]] = new JsonDecoder[Chunk[A]] {
+    private[this] val decoder = JsonDecoder[A]
+    def unsafeDecode(trace: List[JsonError], in: RetractReader): Chunk[A] =
+      builder(trace, in, zio.ChunkBuilder.make[A]())
 
-      def unsafeDecode(trace: List[JsonError], in: RetractReader): Seq[A] =
-        builder(trace, in, immutable.Seq.newBuilder[A])
-    }
-
-  implicit def chunk[A: JsonDecoder]: JsonDecoder[Chunk[A]] =
-    new JsonDecoder[Chunk[A]] {
-
-      override def unsafeDecodeMissing(trace: List[JsonError]): Chunk[A] = Chunk.empty
-
-      val decoder = JsonDecoder[A]
-      def unsafeDecode(trace: List[JsonError], in: RetractReader): Chunk[A] =
-        builder(trace, in, zio.ChunkBuilder.make[A]())
-
-      override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): Chunk[A] =
-        json match {
-          case Json.Arr(elements) =>
-            elements.map {
-              var i = 0
-              json =>
-                val span = JsonError.ArrayAccess(i)
-                i += 1
-                decoder.unsafeFromJsonAST(span :: trace, json)
-            }
-          case _ => Lexer.error("Not an array", trace)
-        }
-    }
+    override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): Chunk[A] =
+      json match {
+        case Json.Arr(elements) =>
+          elements.map {
+            var i = 0
+            json =>
+              val span = JsonError.ArrayAccess(i)
+              i += 1
+              decoder.unsafeFromJsonAST(span :: trace, json)
+          }
+        case _ => Lexer.error("Not an array", trace)
+      }
+  }
 
   implicit def nonEmptyChunk[A: JsonDecoder]: JsonDecoder[NonEmptyChunk[A]] =
     chunk[A].mapOrFail(NonEmptyChunk.fromChunk(_).toRight("Chunk was empty"))
 
   implicit def indexedSeq[A: JsonDecoder]: JsonDecoder[IndexedSeq[A]] =
     new JsonDecoder[IndexedSeq[A]] {
-
-      override def unsafeDecodeMissing(trace: List[JsonError]): IndexedSeq[A] = IndexedSeq.empty
 
       def unsafeDecode(trace: List[JsonError], in: RetractReader): IndexedSeq[A] =
         builder(trace, in, IndexedSeq.newBuilder[A])
@@ -517,75 +515,49 @@ private[json] trait DecoderLowPriority1 extends DecoderLowPriority2 {
   implicit def linearSeq[A: JsonDecoder]: JsonDecoder[immutable.LinearSeq[A]] =
     new JsonDecoder[immutable.LinearSeq[A]] {
 
-      override def unsafeDecodeMissing(trace: List[JsonError]): immutable.LinearSeq[A] =
-        immutable.LinearSeq.empty
-
       def unsafeDecode(trace: List[JsonError], in: RetractReader): LinearSeq[A] =
         builder(trace, in, immutable.LinearSeq.newBuilder[A])
     }
 
-  implicit def listSet[A: JsonDecoder]: JsonDecoder[immutable.ListSet[A]] =
-    new JsonDecoder[immutable.ListSet[A]] {
+  implicit def listSet[A: JsonDecoder]: JsonDecoder[immutable.ListSet[A]] = new JsonDecoder[immutable.ListSet[A]] {
 
-      override def unsafeDecodeMissing(trace: List[JsonError]): immutable.ListSet[A] =
-        immutable.ListSet.empty
-
-      def unsafeDecode(trace: List[JsonError], in: RetractReader): ListSet[A] =
-        builder(trace, in, immutable.ListSet.newBuilder[A])
-    }
+    def unsafeDecode(trace: List[JsonError], in: RetractReader): ListSet[A] =
+      builder(trace, in, immutable.ListSet.newBuilder[A])
+  }
 
   implicit def treeSet[A: JsonDecoder: Ordering]: JsonDecoder[immutable.TreeSet[A]] =
     new JsonDecoder[immutable.TreeSet[A]] {
-
-      override def unsafeDecodeMissing(trace: List[JsonError]): immutable.TreeSet[A] =
-        immutable.TreeSet.empty
 
       def unsafeDecode(trace: List[JsonError], in: RetractReader): TreeSet[A] =
         builder(trace, in, immutable.TreeSet.newBuilder[A])
     }
 
-  implicit def list[A: JsonDecoder]: JsonDecoder[List[A]] =
-    new JsonDecoder[List[A]] {
+  implicit def list[A: JsonDecoder]: JsonDecoder[List[A]] = new JsonDecoder[List[A]] {
 
-      override def unsafeDecodeMissing(trace: List[JsonError]): List[A] = List.empty
+    def unsafeDecode(trace: List[JsonError], in: RetractReader): List[A] =
+      builder(trace, in, new mutable.ListBuffer[A])
+  }
 
-      def unsafeDecode(trace: List[JsonError], in: RetractReader): List[A] =
-        builder(trace, in, new mutable.ListBuffer[A])
-    }
+  implicit def vector[A: JsonDecoder]: JsonDecoder[Vector[A]] = new JsonDecoder[Vector[A]] {
 
-  implicit def vector[A: JsonDecoder]: JsonDecoder[Vector[A]] =
-    new JsonDecoder[Vector[A]] {
+    def unsafeDecode(trace: List[JsonError], in: RetractReader): Vector[A] =
+      builder(trace, in, immutable.Vector.newBuilder[A])
+  }
 
-      override def unsafeDecodeMissing(trace: List[JsonError]): Vector[A] =
-        Vector.empty
+  implicit def set[A: JsonDecoder]: JsonDecoder[Set[A]] = new JsonDecoder[Set[A]] {
 
-      def unsafeDecode(trace: List[JsonError], in: RetractReader): Vector[A] =
-        builder(trace, in, immutable.Vector.newBuilder[A])
-    }
+    def unsafeDecode(trace: List[JsonError], in: RetractReader): Set[A] =
+      builder(trace, in, Set.newBuilder[A])
+  }
 
-  implicit def set[A: JsonDecoder]: JsonDecoder[Set[A]] =
-    new JsonDecoder[Set[A]] {
+  implicit def hashSet[A: JsonDecoder]: JsonDecoder[immutable.HashSet[A]] = new JsonDecoder[immutable.HashSet[A]] {
 
-      override def unsafeDecodeMissing(trace: List[JsonError]): Set[A] = Set.empty
-
-      def unsafeDecode(trace: List[JsonError], in: RetractReader): Set[A] =
-        builder(trace, in, Set.newBuilder[A])
-    }
-
-  implicit def hashSet[A: JsonDecoder]: JsonDecoder[immutable.HashSet[A]] =
-    new JsonDecoder[immutable.HashSet[A]] {
-
-      override def unsafeDecodeMissing(trace: List[JsonError]): immutable.HashSet[A] =
-        immutable.HashSet.empty
-
-      def unsafeDecode(trace: List[JsonError], in: RetractReader): immutable.HashSet[A] =
-        builder(trace, in, immutable.HashSet.newBuilder[A])
-    }
+    def unsafeDecode(trace: List[JsonError], in: RetractReader): immutable.HashSet[A] =
+      builder(trace, in, immutable.HashSet.newBuilder[A])
+  }
 
   implicit def map[K: JsonFieldDecoder, V: JsonDecoder]: JsonDecoder[Map[K, V]] =
     new JsonDecoder[Map[K, V]] {
-
-      override def unsafeDecodeMissing(trace: List[JsonError]): Map[K, V] = Map.empty
 
       def unsafeDecode(trace: List[JsonError], in: RetractReader): Map[K, V] =
         keyValueBuilder(trace, in, Map.newBuilder[K, V])
@@ -594,17 +566,12 @@ private[json] trait DecoderLowPriority1 extends DecoderLowPriority2 {
   implicit def hashMap[K: JsonFieldDecoder, V: JsonDecoder]: JsonDecoder[immutable.HashMap[K, V]] =
     new JsonDecoder[immutable.HashMap[K, V]] {
 
-      override def unsafeDecodeMissing(trace: List[JsonError]): immutable.HashMap[K, V] =
-        immutable.HashMap.empty
-
       def unsafeDecode(trace: List[JsonError], in: RetractReader): immutable.HashMap[K, V] =
         keyValueBuilder(trace, in, immutable.HashMap.newBuilder[K, V])
     }
 
   implicit def mutableMap[K: JsonFieldDecoder, V: JsonDecoder]: JsonDecoder[mutable.Map[K, V]] =
     new JsonDecoder[mutable.Map[K, V]] {
-
-      override def unsafeDecodeMissing(trace: List[JsonError]): mutable.Map[K, V] = mutable.Map.empty
 
       def unsafeDecode(trace: List[JsonError], in: RetractReader): mutable.Map[K, V] =
         keyValueBuilder(trace, in, mutable.Map.newBuilder[K, V])
@@ -613,9 +580,6 @@ private[json] trait DecoderLowPriority1 extends DecoderLowPriority2 {
   implicit def sortedSet[A: Ordering: JsonDecoder]: JsonDecoder[immutable.SortedSet[A]] =
     new JsonDecoder[immutable.SortedSet[A]] {
 
-      override def unsafeDecodeMissing(trace: List[JsonError]): immutable.SortedSet[A] =
-        immutable.SortedSet.empty
-
       def unsafeDecode(trace: List[JsonError], in: RetractReader): immutable.SortedSet[A] =
         builder(trace, in, immutable.SortedSet.newBuilder[A])
     }
@@ -623,18 +587,12 @@ private[json] trait DecoderLowPriority1 extends DecoderLowPriority2 {
   implicit def sortedMap[K: JsonFieldDecoder: Ordering, V: JsonDecoder]: JsonDecoder[collection.SortedMap[K, V]] =
     new JsonDecoder[collection.SortedMap[K, V]] {
 
-      override def unsafeDecodeMissing(trace: List[JsonError]): collection.SortedMap[K, V] =
-        collection.SortedMap.empty
-
       def unsafeDecode(trace: List[JsonError], in: RetractReader): collection.SortedMap[K, V] =
         keyValueBuilder(trace, in, collection.SortedMap.newBuilder[K, V])
     }
 
   implicit def listMap[K: JsonFieldDecoder, V: JsonDecoder]: JsonDecoder[immutable.ListMap[K, V]] =
     new JsonDecoder[immutable.ListMap[K, V]] {
-
-      override def unsafeDecodeMissing(trace: List[JsonError]): immutable.ListMap[K, V] =
-        immutable.ListMap.empty
 
       def unsafeDecode(trace: List[JsonError], in: RetractReader): immutable.ListMap[K, V] =
         keyValueBuilder(trace, in, immutable.ListMap.newBuilder[K, V])
@@ -655,14 +613,11 @@ private[json] trait DecoderLowPriority1 extends DecoderLowPriority2 {
 private[json] trait DecoderLowPriority2 extends DecoderLowPriority3 {
   this: JsonDecoder.type =>
 
-  implicit def iterable[A: JsonDecoder]: JsonDecoder[Iterable[A]] =
-    new JsonDecoder[Iterable[A]] {
+  implicit def iterable[A: JsonDecoder]: JsonDecoder[Iterable[A]] = new JsonDecoder[Iterable[A]] {
 
-      override def unsafeDecodeMissing(trace: List[JsonError]): Iterable[A] = Iterable.empty
-
-      def unsafeDecode(trace: List[JsonError], in: RetractReader): Iterable[A] =
-        builder(trace, in, immutable.Iterable.newBuilder[A])
-    }
+    def unsafeDecode(trace: List[JsonError], in: RetractReader): Iterable[A] =
+      builder(trace, in, immutable.Iterable.newBuilder[A])
+  }
 
   // not implicit because this overlaps with decoders for lists of tuples
   def keyValueChunk[K, A](implicit
@@ -670,9 +625,6 @@ private[json] trait DecoderLowPriority2 extends DecoderLowPriority3 {
     A: JsonDecoder[A]
   ): JsonDecoder[Chunk[(K, A)]] =
     new JsonDecoder[Chunk[(K, A)]] {
-
-      override def unsafeDecodeMissing(trace: List[JsonError]): Chunk[(K, A)] =
-        Chunk.empty
 
       def unsafeDecode(trace: List[JsonError], in: RetractReader): Chunk[(K, A)] =
         keyValueBuilder[K, A, ({ type lambda[X, Y] = Chunk[(X, Y)] })#lambda](
@@ -688,65 +640,98 @@ private[json] trait DecoderLowPriority3 extends DecoderLowPriority4 {
   this: JsonDecoder.type =>
 
   import java.time.{ DateTimeException, _ }
-  import java.time.format.DateTimeParseException
-  import java.time.zone.ZoneRulesException
 
-  implicit val dayOfWeek: JsonDecoder[DayOfWeek] = mapStringOrFail(s => parseJavaTime(DayOfWeek.valueOf, s.toUpperCase))
-  implicit val duration: JsonDecoder[Duration]   = mapStringOrFail(parseJavaTime(parsers.unsafeParseDuration, _))
-  implicit val instant: JsonDecoder[Instant]     = mapStringOrFail(parseJavaTime(parsers.unsafeParseInstant, _))
-  implicit val localDate: JsonDecoder[LocalDate] = mapStringOrFail(parseJavaTime(parsers.unsafeParseLocalDate, _))
+  implicit val dayOfWeek: JsonDecoder[DayOfWeek]           = javaTimeDecoder(s => DayOfWeek.valueOf(s.toUpperCase))
+  implicit val duration: JsonDecoder[Duration]             = javaTimeDecoder(parsers.unsafeParseDuration)
+  implicit val instant: JsonDecoder[Instant]               = javaTimeDecoder(parsers.unsafeParseInstant)
+  implicit val localDate: JsonDecoder[LocalDate]           = javaTimeDecoder(parsers.unsafeParseLocalDate)
+  implicit val localDateTime: JsonDecoder[LocalDateTime]   = javaTimeDecoder(parsers.unsafeParseLocalDateTime)
+  implicit val localTime: JsonDecoder[LocalTime]           = javaTimeDecoder(parsers.unsafeParseLocalTime)
+  implicit val month: JsonDecoder[Month]                   = javaTimeDecoder(s => Month.valueOf(s.toUpperCase))
+  implicit val monthDay: JsonDecoder[MonthDay]             = javaTimeDecoder(parsers.unsafeParseMonthDay)
+  implicit val offsetDateTime: JsonDecoder[OffsetDateTime] = javaTimeDecoder(parsers.unsafeParseOffsetDateTime)
+  implicit val offsetTime: JsonDecoder[OffsetTime]         = javaTimeDecoder(parsers.unsafeParseOffsetTime)
+  implicit val period: JsonDecoder[Period]                 = javaTimeDecoder(parsers.unsafeParsePeriod)
+  implicit val year: JsonDecoder[Year]                     = javaTimeDecoder(parsers.unsafeParseYear)
+  implicit val yearMonth: JsonDecoder[YearMonth]           = javaTimeDecoder(parsers.unsafeParseYearMonth)
+  implicit val zonedDateTime: JsonDecoder[ZonedDateTime]   = javaTimeDecoder(parsers.unsafeParseZonedDateTime)
+  implicit val zoneId: JsonDecoder[ZoneId]                 = javaTimeDecoder(parsers.unsafeParseZoneId)
+  implicit val zoneOffset: JsonDecoder[ZoneOffset]         = javaTimeDecoder(parsers.unsafeParseZoneOffset)
 
-  implicit val localDateTime: JsonDecoder[LocalDateTime] =
-    mapStringOrFail(parseJavaTime(parsers.unsafeParseLocalDateTime, _))
+  private[this] def javaTimeDecoder[A](f: String => A): JsonDecoder[A] = new JsonDecoder[A] {
+    def unsafeDecode(trace: List[JsonError], in: RetractReader): A =
+      parseJavaTime(trace, Lexer.string(trace, in).toString)
 
-  implicit val localTime: JsonDecoder[LocalTime] = mapStringOrFail(parseJavaTime(parsers.unsafeParseLocalTime, _))
-  implicit val month: JsonDecoder[Month]         = mapStringOrFail(s => parseJavaTime(Month.valueOf, s.toUpperCase))
-  implicit val monthDay: JsonDecoder[MonthDay]   = mapStringOrFail(parseJavaTime(parsers.unsafeParseMonthDay, _))
+    override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): A =
+      json match {
+        case Json.Str(value) => parseJavaTime(trace, value)
+        case _               => Lexer.error("expected string", trace)
+      }
 
-  implicit val offsetDateTime: JsonDecoder[OffsetDateTime] =
-    mapStringOrFail(parseJavaTime(parsers.unsafeParseOffsetDateTime, _))
-
-  implicit val offsetTime: JsonDecoder[OffsetTime] = mapStringOrFail(parseJavaTime(parsers.unsafeParseOffsetTime, _))
-  implicit val period: JsonDecoder[Period]         = mapStringOrFail(parseJavaTime(parsers.unsafeParsePeriod, _))
-  implicit val year: JsonDecoder[Year]             = mapStringOrFail(parseJavaTime(parsers.unsafeParseYear, _))
-  implicit val yearMonth: JsonDecoder[YearMonth]   = mapStringOrFail(parseJavaTime(parsers.unsafeParseYearMonth, _))
-
-  implicit val zonedDateTime: JsonDecoder[ZonedDateTime] =
-    mapStringOrFail(parseJavaTime(parsers.unsafeParseZonedDateTime, _))
-
-  implicit val zoneId: JsonDecoder[ZoneId]         = mapStringOrFail(parseJavaTime(parsers.unsafeParseZoneId, _))
-  implicit val zoneOffset: JsonDecoder[ZoneOffset] = mapStringOrFail(parseJavaTime(parsers.unsafeParseZoneOffset, _))
+    // Commonized handling for decoding from string to java.time Class
+    @inline
+    private[this] def parseJavaTime(trace: List[JsonError], s: String): A =
+      try f(s)
+      catch {
+        case ex: DateTimeException =>
+          Lexer.error(s"${strip(s)} is not a valid ISO-8601 format, ${ex.getMessage}", trace)
+        case _: IllegalArgumentException =>
+          Lexer.error(s"${strip(s)} is not a valid ISO-8601 format", trace)
+      }
+  }
 
   // Commonized handling for decoding from string to java.time Class
   private[json] def parseJavaTime[A](f: String => A, s: String): Either[String, A] =
-    try {
-      Right(f(s))
-    } catch {
-      case zre: ZoneRulesException      => Left(s"$s is not a valid ISO-8601 format, ${zre.getMessage}")
-      case dtpe: DateTimeParseException => Left(s"$s is not a valid ISO-8601 format, ${dtpe.getMessage}")
-      case dte: DateTimeException       => Left(s"$s is not a valid ISO-8601 format, ${dte.getMessage}")
-      case ex: Exception                => Left(ex.getMessage)
+    try Right(f(s))
+    catch {
+      case ex: DateTimeException =>
+        Left(s"${strip(s)} is not a valid ISO-8601 format, ${ex.getMessage}")
+      case _: IllegalArgumentException =>
+        Left(s"${strip(s)} is not a valid ISO-8601 format")
     }
 
-  implicit val uuid: JsonDecoder[UUID] =
-    mapStringOrFail { str =>
-      try {
-        Right(UUIDParser.unsafeParse(str))
-      } catch {
-        case iae: IllegalArgumentException => Left(s"Invalid UUID: ${iae.getMessage}")
-      }
-    }
+  implicit val uuid: JsonDecoder[UUID] = new JsonDecoder[UUID] {
+    def unsafeDecode(trace: List[JsonError], in: RetractReader): UUID =
+      parseUUID(trace, Lexer.string(trace, in).toString)
 
-  implicit val currency: JsonDecoder[java.util.Currency] =
-    mapStringOrFail { str =>
-      try {
-        Right(java.util.Currency.getInstance(str))
-      } catch {
-        case iae: IllegalArgumentException => Left(s"Invalid Currency: ${iae.getMessage}")
+    override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): UUID =
+      json match {
+        case Json.Str(value) => parseUUID(trace, value)
+        case _               => Lexer.error("expected string", trace)
       }
-    }
+
+    @inline
+    private[this] def parseUUID(trace: List[JsonError], s: String): UUID =
+      try UUIDParser.unsafeParse(s)
+      catch {
+        case _: IllegalArgumentException => Lexer.error(s"Invalid UUID: ${strip(s)}", trace)
+      }
+  }
+
+  implicit val currency: JsonDecoder[java.util.Currency] = new JsonDecoder[java.util.Currency] {
+    def unsafeDecode(trace: List[JsonError], in: RetractReader): java.util.Currency =
+      parseCurrency(trace, Lexer.string(trace, in).toString)
+
+    override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): java.util.Currency =
+      json match {
+        case Json.Str(value) => parseCurrency(trace, value)
+        case _               => Lexer.error("expected string", trace)
+      }
+
+    @inline
+    private[this] def parseCurrency(trace: List[JsonError], s: String): java.util.Currency =
+      try java.util.Currency.getInstance(s)
+      catch {
+        case _: IllegalArgumentException => Lexer.error(s"Invalid Currency: ${strip(s)}", trace)
+      }
+  }
+
+  private[json] def strip(s: String, len: Int = 50): String =
+    if (s.length <= len) s
+    else s.substring(0, len) + "..."
 }
 
 private[json] trait DecoderLowPriority4 extends DecoderLowPriorityVersionSpecific {
+  @inline
   implicit def fromCodec[A](implicit codec: JsonCodec[A]): JsonDecoder[A] = codec.decoder
 }

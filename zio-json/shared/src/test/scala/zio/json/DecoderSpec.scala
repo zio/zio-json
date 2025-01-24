@@ -157,6 +157,25 @@ object DecoderSpec extends ZIOSpecDefault {
           assert("""{}""".fromJson[DefaultString])(isRight(equalTo(DefaultString("")))) &&
           assert("""{"s": null}""".fromJson[DefaultString])(isRight(equalTo(DefaultString(""))))
         },
+        test("dynamic default value") {
+          case class DefaultDynamic(
+            randomNumber: Double = scala.math.random(),
+            instant: java.time.Instant = java.time.Instant.now()
+          )
+
+          object DefaultDynamic {
+            implicit lazy val decoder: JsonDecoder[DefaultDynamic] = DeriveJsonDecoder.gen[DefaultDynamic]
+          }
+
+          def res = """{}""".stripMargin.fromJson[DefaultDynamic]
+
+          for {
+            dynamics1 <- ZIO.fromEither(res)
+            _         <- ZIO.sleep(2.millis)
+            dynamics2 <- ZIO.fromEither(res)
+          } yield assertTrue(dynamics1.randomNumber != dynamics2.randomNumber) &&
+            assertTrue(dynamics1.instant != dynamics2.instant)
+        } @@ TestAspect.withLiveClock,
         test("sum encoding") {
           import examplesum._
 
@@ -256,6 +275,18 @@ object DecoderSpec extends ZIOSpecDefault {
           val jsonStr  = JsonEncoder[Map[String, String]].encodeJson(expected, None)
           assert(jsonStr.fromJson[Map[String, String]])(isRight(equalTo(expected)))
         },
+        test("Map with Int keys") {
+          assert("""{"1234567890": "value"}""".fromJson[Map[Int, String]])(
+            isRight(equalTo(Map(1234567890 -> "value")))
+          ) &&
+          assert("""{"xxx": "value"}""".fromJson[Map[Int, String]])(isLeft(containsString("Invalid Int: xxx")))
+        },
+        test("Map with Long keys") {
+          assert("""{"1234567890123456789": "value"}""".fromJson[Map[Long, String]])(
+            isRight(equalTo(Map(1234567890123456789L -> "value")))
+          ) &&
+          assert("""{"xxx": "value"}""".fromJson[Map[Long, String]])(isLeft(containsString("Invalid Long: xxx")))
+        },
         test("Map with UUID keys") {
           def expectedMap(str: String): Map[UUID, String] = Map(UUID.fromString(str) -> "value")
 
@@ -280,7 +311,9 @@ object DecoderSpec extends ZIOSpecDefault {
             isRight(equalTo(expectedMap("00000000-0000-0000-0000-000000000000")))
           ) &&
           assert(bad1.fromJson[Map[UUID, String]])(isLeft(containsString("Invalid UUID: "))) &&
-          assert(bad2.fromJson[Map[UUID, String]])(isLeft(containsString("Invalid UUID: UUID string too large"))) &&
+          assert(bad2.fromJson[Map[UUID, String]])(
+            isLeft(containsString("Invalid UUID: 64d7c38d-2afd-4514-9832-4e70afe4b0f80"))
+          ) &&
           assert(bad3.fromJson[Map[UUID, String]])(
             isLeft(containsString("Invalid UUID: 64d7c38d-2afd-4514-983-4e70afe4b0f80"))
           ) &&
@@ -328,7 +361,7 @@ object DecoderSpec extends ZIOSpecDefault {
           assert(ok2.fromJson[UUID])(isRight(equalTo(UUID.fromString("64D7C38D-00FD-0014-0032-0070AfE4B0f8")))) &&
           assert(ok3.fromJson[UUID])(isRight(equalTo(UUID.fromString("00000000-0000-0000-0000-000000000000")))) &&
           assert(bad1.fromJson[UUID])(isLeft(containsString("Invalid UUID: "))) &&
-          assert(bad2.fromJson[UUID])(isLeft(containsString("Invalid UUID: UUID string too large"))) &&
+          assert(bad2.fromJson[UUID])(isLeft(containsString("Invalid UUID: 64d7c38d-2afd-4514-9832-4e70afe4b0f80"))) &&
           assert(bad3.fromJson[UUID])(isLeft(containsString("Invalid UUID: 64d7c38d-2afd-4514-983-4e70afe4b0f80"))) &&
           assert(bad4.fromJson[UUID])(isLeft(containsString("Invalid UUID: 64d7c38d-2afd--9832-4e70afe4b0f8"))) &&
           assert(bad5.fromJson[UUID])(isLeft(containsString("Invalid UUID: 64d7c38d-2afd-XXXX-9832-4e70afe4b0f8"))) &&
@@ -375,6 +408,19 @@ object DecoderSpec extends ZIOSpecDefault {
         test("BigDecimal") {
           assert(Json.Num(123).as[BigDecimal])(isRight(equalTo(BigDecimal(123))))
         },
+        test("boolean") {
+          assert(Json.Bool(true).as[Boolean])(isRight(equalTo(true))) &&
+          assert(Json.Str("true").as[Boolean])(isLeft(equalTo("(expected boolean)")))
+        },
+        test("string") {
+          assert(Json.Str("xxx").as[String])(isRight(equalTo("xxx"))) &&
+          assert(Json.Bool(true).as[String])(isLeft(equalTo("(expected string)")))
+        },
+        test("char") {
+          assert(Json.Str("x").as[Char])(isRight(equalTo('x'))) &&
+          assert(Json.Str("xxx").as[Char])(isLeft(equalTo("(expected single character string)"))) &&
+          assert(Json.Bool(true).as[Char])(isLeft(equalTo("(expected single character string)")))
+        },
         test("eithers") {
           val bernies =
             List(Json.Obj("a" -> Json.Num(1)), Json.Obj("left" -> Json.Num(1)), Json.Obj("Left" -> Json.Num(1)))
@@ -405,7 +451,7 @@ object DecoderSpec extends ZIOSpecDefault {
           import exampleproducts._
 
           assert(Json.Obj("is" -> Json.Arr(Json.Obj("str" -> Json.Num(1)))).as[Outer])(
-            isLeft(equalTo(".is[0].str(Not a string value)"))
+            isLeft(equalTo(".is[0].str(expected string)"))
           )
         },
         test("default field value") {
@@ -414,6 +460,25 @@ object DecoderSpec extends ZIOSpecDefault {
           assert(Json.Obj().as[DefaultString])(isRight(equalTo(DefaultString("")))) &&
           assert(Json.Obj("s" -> Json.Null).as[DefaultString])(isRight(equalTo(DefaultString(""))))
         },
+        test("dynamic default value") {
+          case class DefaultDynamic(
+            randomNumber: Double = scala.math.random(),
+            instant: java.time.Instant = java.time.Instant.now()
+          )
+
+          object DefaultDynamic {
+            implicit lazy val decoder: JsonDecoder[DefaultDynamic] = DeriveJsonDecoder.gen[DefaultDynamic]
+          }
+
+          for {
+            dynamics1 <- ZIO.fromEither(Json.Obj().as[DefaultDynamic])
+            _         <- ZIO.sleep(2.millis) // ensure java.time.Instant is different
+            dynamics2 <- ZIO.fromEither(Json.Obj().as[DefaultDynamic])
+          } yield assertTrue(
+            dynamics1.randomNumber != dynamics2.randomNumber,
+            dynamics1.instant != dynamics2.instant
+          )
+        } @@ TestAspect.withLiveClock,
         test("aliases") {
           import exampleproducts._
 
@@ -549,7 +614,7 @@ object DecoderSpec extends ZIOSpecDefault {
           assert(ok2.as[UUID])(isRight(equalTo(UUID.fromString("64D7C38D-00FD-0014-0032-0070AFE4B0f8")))) &&
           assert(ok3.as[UUID])(isRight(equalTo(UUID.fromString("00000000-0000-0000-0000-000000000000")))) &&
           assert(bad1.as[UUID])(isLeft(containsString("Invalid UUID: "))) &&
-          assert(bad2.as[UUID])(isLeft(containsString("Invalid UUID: UUID string too large"))) &&
+          assert(bad2.as[UUID])(isLeft(containsString("Invalid UUID: 64d7c38d-2afd-4514-9832-4e70afe4b0f80"))) &&
           assert(bad3.as[UUID])(isLeft(containsString("Invalid UUID: 64d7c38d-2afd-4514-983-4e70afe4b0f80"))) &&
           assert(bad4.as[UUID])(isLeft(containsString("Invalid UUID: 64d7c38d-2afd--9832-4e70afe4b0f8"))) &&
           assert(bad5.as[UUID])(isLeft(containsString("Invalid UUID: 64d7c38d-2afd-XXXX-9832-4e70afe4b0f8"))) &&
