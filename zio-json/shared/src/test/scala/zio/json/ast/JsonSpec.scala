@@ -1,5 +1,6 @@
 package zio.json.ast
 
+import zio.Chunk
 import zio.json._
 import zio.test.Assertion._
 import zio.test._
@@ -87,6 +88,8 @@ object JsonSpec extends ZIOSpecDefault {
             case fst :: snd :: Nil => fst != snd
             case _                 => false
           })
+          assertTrue(Json.Obj.empty == Json.Obj(Chunk.empty))
+          assertTrue(Json.Arr.empty == Json.Arr(Chunk.empty))
         },
         test("object order does not matter for equality") {
           val obj1 = Json.Obj(
@@ -146,6 +149,7 @@ object JsonSpec extends ZIOSpecDefault {
           )
 
           assertTrue(obj1.hashCode == obj2.hashCode)
+          assertTrue(Json.Obj.empty.hashCode == Json.Obj(Chunk.empty).hashCode)
         }
       ),
       suite("foldUp")(
