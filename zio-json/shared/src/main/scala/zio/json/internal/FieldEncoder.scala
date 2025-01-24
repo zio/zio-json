@@ -12,17 +12,14 @@ private[json] class FieldEncoder[T, P](
   withExplicitEmptyCollections: Boolean
 ) {
   private[this] val _encodeOrSkip: T => (() => Unit) => Unit =
-    (withExplicitNulls, withExplicitEmptyCollections) match {
-      case (true, true) => _ => encode => encode()
-      case (false, false) => { t => encode =>
-        if (!encoder.isEmpty(t) && !encoder.isNothing(t)) encode() else ()
-      }
-      case (true, false) => { t => encode =>
-        if (!encoder.isEmpty(t)) encode() else ()
-      }
-      case (false, true) => { t => encode =>
-        if (!encoder.isNothing(t)) encode() else ()
-      }
+    if (withExplicitNulls && withExplicitEmptyCollections) { _ => encode =>
+      encode()
+    } else if (withExplicitNulls) { t => encode =>
+      if (!encoder.isEmpty(t)) encode() else ()
+    } else if (withExplicitEmptyCollections) { t => encode =>
+      if (!encoder.isNothing(t)) encode() else ()
+    } else { t => encode =>
+      if (!encoder.isEmpty(t) && !encoder.isNothing(t)) encode() else ()
     }
   def encodeOrSkip(t: T)(encode: () => Unit): Unit = _encodeOrSkip(t)(encode)
 
@@ -30,17 +27,14 @@ private[json] class FieldEncoder[T, P](
     Either[String, Chunk[(String, Json)]],
     () => Either[String, Chunk[(String, Json)]]
   ) => Either[String, Chunk[(String, Json)]] =
-    (withExplicitNulls, withExplicitEmptyCollections) match {
-      case (true, true) => _ => (_, encode) => encode()
-      case (false, false) => { t => (default, encode) =>
-        if (!encoder.isEmpty(t) && !encoder.isNothing(t)) encode() else default
-      }
-      case (true, false) => { t => (default, encode) =>
-        if (!encoder.isEmpty(t)) encode() else default
-      }
-      case (false, true) => { t => (default, encode) =>
-        if (!encoder.isNothing(t)) encode() else default
-      }
+    if (withExplicitNulls && withExplicitEmptyCollections) { _ => (_, encode) =>
+      encode()
+    } else if (withExplicitNulls) { t => (default, encode) =>
+      if (!encoder.isEmpty(t)) encode() else default
+    } else if (withExplicitEmptyCollections) { t => (default, encode) =>
+      if (!encoder.isNothing(t)) encode() else default
+    } else { t => (default, encode) =>
+      if (!encoder.isEmpty(t) && !encoder.isNothing(t)) encode() else default
     }
   def encodeOrDefault(t: T)(
     encode: () => Either[String, Chunk[(String, Json)]],
