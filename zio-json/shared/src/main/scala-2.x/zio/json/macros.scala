@@ -19,6 +19,9 @@ final case class jsonField(name: String) extends Annotation
  */
 final case class jsonAliases(alias: String, aliases: String*) extends Annotation
 
+/**
+ * Empty option fields will be encoded as `null`.
+ */
 final class jsonExplicitNull extends Annotation
 
 /**
