@@ -71,6 +71,7 @@ private[zio] final class RewindTwice
     extends Exception(
       "RecordingReader's rewind was called twice"
     )
+    with NoStackTrace
 
 /**
  * A Reader that can retract and replay the last char that it read.
