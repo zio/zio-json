@@ -7,7 +7,7 @@ import zio.json.JsonCodecConfiguration.SumTypeHandling.WrapperWithClassNameField
  * When disabled for decoding, keys with empty collections will be omitted from the JSON. When disabled for encoding,
  * missing keys will default to empty collections.
  */
-case class ExplicitEmptyCollections(whenEncoding: Boolean = true, whenDecoding: Boolean = true)
+case class ExplicitEmptyCollections(encoding: Boolean = true, decoding: Boolean = true)
 
 /**
  * Implicit codec derivation configuration.

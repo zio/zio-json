@@ -263,7 +263,7 @@ object ConfigurableDeriveCodecSpec extends ZIOSpecDefault {
         val expectedEmptySeq = EmptySeq(Seq.empty)
 
         implicit val config: JsonCodecConfiguration = JsonCodecConfiguration(explicitEmptyCollections =
-          ExplicitEmptyCollections(whenDecoding = false, whenEncoding = false)
+          ExplicitEmptyCollections(decoding = false, encoding = false)
         )
         implicit val codecEmpty: JsonCodec[Empty]       = DeriveJsonCodec.gen[Empty]
         implicit val codecEmptyObj: JsonCodec[EmptyObj] = DeriveJsonCodec.gen[EmptyObj]
@@ -285,7 +285,7 @@ object ConfigurableDeriveCodecSpec extends ZIOSpecDefault {
         val expectedObj = EmptyObj(expectedSeq)
 
         implicit val config: JsonCodecConfiguration =
-          JsonCodecConfiguration(explicitEmptyCollections = ExplicitEmptyCollections(whenDecoding = false))
+          JsonCodecConfiguration(explicitEmptyCollections = ExplicitEmptyCollections(decoding = false))
         implicit val codec: JsonCodec[EmptySeq]    = DeriveJsonCodec.gen
         implicit val codecObj: JsonCodec[EmptyObj] = DeriveJsonCodec.gen
 
@@ -362,7 +362,7 @@ object ConfigurableDeriveCodecSpec extends ZIOSpecDefault {
         val expectedEmptySeq = EmptySeq(Seq.empty)
 
         implicit val config: JsonCodecConfiguration = JsonCodecConfiguration(explicitEmptyCollections =
-          ExplicitEmptyCollections(whenDecoding = false, whenEncoding = false)
+          ExplicitEmptyCollections(decoding = false, encoding = false)
         )
         implicit val emptyCodec: JsonCodec[Empty]       = DeriveJsonCodec.gen
         implicit val emptyObjCodec: JsonCodec[EmptyObj] = DeriveJsonCodec.gen
@@ -384,7 +384,7 @@ object ConfigurableDeriveCodecSpec extends ZIOSpecDefault {
           val expectedObj = EmptyArray(Array.empty)
 
           implicit val config: JsonCodecConfiguration =
-            JsonCodecConfiguration(explicitEmptyCollections = ExplicitEmptyCollections(whenDecoding = false))
+            JsonCodecConfiguration(explicitEmptyCollections = ExplicitEmptyCollections(decoding = false))
           implicit val codec: JsonCodec[EmptyArray] = DeriveJsonCodec.gen
 
           assertTrue("""{}""".fromJson[EmptyArray].toOption.exists(_.a.isEmpty), expectedObj.toJson == expectedStr)
@@ -395,7 +395,7 @@ object ConfigurableDeriveCodecSpec extends ZIOSpecDefault {
           val expectedObj = EmptySeq(Seq.empty)
 
           implicit val config: JsonCodecConfiguration =
-            JsonCodecConfiguration(explicitEmptyCollections = ExplicitEmptyCollections(whenDecoding = false))
+            JsonCodecConfiguration(explicitEmptyCollections = ExplicitEmptyCollections(decoding = false))
           implicit val codec: JsonCodec[EmptySeq] = DeriveJsonCodec.gen
 
           assertTrue("""{}""".fromJson[EmptySeq].toOption.contains(expectedObj), expectedObj.toJson == expectedStr)
@@ -406,7 +406,7 @@ object ConfigurableDeriveCodecSpec extends ZIOSpecDefault {
           val expectedObj = EmptyChunk(Chunk.empty)
 
           implicit val config: JsonCodecConfiguration =
-            JsonCodecConfiguration(explicitEmptyCollections = ExplicitEmptyCollections(whenDecoding = false))
+            JsonCodecConfiguration(explicitEmptyCollections = ExplicitEmptyCollections(decoding = false))
           implicit val codec: JsonCodec[EmptyChunk] = DeriveJsonCodec.gen
 
           assertTrue("""{}""".fromJson[EmptyChunk].toOption.contains(expectedObj), expectedObj.toJson == expectedStr)
@@ -417,7 +417,7 @@ object ConfigurableDeriveCodecSpec extends ZIOSpecDefault {
           val expectedObj = EmptyIndexedSeq(IndexedSeq.empty)
 
           implicit val config: JsonCodecConfiguration =
-            JsonCodecConfiguration(explicitEmptyCollections = ExplicitEmptyCollections(whenDecoding = false))
+            JsonCodecConfiguration(explicitEmptyCollections = ExplicitEmptyCollections(decoding = false))
           implicit val codec: JsonCodec[EmptyIndexedSeq] = DeriveJsonCodec.gen
 
           assertTrue(
@@ -431,7 +431,7 @@ object ConfigurableDeriveCodecSpec extends ZIOSpecDefault {
           val expectedObj = EmptyLinearSeq(immutable.LinearSeq.empty)
 
           implicit val config: JsonCodecConfiguration =
-            JsonCodecConfiguration(explicitEmptyCollections = ExplicitEmptyCollections(whenDecoding = false))
+            JsonCodecConfiguration(explicitEmptyCollections = ExplicitEmptyCollections(decoding = false))
           implicit val codec: JsonCodec[EmptyLinearSeq] = DeriveJsonCodec.gen
 
           assertTrue(
@@ -445,7 +445,7 @@ object ConfigurableDeriveCodecSpec extends ZIOSpecDefault {
           val expectedObj = EmptyListSet(immutable.ListSet.empty)
 
           implicit val config: JsonCodecConfiguration =
-            JsonCodecConfiguration(explicitEmptyCollections = ExplicitEmptyCollections(whenDecoding = false))
+            JsonCodecConfiguration(explicitEmptyCollections = ExplicitEmptyCollections(decoding = false))
           implicit val codec: JsonCodec[EmptyListSet] = DeriveJsonCodec.gen
 
           assertTrue("""{}""".fromJson[EmptyListSet].toOption.contains(expectedObj), expectedObj.toJson == expectedStr)
@@ -456,7 +456,7 @@ object ConfigurableDeriveCodecSpec extends ZIOSpecDefault {
           val expectedObj = EmptyTreeSet(immutable.TreeSet.empty)
 
           implicit val config: JsonCodecConfiguration =
-            JsonCodecConfiguration(explicitEmptyCollections = ExplicitEmptyCollections(whenDecoding = false))
+            JsonCodecConfiguration(explicitEmptyCollections = ExplicitEmptyCollections(decoding = false))
           implicit val codec: JsonCodec[EmptyTreeSet] = DeriveJsonCodec.gen
 
           assertTrue("""{}""".fromJson[EmptyTreeSet].toOption.contains(expectedObj), expectedObj.toJson == expectedStr)
@@ -467,7 +467,7 @@ object ConfigurableDeriveCodecSpec extends ZIOSpecDefault {
           val expectedObj = EmptyList(List.empty)
 
           implicit val config: JsonCodecConfiguration =
-            JsonCodecConfiguration(explicitEmptyCollections = ExplicitEmptyCollections(whenDecoding = false))
+            JsonCodecConfiguration(explicitEmptyCollections = ExplicitEmptyCollections(decoding = false))
           implicit val codec: JsonCodec[EmptyList] = DeriveJsonCodec.gen
 
           assertTrue("""{}""".fromJson[EmptyList].toOption.contains(expectedObj), expectedObj.toJson == expectedStr)
@@ -478,7 +478,7 @@ object ConfigurableDeriveCodecSpec extends ZIOSpecDefault {
           val expectedObj = EmptyVector(Vector.empty)
 
           implicit val config: JsonCodecConfiguration =
-            JsonCodecConfiguration(explicitEmptyCollections = ExplicitEmptyCollections(whenDecoding = false))
+            JsonCodecConfiguration(explicitEmptyCollections = ExplicitEmptyCollections(decoding = false))
           implicit val codec: JsonCodec[EmptyVector] = DeriveJsonCodec.gen
 
           assertTrue("""{}""".fromJson[EmptyVector].toOption.contains(expectedObj), expectedObj.toJson == expectedStr)
@@ -489,7 +489,7 @@ object ConfigurableDeriveCodecSpec extends ZIOSpecDefault {
           val expectedObj = EmptySet(Set.empty)
 
           implicit val config: JsonCodecConfiguration =
-            JsonCodecConfiguration(explicitEmptyCollections = ExplicitEmptyCollections(whenDecoding = false))
+            JsonCodecConfiguration(explicitEmptyCollections = ExplicitEmptyCollections(decoding = false))
           implicit val codec: JsonCodec[EmptySet] = DeriveJsonCodec.gen
 
           assertTrue("""{}""".fromJson[EmptySet].toOption.contains(expectedObj), expectedObj.toJson == expectedStr)
@@ -500,7 +500,7 @@ object ConfigurableDeriveCodecSpec extends ZIOSpecDefault {
           val expectedObj = EmptyHashSet(immutable.HashSet.empty)
 
           implicit val config: JsonCodecConfiguration =
-            JsonCodecConfiguration(explicitEmptyCollections = ExplicitEmptyCollections(whenDecoding = false))
+            JsonCodecConfiguration(explicitEmptyCollections = ExplicitEmptyCollections(decoding = false))
           implicit val codec: JsonCodec[EmptyHashSet] = DeriveJsonCodec.gen
 
           assertTrue("""{}""".fromJson[EmptyHashSet].toOption.contains(expectedObj), expectedObj.toJson == expectedStr)
@@ -511,7 +511,7 @@ object ConfigurableDeriveCodecSpec extends ZIOSpecDefault {
           val expectedObj = EmptySortedSet(immutable.SortedSet.empty)
 
           implicit val config: JsonCodecConfiguration =
-            JsonCodecConfiguration(explicitEmptyCollections = ExplicitEmptyCollections(whenDecoding = false))
+            JsonCodecConfiguration(explicitEmptyCollections = ExplicitEmptyCollections(decoding = false))
           implicit val codec: JsonCodec[EmptySortedSet] = DeriveJsonCodec.gen
 
           assertTrue(
@@ -525,7 +525,7 @@ object ConfigurableDeriveCodecSpec extends ZIOSpecDefault {
           val expectedObj = EmptyMap(Map.empty)
 
           implicit val config: JsonCodecConfiguration =
-            JsonCodecConfiguration(explicitEmptyCollections = ExplicitEmptyCollections(whenDecoding = false))
+            JsonCodecConfiguration(explicitEmptyCollections = ExplicitEmptyCollections(decoding = false))
           implicit val codec: JsonCodec[EmptyMap] = DeriveJsonCodec.gen
 
           assertTrue("""{}""".fromJson[EmptyMap].toOption.contains(expectedObj), expectedObj.toJson == expectedStr)
@@ -536,7 +536,7 @@ object ConfigurableDeriveCodecSpec extends ZIOSpecDefault {
           val expectedObj = EmptyHashMap(immutable.HashMap.empty)
 
           implicit val config: JsonCodecConfiguration =
-            JsonCodecConfiguration(explicitEmptyCollections = ExplicitEmptyCollections(whenDecoding = false))
+            JsonCodecConfiguration(explicitEmptyCollections = ExplicitEmptyCollections(decoding = false))
           implicit val codec: JsonCodec[EmptyHashMap] = DeriveJsonCodec.gen
 
           assertTrue("""{}""".fromJson[EmptyHashMap].toOption.contains(expectedObj), expectedObj.toJson == expectedStr)
@@ -547,7 +547,7 @@ object ConfigurableDeriveCodecSpec extends ZIOSpecDefault {
           val expectedObj = EmptyMutableMap(mutable.Map.empty)
 
           implicit val config: JsonCodecConfiguration =
-            JsonCodecConfiguration(explicitEmptyCollections = ExplicitEmptyCollections(whenDecoding = false))
+            JsonCodecConfiguration(explicitEmptyCollections = ExplicitEmptyCollections(decoding = false))
           implicit val codec: JsonCodec[EmptyMutableMap] = DeriveJsonCodec.gen
 
           assertTrue(
@@ -561,7 +561,7 @@ object ConfigurableDeriveCodecSpec extends ZIOSpecDefault {
           val expectedObj = EmptySortedMap(collection.SortedMap.empty)
 
           implicit val config: JsonCodecConfiguration =
-            JsonCodecConfiguration(explicitEmptyCollections = ExplicitEmptyCollections(whenDecoding = false))
+            JsonCodecConfiguration(explicitEmptyCollections = ExplicitEmptyCollections(decoding = false))
           implicit val codec: JsonCodec[EmptySortedMap] = DeriveJsonCodec.gen
 
           assertTrue(
@@ -575,7 +575,7 @@ object ConfigurableDeriveCodecSpec extends ZIOSpecDefault {
           val expectedObj = EmptyListMap(immutable.ListMap.empty)
 
           implicit val config: JsonCodecConfiguration =
-            JsonCodecConfiguration(explicitEmptyCollections = ExplicitEmptyCollections(whenDecoding = false))
+            JsonCodecConfiguration(explicitEmptyCollections = ExplicitEmptyCollections(decoding = false))
           implicit val codec: JsonCodec[EmptyListMap] = DeriveJsonCodec.gen
 
           assertTrue("""{}""".fromJson[EmptyListMap].toOption.contains(expectedObj), expectedObj.toJson == expectedStr)
