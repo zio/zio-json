@@ -5,8 +5,6 @@ import java.nio.file.Path
 import zio.{ test => _, _ }
 import zio.json._
 
-import zio.stacktracer.TracingImplicits.disableAutoTrace
-
 import java.nio.file.Files
 
 object filehelpers {
@@ -15,17 +13,13 @@ object filehelpers {
     if (file.getName == "target") ZIO.succeed(file)
     else ZIO.attempt(file.getParentFile).flatMap(getRootDir)
 
-  def createGoldenDirectory(pathToDir: String)(implicit trace: Trace): Task[Path] = {
-    val _        = disableAutoTrace // TODO: Find a way to suppress the unused import warning
-    val rootFile = new File(getClass.getResource("/").toURI)
-
+  def createGoldenDirectory(pathToDir: String)(implicit trace: Trace): Task[Path] =
     for {
-      baseFile <- getRootDir(rootFile)
+      baseFile <- getRootDir(new File(getClass.getResource(".").toURI))
       goldenDir = new File(baseFile.getParentFile, pathToDir)
       path      = goldenDir.toPath
       _        <- ZIO.attemptBlocking(goldenDir.mkdirs)
     } yield path
-  }
 
   def writeSampleToFile(path: Path, sample: GoldenSample)(implicit trace: Trace): IO[IOException, Unit] = {
     val jsonString = sample.toJsonPretty
