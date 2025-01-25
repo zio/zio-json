@@ -4,6 +4,12 @@ import zio.json.JsonCodecConfiguration.SumTypeHandling
 import zio.json.JsonCodecConfiguration.SumTypeHandling.WrapperWithClassNameField
 
 /**
+ * When disabled for decoding, keys with empty collections will be omitted from the JSON. When disabled for encoding,
+ * missing keys will default to empty collections.
+ */
+case class ExplicitEmptyCollections(whenEncoding: Boolean = true, whenDecoding: Boolean = true)
+
+/**
  * Implicit codec derivation configuration.
  *
  * @param sumTypeHandling
@@ -21,7 +27,7 @@ final case class JsonCodecConfiguration(
   allowExtraFields: Boolean = true,
   sumTypeMapping: JsonMemberFormat = IdentityFormat,
   explicitNulls: Boolean = false,
-  explicitEmptyCollections: Boolean = true
+  explicitEmptyCollections: ExplicitEmptyCollections = ExplicitEmptyCollections()
 ) {
   def this(
     sumTypeHandling: SumTypeHandling,
@@ -35,7 +41,7 @@ final case class JsonCodecConfiguration(
     allowExtraFields,
     sumTypeMapping,
     explicitNulls,
-    true
+    ExplicitEmptyCollections()
   )
 
   def copy(
@@ -44,7 +50,7 @@ final case class JsonCodecConfiguration(
     allowExtraFields: Boolean = true,
     sumTypeMapping: JsonMemberFormat = IdentityFormat.asInstanceOf[JsonMemberFormat],
     explicitNulls: Boolean = false,
-    explicitEmptyCollections: Boolean = true
+    explicitEmptyCollections: ExplicitEmptyCollections = ExplicitEmptyCollections()
   ) = new JsonCodecConfiguration(
     sumTypeHandling,
     fieldNameMapping,
@@ -66,7 +72,7 @@ final case class JsonCodecConfiguration(
     allowExtraFields,
     sumTypeMapping,
     explicitNulls,
-    true
+    ExplicitEmptyCollections()
   )
 }
 
@@ -83,7 +89,7 @@ object JsonCodecConfiguration {
     allowExtraFields,
     sumTypeMapping,
     explicitNulls,
-    true
+    ExplicitEmptyCollections()
   )
 
   implicit val default: JsonCodecConfiguration = JsonCodecConfiguration()

@@ -34,7 +34,7 @@ final class jsonExplicitNull extends Annotation
 /**
  * When disabled keys with empty collections will be omitted from the JSON.
  */
-final case class jsonExplicitEmptyCollections(enabled: Boolean = true) extends Annotation
+final case class jsonExplicitEmptyCollections(whenEncoding: Boolean = true, whenDecoding: Boolean = true) extends Annotation
 
 /**
  * If used on a sealed class, will determine the name of the field for
@@ -290,9 +290,9 @@ sealed class JsonDecoderDerivation(config: JsonCodecConfiguration) extends Deriv
         private lazy val namesMap = (names.zipWithIndex ++ aliases).toMap
 
         private[this] val explicitEmptyCollections =
-          ctx.annotations.collectFirst { case jsonExplicitEmptyCollections(enabled) =>
-            enabled
-          }.getOrElse(config.explicitEmptyCollections)
+          ctx.annotations.collectFirst { case a: jsonExplicitEmptyCollections =>
+            a.whenDecoding
+          }.getOrElse(config.explicitEmptyCollections.whenDecoding)
 
         private[this] val missingValueDecoder =
           if (explicitEmptyCollections) {
@@ -560,17 +560,17 @@ sealed class JsonEncoderDerivation(config: JsonCodecConfiguration) extends Deriv
         }.toArray
 
         private val explicitNulls = config.explicitNulls || ctx.annotations.exists(_.isInstanceOf[jsonExplicitNull])
-        private val explicitEmptyCollections = ctx.annotations.collectFirst { case jsonExplicitEmptyCollections(enabled) =>
-          enabled
-        }.getOrElse(config.explicitEmptyCollections)
+        private val explicitEmptyCollections = ctx.annotations.collectFirst { case a: jsonExplicitEmptyCollections =>
+          a.whenEncoding
+        }.getOrElse(config.explicitEmptyCollections.whenEncoding)
 
         private[this] lazy val fields: Array[FieldEncoder[Any, CaseClass.Param[JsonEncoder, A]]] = params.map { p =>
           val name = p.annotations.collectFirst { case jsonField(name) =>
             name
           }.getOrElse(if (transformNames) nameTransform(p.label) else p.label)
           val withExplicitNulls = explicitNulls || p.annotations.exists(_.isInstanceOf[jsonExplicitNull])
-          val withExplicitEmptyCollections = p.annotations.collectFirst { case jsonExplicitEmptyCollections(enabled) =>
-            enabled
+          val withExplicitEmptyCollections = p.annotations.collectFirst { case a: jsonExplicitEmptyCollections =>
+            a.whenEncoding
           }.getOrElse(explicitEmptyCollections)
           new FieldEncoder(
             p,

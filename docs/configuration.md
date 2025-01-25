@@ -218,10 +218,10 @@ Mango(None).toJson
 
 ## Empty Collections, explicitEmptyCollections
 
-By default `empty collections` (all supported collection types and case classes) are included from the JSON output an decoding requires empty collections to be present. This behavior can be changed by using the `@jsonExplicitEmptyCollections(false)` annotation on a case class, field or setting `JsonCodecConfiguration.explicitEmptyCollections` to `false`. The result is that empty collections are omitted from the JSON output and when decoding empty collections are created.
+By default `empty collections` (all supported collection types and case classes) are included from the JSON output an decoding requires empty collections to be present. This behavior can be changed by using the `@jsonExplicitEmptyCollections(whenEncoding = false, whenDecoding = false)` annotation on a case class, field or setting `JsonCodecConfiguration.explicitEmptyCollections` to `ExplicitEmptyCollections(whenEncoding = false, whenDecoding = false)`. The result is that empty collections are omitted from the JSON output and when decoding empty collections are created. It is also possible to have different values for encoding and decoding by using `@jsonExplicitEmptyCollections(whenEncoding = true, whenDecoding = false)` or `@jsonExplicitEmptyCollections(whenEncoding = false, whenDecoding = true)`.
 
 ```scala mdoc
-@jsonExplicitEmptyCollections(false)
+@jsonExplicitEmptyCollections(whenEncoding = false, whenDecoding = false)
 case class Pineapple(leaves: List[String])
 
 object Pineapple {
