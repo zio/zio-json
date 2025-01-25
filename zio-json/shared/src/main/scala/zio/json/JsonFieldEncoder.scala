@@ -33,13 +33,15 @@ object JsonFieldEncoder {
     def unsafeEncodeField(in: String): String = in
   }
 
-  implicit val int: JsonFieldEncoder[Int] =
-    JsonFieldEncoder[String].contramap(_.toString)
+  implicit val int: JsonFieldEncoder[Int] = new JsonFieldEncoder[Int] {
+    def unsafeEncodeField(in: Int): String = in.toString
+  }
 
-  implicit val long: JsonFieldEncoder[Long] =
-    JsonFieldEncoder[String].contramap(_.toString)
+  implicit val long: JsonFieldEncoder[Long] = new JsonFieldEncoder[Long] {
+    def unsafeEncodeField(in: Long): String = in.toString
+  }
 
-  implicit val uuid: JsonFieldEncoder[java.util.UUID] =
-    JsonFieldEncoder[String].contramap(_.toString)
-
+  implicit val uuid: JsonFieldEncoder[java.util.UUID] = new JsonFieldEncoder[java.util.UUID] {
+    def unsafeEncodeField(in: java.util.UUID): String = in.toString
+  }
 }
