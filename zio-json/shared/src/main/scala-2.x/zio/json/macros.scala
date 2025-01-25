@@ -27,8 +27,7 @@ final class jsonExplicitNull extends Annotation
 /**
  * When disabled keys with empty collections will be omitted from the JSON.
  */
-final case class jsonExplicitEmptyCollections(encoding: Boolean = true, decoding: Boolean = true)
-    extends Annotation
+final case class jsonExplicitEmptyCollections(encoding: Boolean = true, decoding: Boolean = true) extends Annotation
 
 /**
  * If used on a sealed class, will determine the name of the field for disambiguating classes.
