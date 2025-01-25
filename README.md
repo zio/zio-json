@@ -89,7 +89,7 @@ And bad JSON will produce an error in `jq` syntax with an additional piece of co
 
 ```
 scala> """{"curvature": womp}""".fromJson[Banana]
-val res: Either[String, Banana] = Left(.curvature(expected a number, got w))
+val res: Either[String, Banana] = Left(.curvature(expected a Double))
 ```
 
 Say we extend our data model to include more data types

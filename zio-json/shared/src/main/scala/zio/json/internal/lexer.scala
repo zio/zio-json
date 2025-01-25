@@ -286,7 +286,8 @@ object Lexer {
   }
 
   def byte(trace: List[JsonError], in: RetractReader): Byte = {
-    checkNumber(trace, in)
+    in.nextNonWhitespace()
+    in.retract()
     try {
       val i = UnsafeNumbers.byte_(in, false)
       in.retract()
@@ -297,7 +298,8 @@ object Lexer {
   }
 
   def short(trace: List[JsonError], in: RetractReader): Short = {
-    checkNumber(trace, in)
+    in.nextNonWhitespace()
+    in.retract()
     try {
       val i = UnsafeNumbers.short_(in, false)
       in.retract()
@@ -308,7 +310,8 @@ object Lexer {
   }
 
   def int(trace: List[JsonError], in: RetractReader): Int = {
-    checkNumber(trace, in)
+    in.nextNonWhitespace()
+    in.retract()
     try {
       val i = UnsafeNumbers.int_(in, false)
       in.retract()
@@ -319,7 +322,8 @@ object Lexer {
   }
 
   def long(trace: List[JsonError], in: RetractReader): Long = {
-    checkNumber(trace, in)
+    in.nextNonWhitespace()
+    in.retract()
     try {
       val i = UnsafeNumbers.long_(in, false)
       in.retract()
@@ -333,7 +337,8 @@ object Lexer {
     trace: List[JsonError],
     in: RetractReader
   ): java.math.BigInteger = {
-    checkNumber(trace, in)
+    in.nextNonWhitespace()
+    in.retract()
     try {
       val i = UnsafeNumbers.bigInteger_(in, false, NumberMaxBits)
       in.retract()
@@ -344,7 +349,8 @@ object Lexer {
   }
 
   def float(trace: List[JsonError], in: RetractReader): Float = {
-    checkNumber(trace, in)
+    in.nextNonWhitespace()
+    in.retract()
     try {
       val i = UnsafeNumbers.float_(in, false, NumberMaxBits)
       in.retract()
@@ -355,7 +361,8 @@ object Lexer {
   }
 
   def double(trace: List[JsonError], in: RetractReader): Double = {
-    checkNumber(trace, in)
+    in.nextNonWhitespace()
+    in.retract()
     try {
       val i = UnsafeNumbers.double_(in, false, NumberMaxBits)
       in.retract()
@@ -369,7 +376,8 @@ object Lexer {
     trace: List[JsonError],
     in: RetractReader
   ): java.math.BigDecimal = {
-    checkNumber(trace, in)
+    in.nextNonWhitespace()
+    in.retract()
     try {
       val i = UnsafeNumbers.bigDecimal_(in, false, NumberMaxBits)
       in.retract()
@@ -377,15 +385,6 @@ object Lexer {
     } catch {
       case UnsafeNumbers.UnsafeNumber => error(s"expected a $NumberMaxBits BigDecimal", trace)
     }
-  }
-
-  // really just a way to consume the whitespace
-  private def checkNumber(trace: List[JsonError], in: RetractReader): Unit = {
-    (in.nextNonWhitespace(): @switch) match {
-      case '-' | '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' => ()
-      case c                                                               => error("a number,", c, trace)
-    }
-    in.retract()
   }
 
   // optional whitespace and then an expected character
