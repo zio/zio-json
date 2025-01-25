@@ -262,11 +262,11 @@ object DecoderPlatformSpecificSpec extends ZIOSpecDefault {
           test("test hand-coded alternative in `orElse` comment") {
             val decoder: JsonDecoder[AnyVal] = JsonDecoder.peekChar[AnyVal] {
               case 't' | 'f' => JsonDecoder[Boolean].widen
-              case c         => JsonDecoder[Int].widen
+              case _         => JsonDecoder[Int].widen
             }
             assert(decoder.decodeJson("true"))(equalTo(Right(true.asInstanceOf[AnyVal]))) &&
             assert(decoder.decodeJson("42"))(equalTo(Right(42.asInstanceOf[AnyVal]))) &&
-            assert(decoder.decodeJson("\"a string\""))(equalTo(Left("(expected a number, got 'a')")))
+            assert(decoder.decodeJson("\"a string\""))(equalTo(Left("(expected an Int)")))
           }
         )
       )
