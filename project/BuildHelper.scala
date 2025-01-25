@@ -238,7 +238,7 @@ object BuildHelper {
     },
     semanticdbEnabled := scalaVersion.value != ScalaDotty, // enable SemanticDB
     semanticdbOptions += "-P:semanticdb:synthetics:on",
-    semanticdbVersion        := "4.10.2",
+    semanticdbVersion        := "4.12.7",
     Test / parallelExecution := true,
     incOptions ~= (_.withLogRecompileOnMacro(false)),
     autoAPIMappings := true,
