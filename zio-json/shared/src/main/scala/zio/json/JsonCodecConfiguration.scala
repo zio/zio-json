@@ -72,7 +72,7 @@ final case class JsonCodecConfiguration(
     allowExtraFields,
     sumTypeMapping,
     explicitNulls,
-    ExplicitEmptyCollections()
+    this.explicitEmptyCollections
   )
 }
 
