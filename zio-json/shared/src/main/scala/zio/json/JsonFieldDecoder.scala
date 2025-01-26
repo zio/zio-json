@@ -15,7 +15,7 @@
  */
 package zio.json
 
-import zio.json.internal.Lexer
+import zio.json.internal.{ FastStringReader, Lexer }
 import zio.json.uuid.UUIDParser
 
 /** When decoding a JSON Object, we only allow the keys that implement this interface. */
@@ -90,10 +90,9 @@ object JsonFieldDecoder extends LowPriorityJsonFieldDecoder {
 
 private[json] trait LowPriorityJsonFieldDecoder {
 
-  def string: JsonFieldDecoder[String]
-
-  private def quotedString = string.map(raw => s""""$raw"""")
-
-  implicit def stringLike[T <: String: JsonDecoder]: JsonFieldDecoder[T] =
-    quotedString.mapOrFail(implicitly[JsonDecoder[T]].decodeJson)
+  implicit def stringLike[T <: String](implicit decoder: JsonDecoder[T]): JsonFieldDecoder[T] =
+    new JsonFieldDecoder[T] {
+      def unsafeDecodeField(trace: List[JsonError], in: String): T =
+        decoder.unsafeDecode(trace, new FastStringReader('"' + in + '"'))
+    }
 }
