@@ -85,7 +85,7 @@ object DerivedDecoderSpec extends ZIOSpecDefault {
       case class Foo(aOrB: Map["A" | "B", Int]) derives JsonDecoder
 
       assertTrue("""{"aOrB": {"A": 1, "B": 2}}""".fromJson[Foo] == Right(Foo(Map("A" -> 1, "B" -> 2)))) &&
-      assertTrue("""{"aOrB": {"C": 1}}""".fromJson[Foo] == Left(".aOrB.C((expected one of: A, B))"))
+      assertTrue("""{"aOrB": {"C": 1}}""".fromJson[Foo] == Left(".aOrB.C(expected one of: A, B)"))
     }
   )
 }
