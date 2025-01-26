@@ -4,6 +4,12 @@ import zio.json.JsonCodecConfiguration.SumTypeHandling
 import zio.json.JsonCodecConfiguration.SumTypeHandling.WrapperWithClassNameField
 
 /**
+ * When disabled for decoding, keys with empty collections will be omitted from the JSON. When disabled for encoding,
+ * missing keys will default to empty collections.
+ */
+case class ExplicitEmptyCollections(encoding: Boolean = true, decoding: Boolean = true)
+
+/**
  * Implicit codec derivation configuration.
  *
  * @param sumTypeHandling
@@ -14,33 +20,77 @@ import zio.json.JsonCodecConfiguration.SumTypeHandling.WrapperWithClassNameField
  *   see [[jsonNoExtraFields]]
  * @param sumTypeMapping
  *   see [[jsonHintNames]]
- * @param explicitNulls
- *   see [[jsonExplicitNull]]
  */
 final case class JsonCodecConfiguration(
   sumTypeHandling: SumTypeHandling = WrapperWithClassNameField,
   fieldNameMapping: JsonMemberFormat = IdentityFormat,
   allowExtraFields: Boolean = true,
   sumTypeMapping: JsonMemberFormat = IdentityFormat,
-  explicitNulls: Boolean = false
+  explicitNulls: Boolean = false,
+  explicitEmptyCollections: ExplicitEmptyCollections = ExplicitEmptyCollections()
 ) {
+  def this(
+    sumTypeHandling: SumTypeHandling,
+    fieldNameMapping: JsonMemberFormat,
+    allowExtraFields: Boolean,
+    sumTypeMapping: JsonMemberFormat,
+    explicitNulls: Boolean
+  ) = this(
+    sumTypeHandling,
+    fieldNameMapping,
+    allowExtraFields,
+    sumTypeMapping,
+    explicitNulls,
+    ExplicitEmptyCollections()
+  )
 
   def copy(
     sumTypeHandling: SumTypeHandling = WrapperWithClassNameField.asInstanceOf[SumTypeHandling],
     fieldNameMapping: JsonMemberFormat = IdentityFormat.asInstanceOf[JsonMemberFormat],
     allowExtraFields: Boolean = true,
     sumTypeMapping: JsonMemberFormat = IdentityFormat.asInstanceOf[JsonMemberFormat],
-    explicitNulls: Boolean = false
+    explicitNulls: Boolean = false,
+    explicitEmptyCollections: ExplicitEmptyCollections = ExplicitEmptyCollections()
   ) = new JsonCodecConfiguration(
     sumTypeHandling,
     fieldNameMapping,
     allowExtraFields,
     sumTypeMapping,
-    explicitNulls
+    explicitNulls,
+    explicitEmptyCollections
+  )
+
+  def copy(
+    sumTypeHandling: SumTypeHandling,
+    fieldNameMapping: JsonMemberFormat,
+    allowExtraFields: Boolean,
+    sumTypeMapping: JsonMemberFormat,
+    explicitNulls: Boolean
+  ) = new JsonCodecConfiguration(
+    sumTypeHandling,
+    fieldNameMapping,
+    allowExtraFields,
+    sumTypeMapping,
+    explicitNulls,
+    this.explicitEmptyCollections
   )
 }
 
 object JsonCodecConfiguration {
+  def apply(
+    sumTypeHandling: SumTypeHandling,
+    fieldNameMapping: JsonMemberFormat,
+    allowExtraFields: Boolean,
+    sumTypeMapping: JsonMemberFormat,
+    explicitNulls: Boolean
+  ) = new JsonCodecConfiguration(
+    sumTypeHandling,
+    fieldNameMapping,
+    allowExtraFields,
+    sumTypeMapping,
+    explicitNulls,
+    ExplicitEmptyCollections()
+  )
 
   implicit val default: JsonCodecConfiguration = JsonCodecConfiguration()
 
