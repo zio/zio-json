@@ -86,6 +86,6 @@ object DerivedDecoderSpec extends ZIOSpecDefault {
 
       assertTrue("""{"aOrB": {"A": 1, "B": 2}}""".fromJson[Foo] == Right(Foo(Map("A" -> 1, "B" -> 2)))) &&
       assertTrue("""{"aOrB": {"C": 1}}""".fromJson[Foo] == Left(".aOrB.C((expected one of: A, B))"))
-    },
+    }
   )
 }
