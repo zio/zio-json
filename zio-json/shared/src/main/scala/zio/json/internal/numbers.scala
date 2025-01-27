@@ -735,7 +735,7 @@ object UnsafeNumbers {
     }) {
       if (
         accum < -922337203685477580L || {
-          accum = accum * 10 + ('0' - current)
+          accum = (accum << 3) + (accum << 1) + ('0' - current)
           accum > 0
         }
       ) throw UnsafeNumber
