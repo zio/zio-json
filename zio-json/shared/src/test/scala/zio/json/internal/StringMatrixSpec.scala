@@ -23,7 +23,7 @@ object StringMatrixSpec extends ZIOSpecDefault {
       }
     },
     test("negative fails") {
-      check(genTestStrings.filterNot(_.startsWith("wibble")))(xs =>
+      check(genTestStrings.filter(_.forall(s => !s.startsWith("wibble"))))(xs =>
         assert(matcher(xs, Array.empty, "wibble").toVector)(isEmpty)
       )
     },
