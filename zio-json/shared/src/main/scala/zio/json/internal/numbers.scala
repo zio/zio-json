@@ -690,7 +690,7 @@ object UnsafeNumbers {
     max_bits: Int
   ): java.math.BigInteger = {
     var current: Int = in.read()
-    val negative = current == '-'
+    val negative     = current == '-'
     if (negative || current == '+') current = in.read()
     if (current == -1) throw UnsafeNumber
     bigDecimal__(in, consume, negative, current, true, max_bits).unscaledValue
@@ -838,7 +838,7 @@ object UnsafeNumbers {
     max_bits: Int
   ): java.math.BigDecimal = {
     var current: Int = in.read()
-    val negative = current == '-'
+    val negative     = current == '-'
     if (negative || current == '+') current = in.read()
     if (current == -1) throw UnsafeNumber
     bigDecimal__(in, consume, negative, current, false, max_bits)
