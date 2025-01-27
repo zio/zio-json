@@ -18,49 +18,72 @@ object DecoderSpec extends ZIOSpecDefault {
       suite("fromJson")(
         test("byte") {
           assert("-123".fromJson[Byte])(isRight(equalTo(-123: Byte))) &&
+          assert("123".fromJson[Byte])(isRight(equalTo(123: Byte))) &&
           assert("\"-123\"".fromJson[Byte])(isRight(equalTo(-123: Byte))) &&
+          assert("\"123\"".fromJson[Byte])(isRight(equalTo(123: Byte))) &&
+          assertTrue("+123".fromJson[Byte].isLeft) &&
           assertTrue("\"Infinity\"".fromJson[Byte].isLeft) &&
+          assertTrue("\"+Infinity\"".fromJson[Byte].isLeft) &&
           assertTrue("\"-Infinity\"".fromJson[Byte].isLeft) &&
           assertTrue("\"NaN\"".fromJson[Byte].isLeft)
         },
         test("short") {
           assert("-12345".fromJson[Short])(isRight(equalTo(-12345: Short))) &&
+          assert("12345".fromJson[Short])(isRight(equalTo(12345: Short))) &&
           assert("\"-12345\"".fromJson[Short])(isRight(equalTo(-12345: Short))) &&
+          assert("\"12345\"".fromJson[Short])(isRight(equalTo(12345: Short))) &&
+          assertTrue("+12345".fromJson[Short].isLeft) &&
           assertTrue("\"Infinity\"".fromJson[Short].isLeft) &&
+          assertTrue("\"+Infinity\"".fromJson[Short].isLeft) &&
           assertTrue("\"-Infinity\"".fromJson[Short].isLeft) &&
           assertTrue("\"NaN\"".fromJson[Short].isLeft)
         },
         test("int") {
           assert("-1234567890".fromJson[Int])(isRight(equalTo(-1234567890))) &&
+          assert("1234567890".fromJson[Int])(isRight(equalTo(1234567890))) &&
           assert("\"-1234567890\"".fromJson[Int])(isRight(equalTo(-1234567890))) &&
+          assert("\"1234567890\"".fromJson[Int])(isRight(equalTo(1234567890))) &&
+          assertTrue("+1234567890".fromJson[Int].isLeft) &&
           assertTrue("\"Infinity\"".fromJson[Int].isLeft) &&
+          assertTrue("\"+Infinity\"".fromJson[Int].isLeft) &&
           assertTrue("\"-Infinity\"".fromJson[Int].isLeft) &&
           assertTrue("\"NaN\"".fromJson[Int].isLeft)
         },
         test("long") {
           assert("-123456789012345678".fromJson[Long])(isRight(equalTo(-123456789012345678L))) &&
+          assert("123456789012345678".fromJson[Long])(isRight(equalTo(123456789012345678L))) &&
           assert("\"-123456789012345678\"".fromJson[Long])(isRight(equalTo(-123456789012345678L))) &&
+          assert("\"123456789012345678\"".fromJson[Long])(isRight(equalTo(123456789012345678L))) &&
+          assertTrue("+123456789012345678".fromJson[Long].isLeft) &&
           assertTrue("\"Infinity\"".fromJson[Long].isLeft) &&
+          assertTrue("\"+Infinity\"".fromJson[Long].isLeft) &&
           assertTrue("\"-Infinity\"".fromJson[Long].isLeft) &&
           assertTrue("\"NaN\"".fromJson[Long].isLeft)
         },
         test("float") {
           assert("-1.234567e9".fromJson[Float])(isRight(equalTo(-1.234567e9f))) &&
+          assert("1.234567e9".fromJson[Float])(isRight(equalTo(1.234567e9f))) &&
           assert("\"-1.234567e9\"".fromJson[Float])(isRight(equalTo(-1.234567e9f))) &&
           assert("\"Infinity\"".fromJson[Float])(isRight(equalTo(Float.PositiveInfinity))) &&
+          assert("\"+Infinity\"".fromJson[Float])(isRight(equalTo(Float.PositiveInfinity))) &&
           assert("\"-Infinity\"".fromJson[Float])(isRight(equalTo(Float.NegativeInfinity))) &&
-          assertTrue("\"NaN\"".fromJson[Float].isRight)
+          assertTrue("\"NaN\"".fromJson[Float].isRight) &&
+          assertTrue("+1.234567e9".fromJson[Float].isLeft)
         },
         test("double") {
           assert("-1.23456789012345e9".fromJson[Double])(isRight(equalTo(-1.23456789012345e9))) &&
           assert("\"-1.23456789012345e9\"".fromJson[Double])(isRight(equalTo(-1.23456789012345e9))) &&
           assert("\"Infinity\"".fromJson[Double])(isRight(equalTo(Double.PositiveInfinity))) &&
+          assert("\"+Infinity\"".fromJson[Double])(isRight(equalTo(Double.PositiveInfinity))) &&
           assert("\"-Infinity\"".fromJson[Double])(isRight(equalTo(Double.NegativeInfinity))) &&
-          assertTrue("\"NaN\"".fromJson[Double].isRight)
+          assertTrue("\"NaN\"".fromJson[Double].isRight) &&
+          assertTrue("+1.23456789012345e9".fromJson[Double].isLeft)
         },
         test("BigDecimal") {
+          assert("-123.0e123".fromJson[BigDecimal])(isRight(equalTo(BigDecimal("-123.0e123")))) &&
           assert("123.0e123".fromJson[BigDecimal])(isRight(equalTo(BigDecimal("123.0e123")))) &&
           assertTrue("\"Infinity\"".fromJson[BigDecimal].isLeft) &&
+          assertTrue("\"+Infinity\"".fromJson[BigDecimal].isLeft) &&
           assertTrue("\"-Infinity\"".fromJson[BigDecimal].isLeft) &&
           assertTrue("\"NaN\"".fromJson[BigDecimal].isLeft)
         },
@@ -68,7 +91,11 @@ object DecoderSpec extends ZIOSpecDefault {
           assert("170141183460469231731687303715884105728".fromJson[BigInteger])(
             isRight(equalTo(new BigInteger("170141183460469231731687303715884105728")))
           ) &&
+          assert("-170141183460469231731687303715884105728".fromJson[BigInteger])(
+            isRight(equalTo(new BigInteger("-170141183460469231731687303715884105728")))
+          ) &&
           assertTrue("\"Infinity\"".fromJson[BigInteger].isLeft) &&
+          assertTrue("\"+Infinity\"".fromJson[BigInteger].isLeft) &&
           assertTrue("\"-Infinity\"".fromJson[BigInteger].isLeft) &&
           assertTrue("\"NaN\"".fromJson[BigInteger].isLeft)
         },

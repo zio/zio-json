@@ -691,7 +691,7 @@ object UnsafeNumbers {
   ): java.math.BigInteger = {
     var current: Int = in.read()
     val negative     = current == '-'
-    if (negative || current == '+') current = in.read()
+    if (negative) current = in.read()
     if (current == -1) throw UnsafeNumber
     bigDecimal__(in, consume, negative, current, true, max_bits).unscaledValue
   }
@@ -699,7 +699,7 @@ object UnsafeNumbers {
   def int__(in: Reader, lower: Int, upper: Int, consume: Boolean): Int = {
     var current  = in.read()
     val negative = current == '-'
-    if (negative || current == '+') current = in.read()
+    if (negative) current = in.read()
     if (current < '0' || current > '9') throw UnsafeNumber
     var accum = '0' - current
     while ({
@@ -726,7 +726,7 @@ object UnsafeNumbers {
   def long__(in: Reader, lower: Long, upper: Long, consume: Boolean): Long = {
     var current  = in.read()
     val negative = current == '-'
-    if (negative || current == '+') current = in.read()
+    if (negative) current = in.read()
     if (current < '0' || current > '9') throw UnsafeNumber
     var accum = ('0' - current).toLong
     while ({
@@ -763,9 +763,13 @@ object UnsafeNumbers {
     }
 
     negative = current == '-'
-    if (negative || current == '+') current = in.read()
+    if (negative) current = in.read()
 
-    if (current == 'I') {
+    if (current == 'I' || current == '+') {
+      if (current == '+') {
+        current = in.read()
+        if (current != 'I') throw UnsafeNumber
+      }
       readAll(in, "nfinity", consume)
       if (negative) return Float.NegativeInfinity
       else return Float.PositiveInfinity
@@ -792,9 +796,13 @@ object UnsafeNumbers {
     }
 
     negative = current == '-'
-    if (negative || current == '+') current = in.read()
+    if (negative) current = in.read()
 
-    if (current == 'I') {
+    if (current == 'I' || current == '+') {
+      if (current == '+') {
+        current = in.read()
+        if (current != 'I') throw UnsafeNumber
+      }
       readAll(in, "nfinity", consume)
       if (negative) return Double.NegativeInfinity
       else return Double.PositiveInfinity
@@ -839,7 +847,7 @@ object UnsafeNumbers {
   ): java.math.BigDecimal = {
     var current: Int = in.read()
     val negative     = current == '-'
-    if (negative || current == '+') current = in.read()
+    if (negative) current = in.read()
     if (current == -1) throw UnsafeNumber
     bigDecimal__(in, consume, negative, current, false, max_bits)
   }
@@ -859,15 +867,11 @@ object UnsafeNumbers {
     var dot: Int                    = 0    // counts from the right
     var exp: Int                    = 0    // implied
 
-    def advance(): Boolean = {
-      current = in.read()
-      current != -1
-    }
-
     // skip trailing zero on the left
     while (current == '0') {
       sig = 0
-      if (!advance())
+      current = in.read()
+      if (current == -1)
         return java.math.BigDecimal.ZERO
     }
 
@@ -903,7 +907,8 @@ object UnsafeNumbers {
 
     while ('0' <= current && current <= '9') {
       push_sig()
-      if (!advance())
+      current = in.read()
+      if (current == -1)
         return significand()
     }
 
@@ -915,7 +920,8 @@ object UnsafeNumbers {
 
     if (current == '.') {
       if (sig < 0) sig = 0 // e.g. ".1" is shorthand for "0.1"
-      if (!advance())
+      current = in.read()
+      if (current == -1)
         return significand()
       while ('0' <= current && current <= '9') {
         dot += 1
@@ -923,15 +929,36 @@ object UnsafeNumbers {
           push_sig()
         // overflowed...
         if (dot < 0) throw UnsafeNumber
-        advance()
+        current = in.read()
       }
     }
 
     if (sig < 0) throw UnsafeNumber // no significand
 
-    if (current == 'E' || current == 'e')
-      exp = int_(in, consume)
-    else if (consume && current != -1)
+    if (current == 'E' || current == 'e') {
+      current = in.read()
+      val negative = current == '-'
+      if (negative || current == '+') current = in.read()
+      if (current < '0' || current > '9') throw UnsafeNumber
+      var accum = '0' - current
+      while ({
+        current = in.read()
+        '0' <= current && current <= '9'
+      }) {
+        if (
+          accum < -214748364 || {
+            accum = accum * 10 + ('0' - current)
+            accum > 0
+          }
+        ) throw UnsafeNumber
+      }
+      if (consume && current != -1) throw UnsafeNumber
+      if (negative) {
+        exp = accum
+      } else if (accum != -2147483648) {
+        exp = -accum
+      } else throw UnsafeNumber
+    } else if (consume && current != -1)
       throw UnsafeNumber
 
     val scale = if (dot < 1) exp else exp - dot

@@ -17,7 +17,7 @@ object Gens {
     Gen
       .bigDecimal((BigDecimal(2).pow(128) - 1) * -1, BigDecimal(2).pow(128) - 1)
       .map(_.bigDecimal)
-      .filter(_.toBigInteger.bitLength < 128)
+      .filter(_.unscaledValue.bitLength < 128)
 
   val genUsAsciiString =
     Gen.string(Gen.oneOf(Gen.char('!', '~')))
