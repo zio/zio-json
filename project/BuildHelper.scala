@@ -236,6 +236,7 @@ object BuildHelper {
           compilerPlugin("org.typelevel"  %% "kind-projector"  % "0.13.3" cross CrossVersion.full)
         )
     },
+    versionScheme     := Some("early-semver"),
     semanticdbEnabled := scalaVersion.value != ScalaDotty, // enable SemanticDB
     semanticdbOptions += "-P:semanticdb:synthetics:on",
     semanticdbVersion        := "4.12.7",
