@@ -150,10 +150,9 @@ object SafeNumbers {
         exp += len - 1
         if (exp < -3 || exp >= 7) {
           val dotOff = s.length + 1
-          s.append(dv)
-          var i = s.length - 1
-          while (i > dotOff && s.charAt(i) == '0') i -= 1
-          s.setLength(i + 1)
+          val sdv = stripTrailingZeros(dv)
+          s.append(sdv)
+          if (sdv < 10) s.append('0')
           s.insert(dotOff, '.').append('E').append(exp)
         } else if (exp < 0) {
           s.append('0').append('.')
@@ -161,16 +160,10 @@ object SafeNumbers {
             exp += 1
             exp != 0
           }) s.append('0')
-          s.append(dv)
-          var i = s.length - 1
-          while (s.charAt(i) == '0') i -= 1
-          s.setLength(i + 1)
+          s.append(stripTrailingZeros(dv))
         } else if (exp + 1 < len) {
           val dotOff = s.length + exp + 1
-          s.append(dv)
-          var i = s.length - 1
-          while (s.charAt(i) == '0') i -= 1
-          s.setLength(i + 1)
+          s.append(stripTrailingZeros(dv))
           s.insert(dotOff, '.')
         } else s.append(dv).append('.').append('0')
       }
@@ -244,10 +237,9 @@ object SafeNumbers {
         exp += len - 1
         if (exp < -3 || exp >= 7) {
           val dotOff = s.length + 1
-          s.append(dv)
-          var i = s.length - 1
-          while (i > dotOff && s.charAt(i) == '0') i -= 1
-          s.setLength(i + 1)
+          val sdv = stripTrailingZeros(dv)
+          s.append(sdv)
+          if (sdv < 10) s.append('0')
           s.insert(dotOff, '.').append('E').append(exp)
         } else if (exp < 0) {
           s.append('0').append('.')
@@ -255,16 +247,10 @@ object SafeNumbers {
             exp += 1
             exp != 0
           }) s.append('0')
-          s.append(dv)
-          var i = s.length - 1
-          while (s.charAt(i) == '0') i -= 1
-          s.setLength(i + 1)
+          s.append(stripTrailingZeros(dv))
         } else if (exp + 1 < len) {
           val dotOff = s.length + exp + 1
-          s.append(dv)
-          var i = s.length - 1
-          while (s.charAt(i) == '0') i -= 1
-          s.setLength(i + 1)
+          s.append(stripTrailingZeros(dv))
           s.insert(dotOff, '.')
         } else s.append(dv).append('.').append('0')
       }
@@ -273,15 +259,46 @@ object SafeNumbers {
   }
 
   private[this] def rop(g1: Long, g0: Long, cp: Long): Long = {
-    val x = Math.multiplyHigh(g0, cp)
-    val z = (g1 * cp >>> 1) + x
-    val y = Math.multiplyHigh(g1, cp)
-    (z >>> 63) + y | -(z & 0x7fffffffffffffffL) >>> 63
+    val x = Math.multiplyHigh(g0, cp) + (g1 * cp >>> 1)
+    Math.multiplyHigh(g1, cp) + (x >>> 63) | (-x ^ x) >>> 63
   }
 
   private[this] def rop(g: Long, cp: Int): Int = {
     val x = ((g & 0xffffffffL) * cp >>> 32) + (g >>> 32) * cp
     (x >>> 31).toInt | -x.toInt >>> 31
+  }
+
+  private[this] def stripTrailingZeros(x: Long): Long = {
+    var q0 = x.toInt
+    if (q0 == x || {
+      q0 = (x / 100000000L).toInt
+      (x - q0 * 100000000L).toInt == 0
+    }) return stripTrailingZeros(q0).toLong
+    var y = x
+    var q1, r1 = 0L
+    while ({
+      q1 = y / 100
+      r1 = y - q1 * 100
+      r1 == 0
+    }) y = q1
+    q1 = y / 10
+    r1 = y - q1 * 10
+    if (r1 == 0) return q1
+    y
+  }
+
+  private[this] def stripTrailingZeros(x: Int): Int = {
+    var q0 = x
+    var q1 = 0
+    while ({
+      val qp = q0 * 1374389535L
+      q1 = (qp >> 37).toInt // divide a positive int by 100
+      (qp & 0x1FC0000000L) == 0 // check if q is divisible by 100
+    }) q0 = q1
+    val qp = q0 * 3435973837L
+    q1 = (qp >> 35).toInt // divide a positive int by 10
+    if ((qp & 0x7E0000000L) == 0) return q1 // check if q is divisible by 10
+    q0
   }
 
   // Adoption of a nice trick form Daniel Lemire's blog that works for numbers up to 10^18:
