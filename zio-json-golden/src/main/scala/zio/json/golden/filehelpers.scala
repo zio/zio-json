@@ -13,13 +13,19 @@ object filehelpers {
     if (file.getName == "target") ZIO.succeed(file)
     else ZIO.attempt(file.getParentFile).flatMap(getRootDir)
 
-  def createGoldenDirectory(pathToDir: String)(implicit trace: Trace): Task[Path] =
+  def createGoldenDirectory(pathToDir: String)(implicit trace: Trace): Task[Path] = {
+    val rootFile =
+      try new File(getClass.getResource("/").toURI)
+      catch { // fixes "java.lang.IllegalArgumentException: URI is not hierarchical" in unit tests with Scala 2.12.20
+        case _: IllegalArgumentException => new File(getClass.getResource(".").toURI)
+      }
     for {
-      baseFile <- getRootDir(new File(getClass.getResource(".").toURI))
+      baseFile <- getRootDir(rootFile)
       goldenDir = new File(baseFile.getParentFile, pathToDir)
       path      = goldenDir.toPath
       _        <- ZIO.attemptBlocking(goldenDir.mkdirs)
     } yield path
+  }
 
   def writeSampleToFile(path: Path, sample: GoldenSample)(implicit trace: Trace): IO[IOException, Unit] = {
     val jsonString = sample.toJsonPretty
