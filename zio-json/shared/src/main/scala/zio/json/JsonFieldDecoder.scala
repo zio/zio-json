@@ -93,6 +93,6 @@ private[json] trait LowPriorityJsonFieldDecoder {
   implicit def stringLike[T <: String](implicit decoder: JsonDecoder[T]): JsonFieldDecoder[T] =
     new JsonFieldDecoder[T] {
       def unsafeDecodeField(trace: List[JsonError], in: String): T =
-        decoder.unsafeDecode(trace, new FastStringReader('"' + in + '"'))
+        decoder.unsafeDecode(trace, new FastStringReader(s""""$in""""))
     }
 }

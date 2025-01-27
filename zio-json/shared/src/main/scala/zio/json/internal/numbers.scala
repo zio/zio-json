@@ -306,7 +306,7 @@ object SafeNumbers {
   // https://lemire.me/blog/2021/06/03/computing-the-number-of-digits-of-an-integer-even-faster/
   private[this] def digitCount(x: Long): Int = (offsets(java.lang.Long.numberOfLeadingZeros(x)) + x >> 58).toInt
 
-  private final val offsets = Array(
+  private[this] val offsets = Array(
     5088146770730811392L, 5088146770730811392L, 5088146770730811392L, 5088146770730811392L, 5088146770730811392L,
     5088146770730811392L, 5088146770730811392L, 5088146770730811392L, 4889916394579099648L, 4889916394579099648L,
     4889916394579099648L, 4610686018427387904L, 4610686018427387904L, 4610686018427387904L, 4610686018427387904L,
@@ -665,17 +665,17 @@ object UnsafeNumbers {
   def byte(num: String): Byte =
     byte_(new FastStringReader(num), true)
   def byte_(in: Reader, consume: Boolean): Byte =
-    long__(in, Byte.MinValue, Byte.MaxValue, consume).toByte
+    int__(in, -128, 127, consume).toByte
 
   def short(num: String): Short =
     short_(new FastStringReader(num), true)
   def short_(in: Reader, consume: Boolean): Short =
-    long__(in, Short.MinValue, Short.MaxValue, consume).toShort
+    int__(in, -32768, 32767, consume).toShort
 
   def int(num: String): Int =
     int_(new FastStringReader(num), true)
   def int_(in: Reader, consume: Boolean): Int =
-    long__(in, Int.MinValue, Int.MaxValue, consume).toInt
+    int__(in, -2147483648, 2147483647, consume).toInt
 
   def long(num: String): Long =
     long_(new FastStringReader(num), true)
@@ -690,115 +690,88 @@ object UnsafeNumbers {
     max_bits: Int
   ): java.math.BigInteger = {
     var current: Int = in.read()
-    var negative     = false
-
-    if (current == '-') {
-      negative = true
-      current = in.read()
-    } else if (current == '+')
-      current = in.read()
+    val negative     = current == '-'
+    if (negative || current == '+') current = in.read()
     if (current == -1) throw UnsafeNumber
-
     bigDecimal__(in, consume, negative, current, true, max_bits).unscaledValue
   }
 
-  // measured faster than Character.isDigit
-  @inline private[this] def isDigit(i: Int): Boolean =
-    '0' <= i && i <= '9'
-
-  // is it worth keeping this custom long__ instead of using bigInteger since it
-  // is approximately double the performance.
-  def long__(in: Reader, lower: Long, upper: Long, consume: Boolean): Long = {
-    var current: Int = 0
-
-    current = in.read()
-    if (current == -1) throw UnsafeNumber
-    var negative = false
-    if (current == '-') {
-      negative = true
-      current = in.read()
-      if (current == -1) throw UnsafeNumber
-    } else if (current == '+') {
-      current = in.read()
-      if (current == -1) throw UnsafeNumber
-    }
-
-    if (!isDigit(current))
-      throw UnsafeNumber
-
-    var accum: Long = 0L
+  def int__(in: Reader, lower: Int, upper: Int, consume: Boolean): Int = {
+    var current  = in.read()
+    val negative = current == '-'
+    if (negative || current == '+') current = in.read()
+    if (current < '0' || current > '9') throw UnsafeNumber
+    var accum = '0' - current
     while ({
-      {
-        val c = current - '0'
-        if (accum <= longunderflow)
-          if (accum < longunderflow)
-            throw UnsafeNumber
-          else if (accum == longunderflow && c == 9)
-            throw UnsafeNumber
-        // count down, not up, because it is larger
-        accum = accum * 10 - c // should never underflow
-        current = in.read()
-      }; current != -1 && isDigit(current)
-    }) ()
-
-    if (consume && current != -1) throw UnsafeNumber
-
-    if (negative)
-      if (accum < lower || upper < accum) throw UnsafeNumber
-      else accum
-    else if (accum == Long.MinValue)
-      throw UnsafeNumber
-    else {
-      accum = -accum
-      if (accum < lower || upper < accum) throw UnsafeNumber
-      else accum
+      current = in.read()
+      '0' <= current && current <= '9'
+    }) {
+      if (
+        accum < -214748364 || {
+          accum = accum * 10 + ('0' - current)
+          accum > 0
+        }
+      ) throw UnsafeNumber
     }
+    if (consume && current != -1) throw UnsafeNumber
+    if (negative) {
+      if (accum < lower) throw UnsafeNumber
+    } else if (accum != -2147483648) {
+      accum = -accum
+      if (upper < accum) throw UnsafeNumber
+    } else throw UnsafeNumber
+    accum
+  }
+
+  def long__(in: Reader, lower: Long, upper: Long, consume: Boolean): Long = {
+    var current  = in.read()
+    val negative = current == '-'
+    if (negative || current == '+') current = in.read()
+    if (current < '0' || current > '9') throw UnsafeNumber
+    var accum = ('0' - current).toLong
+    while ({
+      current = in.read()
+      '0' <= current && current <= '9'
+    }) {
+      if (
+        accum < -922337203685477580L || {
+          accum = (accum << 3) + (accum << 1) + ('0' - current)
+          accum > 0
+        }
+      ) throw UnsafeNumber
+    }
+    if (consume && current != -1) throw UnsafeNumber
+    if (negative) {
+      if (accum < lower) throw UnsafeNumber
+    } else if (accum != -9223372036854775808L) {
+      accum = -accum
+      if (upper < accum) throw UnsafeNumber
+    } else throw UnsafeNumber
+    accum
   }
 
   def float(num: String, max_bits: Int): Float =
     float_(new FastStringReader(num), true, max_bits)
 
   def float_(in: Reader, consume: Boolean, max_bits: Int): Float = {
-    var current: Int = in.read()
-    var negative     = false
-
-    def readAll(s: String): Unit = {
-      var i   = 0
-      val len = s.length
-
-      while (i < len) {
-        current = in.read()
-        if (current != s(i)) throw UnsafeNumber
-        i += 1
-      }
-
-      current = in.read() // to be consistent read the terminator
-
-      if (consume && current != -1)
-        throw UnsafeNumber
-    }
+    var current  = in.read()
+    var negative = false
 
     if (current == 'N') {
-      readAll("aN")
+      readAll(in, "aN", consume)
       return Float.NaN
     }
 
-    if (current == '-') {
-      negative = true
-      current = in.read()
-    } else if (current == '+') {
-      current = in.read()
-    }
+    negative = current == '-'
+    if (negative || current == '+') current = in.read()
 
     if (current == 'I') {
-      readAll("nfinity")
-
+      readAll(in, "nfinity", consume)
       if (negative) return Float.NegativeInfinity
       else return Float.PositiveInfinity
     }
 
-    if (current == -1)
-      throw UnsafeNumber
+    if (current == -1) throw UnsafeNumber
 
     val res = bigDecimal__(in, consume, negative = negative, initial = current, int_only = false, max_bits = max_bits)
 
@@ -810,34 +783,19 @@ object UnsafeNumbers {
     double_(new FastStringReader(num), true, max_bits)
 
   def double_(in: Reader, consume: Boolean, max_bits: Int): Double = {
-    var current: Int = in.read()
-    var negative     = false
-
-    def readall(s: String): Unit = {
-      var i   = 0
-      val len = s.length
-      while (i < len) {
-        current = in.read()
-        if (current != s(i)) throw UnsafeNumber
-        i += 1
-      }
-      current = in.read() // to be consistent read the terminator
-      if (consume && current != -1) throw UnsafeNumber
-    }
+    var current  = in.read()
+    var negative = false
 
     if (current == 'N') {
-      readall("aN")
+      readAll(in, "aN", consume)
       return Double.NaN
     }
 
-    if (current == '-') {
-      negative = true
-      current = in.read()
-    } else if (current == '+')
-      current = in.read()
+    negative = current == '-'
+    if (negative || current == '+') current = in.read()
 
     if (current == 'I') {
-      readall("nfinity")
+      readAll(in, "nfinity", consume)
       if (negative) return Double.NegativeInfinity
       else return Double.PositiveInfinity
     }
@@ -860,6 +818,18 @@ object UnsafeNumbers {
     else res.doubleValue
   }
 
+  private[this] def readAll(in: Reader, s: String, consume: Boolean): Unit = {
+    val len        = s.length
+    var i, current = 0
+    while (i < len) {
+      current = in.read()
+      if (current != s(i)) throw UnsafeNumber
+      i += 1
+    }
+    current = in.read() // to be consistent read the terminator
+    if (consume && current != -1) throw UnsafeNumber
+  }
+
   def bigDecimal(num: String, max_bits: Int): java.math.BigDecimal =
     bigDecimal_(new FastStringReader(num), true, max_bits)
   def bigDecimal_(
@@ -868,15 +838,9 @@ object UnsafeNumbers {
     max_bits: Int
   ): java.math.BigDecimal = {
     var current: Int = in.read()
-    var negative     = false
-
-    if (current == '-') {
-      negative = true
-      current = in.read()
-    } else if (current == '+')
-      current = in.read()
+    val negative     = current == '-'
+    if (negative || current == '+') current = in.read()
     if (current == -1) throw UnsafeNumber
-
     bigDecimal__(in, consume, negative, current, false, max_bits)
   }
 
@@ -917,7 +881,7 @@ object UnsafeNumbers {
         // arbitrary limit on BigInteger size to avoid OOM attacks
         if (sig_.bitLength >= max_bits)
           throw UnsafeNumber
-      } else if (sig >= longoverflow)
+      } else if (sig >= 922337203685477580L)
         sig_ = java.math.BigInteger
           .valueOf(sig)
           .multiply(java.math.BigInteger.TEN)
@@ -937,7 +901,7 @@ object UnsafeNumbers {
         if (negative) res.negate else res
       }
 
-    while (isDigit(current)) {
+    while ('0' <= current && current <= '9') {
       push_sig()
       if (!advance())
         return significand()
@@ -953,7 +917,7 @@ object UnsafeNumbers {
       if (sig < 0) sig = 0 // e.g. ".1" is shorthand for "0.1"
       if (!advance())
         return significand()
-      while (isDigit(current)) {
+      while ('0' <= current && current <= '9') {
         dot += 1
         if (sig > 0 || current != '0')
           push_sig()
@@ -980,6 +944,4 @@ object UnsafeNumbers {
   // note that bigDecimal does not have a negative zero
   private[this] val bigIntegers: Array[java.math.BigInteger] =
     (0L to 9L).map(java.math.BigInteger.valueOf).toArray
-  private[this] val longunderflow: Long = Long.MinValue / 10L
-  private[this] val longoverflow: Long  = Long.MaxValue / 10L
 }
