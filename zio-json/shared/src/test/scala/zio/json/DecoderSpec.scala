@@ -282,6 +282,20 @@ object DecoderSpec extends ZIOSpecDefault {
           assert("""{"hint":"Child2"}""".fromJson[Parent])(isLeft(equalTo("(invalid disambiguator)"))) &&
           assert("""{"child1":{}}""".fromJson[Parent])(isLeft(equalTo("(missing hint 'hint')")))
         },
+        test("sum with duplicated case names") {
+          for {
+            error <- ZIO.attempt {
+                       sealed trait Fruit
+                       case class Banana(curvature: Double)                extends Fruit
+                       @jsonHint("Banana") case class Apple(color: String) extends Fruit
+                       DeriveJsonDecoder.gen[Fruit]
+                     }.flip
+          } yield assertTrue(
+            error.getMessage.matches(
+              """Case names in ADT zio.json.DecoderSpec.spec(.\$anonfun)?.Fruit must be distinct, name\(s\) Banana are duplicated"""
+            )
+          )
+        },
         test("unicode") {
           assert(""""€🐵🥰"""".fromJson[String])(isRight(equalTo("€🐵🥰")))
         },

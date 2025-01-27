@@ -398,6 +398,13 @@ object DeriveJsonDecoder {
     val names = ctx.subtypes.map { p =>
       p.annotations.collectFirst { case jsonHint(name) => name }.getOrElse(jsonHintFormat(p.typeName.short))
     }.toArray
+    if (names.distinct.length != names.length) {
+      val collisions = names.groupBy(identity).collect { case (n, ns) if ns.lengthCompare(1) > 0 => n }
+      throw new AssertionError(
+        s"Case names in ADT ${ctx.typeName.full} must be distinct, " +
+          s"name(s) ${collisions.mkString(",")} are duplicated"
+      )
+    }
     val matrix        = new StringMatrix(names)
     lazy val tcs      = ctx.subtypes.map(_.typeclass).toArray.asInstanceOf[Array[JsonDecoder[Any]]]
     lazy val namesMap = names.zipWithIndex.toMap
