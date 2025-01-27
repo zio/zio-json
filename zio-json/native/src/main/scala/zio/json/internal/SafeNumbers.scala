@@ -150,7 +150,7 @@ object SafeNumbers {
         exp += len - 1
         if (exp < -3 || exp >= 7) {
           val dotOff = s.length + 1
-          val sdv = stripTrailingZeros(dv)
+          val sdv    = stripTrailingZeros(dv)
           s.append(sdv)
           if (sdv < 10) s.append('0')
           s.insert(dotOff, '.').append('E').append(exp)
@@ -237,7 +237,7 @@ object SafeNumbers {
         exp += len - 1
         if (exp < -3 || exp >= 7) {
           val dotOff = s.length + 1
-          val sdv = stripTrailingZeros(dv)
+          val sdv    = stripTrailingZeros(dv)
           s.append(sdv)
           if (sdv < 10) s.append('0')
           s.insert(dotOff, '.').append('E').append(exp)
@@ -270,11 +270,13 @@ object SafeNumbers {
 
   private[this] def stripTrailingZeros(x: Long): Long = {
     var q0 = x.toInt
-    if (q0 == x || {
-      q0 = (x / 100000000L).toInt
-      (x - q0 * 100000000L).toInt == 0
-    }) return stripTrailingZeros(q0).toLong
-    var y = x
+    if (
+      q0 == x || {
+        q0 = (x / 100000000L).toInt
+        (x - q0 * 100000000L).toInt == 0
+      }
+    ) return stripTrailingZeros(q0).toLong
+    var y      = x
     var q1, r1 = 0L
     while ({
       q1 = y / 100
@@ -292,12 +294,12 @@ object SafeNumbers {
     var q1 = 0
     while ({
       val qp = q0 * 1374389535L
-      q1 = (qp >> 37).toInt // divide a positive int by 100
-      (qp & 0x1FC0000000L) == 0 // check if q is divisible by 100
+      q1 = (qp >> 37).toInt     // divide a positive int by 100
+      (qp & 0x1fc0000000L) == 0 // check if q is divisible by 100
     }) q0 = q1
     val qp = q0 * 3435973837L
-    q1 = (qp >> 35).toInt // divide a positive int by 10
-    if ((qp & 0x7E0000000L) == 0) return q1 // check if q is divisible by 10
+    q1 = (qp >> 35).toInt                   // divide a positive int by 10
+    if ((qp & 0x7e0000000L) == 0) return q1 // check if q is divisible by 10
     q0
   }
 

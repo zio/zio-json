@@ -150,7 +150,7 @@ object SafeNumbers {
         exp += len - 1
         if (exp < -3 || exp >= 7) {
           val dotOff = s.length + 1
-          val sdv = stripTrailingZeros(dv)
+          val sdv    = stripTrailingZeros(dv)
           s.append(sdv)
           if (sdv < 10) s.append('0')
           s.insert(dotOff, '.').append('E').append(exp)
@@ -237,7 +237,7 @@ object SafeNumbers {
         exp += len - 1
         if (exp < -3 || exp >= 7) {
           val dotOff = s.length + 1
-          val sdv = stripTrailingZeros(dv)
+          val sdv    = stripTrailingZeros(dv)
           s.append(sdv)
           if (sdv < 10) s.append('0')
           s.insert(dotOff, '.').append('E').append(exp)
@@ -287,11 +287,13 @@ object SafeNumbers {
   @inline
   private[this] def stripTrailingZeros(x: Long): Long = {
     var q0 = x.toInt
-    if (q0 == x || {
-      q0 = ((x >>> 8) * 2.56e-6).toInt  // divide a medium positive long by 100000000
-      q0 * 100000000L == x
-    }) return stripTrailingZeros(q0).toLong
-    var y = x
+    if (
+      q0 == x || {
+        q0 = ((x >>> 8) * 2.56e-6).toInt // divide a medium positive long by 100000000
+        q0 * 100000000L == x
+      }
+    ) return stripTrailingZeros(q0).toLong
+    var y      = x
     var q1, r1 = 0L
     while ({
       q1 = y / 100
