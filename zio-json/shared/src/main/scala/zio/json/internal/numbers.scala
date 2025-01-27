@@ -665,17 +665,17 @@ object UnsafeNumbers {
   def byte(num: String): Byte =
     byte_(new FastStringReader(num), true)
   def byte_(in: Reader, consume: Boolean): Byte =
-    long__(in, Byte.MinValue, Byte.MaxValue, consume).toByte
+    int__(in, -128, 127, consume).toByte
 
   def short(num: String): Short =
     short_(new FastStringReader(num), true)
   def short_(in: Reader, consume: Boolean): Short =
-    long__(in, Short.MinValue, Short.MaxValue, consume).toShort
+    int__(in, -32768, 32767, consume).toShort
 
   def int(num: String): Int =
     int_(new FastStringReader(num), true)
   def int_(in: Reader, consume: Boolean): Int =
-    long__(in, Int.MinValue, Int.MaxValue, consume).toInt
+    int__(in, -2147483648, 2147483647, consume).toInt
 
   def long(num: String): Long =
     long_(new FastStringReader(num), true)
@@ -690,50 +690,57 @@ object UnsafeNumbers {
     max_bits: Int
   ): java.math.BigInteger = {
     var current: Int = in.read()
-    var negative     = false
-
-    if (current == '-') {
-      negative = true
-      current = in.read()
-    } else if (current == '+')
-      current = in.read()
+    val negative = current == '-'
+    if (negative || current == '+') current = in.read()
     if (current == -1) throw UnsafeNumber
-
     bigDecimal__(in, consume, negative, current, true, max_bits).unscaledValue
   }
 
-  // measured faster than Character.isDigit
-  @inline private[this] def isDigit(i: Int): Boolean =
-    '0' <= i && i <= '9'
+  def int__(in: Reader, lower: Int, upper: Int, consume: Boolean): Int = {
+    var current  = in.read()
+    val negative = current == '-'
+    if (negative || current == '+') current = in.read()
+    if (current < '0' || current > '9') throw UnsafeNumber
+    var accum = '0' - current
+    while ({
+      current = in.read()
+      '0' <= current && current <= '9'
+    }) {
+      if (
+        accum < -214748364 || {
+          accum = accum * 10 + ('0' - current)
+          accum > 0
+        }
+      ) throw UnsafeNumber
+    }
+    if (consume && current != -1) throw UnsafeNumber
+    if (negative) {
+      if (accum < lower) throw UnsafeNumber
+    } else if (accum != -2147483648) {
+      accum = -accum
+      if (upper < accum) throw UnsafeNumber
+    } else throw UnsafeNumber
+    accum
+  }
 
-  // is it worth keeping this custom long__ instead of using bigInteger since it
-  // is approximately double the performance.
   def long__(in: Reader, lower: Long, upper: Long, consume: Boolean): Long = {
     var current  = in.read()
-    var negative = false
-    if (current == '-') {
-      negative = true
-      current = in.read()
-    } else if (current == '+')
-      current = in.read()
-    if (current == -1) throw UnsafeNumber
-
-    if (!isDigit(current)) throw UnsafeNumber
-
-    var accum = 0L
+    val negative = current == '-'
+    if (negative || current == '+') current = in.read()
+    if (current < '0' || current > '9') throw UnsafeNumber
+    var accum = ('0' - current).toLong
     while ({
+      current = in.read()
+      '0' <= current && current <= '9'
+    }) {
       if (
         accum < -922337203685477580L || {
           accum = accum * 10 + ('0' - current)
           accum > 0
         }
       ) throw UnsafeNumber
-      current = in.read()
-      isDigit(current)
-    }) ()
-
+    }
     if (consume && current != -1) throw UnsafeNumber
-
     if (negative) {
       if (accum < lower) throw UnsafeNumber
     } else if (accum != -9223372036854775808L) {
@@ -755,12 +762,8 @@ object UnsafeNumbers {
       return Float.NaN
     }
 
-    if (current == '-') {
-      negative = true
-      current = in.read()
-    } else if (current == '+') {
-      current = in.read()
-    }
+    negative = current == '-'
+    if (negative || current == '+') current = in.read()
 
     if (current == 'I') {
       readAll(in, "nfinity", consume)
@@ -788,11 +791,8 @@ object UnsafeNumbers {
       return Double.NaN
     }
 
-    if (current == '-') {
-      negative = true
-      current = in.read()
-    } else if (current == '+')
-      current = in.read()
+    negative = current == '-'
+    if (negative || current == '+') current = in.read()
 
     if (current == 'I') {
       readAll(in, "nfinity", consume)
@@ -838,15 +838,9 @@ object UnsafeNumbers {
     max_bits: Int
   ): java.math.BigDecimal = {
     var current: Int = in.read()
-    var negative     = false
-
-    if (current == '-') {
-      negative = true
-      current = in.read()
-    } else if (current == '+')
-      current = in.read()
+    val negative = current == '-'
+    if (negative || current == '+') current = in.read()
     if (current == -1) throw UnsafeNumber
-
     bigDecimal__(in, consume, negative, current, false, max_bits)
   }
 
@@ -907,7 +901,7 @@ object UnsafeNumbers {
         if (negative) res.negate else res
       }
 
-    while (isDigit(current)) {
+    while ('0' <= current && current <= '9') {
       push_sig()
       if (!advance())
         return significand()
@@ -923,7 +917,7 @@ object UnsafeNumbers {
       if (sig < 0) sig = 0 // e.g. ".1" is shorthand for "0.1"
       if (!advance())
         return significand()
-      while (isDigit(current)) {
+      while ('0' <= current && current <= '9') {
         dot += 1
         if (sig > 0 || current != '0')
           push_sig()
