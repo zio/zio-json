@@ -404,6 +404,11 @@ sealed class JsonDecoderDerivation(config: JsonCodecConfiguration) extends Deriv
     val names: Array[String] = IArray.genericWrapArray(ctx.subtypes.map { p =>
       p.annotations.collectFirst { case jsonHint(name) => name }.getOrElse(jsonHintFormat(p.typeInfo.short))
     }).toArray
+    if (names.distinct.length != names.length) {
+      val collisions = names.groupBy(identity).collect { case (n, ns) if ns.lengthCompare(1) > 0 => n }
+      throw new AssertionError(s"Case names in ADT ${ctx.typeInfo.full} must be distinct, " +
+        s"name(s) ${collisions.mkString(",")} are duplicated")
+    }
     val matrix: StringMatrix = new StringMatrix(names)
     lazy val tcs: Array[JsonDecoder[Any]] =
       IArray.genericWrapArray(ctx.subtypes.map(_.typeclass)).toArray.asInstanceOf[Array[JsonDecoder[Any]]]
