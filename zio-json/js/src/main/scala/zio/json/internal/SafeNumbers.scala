@@ -107,7 +107,7 @@ object SafeNumbers {
             e = -1074
             m = ieeeMantissa
             if (ieeeMantissa < 3) {
-              m *= 10
+              m = (m << 3) + (m << 1)
               expShift = 1
             }
           } else if (ieeeMantissa == 0 && ieeeExponent > 1) {
@@ -128,7 +128,7 @@ object SafeNumbers {
           if (
             s < 100 || {
               dv = s / 10
-              val sp40 = dv * 40
+              val sp40 = (dv << 5) + (dv << 3)
               val upin = (vbls - sp40).toInt
               (((sp40 + vbrd).toInt + 40) ^ upin) >= 0 || {
                 dv += ~upin >>> 31
@@ -214,7 +214,7 @@ object SafeNumbers {
           val s     = vb >> 2
           if (
             s < 100 || {
-              dv = (s * 3435973837L >>> 35).toInt // divide a positive int by 10
+              dv = s / 10
               val sp40 = dv * 40
               val upin = vbls - sp40
               ((sp40 + vbrd + 40) ^ upin) >= 0 || {
@@ -233,7 +233,7 @@ object SafeNumbers {
             exp -= expShift
           }
         }
-        val len = digitCount(dv.toLong)
+        val len = digitCount(dv)
         exp += len - 1
         if (exp < -3 || exp >= 7) {
           val dotOff = s.length + 1
@@ -297,11 +297,11 @@ object SafeNumbers {
     var q1, r1 = 0L
     while ({
       q1 = y / 100
-      r1 = y - q1 * 100
+      r1 = y - ((q1 << 6) + (q1 << 5) + (q1 << 2))
       r1 == 0
     }) y = q1
     q1 = y / 10
-    r1 = y - q1 * 10
+    r1 = y - ((q1 << 3) + (q1 << 1))
     if (r1 == 0) return q1
     y
   }
@@ -318,26 +318,39 @@ object SafeNumbers {
     q0
   }
 
-  // Adoption of a nice trick form Daniel Lemire's blog that works for numbers up to 10^18:
-  // https://lemire.me/blog/2021/06/03/computing-the-number-of-digits-of-an-integer-even-faster/
   @inline
-  private[this] def digitCount(x: Long): Int = (offsets(java.lang.Long.numberOfLeadingZeros(x)) + x >> 58).toInt
+  private[this] def digitCount(x: Long): Int =
+    if (x >= 1000000000000000L) {
+      if (x >= 10000000000000000L) 17
+      else 16
+    } else if (x >= 10000000000000L) {
+      if (x >= 100000000000000L) 15
+      else 14
+    } else if (x >= 100000000000L) {
+      if (x >= 1000000000000L) 13
+      else 12
+    } else if (x >= 1000000000L) {
+      if (x >= 10000000000L) 11
+      else 10
+    } else digitCount(x.toInt)
 
-  private[this] val offsets = Array(
-    5088146770730811392L, 5088146770730811392L, 5088146770730811392L, 5088146770730811392L, 5088146770730811392L,
-    5088146770730811392L, 5088146770730811392L, 5088146770730811392L, 4889916394579099648L, 4889916394579099648L,
-    4889916394579099648L, 4610686018427387904L, 4610686018427387904L, 4610686018427387904L, 4610686018427387904L,
-    4323355642275676160L, 4323355642275676160L, 4323355642275676160L, 4035215266123964416L, 4035215266123964416L,
-    4035215266123964416L, 3746993889972252672L, 3746993889972252672L, 3746993889972252672L, 3746993889972252672L,
-    3458764413820540928L, 3458764413820540928L, 3458764413820540928L, 3170534127668829184L, 3170534127668829184L,
-    3170534127668829184L, 2882303760517117440L, 2882303760517117440L, 2882303760517117440L, 2882303760517117440L,
-    2594073385265405696L, 2594073385265405696L, 2594073385265405696L, 2305843009203693952L, 2305843009203693952L,
-    2305843009203693952L, 2017612633060982208L, 2017612633060982208L, 2017612633060982208L, 2017612633060982208L,
-    1729382256910170464L, 1729382256910170464L, 1729382256910170464L, 1441151880758548720L, 1441151880758548720L,
-    1441151880758548720L, 1152921504606845976L, 1152921504606845976L, 1152921504606845976L, 1152921504606845976L,
-    864691128455135132L, 864691128455135132L, 864691128455135132L, 576460752303423478L, 576460752303423478L,
-    576460752303423478L, 576460752303423478L, 576460752303423478L, 576460752303423478L, 576460752303423478L
-  )
+  private[this] def digitCount(x: Int): Int =
+    if (x < 100) {
+      if (x < 10) 1
+      else 2
+    } else if (x < 10000) {
+      if (x < 1000) 3
+      else 4
+    } else if (x < 1000000) {
+      if (x < 100000) 5
+      else 6
+    } else if (x < 100000000) {
+      if (x < 10000000) 7
+      else 8
+    } else {
+      if (x < 1000000000) 9
+      else 10
+    }
 
   private[this] val gs: Array[Long] = Array(
     5696189077778435540L, 6557778377634271669L, 9113902524445496865L, 1269073367360058862L, 7291122019556397492L,
