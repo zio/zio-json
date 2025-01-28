@@ -491,6 +491,19 @@ object DecoderSpec extends ZIOSpecDefault {
               )
             )
           )
+        },
+        test("bothWith") {
+          final case class Foo(a: Int)
+          final case class Bar(b: String)
+
+          val fooDecoder: JsonDecoder[Foo]                       = DeriveJsonDecoder.gen
+          val barDecoder: JsonDecoder[Bar]                       = DeriveJsonDecoder.gen
+          implicit val fooAndBarDecoder: JsonDecoder[(Foo, Bar)] = fooDecoder.both(barDecoder)
+
+          val json = """{"a": 1, "b": "foo"}"""
+          assertTrue(
+            json.fromJson[(Foo, Bar)] == Right((Foo(1), Bar("foo")))
+          )
         }
       ),
       suite("fromJsonAST")(
