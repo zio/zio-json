@@ -28,6 +28,14 @@ In order to use this library, we need to add the following line in our `build.sb
 libraryDependencies += "dev.zio" %% "zio-json" % "@VERSION@"
 ```
 
+For cross-platform projects with Scala.js and Scala Native need to replace `%%` operator by `%%%`, 
+and optionally when using `java.time.ZoneId` and `java.time.ZonedDateTime` types need to add 
+the dependency on the latest version of Timezone DB:
+
+```scala
+libraryDependencies += "io.github.cquiroz" %%% "scala-java-time-tzdb" % "2.6.0"
+```
+
 ## Example
 
 Let's try a simple example of encoding and decoding JSON using ZIO JSON.
