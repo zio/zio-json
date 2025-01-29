@@ -59,6 +59,26 @@ trait JsonDecoder[A] extends JsonDecoderPlatformSpecific[A] {
    */
   final def <*[B](that: => JsonDecoder[B]): JsonDecoder[A] = self.zipLeft(that)
 
+  final def both[B](that: => JsonDecoder[B]): JsonDecoder[(A, B)] =
+    bothWith(that)((a, b) => (a, b))
+
+  final def bothRight[B](that: => JsonDecoder[B]): JsonDecoder[B] =
+    bothWith(that)((_, b) => b)
+
+  final def bothLeft[B](that: => JsonDecoder[B]): JsonDecoder[A] =
+    bothWith(that)((a, _) => a)
+
+  final def bothWith[B, C](that: => JsonDecoder[B])(f: (A, B) => C): JsonDecoder[C] =
+    new JsonDecoder[C] {
+      override def unsafeDecode(trace: List[JsonError], in: RetractReader): C = {
+        val in2 = new WithRecordingReader(in, 64)
+        val a   = self.unsafeDecode(trace, in2)
+        in2.rewind()
+        val b = that.unsafeDecode(trace, in2)
+        f(a, b)
+      }
+    }
+
   /**
    * Attempts to decode a value of type `A` from the specified `CharSequence`, but may fail with a human-readable error
    * message if the provided text does not encode a value of this type.
