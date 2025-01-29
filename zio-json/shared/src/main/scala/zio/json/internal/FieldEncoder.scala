@@ -8,9 +8,13 @@ private[json] class FieldEncoder[T, P](
   val p: P,
   val name: String,
   val encoder: JsonEncoder[T],
-  val withExplicitNulls: Boolean,
-  val withExplicitEmptyCollections: Boolean
+  withExplicitNulls: Boolean,
+  withExplicitEmptyCollections: Boolean
 ) {
+  val flags: Int =
+    if (withExplicitNulls) {
+      if (withExplicitEmptyCollections) 3 else 2
+    } else if (withExplicitEmptyCollections) 1 else 0
   private[this] val _encodeOrDefault: T => (
     Either[String, Chunk[(String, Json)]],
     () => Either[String, Chunk[(String, Json)]]

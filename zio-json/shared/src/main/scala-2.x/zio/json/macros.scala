@@ -549,12 +549,14 @@ object DeriveJsonEncoder {
             val field   = fields(idx)
             val p       = field.p.dereference(a)
             val encoder = field.encoder
-            if (
-              (field.withExplicitNulls && field.withExplicitEmptyCollections) ||
-              (field.withExplicitNulls && !encoder.isEmpty(p)) ||
-              (field.withExplicitEmptyCollections && !encoder.isNothing(p)) ||
-              (!encoder.isEmpty(p) && !encoder.isNothing(p))
-            ) {
+            if ({
+              (field.flags: @switch) match {
+                case 0 => !encoder.isEmpty(p) && !encoder.isNothing(p)
+                case 1 => !encoder.isNothing(p)
+                case 2 => !encoder.isEmpty(p)
+                case _ => true
+              }
+            }) {
               // if we have at least one field already, we need a comma
               if (prevFields) {
                 out.write(',')
