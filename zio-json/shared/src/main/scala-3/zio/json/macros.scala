@@ -577,7 +577,7 @@ sealed class JsonEncoderDerivation(config: JsonCodecConfiguration) extends Deriv
           val withExplicitEmptyCollections = p.annotations.collectFirst { case a: jsonExplicitEmptyCollections =>
             a.encoding
           }.getOrElse(explicitEmptyCollections)
-          new FieldEncoder(
+          FieldEncoder(
             p,
             name,
             p.typeclass.asInstanceOf[JsonEncoder[Any]],
@@ -601,7 +601,15 @@ sealed class JsonEncoderDerivation(config: JsonCodecConfiguration) extends Deriv
           while (idx < fields.length) {
             val field = fields(idx)
             val p     = field.p.deref(a)
-            field.encodeOrSkip(p) { () =>
+            val encoder = field.encoder
+            if ({
+              (field.flags: @switch) match {
+                case 0 => !encoder.isEmpty(p) && !encoder.isNothing(p)
+                case 1 => !encoder.isNothing(p)
+                case 2 => !encoder.isEmpty(p)
+                case _ => true
+              }
+            }) {
               // if we have at least one field already, we need a comma
               if (prevFields) {
                 out.write(',')
@@ -610,7 +618,7 @@ sealed class JsonEncoderDerivation(config: JsonCodecConfiguration) extends Deriv
               JsonEncoder.string.unsafeEncode(field.name, indent_, out)
               if (indent.isEmpty) out.write(':')
               else out.write(" : ")
-              field.encoder.unsafeEncode(p, indent_, out)
+              encoder.unsafeEncode(p, indent_, out)
               prevFields = true // at least one field so far
             }
             idx += 1
