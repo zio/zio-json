@@ -107,7 +107,7 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform, NativePlatform)
     libraryDependencies ++= Seq(
       "dev.zio"                               %%% "zio"                     % zioVersion,
       "dev.zio"                               %%% "zio-streams"             % zioVersion,
-      "org.scala-lang.modules"                %%% "scala-collection-compat" % "2.12.0",
+      "org.scala-lang.modules"                %%% "scala-collection-compat" % "2.13.0"     % "test",
       "dev.zio"                               %%% "zio-test"                % zioVersion   % "test",
       "dev.zio"                               %%% "zio-test-sbt"            % zioVersion   % "test",
       "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-core"     % "2.33.0"     % "test",
@@ -220,13 +220,14 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform, NativePlatform)
   .jsSettings(
     libraryDependencies ++= Seq(
       "io.github.cquiroz" %%% "scala-java-time"      % scalaJavaTimeVersion,
-      "io.github.cquiroz" %%% "scala-java-time-tzdb" % scalaJavaTimeVersion
+      "io.github.cquiroz" %%% "scala-java-time-tzdb" % scalaJavaTimeVersion % "test"
     )
   )
   .nativeSettings(nativeSettings)
   .nativeSettings(
     libraryDependencies ++= Seq(
-      "io.github.cquiroz" %%% "scala-java-time" % scalaJavaTimeVersion
+      "io.github.cquiroz" %%% "scala-java-time"      % scalaJavaTimeVersion,
+      "io.github.cquiroz" %%% "scala-java-time-tzdb" % scalaJavaTimeVersion % "test"
     )
   )
   .enablePlugins(BuildInfoPlugin)
@@ -262,10 +263,11 @@ lazy val zioJsonYaml = project
   .settings(buildInfoSettings("zio.json.yaml"))
   .settings(
     libraryDependencies ++= Seq(
-      "org.yaml" % "snakeyaml"    % "2.3",
-      "dev.zio" %% "zio"          % zioVersion,
-      "dev.zio" %% "zio-test"     % zioVersion % "test",
-      "dev.zio" %% "zio-test-sbt" % zioVersion % "test"
+      "org.yaml"                % "snakeyaml"               % "2.3",
+      "org.scala-lang.modules" %% "scala-collection-compat" % "2.13.0",
+      "dev.zio"                %% "zio"                     % zioVersion,
+      "dev.zio"                %% "zio-test"                % zioVersion % "test",
+      "dev.zio"                %% "zio-test-sbt"            % zioVersion % "test"
     ),
     testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework")
   )
