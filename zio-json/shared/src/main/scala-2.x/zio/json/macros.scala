@@ -524,7 +524,7 @@ object DeriveJsonEncoder {
           val withExplicitEmptyCollections = p.annotations.collectFirst { case a: jsonExplicitEmptyCollections =>
             a.encoding
           }.getOrElse(explicitEmptyCollections)
-          new FieldEncoder(
+          FieldEncoder(
             p,
             name,
             p.typeclass.asInstanceOf[JsonEncoder[Any]],

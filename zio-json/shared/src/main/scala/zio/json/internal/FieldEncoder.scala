@@ -1,37 +1,48 @@
-package zio.json
-package internal
+package zio.json.internal
 
 import zio.Chunk
+import zio.json._
 import zio.json.ast.Json
+import scala.annotation.switch
 
 private[json] class FieldEncoder[T, P](
   val p: P,
   val name: String,
   val encoder: JsonEncoder[T],
-  withExplicitNulls: Boolean,
-  withExplicitEmptyCollections: Boolean
+  val flags: Int
 ) {
-  val flags: Int =
-    if (withExplicitNulls) {
-      if (withExplicitEmptyCollections) 3 else 2
-    } else if (withExplicitEmptyCollections) 1
-    else 0
-  private[this] val _encodeOrDefault: T => (
-    Either[String, Chunk[(String, Json)]],
-    () => Either[String, Chunk[(String, Json)]]
-  ) => Either[String, Chunk[(String, Json)]] =
-    if (withExplicitNulls && withExplicitEmptyCollections) { _ => (_, encode) =>
-      encode()
-    } else if (withExplicitNulls) { t => (default, encode) =>
-      if (!encoder.isEmpty(t)) encode() else default
-    } else if (withExplicitEmptyCollections) { t => (default, encode) =>
-      if (!encoder.isNothing(t)) encode() else default
-    } else { t => (default, encode) =>
-      if (!encoder.isEmpty(t) && !encoder.isNothing(t)) encode() else default
-    }
   def encodeOrDefault(t: T)(
     encode: () => Either[String, Chunk[(String, Json)]],
     default: Either[String, Chunk[(String, Json)]]
   ): Either[String, Chunk[(String, Json)]] =
-    _encodeOrDefault(t)(default, encode)
+    (flags: @switch) match {
+      case 0 =>
+        if (!encoder.isEmpty(t) && !encoder.isNothing(t)) encode() else default
+      case 1 =>
+        if (!encoder.isNothing(t)) encode() else default
+      case 2 =>
+        if (!encoder.isEmpty(t)) encode() else default
+      case _ =>
+        encode()
+    }
+}
+
+private[json] object FieldEncoder {
+  def apply[T, P](
+    p: P,
+    name: String,
+    encoder: JsonEncoder[T],
+    withExplicitNulls: Boolean,
+    withExplicitEmptyCollections: Boolean
+  ): FieldEncoder[T, P] =
+    new FieldEncoder(
+      p,
+      name,
+      encoder, {
+        if (withExplicitNulls) {
+          if (withExplicitEmptyCollections) 3 else 2
+        } else if (withExplicitEmptyCollections) 1
+        else 0
+      }
+    )
 }
