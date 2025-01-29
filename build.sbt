@@ -1,4 +1,6 @@
 import BuildHelper.*
+import com.typesafe.tools.mima.core.Problem
+import com.typesafe.tools.mima.core.ProblemFilters.exclude
 import com.typesafe.tools.mima.plugin.MimaKeys.mimaPreviousArtifacts
 import explicitdeps.ExplicitDepsPlugin.autoImport.moduleFilterRemoveValue
 import sbtcrossproject.CrossPlugin.autoImport.crossProject
@@ -218,6 +220,12 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform, NativePlatform)
   )
   .settings(testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework"))
   .jsSettings(
+    mimaBinaryIssueFilters ++= Seq(
+      exclude[Problem]("zio.JsonPackagePlatformSpecific.*"),
+      exclude[Problem]("zio.json.JsonDecoderPlatformSpecific.*"),
+      exclude[Problem]("zio.json.JsonEncoderPlatformSpecific.*"),
+      exclude[Problem]("zio.json.package.*")
+    ),
     libraryDependencies ++= Seq(
       "io.github.cquiroz" %%% "scala-java-time"      % scalaJavaTimeVersion,
       "io.github.cquiroz" %%% "scala-java-time-tzdb" % scalaJavaTimeVersion % "test"
@@ -225,6 +233,12 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform, NativePlatform)
   )
   .nativeSettings(nativeSettings)
   .nativeSettings(
+    mimaBinaryIssueFilters ++= Seq(
+      exclude[Problem]("zio.JsonPackagePlatformSpecific.*"),
+      exclude[Problem]("zio.json.JsonDecoderPlatformSpecific.*"),
+      exclude[Problem]("zio.json.JsonEncoderPlatformSpecific.*"),
+      exclude[Problem]("zio.json.package.*")
+    ),
     libraryDependencies ++= Seq(
       "io.github.cquiroz" %%% "scala-java-time"      % scalaJavaTimeVersion,
       "io.github.cquiroz" %%% "scala-java-time-tzdb" % scalaJavaTimeVersion % "test"
