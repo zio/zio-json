@@ -28,7 +28,7 @@ object BuildHelper {
   }
   val Scala212: String   = versions("2.12")
   val Scala213: String   = versions("2.13")
-  val ScalaDotty: String = "3.3.4"
+  val ScalaDotty: String = "3.3.5"
 
   val SilencerVersion = "1.7.19"
 
@@ -244,18 +244,10 @@ object BuildHelper {
     incOptions ~= (_.withLogRecompileOnMacro(false)),
     autoAPIMappings := true,
     unusedCompileDependenciesFilter -= moduleFilter("org.scala-js", "scalajs-library"),
-    mimaPreviousArtifacts := {
-      previousStableVersion.value.filter(_ != "0.7.4").map(organization.value %% name.value % _).toSet ++
-        Set(organization.value %% name.value % "0.7.3")
-    },
-    mimaCheckDirection := "backward", // TODO: find how we can use "both" for path versions
+    mimaPreviousArtifacts := previousStableVersion.value.map(organization.value %% name.value % _).toSet,
+    mimaCheckDirection    := "backward", // TODO: find how we can use "both" for patch versions of 1.x releases
     mimaBinaryIssueFilters ++= Seq(
-      exclude[Problem]("zio.json.macros#package.<clinit>"),
-      exclude[Problem]("zio.JsonPackagePlatformSpecific.*"),
-      exclude[Problem]("zio.json.JsonDecoderPlatformSpecific.*"),
-      exclude[Problem]("zio.json.JsonEncoderPlatformSpecific.*"),
       exclude[Problem]("zio.json.internal.*"),
-      exclude[Problem]("zio.json.package.*"),
       exclude[Problem]("zio.json.yaml.internal.*")
     ),
     mimaFailOnProblem := true
@@ -290,12 +282,6 @@ object BuildHelper {
   )
 
   val scalaJavaTimeVersion = "2.6.0"
-
-  def jsSettings =
-    Seq(
-      libraryDependencies += "io.github.cquiroz" %%% "scala-java-time"      % scalaJavaTimeVersion,
-      libraryDependencies += "io.github.cquiroz" %%% "scala-java-time-tzdb" % scalaJavaTimeVersion
-    )
 
   def nativeSettings = Seq(
     nativeConfig ~= { cfg =>
