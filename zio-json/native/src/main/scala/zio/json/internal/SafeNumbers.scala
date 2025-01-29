@@ -165,7 +165,7 @@ object SafeNumbers {
           val dotOff = s.length + exp + 1
           s.append(stripTrailingZeros(dv))
           s.insert(dotOff, '.')
-        } else s.append(dv).append('.').append('0')
+        } else s.append(dv.toInt).append('.').append('0')
       }
       s.toString
     }
@@ -271,7 +271,7 @@ object SafeNumbers {
   private[this] def stripTrailingZeros(x: Long): Long = {
     var q0 = x.toInt
     if (
-      q0 == x || {
+      q0 == x || x << 56 == 0 && {
         q0 = (x / 100000000L).toInt
         (x - q0 * 100000000L).toInt == 0
       }
