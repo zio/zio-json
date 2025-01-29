@@ -11,18 +11,6 @@ private[json] class FieldEncoder[T, P](
   val withExplicitNulls: Boolean,
   val withExplicitEmptyCollections: Boolean
 ) {
-  private[this] val _encodeOrSkip: T => (() => Unit) => Unit =
-    if (withExplicitNulls && withExplicitEmptyCollections) { _ => encode =>
-      encode()
-    } else if (withExplicitNulls) { t => encode =>
-      if (!encoder.isEmpty(t)) encode() else ()
-    } else if (withExplicitEmptyCollections) { t => encode =>
-      if (!encoder.isNothing(t)) encode() else ()
-    } else { t => encode =>
-      if (!encoder.isEmpty(t) && !encoder.isNothing(t)) encode() else ()
-    }
-  def encodeOrSkip(t: T)(encode: () => Unit): Unit = _encodeOrSkip(t)(encode)
-
   private[this] val _encodeOrDefault: T => (
     Either[String, Chunk[(String, Json)]],
     () => Either[String, Chunk[(String, Json)]]
