@@ -33,7 +33,7 @@ and optionally when using `java.time.ZoneId` and `java.time.ZonedDateTime` types
 the dependency on the latest version of Timezone DB:
 
 ```scala
-libraryDependencies += "io.github.cquiroz" %%% "scala-java-time-tzdb" % "2.6.0"
+libraryDependencies += "io.github.cquiroz" %%% "scala-java-time-tzdb" % "latest.integration"
 ```
 
 ## Example
