@@ -8,8 +8,8 @@ private[json] class FieldEncoder[T, P](
   val p: P,
   val name: String,
   val encoder: JsonEncoder[T],
-  withExplicitNulls: Boolean,
-  withExplicitEmptyCollections: Boolean
+  val withExplicitNulls: Boolean,
+  val withExplicitEmptyCollections: Boolean
 ) {
   private[this] val _encodeOrSkip: T => (() => Unit) => Unit =
     if (withExplicitNulls && withExplicitEmptyCollections) { _ => encode =>

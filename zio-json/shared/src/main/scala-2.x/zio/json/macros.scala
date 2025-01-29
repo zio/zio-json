@@ -546,9 +546,15 @@ object DeriveJsonEncoder {
           var idx        = 0
           var prevFields = false // whether any fields have been written
           while (idx < fields.length) {
-            val field = fields(idx)
-            val p     = field.p.dereference(a)
-            field.encodeOrSkip(p) { () =>
+            val field   = fields(idx)
+            val p       = field.p.dereference(a)
+            val encoder = field.encoder
+            if (
+              (field.withExplicitNulls && field.withExplicitEmptyCollections) ||
+              (field.withExplicitNulls && !encoder.isEmpty(p)) ||
+              (field.withExplicitEmptyCollections && !encoder.isNothing(p)) ||
+              (!encoder.isEmpty(p) && !encoder.isNothing(p))
+            ) {
               // if we have at least one field already, we need a comma
               if (prevFields) {
                 out.write(',')
@@ -557,7 +563,7 @@ object DeriveJsonEncoder {
               JsonEncoder.string.unsafeEncode(field.name, indent_, out)
               if (indent.isEmpty) out.write(':')
               else out.write(" : ")
-              field.encoder.unsafeEncode(p, indent_, out)
+              encoder.unsafeEncode(p, indent_, out)
               prevFields = true // record that we have at least one field so far
             }
             idx += 1
