@@ -309,11 +309,7 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority1 with 
   }
 
   implicit val char: JsonDecoder[Char] = new JsonDecoder[Char] {
-    def unsafeDecode(trace: List[JsonError], in: RetractReader): Char = {
-      val s = Lexer.string(trace, in)
-      if (s.length == 1) s.charAt(0)
-      else Lexer.error("expected single character string", trace)
-    }
+    def unsafeDecode(trace: List[JsonError], in: RetractReader): Char = Lexer.char(trace, in)
 
     override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): Char =
       json match {
