@@ -42,41 +42,41 @@ object SafeNumbers {
 
   def byte(num: String): ByteOption =
     try ByteSome(UnsafeNumbers.byte(num))
-    catch { case UnsafeNumber => ByteNone }
+    catch { case _: UnexpectedEnd | UnsafeNumber => ByteNone }
 
   def short(num: String): ShortOption =
     try ShortSome(UnsafeNumbers.short(num))
-    catch { case UnsafeNumber => ShortNone }
+    catch { case _: UnexpectedEnd | UnsafeNumber => ShortNone }
 
   def int(num: String): IntOption =
     try IntSome(UnsafeNumbers.int(num))
-    catch { case UnsafeNumber => IntNone }
+    catch { case _: UnexpectedEnd | UnsafeNumber => IntNone }
 
   def long(num: String): LongOption =
     try LongSome(UnsafeNumbers.long(num))
-    catch { case UnsafeNumber => LongNone }
+    catch { case _: UnexpectedEnd | UnsafeNumber => LongNone }
 
   def bigInteger(
     num: String,
     max_bits: Int = 128
   ): Option[java.math.BigInteger] =
     try Some(UnsafeNumbers.bigInteger(num, max_bits))
-    catch { case UnsafeNumber => None }
+    catch { case _: UnexpectedEnd | UnsafeNumber => None }
 
   def float(num: String, max_bits: Int = 128): FloatOption =
     try FloatSome(UnsafeNumbers.float(num, max_bits))
-    catch { case UnsafeNumber => FloatNone }
+    catch { case _: UnexpectedEnd | UnsafeNumber => FloatNone }
 
   def double(num: String, max_bits: Int = 128): DoubleOption =
     try DoubleSome(UnsafeNumbers.double(num, max_bits))
-    catch { case UnsafeNumber => DoubleNone }
+    catch { case _: UnexpectedEnd | UnsafeNumber => DoubleNone }
 
   def bigDecimal(
     num: String,
     max_bits: Int = 128
   ): Option[java.math.BigDecimal] =
     try Some(UnsafeNumbers.bigDecimal(num, max_bits))
-    catch { case UnsafeNumber => None }
+    catch { case _: UnexpectedEnd | UnsafeNumber => None }
 
   // Based on the amazing work of Raffaello Giulietti
   // "The Schubfach way to render doubles": https://drive.google.com/file/d/1luHhyQF9zKlM8yJ1nebU0OgVYhfC6CBN/view

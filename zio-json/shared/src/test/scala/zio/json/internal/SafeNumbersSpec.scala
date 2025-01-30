@@ -41,11 +41,7 @@ object SafeNumbersSpec extends ZIOSpecDefault {
         )
 
         check(Gen.fromIterable(invalidBigDecimalEdgeCases)) { s =>
-          assert(SafeNumbers.bigDecimal(s).map(_.toString))(
-            isSome(
-              equalTo((new java.math.BigDecimal(s)).toString)
-            )
-          )
+          assert(SafeNumbers.bigDecimal(s).get.compareTo(new java.math.BigDecimal(s)))(equalTo(0))
         }
       },
       test("invalid BigDecimal text") {
@@ -65,7 +61,7 @@ object SafeNumbersSpec extends ZIOSpecDefault {
         check(Gen.fromIterable(inputs)) { s =>
           assert(SafeNumbers.bigInteger(s))(
             isSome(
-              equalTo((new java.math.BigInteger(s)))
+              equalTo(new java.math.BigInteger(s))
             )
           )
         }
@@ -202,6 +198,19 @@ object SafeNumbersSpec extends ZIOSpecDefault {
         test("valid") {
           check(Gen.int)(d => assert(SafeNumbers.int(d.toString))(equalTo(IntSome(d))))
         },
+        test("invalid (edge cases)") {
+          val input = List(
+            "1e3",
+            "1E-2",
+            "0.1",
+            "",
+            "1 ",
+            "-2147483649",
+            "2147483648"
+          )
+
+          check(Gen.fromIterable(input))(x => assert(SafeNumbers.int(x))(equalTo(IntNone)))
+        },
         test("invalid (out of range)") {
           check(Gen.long.filter(i => i < Int.MinValue || i > Int.MaxValue))(d =>
             assert(SafeNumbers.int(d.toString))(equalTo(IntNone))
@@ -217,10 +226,10 @@ object SafeNumbersSpec extends ZIOSpecDefault {
 
           check(Gen.fromIterable(input))(x => assert(SafeNumbers.long(x))(equalTo(LongSome(x.toLong))))
         },
-        test("in valid edge cases") {
+        test("invalid (edge cases)") {
           val input = List(
-            "0foo",
-            "01foo",
+            "1e3foo",
+            "1E-2",
             "0.1",
             "",
             "1 ",

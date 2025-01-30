@@ -285,9 +285,7 @@ object Lexer {
     }
   }
 
-  def byte(trace: List[JsonError], in: RetractReader): Byte = {
-    in.nextNonWhitespace()
-    in.retract()
+  def byte(trace: List[JsonError], in: RetractReader): Byte =
     try {
       val i = UnsafeNumbers.byte_(in, false)
       in.retract()
@@ -295,11 +293,8 @@ object Lexer {
     } catch {
       case UnsafeNumbers.UnsafeNumber => error("expected a Byte", trace)
     }
-  }
 
-  def short(trace: List[JsonError], in: RetractReader): Short = {
-    in.nextNonWhitespace()
-    in.retract()
+  def short(trace: List[JsonError], in: RetractReader): Short =
     try {
       val i = UnsafeNumbers.short_(in, false)
       in.retract()
@@ -307,11 +302,8 @@ object Lexer {
     } catch {
       case UnsafeNumbers.UnsafeNumber => error("expected a Short", trace)
     }
-  }
 
-  def int(trace: List[JsonError], in: RetractReader): Int = {
-    in.nextNonWhitespace()
-    in.retract()
+  def int(trace: List[JsonError], in: RetractReader): Int =
     try {
       val i = UnsafeNumbers.int_(in, false)
       in.retract()
@@ -319,11 +311,8 @@ object Lexer {
     } catch {
       case UnsafeNumbers.UnsafeNumber => error("expected an Int", trace)
     }
-  }
 
-  def long(trace: List[JsonError], in: RetractReader): Long = {
-    in.nextNonWhitespace()
-    in.retract()
+  def long(trace: List[JsonError], in: RetractReader): Long =
     try {
       val i = UnsafeNumbers.long_(in, false)
       in.retract()
@@ -331,14 +320,11 @@ object Lexer {
     } catch {
       case UnsafeNumbers.UnsafeNumber => error("expected a Long", trace)
     }
-  }
 
   def bigInteger(
     trace: List[JsonError],
     in: RetractReader
-  ): java.math.BigInteger = {
-    in.nextNonWhitespace()
-    in.retract()
+  ): java.math.BigInteger =
     try {
       val i = UnsafeNumbers.bigInteger_(in, false, NumberMaxBits)
       in.retract()
@@ -346,11 +332,8 @@ object Lexer {
     } catch {
       case UnsafeNumbers.UnsafeNumber => error(s"expected a $NumberMaxBits bit BigInteger", trace)
     }
-  }
 
-  def float(trace: List[JsonError], in: RetractReader): Float = {
-    in.nextNonWhitespace()
-    in.retract()
+  def float(trace: List[JsonError], in: RetractReader): Float =
     try {
       val i = UnsafeNumbers.float_(in, false, NumberMaxBits)
       in.retract()
@@ -358,11 +341,8 @@ object Lexer {
     } catch {
       case UnsafeNumbers.UnsafeNumber => error("expected a Float", trace)
     }
-  }
 
-  def double(trace: List[JsonError], in: RetractReader): Double = {
-    in.nextNonWhitespace()
-    in.retract()
+  def double(trace: List[JsonError], in: RetractReader): Double =
     try {
       val i = UnsafeNumbers.double_(in, false, NumberMaxBits)
       in.retract()
@@ -370,14 +350,11 @@ object Lexer {
     } catch {
       case UnsafeNumbers.UnsafeNumber => error("expected a Double", trace)
     }
-  }
 
   def bigDecimal(
     trace: List[JsonError],
     in: RetractReader
-  ): java.math.BigDecimal = {
-    in.nextNonWhitespace()
-    in.retract()
+  ): java.math.BigDecimal =
     try {
       val i = UnsafeNumbers.bigDecimal_(in, false, NumberMaxBits)
       in.retract()
@@ -385,7 +362,6 @@ object Lexer {
     } catch {
       case UnsafeNumbers.UnsafeNumber => error(s"expected a $NumberMaxBits BigDecimal", trace)
     }
-  }
 
   // optional whitespace and then an expected character
   @inline def char(trace: List[JsonError], in: OneCharReader, c: Char): Unit = {
