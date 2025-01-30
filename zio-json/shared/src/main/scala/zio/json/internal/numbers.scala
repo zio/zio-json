@@ -126,7 +126,7 @@ object UnsafeNumbers {
     byte_(new FastStringReader(num), true)
 
   def byte_(in: OneCharReader, consume: Boolean): Byte = {
-    val n = int__(in, consume)
+    val n = int_(in, consume)
     if (n < -128 || n > 127) throw UnsafeNumber
     n.toByte
   }
@@ -135,7 +135,7 @@ object UnsafeNumbers {
     short_(new FastStringReader(num), true)
 
   def short_(in: OneCharReader, consume: Boolean): Short = {
-    val n = int__(in, consume)
+    val n = int_(in, consume)
     if (n < -32768 || n > 32767) throw UnsafeNumber
     n.toShort
   }
@@ -143,14 +143,8 @@ object UnsafeNumbers {
   def int(num: String): Int =
     int_(new FastStringReader(num), true)
 
-  def int_(in: OneCharReader, consume: Boolean): Int =
-    int__(in, consume)
-
   def long(num: String): Long =
     long_(new FastStringReader(num), true)
-
-  def long_(in: OneCharReader, consume: Boolean): Long =
-    long__(in, consume)
 
   def bigInteger(num: String, max_bits: Int): java.math.BigInteger =
     bigInteger_(new FastStringReader(num), true, max_bits)
@@ -168,7 +162,7 @@ object UnsafeNumbers {
     bigDecimal__(in, consume, negative, current, true, max_bits).unscaledValue
   }
 
-  @inline def int__(in: OneCharReader, consume: Boolean): Int = {
+  def int_(in: OneCharReader, consume: Boolean): Int = {
     var current =
       if (consume) in.readChar().toInt
       else in.nextNonWhitespace().toInt
@@ -193,7 +187,7 @@ object UnsafeNumbers {
     else throw UnsafeNumber
   }
 
-  @inline def long__(in: OneCharReader, consume: Boolean): Long = {
+  def long_(in: OneCharReader, consume: Boolean): Long = {
     var current =
       if (consume) in.readChar().toInt
       else in.nextNonWhitespace().toInt
@@ -395,28 +389,41 @@ object UnsafeNumbers {
         ) throw UnsafeNumber
       }
       if (consume && current != -1) throw UnsafeNumber
-      if (negativeExp) {
-      } else if (exp != -2147483648) exp = -exp
+      if (negativeExp) {}
+      else if (exp != -2147483648) exp = -exp
       else throw UnsafeNumber
     } else if (consume && current != -1) throw UnsafeNumber
 
-    significand(sig, sig_, negative, {
+    significand(
+      sig,
+      sig_,
+      negative,
       if (dot < 1) -exp
       else dot - exp
-    })
+    )
   }
 
-  private[this] def significand(sig: Long, sig_ : java.math.BigInteger, negative: Boolean, scale: Int): java.math.BigDecimal =
+  @inline private[this] def significand(
+    sig: Long,
+    sig_ : java.math.BigInteger,
+    negative: Boolean,
+    scale: Int
+  ): java.math.BigDecimal =
     if (sig <= 0) java.math.BigDecimal.ZERO
     else if (sig_ != null) {
-      new java.math.BigDecimal({
-        if (negative) sig_.negate
-        else sig_
-      }, scale)
-    } else java.math.BigDecimal.valueOf({
-      if (negative) -sig
-      else sig
-    }, scale)
+      new java.math.BigDecimal(
+        {
+          if (negative) sig_.negate
+          else sig_
+        },
+        scale
+      )
+    } else
+      java.math.BigDecimal.valueOf(
+        if (negative) -sig
+        else sig,
+        scale
+      )
 
   // note that bigDecimal does not have a negative zero
   private[this] val bigIntegers: Array[java.math.BigInteger] =
