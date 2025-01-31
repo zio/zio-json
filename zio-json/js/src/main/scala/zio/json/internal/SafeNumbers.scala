@@ -127,7 +127,16 @@ object SafeNumbers {
           val s     = vb >> 2
           if (
             s < 100 || {
-              dv = s / 10
+              var z = s
+              dv = s
+              dv = (dv >>> 1) + (dv >>> 2) // Based upon the divu10() code from Hacker's Delight 2nd Edition by Henry Warren
+              dv += dv >>> 4
+              dv += dv >>> 8
+              dv += dv >>> 16
+              dv += dv >>> 32
+              z -= dv & 0xFFFFFFFFFFFFFFF8L
+              dv >>>= 3
+              if ((z - (dv << 1)).toInt >= 10) dv += 1L
               val sp40 = (dv << 5) + (dv << 3)
               val upin = (vbls - sp40).toInt
               (((sp40 + vbrd).toInt + 40) ^ upin) >= 0 || {
@@ -293,15 +302,26 @@ object SafeNumbers {
         q0 * 100000000L == x
       }
     ) return stripTrailingZeros(q0).toLong
-    var y      = x
-    var q1, r1 = 0L
+    var q1, y, z = x
+    var r1 = 0
     while ({
-      q1 = y / 100
-      r1 = y - ((q1 << 6) + (q1 << 5) + (q1 << 2))
+      q1 = (q1 >>> 1) + (q1 >>> 2) // Based upon the divu10() code from Hacker's Delight 2nd Edition by Henry Warren
+      q1 += q1 >>> 4
+      q1 += q1 >>> 8
+      q1 += q1 >>> 16
+      q1 += q1 >>> 32
+      z -= q1 & 0xFFFFFFFFFFFFFFF8L
+      q1 >>>= 3
+      r1 = (z - (q1 << 1)).toInt
+      if (r1 >= 10) {
+        q1 += 1L
+        r1 -= 10
+      }
       r1 == 0
-    }) y = q1
-    q1 = y / 10
-    r1 = y - ((q1 << 3) + (q1 << 1))
+    }) {
+      y = q1
+      z = q1
+    }
     if (r1 == 0) return q1
     y
   }
