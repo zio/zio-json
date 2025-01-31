@@ -165,7 +165,7 @@ object SafeNumbers {
           val dotOff = s.length + exp + 1
           s.append(stripTrailingZeros(dv))
           s.insert(dotOff, '.')
-        } else s.append(dv).append('.').append('0')
+        } else s.append(dv.toInt).append('.').append('0')
       }
       s.toString
     }

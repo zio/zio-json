@@ -96,7 +96,7 @@ object UnsafeNumbers {
     }) {
       if (
         accum < -922337203685477580L || {
-          accum = (accum << 3) + (accum << 1) + ('0' - current)
+          accum = accum * 10 + ('0' - current)
           accum > 0
         }
       ) throw UnsafeNumber
@@ -125,7 +125,7 @@ object UnsafeNumbers {
     }) {
       if (m10 < 922337203685477580L) {
         if (m10 <= 0) m10 = (current - '0').toLong
-        else m10 = (m10 << 3) + (m10 << 1) + (current - '0')
+        else m10 = m10 * 10 + (current - '0')
       } else {
         if (bigM10 eq null) bigM10 = java.math.BigInteger.valueOf(m10)
         bigM10 = bigM10.multiply(java.math.BigInteger.TEN).add(bigIntegers(current - '0'))
@@ -160,7 +160,7 @@ object UnsafeNumbers {
       }) {
         if (m10 < 922337203685477580L) {
           if (m10 <= 0) m10 = (current - '0').toLong
-          else m10 = (m10 << 3) + (m10 << 1) + (current - '0')
+          else m10 = m10 * 10 + (current - '0')
         } else {
           if (bigM10 eq null) bigM10 = java.math.BigInteger.valueOf(m10)
           bigM10 = bigM10.multiply(java.math.BigInteger.TEN).add(bigIntegers(current - '0'))
@@ -177,7 +177,7 @@ object UnsafeNumbers {
         e10 -= 1
         if (m10 < 922337203685477580L) {
           if (m10 <= 0) m10 = (current - '0').toLong
-          else m10 = (m10 << 3) + (m10 << 1) + (current - '0')
+          else m10 = m10 * 10 + (current - '0')
         } else {
           if (bigM10 eq null) bigM10 = java.math.BigInteger.valueOf(m10)
           bigM10 = bigM10.multiply(java.math.BigInteger.TEN).add(bigIntegers(current - '0'))
@@ -249,7 +249,7 @@ object UnsafeNumbers {
         if (m10 < 922337203685477580L) {
           if (m10 <= 0) m10 = (current - '0').toLong
           else {
-            m10 = (m10 << 3) + (m10 << 1) + (current - '0')
+            m10 = m10 * 10 + (current - '0')
             digits += 1
           }
         } else {
@@ -269,7 +269,7 @@ object UnsafeNumbers {
         if (m10 < 922337203685477580L) {
           if (m10 <= 0) m10 = (current - '0').toLong
           else {
-            m10 = (m10 << 3) + (m10 << 1) + (current - '0')
+            m10 = m10 * 10 + (current - '0')
             digits += 1
           }
         } else {
@@ -388,7 +388,7 @@ object UnsafeNumbers {
         if (m10 < 922337203685477580L) {
           if (m10 <= 0) m10 = (current - '0').toLong
           else {
-            m10 = (m10 << 3) + (m10 << 1) + (current - '0')
+            m10 = m10 * 10 + (current - '0')
             digits += 1
           }
         } else {
@@ -408,7 +408,7 @@ object UnsafeNumbers {
         if (m10 < 922337203685477580L) {
           if (m10 <= 0) m10 = (current - '0').toLong
           else {
-            m10 = (m10 << 3) + (m10 << 1) + (current - '0')
+            m10 = m10 * 10 + (current - '0')
             digits += 1
           }
         } else {

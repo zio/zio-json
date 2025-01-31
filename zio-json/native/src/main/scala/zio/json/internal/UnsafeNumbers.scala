@@ -96,7 +96,7 @@ object UnsafeNumbers {
     }) {
       if (
         accum < -922337203685477580L || {
-          accum = (accum << 3) + (accum << 1) + ('0' - current)
+          accum = accum * 10 + ('0' - current)
           accum > 0
         }
       ) throw UnsafeNumber
@@ -125,7 +125,7 @@ object UnsafeNumbers {
     }) {
       if (m10 < 922337203685477580L) {
         if (m10 <= 0) m10 = (current - '0').toLong
-        else m10 = (m10 << 3) + (m10 << 1) + (current - '0')
+        else m10 = m10 * 10 + (current - '0')
       } else {
         if (bigM10 eq null) bigM10 = java.math.BigInteger.valueOf(m10)
         bigM10 = bigM10.multiply(java.math.BigInteger.TEN).add(bigIntegers(current - '0'))
@@ -160,7 +160,7 @@ object UnsafeNumbers {
       }) {
         if (m10 < 922337203685477580L) {
           if (m10 <= 0) m10 = (current - '0').toLong
-          else m10 = (m10 << 3) + (m10 << 1) + (current - '0')
+          else m10 = m10 * 10 + (current - '0')
         } else {
           if (bigM10 eq null) bigM10 = java.math.BigInteger.valueOf(m10)
           bigM10 = bigM10.multiply(java.math.BigInteger.TEN).add(bigIntegers(current - '0'))
@@ -177,7 +177,7 @@ object UnsafeNumbers {
         e10 -= 1
         if (m10 < 922337203685477580L) {
           if (m10 <= 0) m10 = (current - '0').toLong
-          else m10 = (m10 << 3) + (m10 << 1) + (current - '0')
+          else m10 = m10 * 10 + (current - '0')
         } else {
           if (bigM10 eq null) bigM10 = java.math.BigInteger.valueOf(m10)
           bigM10 = bigM10.multiply(java.math.BigInteger.TEN).add(bigIntegers(current - '0'))
@@ -249,7 +249,7 @@ object UnsafeNumbers {
         if (m10 < 922337203685477580L) {
           if (m10 <= 0) m10 = (current - '0').toLong
           else {
-            m10 = (m10 << 3) + (m10 << 1) + (current - '0')
+            m10 = m10 * 10 + (current - '0')
             digits += 1
           }
         } else {
@@ -269,7 +269,7 @@ object UnsafeNumbers {
         if (m10 < 922337203685477580L) {
           if (m10 <= 0) m10 = (current - '0').toLong
           else {
-            m10 = (m10 << 3) + (m10 << 1) + (current - '0')
+            m10 = m10 * 10 + (current - '0')
             digits += 1
           }
         } else {
@@ -326,7 +326,7 @@ object UnsafeNumbers {
     else if (e10 >= 39) Float.PositiveInfinity
     else {
       var shift = java.lang.Long.numberOfLeadingZeros(m10)
-      var m2    = unsignedMultiplyHigh(pow10Mantissas(e10 + 343), m10 << shift)
+      var m2    = NativeMath.unsignedMultiplyHigh(pow10Mantissas(e10 + 343), m10 << shift)
       var e2    = (e10 * 108853 >> 15) - shift + 1 // (e10 * Math.log(10) / Math.log(2)).toInt - shift + 1
       shift = java.lang.Long.numberOfLeadingZeros(m2)
       m2 <<= shift
@@ -385,7 +385,7 @@ object UnsafeNumbers {
         if (m10 < 922337203685477580L) {
           if (m10 <= 0) m10 = (current - '0').toLong
           else {
-            m10 = (m10 << 3) + (m10 << 1) + (current - '0')
+            m10 = m10 * 10 + (current - '0')
             digits += 1
           }
         } else {
@@ -405,7 +405,7 @@ object UnsafeNumbers {
         if (m10 < 922337203685477580L) {
           if (m10 <= 0) m10 = (current - '0').toLong
           else {
-            m10 = (m10 << 3) + (m10 << 1) + (current - '0')
+            m10 = m10 * 10 + (current - '0')
             digits += 1
           }
         } else {
@@ -466,7 +466,7 @@ object UnsafeNumbers {
     else if (e10 >= 310) Double.PositiveInfinity
     else {
       var shift = java.lang.Long.numberOfLeadingZeros(m10)
-      var m2    = unsignedMultiplyHigh(pow10Mantissas(e10 + 343), m10 << shift)
+      var m2    = NativeMath.unsignedMultiplyHigh(pow10Mantissas(e10 + 343), m10 << shift)
       var e2    = (e10 * 108853 >> 15) - shift + 1 // (e10 * Math.log(10) / Math.log(2)).toInt - shift + 1
       shift = java.lang.Long.numberOfLeadingZeros(m2)
       m2 <<= shift
@@ -502,9 +502,6 @@ object UnsafeNumbers {
     val current = in.read() // to be consistent read the terminator
     if (consume && current != -1) throw UnsafeNumber
   }
-
-  @inline private[this] def unsignedMultiplyHigh(x: Long, y: Long): Long =
-    Math.multiplyHigh(x, y) + x + y // Use implementation that works only when both params are negative
 
   private[this] final val bigIntegers: Array[java.math.BigInteger] =
     (0L to 9L).map(java.math.BigInteger.valueOf).toArray
