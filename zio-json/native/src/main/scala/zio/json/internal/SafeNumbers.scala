@@ -165,7 +165,7 @@ object SafeNumbers {
           val dotOff = s.length + exp + 1
           s.append(stripTrailingZeros(dv))
           s.insert(dotOff, '.')
-        } else s.append(dv).append('.').append('0')
+        } else s.append(dv.toInt).append('.').append('0')
       }
       s.toString
     }
@@ -259,12 +259,12 @@ object SafeNumbers {
   }
 
   private[this] def rop(g1: Long, g0: Long, cp: Long): Long = {
-    val x = Math.multiplyHigh(g0, cp) + (g1 * cp >>> 1)
-    Math.multiplyHigh(g1, cp) + (x >>> 63) | (-x ^ x) >>> 63
+    val x = NativeMath.multiplyHigh(g0, cp) + (g1 * cp >>> 1)
+    NativeMath.multiplyHigh(g1, cp) + (x >>> 63) | (-x ^ x) >>> 63
   }
 
   private[this] def rop(g: Long, cp: Int): Int = {
-    val x = ((g & 0xffffffffL) * cp >>> 32) + (g >>> 32) * cp
+    val x = NativeMath.multiplyHigh(g, cp.toLong << 32)
     (x >>> 31).toInt | -x.toInt >>> 31
   }
 
@@ -272,7 +272,7 @@ object SafeNumbers {
     var q0 = x.toInt
     if (
       q0 == x || {
-        q0 = (x / 100000000L).toInt
+        q0 = (NativeMath.multiplyHigh(x, 6189700196426901375L) >>> 25).toInt // divide a positive long by 100000000
         (x - q0 * 100000000L).toInt == 0
       }
     ) return stripTrailingZeros(q0).toLong
