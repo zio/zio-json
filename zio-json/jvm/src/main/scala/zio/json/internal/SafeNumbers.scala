@@ -127,7 +127,7 @@ object SafeNumbers {
           val s     = vb >> 2
           if (
             s < 100 || {
-              dv = Math.multiplyHigh(s, 1844674407370955168L)
+              dv = Math.multiplyHigh(s, 1844674407370955168L) // divide a positive long by 10
               val sp40 = dv * 40
               val upin = (vbls - sp40).toInt
               (((sp40 + vbrd).toInt + 40) ^ upin) >= 0 || {
@@ -276,16 +276,11 @@ object SafeNumbers {
         (x - q0 * 100000000L).toInt == 0
       }
     ) return stripTrailingZeros(q0).toLong
-    var y      = x
-    var q1, r1 = 0L
+    var y, q1 = x
     while ({
-      q1 = y / 100
-      r1 = y - q1 * 100
-      r1 == 0
+      q1 = Math.multiplyHigh(q1, 1844674407370955168L) // divide a positive long by 10
+      q1 * 10 == y
     }) y = q1
-    q1 = y / 10
-    r1 = y - q1 * 10
-    if (r1 == 0) return q1
     y
   }
 
