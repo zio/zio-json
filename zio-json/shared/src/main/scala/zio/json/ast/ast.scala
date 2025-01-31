@@ -384,7 +384,7 @@ object Json {
 
     def apply(fields: (String, Json)*): Obj =
       if (fields.isEmpty) Obj.empty
-      else new Obj(Chunk.from(fields))
+      else new Obj(Chunk(fields: _*))
 
     private lazy val objd = JsonDecoder.keyValueChunk[String, Json]
     implicit val decoder: JsonDecoder[Obj] = new JsonDecoder[Obj] {
@@ -437,7 +437,7 @@ object Json {
 
     def apply(elements: Json*): Arr =
       if (elements.isEmpty) empty
-      else new Arr(Chunk.from(elements))
+      else new Arr(Chunk(elements: _*))
 
     private lazy val arrd = JsonDecoder.chunk[Json]
     implicit val decoder: JsonDecoder[Arr] = new JsonDecoder[Arr] {
@@ -609,5 +609,5 @@ object Json {
 
   def apply(fields: (String, Json)*): Json =
     if (fields.isEmpty) Obj.empty
-    else new Obj(Chunk.from(fields))
+    else new Obj(Chunk(fields: _*))
 }
