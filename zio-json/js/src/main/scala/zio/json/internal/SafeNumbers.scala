@@ -322,7 +322,6 @@ object SafeNumbers {
       y = q1
       z = q1
     }
-    if (r1 == 0) return q1
     y
   }
 
