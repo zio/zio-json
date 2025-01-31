@@ -325,8 +325,7 @@ lazy val zioJsonInteropHttp4s = project
       "dev.zio"       %% "zio-test"         % zioVersion % "test",
       "dev.zio"       %% "zio-test-sbt"     % zioVersion % "test"
     ),
-    testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework"),
-    mimaPreviousArtifacts := Set() // FIXME: remove after releasing zio-json-interop-http4s for Scala 3
+    testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework")
   )
   .dependsOn(zioJsonJVM)
   .enablePlugins(BuildInfoPlugin)

@@ -44,9 +44,9 @@ object EncoderSpec extends ZIOSpecDefault {
             assert(9999999.0f.toJson)(equalTo("9999999.0")) &&
             assert(0.001f.toJson)(equalTo("0.001")) &&
             assert(9.999999e-4f.toJson)(equalTo("9.999999E-4")) &&
-            // FIXME: sbt fmt cannot parse: assert((-3.4028235E38f).toJson)(equalTo("-3.4028235E38")) && // Float.MinValue
-            assert(1.4e-45f.toJson)(equalTo("1.4E-45")) && // Float.MinPositiveValue
-            // FIXME: sbt fmt cannot parse: assert(3.4028235E38f.toJson)(equalTo("3.4028235E38")) && // Float.MaxValue
+            assert(Float.MinValue.toJson)(equalTo("-3.4028235E38")) &&
+            assert(Float.MinPositiveValue.toJson)(equalTo("1.4E-45")) &&
+            assert(Float.MaxValue.toJson)(equalTo("3.4028235E38")) &&
             assert(3.3554448e7f.toJson)(equalTo("3.355445E7")) &&
             assert(8.999999e9f.toJson)(equalTo("9.0E9")) &&
             assert(3.4366718e10f.toJson)(equalTo("3.436672E10")) &&
