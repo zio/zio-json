@@ -134,7 +134,7 @@ object SafeNumbers {
               dv += dv >>> 8
               dv += dv >>> 16
               dv += dv >>> 32
-              z -= dv & 0xFFFFFFFFFFFFFFF8L
+              z -= dv & 0xfffffffffffffff8L
               dv >>>= 3
               if ((z - (dv << 1)).toInt >= 10) dv += 1L
               val sp40 = (dv << 5) + (dv << 3)
@@ -303,14 +303,14 @@ object SafeNumbers {
       }
     ) return stripTrailingZeros(q0).toLong
     var q1, y, z = x
-    var r1 = 0
+    var r1       = 0
     while ({
       q1 = (q1 >>> 1) + (q1 >>> 2) // Based upon the divu10() code from Hacker's Delight 2nd Edition by Henry Warren
       q1 += q1 >>> 4
       q1 += q1 >>> 8
       q1 += q1 >>> 16
       q1 += q1 >>> 32
-      z -= q1 & 0xFFFFFFFFFFFFFFF8L
+      z -= q1 & 0xfffffffffffffff8L
       q1 >>>= 3
       r1 = (z - (q1 << 1)).toInt
       if (r1 >= 10) {
