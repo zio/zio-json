@@ -254,23 +254,25 @@ object Lexer {
     var c = in.nextNonWhitespace()
     if (c != '"') error("'\"'", c, trace)
     c = in.readChar()
-    if (c == '"' || {
-      if (c == '\\') {
-        (in.readChar(): @switch) match {
-          case '"'  => c = '"'
-          case '\\' => c = '\\'
-          case '/'  => c = '/'
-          case 'b'  => c = '\b'
-          case 'f'  => c = '\f'
-          case 'n'  => c = '\n'
-          case 'r'  => c = '\r'
-          case 't'  => c = '\t'
-          case 'u'  => c = nextHex4(trace, in)
-          case _    => error(c, trace)
-        }
-      } else if (c < ' ') error("invalid control in string", trace)
-      in.readChar() != '"'
-    }) error("expected single character string", trace)
+    if (
+      c == '"' || {
+        if (c == '\\') {
+          (in.readChar(): @switch) match {
+            case '"'  => c = '"'
+            case '\\' => c = '\\'
+            case '/'  => c = '/'
+            case 'b'  => c = '\b'
+            case 'f'  => c = '\f'
+            case 'n'  => c = '\n'
+            case 'r'  => c = '\r'
+            case 't'  => c = '\t'
+            case 'u'  => c = nextHex4(trace, in)
+            case _    => error(c, trace)
+          }
+        } else if (c < ' ') error("invalid control in string", trace)
+        in.readChar() != '"'
+      }
+    ) error("expected single character string", trace)
     c
   }
 
@@ -292,7 +294,7 @@ object Lexer {
     accum.toChar
   }
 
-  def boolean(trace: List[JsonError], in: OneCharReader): Boolean = {
+  def boolean(trace: List[JsonError], in: OneCharReader): Boolean =
     (in.nextNonWhitespace(): @switch) match {
       case 't' =>
         if (in.readChar() != 'r' || in.readChar() != 'u' || in.readChar() != 'e') {
@@ -307,7 +309,6 @@ object Lexer {
       case c =>
         error("'true' or 'false'", c, trace)
     }
-  }
 
   def byte(trace: List[JsonError], in: RetractReader): Byte =
     try {
