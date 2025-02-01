@@ -376,9 +376,15 @@ object Json {
     override def mapObjectEntries(f: ((String, Json)) => (String, Json)): Json.Obj = Json.Obj(fields.map(f))
   }
   object Obj {
-    val empty: Obj = Obj(Chunk.empty)
+    val empty: Obj = new Obj(Chunk.empty)
 
-    def apply(fields: (String, Json)*): Obj = Obj(Chunk(fields: _*))
+    def apply(chunk: Chunk[(String, Json)]): Obj =
+      if (chunk.isEmpty) empty
+      else new Obj(chunk)
+
+    def apply(fields: (String, Json)*): Obj =
+      if (fields.isEmpty) Obj.empty
+      else new Obj(Chunk(fields: _*))
 
     private lazy val objd = JsonDecoder.keyValueChunk[String, Json]
     implicit val decoder: JsonDecoder[Obj] = new JsonDecoder[Obj] {
@@ -423,9 +429,15 @@ object Json {
     override def mapArrayValues(f: Json => Json): Json.Arr         = Json.Arr(elements.map(f))
   }
   object Arr {
-    val empty: Arr = Arr(Chunk.empty)
+    val empty: Arr = new Arr(Chunk.empty)
 
-    def apply(elements: Json*): Arr = Arr(Chunk(elements: _*))
+    def apply(chunk: Chunk[Json]): Arr =
+      if (chunk.isEmpty) empty
+      else new Arr(chunk)
+
+    def apply(elements: Json*): Arr =
+      if (elements.isEmpty) empty
+      else new Arr(Chunk(elements: _*))
 
     private lazy val arrd = JsonDecoder.chunk[Json]
     implicit val decoder: JsonDecoder[Arr] = new JsonDecoder[Arr] {
@@ -595,5 +607,7 @@ object Json {
 
   implicit val codec: JsonCodec[Json] = JsonCodec(encoder, decoder)
 
-  def apply(fields: (String, Json)*): Json = Json.Obj(Chunk(fields: _*))
+  def apply(fields: (String, Json)*): Json =
+    if (fields.isEmpty) Obj.empty
+    else new Obj(Chunk(fields: _*))
 }

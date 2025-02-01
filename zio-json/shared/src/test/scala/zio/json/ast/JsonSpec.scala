@@ -9,6 +9,17 @@ object JsonSpec extends ZIOSpecDefault {
 
   val spec: Spec[Environment, Any] =
     suite("Json")(
+      suite("apply")(
+        test("()") {
+          assertTrue(Json.Obj.empty eq Json()) &&
+          assertTrue(Json.Obj.empty eq Json.Obj()) &&
+          assertTrue(Json.Arr.empty eq Json.Arr())
+        },
+        test("(Chunk.empty)") {
+          assertTrue(Json.Obj.empty eq Json.Obj(Chunk.empty)) &&
+          assertTrue(Json.Arr.empty eq Json.Arr(Chunk.empty))
+        }
+      ),
       suite("delete")(
         suite("scalar")(
           test("success") {
