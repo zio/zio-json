@@ -293,16 +293,16 @@ object Lexer {
   }
 
   def boolean(trace: List[JsonError], in: OneCharReader): Boolean = {
-    val c1 = in.nextNonWhitespace()
-    val c2 = in.readChar()
-    val c3 = in.readChar()
-    val c4 = in.readChar()
-    (c1: @switch) match {
+    (in.nextNonWhitespace(): @switch) match {
       case 't' =>
-        if (c2 != 'r' || c3 != 'u' || c4 != 'e') error("expected 'true'", trace)
+        if (in.readChar() != 'r' || in.readChar() != 'u' || in.readChar() != 'e') {
+          error("expected 'true'", trace)
+        }
         true
       case 'f' =>
-        if (in.readChar() != 'e' || c2 != 'a' || c3 != 'l' || c4 != 's') error("expected 'false'", trace)
+        if (in.readChar() != 'a' || in.readChar() != 'l' || in.readChar() != 's' || in.readChar() != 'e') {
+          error("expected 'false'", trace)
+        }
         false
       case c =>
         error("'true' or 'false'", c, trace)
