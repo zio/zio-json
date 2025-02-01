@@ -254,23 +254,25 @@ object Lexer {
     var c = in.nextNonWhitespace()
     if (c != '"') error("'\"'", c, trace)
     c = in.readChar()
-    if (c == '"') error("expected single character string", trace)
-    else if (c == '\\') {
-      (in.readChar(): @switch) match {
-        case '"'  => c = '"'
-        case '\\' => c = '\\'
-        case '/'  => c = '/'
-        case 'b'  => c = '\b'
-        case 'f'  => c = '\f'
-        case 'n'  => c = '\n'
-        case 'r'  => c = '\r'
-        case 't'  => c = '\t'
-        case 'u'  => c = nextHex4(trace, in)
-        case _    => error(c, trace)
+    if (
+      c == '"' || {
+        if (c == '\\') {
+          (in.readChar(): @switch) match {
+            case '"'  => c = '"'
+            case '\\' => c = '\\'
+            case '/'  => c = '/'
+            case 'b'  => c = '\b'
+            case 'f'  => c = '\f'
+            case 'n'  => c = '\n'
+            case 'r'  => c = '\r'
+            case 't'  => c = '\t'
+            case 'u'  => c = nextHex4(trace, in)
+            case _    => error(c, trace)
+          }
+        } else if (c < ' ') error("invalid control in string", trace)
+        in.readChar() != '"'
       }
-    } else if (c < ' ') error("invalid control in string", trace)
-    val c1 = in.readChar()
-    if (c1 != '"') error("expected single character string", trace)
+    ) error("expected single character string", trace)
     c
   }
 
@@ -292,22 +294,21 @@ object Lexer {
     accum.toChar
   }
 
-  def boolean(trace: List[JsonError], in: OneCharReader): Boolean = {
-    val c1 = in.nextNonWhitespace()
-    val c2 = in.readChar()
-    val c3 = in.readChar()
-    val c4 = in.readChar()
-    (c1: @switch) match {
+  def boolean(trace: List[JsonError], in: OneCharReader): Boolean =
+    (in.nextNonWhitespace(): @switch) match {
       case 't' =>
-        if (c2 != 'r' || c3 != 'u' || c4 != 'e') error("expected 'true'", trace)
+        if (in.readChar() != 'r' || in.readChar() != 'u' || in.readChar() != 'e') {
+          error("expected 'true'", trace)
+        }
         true
       case 'f' =>
-        if (in.readChar() != 'e' || c2 != 'a' || c3 != 'l' || c4 != 's') error("expected 'false'", trace)
+        if (in.readChar() != 'a' || in.readChar() != 'l' || in.readChar() != 's' || in.readChar() != 'e') {
+          error("expected 'false'", trace)
+        }
         false
       case c =>
         error("'true' or 'false'", c, trace)
     }
-  }
 
   def byte(trace: List[JsonError], in: RetractReader): Byte =
     try {
