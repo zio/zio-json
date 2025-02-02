@@ -481,7 +481,7 @@ private[json] trait MappedJsonDecoder[A] extends JsonDecoder[A] {
 private[json] trait DecoderLowPriority1 extends DecoderLowPriority2 {
   this: JsonDecoder.type =>
 
-  implicit def array[A: JsonDecoder: reflect.ClassTag]: JsonDecoder[Array[A]] =
+  implicit def array[A](implicit A: JsonDecoder[A], classTag: reflect.ClassTag[A]): JsonDecoder[Array[A]] =
     new CollectionJsonDecoder[Array[A]] {
 
       override def unsafeDecodeMissing(trace: List[JsonError]): Array[A] = Array.empty

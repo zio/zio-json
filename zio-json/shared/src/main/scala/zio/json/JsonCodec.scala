@@ -120,6 +120,8 @@ object JsonCodec extends GeneratedTupleCodecs with CodecLowPriority0 with JsonCo
 }
 
 private[json] trait CodecLowPriority0 extends CodecLowPriority1 { this: JsonCodec.type =>
+  implicit def array[A: JsonEncoder: JsonDecoder: reflect.ClassTag]: JsonCodec[Array[A]] =
+    JsonCodec(JsonEncoder.array[A], JsonDecoder.array[A])
 
   implicit def chunk[A: JsonEncoder: JsonDecoder]: JsonCodec[Chunk[A]] =
     JsonCodec(JsonEncoder.chunk[A], JsonDecoder.chunk[A])

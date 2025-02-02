@@ -2,9 +2,7 @@ package zio.json
 
 import scala.collection.immutable
 
-private[json] trait JsonCodecVersionSpecific {
-  inline def derived[A: deriving.Mirror.Of](using config: JsonCodecConfiguration): JsonCodec[A] = DeriveJsonCodec.gen[A]
-
+trait JsonCodecVersionSpecific {
   implicit def arraySeq[A: JsonEncoder: JsonDecoder: reflect.ClassTag]: JsonCodec[immutable.ArraySeq[A]] =
     JsonCodec(JsonEncoder.arraySeq[A], JsonDecoder.arraySeq[A])
 }
