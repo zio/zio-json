@@ -28,16 +28,13 @@ object Lexer {
 
   val NumberMaxBits: Int = 256
 
-  @noinline
-  def error(msg: String, trace: List[JsonError]): Nothing =
+  @noinline def error(msg: String, trace: List[JsonError]): Nothing =
     throw UnsafeJson(JsonError.Message(msg) :: trace)
 
-  @noinline
-  private[json] def error(expected: String, got: Char, trace: List[JsonError]): Nothing =
+  @noinline private[json] def error(expected: String, got: Char, trace: List[JsonError]): Nothing =
     error(s"expected $expected got '$got'", trace)
 
-  @noinline
-  private[json] def error(c: Char, trace: List[JsonError]): Nothing =
+  @noinline private[json] def error(c: Char, trace: List[JsonError]): Nothing =
     error(s"invalid '\\$c' in string", trace)
 
   // True if we got a string (implies a retraction), False for }
@@ -60,11 +57,9 @@ object Lexer {
 
   // True if we got anything besides a ], False for ]
   def firstArrayElement(in: RetractReader): Boolean =
-    (in.nextNonWhitespace(): @switch) match {
-      case ']' => false
-      case _ =>
-        in.retract()
-        true
+    in.nextNonWhitespace() != ']' && {
+      in.retract()
+      true
     }
 
   def nextArrayElement(trace: List[JsonError], in: OneCharReader): Boolean =
@@ -74,13 +69,10 @@ object Lexer {
       case c   => error("',' or ']'", c, trace)
     }
 
-  // avoids allocating lots of strings (they are often the bulk of incoming
-  // messages) by only checking for what we expect to see (Jon Pretty's idea).
-  //
-  // returns the index of the matched field, or -1
   def field(trace: List[JsonError], in: OneCharReader, matrix: StringMatrix): Int = {
     val f = enumeration(trace, in, matrix)
-    char(trace, in, ':')
+    val c = in.nextNonWhitespace()
+    if (c != ':') error("':'", c, trace)
     f
   }
 
@@ -135,23 +127,20 @@ object Lexer {
   def skipString(trace: List[JsonError], in: OneCharReader): Unit =
     skipString(in, evenBackSlashes = true)
 
-  @tailrec
-  private def skipFixedChars(in: OneCharReader, n: Int): Unit =
+  @tailrec private def skipFixedChars(in: OneCharReader, n: Int): Unit =
     if (n > 0) {
       in.readChar()
       skipFixedChars(in, n - 1)
     }
 
-  @tailrec
-  private def skipString(in: OneCharReader, evenBackSlashes: Boolean): Unit = {
+  @tailrec private def skipString(in: OneCharReader, evenBackSlashes: Boolean): Unit = {
     val ch = in.readChar()
     if (evenBackSlashes) {
       if (ch != '"') skipString(in, ch != '\\')
     } else skipString(in, evenBackSlashes = true)
   }
 
-  @tailrec
-  private def skipObject(in: OneCharReader, level: Int): Unit = {
+  @tailrec private def skipObject(in: OneCharReader, level: Int): Unit = {
     val ch = in.readChar()
     if (ch == '"') {
       skipString(in, evenBackSlashes = true)
@@ -161,8 +150,7 @@ object Lexer {
     else if (level != 0) skipObject(in, level - 1)
   }
 
-  @tailrec
-  private def skipArray(in: OneCharReader, level: Int): Unit = {
+  @tailrec private def skipArray(in: OneCharReader, level: Int): Unit = {
     val b = in.readChar()
     if (b == '"') {
       skipString(in, evenBackSlashes = true)
@@ -180,8 +168,7 @@ object Lexer {
 
       private[this] var escaped = false
 
-      @tailrec
-      override def read(): Int = {
+      @tailrec override def read(): Int = {
         val c = in.readChar()
         if (escaped) {
           escaped = false
@@ -266,8 +253,7 @@ object Lexer {
   }
 
   // consumes 4 hex characters after current
-  @noinline
-  def nextHex4(trace: List[JsonError], in: OneCharReader): Char = {
+  @noinline def nextHex4(trace: List[JsonError], in: OneCharReader): Char = {
     var i, accum = 0
     while (i < 4) {
       val c = in.readChar()
@@ -389,9 +375,8 @@ object Lexer {
   // non-positional for performance
   @inline private[this] def isNumber(c: Char): Boolean =
     (c: @switch) match {
-      case '+' | '-' | '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | '.' | 'e' | 'E' =>
-        true
-      case _ => false
+      case '+' | '-' | '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | '.' | 'e' | 'E' => true
+      case _                                                                                       => false
     }
 
   def readChars(

@@ -160,21 +160,28 @@ object UnsafeNumbers {
       else in.nextNonWhitespace().toInt
     val negate = current == '-'
     if (negate) current = in.readChar().toInt
-    var bigM10: java.math.BigInteger = null
-    var m10                          = -1L
+    var loM10                       = 0L
+    var loDigits                    = 0
+    var hiM10: java.math.BigDecimal = null
     if ('0' <= current && current <= '9') {
-      m10 = (current - '0').toLong
+      loM10 = (current - '0').toLong
+      loDigits += 1
       while ({
         current = in.read()
         '0' <= current && current <= '9'
       }) {
-        if (m10 < 922337203685477580L) {
-          if (m10 <= 0) m10 = (current - '0').toLong
-          else m10 = m10 * 10 + (current - '0')
-        } else {
-          if (bigM10 eq null) bigM10 = java.math.BigInteger.valueOf(m10)
-          bigM10 = bigM10.multiply(java.math.BigInteger.TEN).add(bigIntegers(current - '0'))
-          if (bigM10.bitLength >= max_bits) throw UnsafeNumber
+        loM10 = loM10 * 10 + (current - '0')
+        loDigits += 1
+        if (loM10 >= 100000000000000000L) {
+          if (negate) loM10 = -loM10
+          val bd = java.math.BigDecimal.valueOf(loM10)
+          if (hiM10 eq null) hiM10 = bd
+          else {
+            hiM10 = hiM10.scaleByPowerOfTen(loDigits).add(bd)
+            if (hiM10.unscaledValue.bitLength >= max_bits) throw UnsafeNumber
+          }
+          loM10 = 0
+          loDigits = 0
         }
       }
     }
@@ -184,18 +191,23 @@ object UnsafeNumbers {
         current = in.read()
         '0' <= current && current <= '9'
       }) {
+        loM10 = loM10 * 10 + (current - '0')
+        loDigits += 1
         e10 -= 1
-        if (m10 < 922337203685477580L) {
-          if (m10 <= 0) m10 = (current - '0').toLong
-          else m10 = m10 * 10 + (current - '0')
-        } else {
-          if (bigM10 eq null) bigM10 = java.math.BigInteger.valueOf(m10)
-          bigM10 = bigM10.multiply(java.math.BigInteger.TEN).add(bigIntegers(current - '0'))
-          if (bigM10.bitLength >= max_bits) throw UnsafeNumber
+        if (loM10 >= 100000000000000000L) {
+          if (negate) loM10 = -loM10
+          val bd = java.math.BigDecimal.valueOf(loM10)
+          if (hiM10 eq null) hiM10 = bd
+          else {
+            hiM10 = hiM10.scaleByPowerOfTen(loDigits).add(bd)
+            if (hiM10.unscaledValue.bitLength >= max_bits) throw UnsafeNumber
+          }
+          loM10 = 0
+          loDigits = 0
         }
       }
     }
-    if (m10 < 0) throw UnsafeNumber
+    if ((hiM10 eq null) && loDigits == 0) throw UnsafeNumber
     if ((current | 0x20) == 'e') {
       current = in.readChar().toInt
       val negateExp = current == '-'
@@ -218,12 +230,17 @@ object UnsafeNumbers {
       else throw UnsafeNumber
     }
     if (consume && current != -1) throw UnsafeNumber
-    if (bigM10 eq null) {
-      if (negate) m10 = -m10
-      return java.math.BigDecimal.valueOf(m10, -e10)
+    if (hiM10 eq null) {
+      if (negate) loM10 = -loM10
+      return java.math.BigDecimal.valueOf(loM10, -e10)
     }
-    if (negate) bigM10 = bigM10.negate
-    new java.math.BigDecimal(bigM10, -e10)
+    hiM10 = hiM10.scaleByPowerOfTen(loDigits + e10)
+    if (loDigits != 0) {
+      if (negate) loM10 = -loM10
+      hiM10 = hiM10.add(java.math.BigDecimal.valueOf(loM10, -e10))
+    }
+    if (hiM10.unscaledValue.bitLength >= max_bits) throw UnsafeNumber
+    hiM10
   }
 
   def float(num: String, max_bits: Int): Float =
