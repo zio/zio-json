@@ -1,4 +1,5 @@
-import zio.json.DecoderOps
+package zio.json
+
 import zio.json.ast.Json
 import zio.test.Assertion._
 import zio.test._
@@ -15,7 +16,7 @@ object DecoderVersionSpecificSpec extends ZIOSpecDefault {
           val expected = immutable.ArraySeq("5XL", "2XL", "XL")
 
           assert(jsonStr.fromJson[immutable.ArraySeq[String]])(isRight(equalTo(expected)))
-        },
+        }
       ),
       suite("fromJsonAST")(
         test("ArraySeq") {

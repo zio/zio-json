@@ -1,4 +1,5 @@
-import zio.json.DecoderOps
+package zio.json
+
 import zio.test.Assertion._
 import zio.test._
 

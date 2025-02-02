@@ -1,4 +1,5 @@
-import zio.json.EncoderOps
+package zio.json
+
 import zio.json.ast.Json
 import zio.test.Assertion._
 import zio.test._
@@ -15,7 +16,7 @@ object EncoderVesionSpecificSpec extends ZIOSpecDefault {
           assert(immutable.ArraySeq(1, 2, 3).toJson)(equalTo("[1,2,3]")) &&
           assert(immutable.ArraySeq[String]().toJsonPretty)(equalTo("[]")) &&
           assert(immutable.ArraySeq("foo", "bar").toJsonPretty)(equalTo("[\n  \"foo\",\n  \"bar\"\n]"))
-        },
+        }
       ),
       suite("toJsonAST")(
         test("collections") {
