@@ -56,13 +56,13 @@ object Lexer {
     }
 
   // True if we got anything besides a ], False for ]
-  def firstArrayElement(in: RetractReader): Boolean =
+  @inline def firstArrayElement(in: RetractReader): Boolean =
     in.nextNonWhitespace() != ']' && {
       in.retract()
       true
     }
 
-  def nextArrayElement(trace: List[JsonError], in: OneCharReader): Boolean =
+  @inline def nextArrayElement(trace: List[JsonError], in: OneCharReader): Boolean =
     (in.nextNonWhitespace(): @switch) match {
       case ',' => true
       case ']' => false
