@@ -225,7 +225,7 @@ object UnsafeNumbers {
     toBigDecimal(hiM10, loM10, loDigits, e10, max_bits, negate)
   }
 
-  private[this] def toBigDecimal(
+  @noinline private[this] def toBigDecimal(
     hi: java.math.BigDecimal,
     lo: Long,
     loDigits: Int,
@@ -476,7 +476,7 @@ object UnsafeNumbers {
 
   // Based on the 'Moderate Path' algorithm from the awesome library of Alexander Huszagh: https://github.com/Alexhuszagh/rust-lexical
   // Here is his inspiring post: https://www.reddit.com/r/rust/comments/a6j5j1/making_rust_float_parsing_fast_and_correct
-  private[this] def toDouble(m10: Long, e10: Int): Double =
+  @inline private[this] def toDouble(m10: Long, e10: Int): Double =
     if (m10 == 0 || e10 < -343) 0.0
     else if (e10 >= 310) Double.PositiveInfinity
     else {
