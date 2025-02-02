@@ -78,21 +78,13 @@ object Lexer {
   // messages) by only checking for what we expect to see (Jon Pretty's idea).
   //
   // returns the index of the matched field, or -1
-  def field(
-    trace: List[JsonError],
-    in: OneCharReader,
-    matrix: StringMatrix
-  ): Int = {
+  def field(trace: List[JsonError], in: OneCharReader, matrix: StringMatrix): Int = {
     val f = enumeration(trace, in, matrix)
     char(trace, in, ':')
     f
   }
 
-  def enumeration(
-    trace: List[JsonError],
-    in: OneCharReader,
-    matrix: StringMatrix
-  ): Int = {
+  def enumeration(trace: List[JsonError], in: OneCharReader, matrix: StringMatrix): Int = {
     var c = in.nextNonWhitespace()
     if (c != '"') error("'\"'", c, trace)
     var bs = matrix.initial
@@ -181,10 +173,7 @@ object Lexer {
   }
 
   // useful for embedded documents, e.g. CSV contained inside JSON
-  def streamingString(
-    trace: List[JsonError],
-    in: OneCharReader
-  ): java.io.Reader = {
+  def streamingString(trace: List[JsonError], in: OneCharReader): java.io.Reader = {
     char(trace, in, '"')
     new OneCharReader {
       def close(): Unit = in.close()
@@ -346,10 +335,7 @@ object Lexer {
       case UnsafeNumbers.UnsafeNumber => error("expected a Long", trace)
     }
 
-  def bigInteger(
-    trace: List[JsonError],
-    in: RetractReader
-  ): java.math.BigInteger =
+  def bigInteger(trace: List[JsonError], in: RetractReader): java.math.BigInteger =
     try {
       val i = UnsafeNumbers.bigInteger_(in, false, NumberMaxBits)
       in.retract()
@@ -376,10 +362,7 @@ object Lexer {
       case UnsafeNumbers.UnsafeNumber => error("expected a Double", trace)
     }
 
-  def bigDecimal(
-    trace: List[JsonError],
-    in: RetractReader
-  ): java.math.BigDecimal =
+  def bigDecimal(trace: List[JsonError], in: RetractReader): java.math.BigDecimal =
     try {
       val i = UnsafeNumbers.bigDecimal_(in, false, NumberMaxBits)
       in.retract()
