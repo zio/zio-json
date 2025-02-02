@@ -325,7 +325,7 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority1 with 
   implicit val int: JsonDecoder[Int]                         = number(Lexer.int, _.intValueExact())
   implicit val long: JsonDecoder[Long]                       = number(Lexer.long, _.longValueExact())
   implicit val bigInteger: JsonDecoder[java.math.BigInteger] = number(Lexer.bigInteger, _.toBigIntegerExact)
-  implicit val scalaBigInt: JsonDecoder[BigInt]              = bigInteger.map(x => x)
+  implicit val scalaBigInt: JsonDecoder[BigInt]              = number(Lexer.bigInteger, _.toBigIntegerExact)
   implicit val float: JsonDecoder[Float]                     = number(Lexer.float, _.floatValue())
   implicit val double: JsonDecoder[Double]                   = number(Lexer.double, _.doubleValue())
   implicit val bigDecimal: JsonDecoder[java.math.BigDecimal] = number(Lexer.bigDecimal, identity)

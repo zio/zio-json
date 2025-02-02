@@ -56,10 +56,7 @@ object SafeNumbers {
     try LongSome(UnsafeNumbers.long(num))
     catch { case _: UnexpectedEnd | UnsafeNumber => LongNone }
 
-  def bigInteger(
-    num: String,
-    max_bits: Int = 128
-  ): Option[java.math.BigInteger] =
+  def bigInteger(num: String, max_bits: Int = 128): Option[java.math.BigInteger] =
     try Some(UnsafeNumbers.bigInteger(num, max_bits))
     catch { case _: UnexpectedEnd | UnsafeNumber => None }
 
@@ -71,10 +68,7 @@ object SafeNumbers {
     try DoubleSome(UnsafeNumbers.double(num, max_bits))
     catch { case _: UnexpectedEnd | UnsafeNumber => DoubleNone }
 
-  def bigDecimal(
-    num: String,
-    max_bits: Int = 128
-  ): Option[java.math.BigDecimal] =
+  def bigDecimal(num: String, max_bits: Int = 128): Option[java.math.BigDecimal] =
     try Some(UnsafeNumbers.bigDecimal(num, max_bits))
     catch { case _: UnexpectedEnd | UnsafeNumber => None }
 
