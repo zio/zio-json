@@ -38,7 +38,7 @@ object Lexer {
     error(s"invalid '\\$c' in string", trace)
 
   // True if we got a string (implies a retraction), False for }
-  def firstField(trace: List[JsonError], in: RetractReader): Boolean =
+  @inline def firstField(trace: List[JsonError], in: RetractReader): Boolean =
     (in.nextNonWhitespace(): @switch) match {
       case '"' =>
         in.retract()
@@ -48,7 +48,7 @@ object Lexer {
     }
 
   // True if we got a comma, and False for }
-  def nextField(trace: List[JsonError], in: OneCharReader): Boolean =
+  @inline def nextField(trace: List[JsonError], in: OneCharReader): Boolean =
     (in.nextNonWhitespace(): @switch) match {
       case ',' => true
       case '}' => false
@@ -69,7 +69,7 @@ object Lexer {
       case c   => error("',' or ']'", c, trace)
     }
 
-  def field(trace: List[JsonError], in: OneCharReader, matrix: StringMatrix): Int = {
+  @inline def field(trace: List[JsonError], in: OneCharReader, matrix: StringMatrix): Int = {
     val f = enumeration(trace, in, matrix)
     val c = in.nextNonWhitespace()
     if (c != ':') error("':'", c, trace)
@@ -106,7 +106,7 @@ object Lexer {
     matrix.first(bs)
   }
 
-  def skipValue(trace: List[JsonError], in: RetractReader): Unit =
+  @noinline def skipValue(trace: List[JsonError], in: RetractReader): Unit =
     (in.nextNonWhitespace(): @switch) match {
       case 'n' | 't' => skipFixedChars(in, 3)
       case 'f'       => skipFixedChars(in, 4)
@@ -120,10 +120,11 @@ object Lexer {
     }
 
   def skipNumber(in: RetractReader): Unit = {
-    while (isNumber(in.readChar())) {}
+    while (isNumber(in.readChar())) ()
     in.retract()
   }
 
+  // FIXME: remove in the next major version
   def skipString(trace: List[JsonError], in: OneCharReader): Unit =
     skipString(in, evenBackSlashes = true)
 
@@ -160,7 +161,7 @@ object Lexer {
     else if (level != 0) skipArray(in, level - 1)
   }
 
-  // useful for embedded documents, e.g. CSV contained inside JSON
+  // FIXME: remove in the next major version
   def streamingString(trace: List[JsonError], in: OneCharReader): java.io.Reader = {
     char(trace, in, '"')
     new OneCharReader {
@@ -357,34 +358,23 @@ object Lexer {
       case UnsafeNumbers.UnsafeNumber => error(s"expected a $NumberMaxBits BigDecimal", trace)
     }
 
-  // optional whitespace and then an expected character
   @inline def char(trace: List[JsonError], in: OneCharReader, c: Char): Unit = {
     val got = in.nextNonWhitespace()
     if (got != c) error(s"'$c'", got, trace)
   }
 
-  @inline def charOnly(
-    trace: List[JsonError],
-    in: OneCharReader,
-    c: Char
-  ): Unit = {
+  @inline def charOnly(trace: List[JsonError], in: OneCharReader, c: Char): Unit = {
     val got = in.readChar()
     if (got != c) error(s"'$c'", got, trace)
   }
 
-  // non-positional for performance
   @inline private[this] def isNumber(c: Char): Boolean =
     (c: @switch) match {
       case '+' | '-' | '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | '.' | 'e' | 'E' => true
       case _                                                                                       => false
     }
 
-  def readChars(
-    trace: List[JsonError],
-    in: OneCharReader,
-    expect: Array[Char],
-    errMsg: String
-  ): Unit = {
+  def readChars(trace: List[JsonError], in: OneCharReader, expect: Array[Char], errMsg: String): Unit = {
     var i: Int = 0
     while (i < expect.length) {
       if (in.readChar() != expect(i)) error(s"expected '$errMsg'", trace)

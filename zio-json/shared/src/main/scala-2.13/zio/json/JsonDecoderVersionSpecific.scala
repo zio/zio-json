@@ -4,13 +4,8 @@ import zio.json.JsonDecoder.JsonError
 import zio.json.internal.RetractReader
 
 import scala.collection.immutable
-import scala.compiletime.*
-import scala.compiletime.ops.any.IsConst
 
 private[json] trait JsonDecoderVersionSpecific {
-  inline def derived[A: deriving.Mirror.Of](using config: JsonCodecConfiguration): JsonDecoder[A] =
-    DeriveJsonDecoder.gen[A]
-
   implicit def arraySeq[A: JsonDecoder: reflect.ClassTag]: JsonDecoder[immutable.ArraySeq[A]] =
     new CollectionJsonDecoder[immutable.ArraySeq[A]] {
       private[this] val arrayDecoder = JsonDecoder.array[A]
@@ -22,11 +17,4 @@ private[json] trait JsonDecoderVersionSpecific {
     }
 }
 
-trait DecoderLowPriorityVersionSpecific {
-  inline given unionOfStringEnumeration[T](using IsUnionOf[String, T]): JsonDecoder[T] =
-    val values = UnionDerivation.constValueUnionTuple[String, T]
-    JsonDecoder.string.mapOrFail {
-      case raw if values.toList.contains(raw) => Right(raw.asInstanceOf[T])
-      case _                                  => Left("expected one of: " + values.toList.mkString(", "))
-    }
-}
+private[json] trait DecoderLowPriorityVersionSpecific

@@ -23,7 +23,6 @@ import zio.{ Chunk, NonEmptyChunk }
 import java.util.UUID
 import scala.annotation._
 import scala.collection.{ immutable, mutable }
-import scala.reflect.ClassTag
 
 trait JsonEncoder[A] extends JsonEncoderPlatformSpecific[A] {
   self =>
@@ -33,7 +32,6 @@ trait JsonEncoder[A] extends JsonEncoderPlatformSpecific[A] {
    * user-defined function.
    */
   final def contramap[B](f: B => A): JsonEncoder[B] = new JsonEncoder[B] {
-
     override def unsafeEncode(b: B, indent: Option[Int], out: Write): Unit =
       self.unsafeEncode(f(b), indent, out)
 
@@ -41,8 +39,7 @@ trait JsonEncoder[A] extends JsonEncoderPlatformSpecific[A] {
 
     override def isEmpty(b: B): Boolean = self.isEmpty(f(b))
 
-    override final def toJsonAST(b: B): Either[String, Json] =
-      self.toJsonAST(f(b))
+    override final def toJsonAST(b: B): Either[String, Json] = self.toJsonAST(f(b))
   }
 
   /**
@@ -114,10 +111,9 @@ trait JsonEncoder[A] extends JsonEncoderPlatformSpecific[A] {
 }
 
 object JsonEncoder extends GeneratedTupleEncoders with EncoderLowPriority1 with JsonEncoderVersionSpecific {
-  def apply[A](implicit a: JsonEncoder[A]): JsonEncoder[A] = a
+  @inline def apply[A](implicit a: JsonEncoder[A]): JsonEncoder[A] = a
 
   implicit val string: JsonEncoder[String] = new JsonEncoder[String] {
-
     override def unsafeEncode(a: String, indent: Option[Int], out: Write): Unit = {
       out.write('"')
       val len = a.length
@@ -134,8 +130,7 @@ object JsonEncoder extends GeneratedTupleEncoders with EncoderLowPriority1 with 
       out.write('"')
     }
 
-    override final def toJsonAST(a: String): Either[String, Json] =
-      Right(Json.Str(a))
+    override final def toJsonAST(a: String): Either[String, Json] = new Right(Json.Str(a))
 
     private[this] def writeEncoded(a: String, out: Write): Unit = {
       val len = a.length
@@ -157,11 +152,9 @@ object JsonEncoder extends GeneratedTupleEncoders with EncoderLowPriority1 with 
       }
       out.write('"')
     }
-
   }
 
   implicit val char: JsonEncoder[Char] = new JsonEncoder[Char] {
-
     override def unsafeEncode(a: Char, indent: Option[Int], out: Write): Unit = {
       out.write('"')
       (a: @switch) match {
@@ -179,15 +172,13 @@ object JsonEncoder extends GeneratedTupleEncoders with EncoderLowPriority1 with 
       out.write('"')
     }
 
-    override final def toJsonAST(a: Char): Either[String, Json] =
-      Right(Json.Str(a.toString))
+    override final def toJsonAST(a: Char): Either[String, Json] = new Right(Json.Str(a.toString))
   }
 
   private[json] def explicit[A](f: A => String, g: A => Json): JsonEncoder[A] = new JsonEncoder[A] {
     def unsafeEncode(a: A, indent: Option[Int], out: Write): Unit = out.write(f(a))
 
-    override final def toJsonAST(a: A): Either[String, Json] =
-      Right(g(a))
+    override final def toJsonAST(a: A): Either[String, Json] = new Right(g(a))
   }
 
   private[json] def stringify[A](f: A => String): JsonEncoder[A] = new JsonEncoder[A] {
@@ -197,8 +188,7 @@ object JsonEncoder extends GeneratedTupleEncoders with EncoderLowPriority1 with 
       out.write('"')
     }
 
-    override final def toJsonAST(a: A): Either[String, Json] =
-      Right(Json.Str(f(a)))
+    override final def toJsonAST(a: A): Either[String, Json] = new Right(Json.Str(f(a)))
   }
 
   def suspend[A](encoder0: => JsonEncoder[A]): JsonEncoder[A] =
@@ -224,48 +214,36 @@ object JsonEncoder extends GeneratedTupleEncoders with EncoderLowPriority1 with 
     explicit(_.toString, n => Json.Num(new java.math.BigDecimal(n)))
   implicit val scalaBigInt: JsonEncoder[BigInt] =
     explicit(_.toString, n => Json.Num(new java.math.BigDecimal(n.bigInteger)))
-  implicit val double: JsonEncoder[Double] =
-    explicit(SafeNumbers.toString, n => Json.Num(n))
-  implicit val float: JsonEncoder[Float] =
-    explicit(SafeNumbers.toString, n => Json.Num(n))
+  implicit val double: JsonEncoder[Double]                   = explicit(SafeNumbers.toString, n => Json.Num(n))
+  implicit val float: JsonEncoder[Float]                     = explicit(SafeNumbers.toString, n => Json.Num(n))
   implicit val bigDecimal: JsonEncoder[java.math.BigDecimal] = explicit(_.toString, Json.Num.apply)
   implicit val scalaBigDecimal: JsonEncoder[BigDecimal]      = explicit(_.toString, n => Json.Num(n.bigDecimal))
 
   implicit def option[A](implicit A: JsonEncoder[A]): JsonEncoder[Option[A]] = new JsonEncoder[Option[A]] {
+    def unsafeEncode(oa: Option[A], indent: Option[Int], out: Write): Unit =
+      if (oa eq None) out.write("null")
+      else A.unsafeEncode(oa.get, indent, out)
 
-    def unsafeEncode(oa: Option[A], indent: Option[Int], out: Write): Unit = oa match {
-      case None    => out.write("null")
-      case Some(a) => A.unsafeEncode(a, indent, out)
-    }
-
-    override def isNothing(oa: Option[A]): Boolean =
-      oa match {
-        case None    => true
-        case Some(a) => A.isNothing(a)
-      }
+    override def isNothing(oa: Option[A]): Boolean = (oa eq None) || A.isNothing(oa.get)
 
     override final def toJsonAST(oa: Option[A]): Either[String, Json] =
-      oa match {
-        case None    => Right(Json.Null)
-        case Some(a) => A.toJsonAST(a)
-      }
+      if (oa eq None) new Right(Json.Null)
+      else A.toJsonAST(oa.get)
   }
 
-  def bump(indent: Option[Int]): Option[Int] = indent match {
-    case None    => None
-    case Some(i) => Some(i + 1)
-  }
+  def bump(indent: Option[Int]): Option[Int] =
+    if (indent ne None) new Some(indent.get + 1)
+    else indent
 
-  def pad(indent: Option[Int], out: Write): Unit = indent match {
-    case None => ()
-    case Some(n) =>
+  def pad(indent: Option[Int], out: Write): Unit =
+    if (indent ne None) {
       out.write('\n')
-      var i = n
+      var i = indent.get
       while (i > 0) {
         out.write("  ")
         i -= 1
       }
-  }
+    }
 
   implicit def either[A, B](implicit A: JsonEncoder[A], B: JsonEncoder[B]): JsonEncoder[Either[A, B]] =
     new JsonEncoder[Either[A, B]] {
@@ -320,12 +298,8 @@ object JsonEncoder extends GeneratedTupleEncoders with EncoderLowPriority1 with 
 private[json] trait EncoderLowPriority1 extends EncoderLowPriority2 {
   this: JsonEncoder.type =>
 
-  implicit def array[A](implicit
-    A: JsonEncoder[A],
-    classTag: ClassTag[A]
-  ): JsonEncoder[Array[A]] =
+  implicit def array[A](implicit A: JsonEncoder[A], classTag: scala.reflect.ClassTag[A]): JsonEncoder[Array[A]] =
     new JsonEncoder[Array[A]] {
-
       override def isEmpty(as: Array[A]): Boolean = as.isEmpty
 
       def unsafeEncode(as: Array[A], indent: Option[Int], out: Write): Unit =
@@ -389,17 +363,14 @@ private[json] trait EncoderLowPriority1 extends EncoderLowPriority2 {
 
   implicit def vector[A: JsonEncoder]: JsonEncoder[Vector[A]] = iterable[A, Vector]
 
-  implicit def set[A: JsonEncoder]: JsonEncoder[Set[A]] =
-    iterable[A, Set]
+  implicit def set[A: JsonEncoder]: JsonEncoder[Set[A]] = iterable[A, Set]
 
-  implicit def hashSet[A: JsonEncoder]: JsonEncoder[immutable.HashSet[A]] =
-    iterable[A, immutable.HashSet]
+  implicit def hashSet[A: JsonEncoder]: JsonEncoder[immutable.HashSet[A]] = iterable[A, immutable.HashSet]
 
   implicit def sortedSet[A: Ordering: JsonEncoder]: JsonEncoder[immutable.SortedSet[A]] =
     iterable[A, immutable.SortedSet]
 
-  implicit def map[K: JsonFieldEncoder, V: JsonEncoder]: JsonEncoder[Map[K, V]] =
-    keyValueIterable[K, V, Map]
+  implicit def map[K: JsonFieldEncoder, V: JsonEncoder]: JsonEncoder[Map[K, V]] = keyValueIterable[K, V, Map]
 
   implicit def hashMap[K: JsonFieldEncoder, V: JsonEncoder]: JsonEncoder[immutable.HashMap[K, V]] =
     keyValueIterable[K, V, immutable.HashMap]
@@ -417,11 +388,8 @@ private[json] trait EncoderLowPriority1 extends EncoderLowPriority2 {
 private[json] trait EncoderLowPriority2 extends EncoderLowPriority3 {
   this: JsonEncoder.type =>
 
-  implicit def iterable[A, T[X] <: Iterable[X]](implicit
-    A: JsonEncoder[A]
-  ): JsonEncoder[T[A]] =
+  implicit def iterable[A, T[X] <: Iterable[X]](implicit A: JsonEncoder[A]): JsonEncoder[T[A]] =
     new JsonEncoder[T[A]] {
-
       override def isEmpty(as: T[A]): Boolean = as.isEmpty
 
       def unsafeEncode(as: T[A], indent: Option[Int], out: Write): Unit =
@@ -471,7 +439,6 @@ private[json] trait EncoderLowPriority2 extends EncoderLowPriority3 {
     K: JsonFieldEncoder[K],
     A: JsonEncoder[A]
   ): JsonEncoder[T[K, A]] = new JsonEncoder[T[K, A]] {
-
     override def isEmpty(a: T[K, A]): Boolean = a.isEmpty
 
     def unsafeEncode(kvs: T[K, A], indent: Option[Int], out: Write): Unit =
