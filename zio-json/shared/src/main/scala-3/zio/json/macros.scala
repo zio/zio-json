@@ -12,6 +12,7 @@ import zio.json.ast.Json
 import zio.json.internal.{ FieldEncoder, Lexer, RetractReader, StringMatrix, Write }
 
 import scala.annotation._
+import scala.collection.Factory
 import scala.collection.mutable
 import scala.language.experimental.macros
 
@@ -516,6 +517,9 @@ sealed class JsonDecoderDerivation(config: JsonCodecConfiguration) extends Deriv
   private final class ArraySeq(p: Array[Any]) extends IndexedSeq[Any] {
     def apply(i: Int): Any = p(i)
     def length: Int        = p.length
+    override def to[A](factory: Factory[Any, A]): A =
+      if (factory.isInstanceOf[Factory[Any, Array[Any]]]) p.asInstanceOf[A]
+      else super.to(factory)
   }
 }
 
@@ -540,6 +544,9 @@ object DeriveJsonDecoder extends JsonDecoderDerivation(JsonCodecConfiguration.de
   private final class ArraySeq(p: Array[Any]) extends IndexedSeq[Any] {
     def apply(i: Int): Any = p(i)
     def length: Int        = p.length
+    override def to[A](factory: Factory[Any, A]): A =
+      if (factory.isInstanceOf[Factory[Any, Array[Any]]]) p.asInstanceOf[A]
+      else super.to(factory)
   }
 }
 
