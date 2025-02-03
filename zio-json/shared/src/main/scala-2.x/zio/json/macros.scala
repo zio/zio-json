@@ -8,6 +8,7 @@ import zio.json.internal.{ FieldEncoder, Lexer, RetractReader, StringMatrix, Wri
 
 import scala.annotation._
 import scala.language.experimental.macros
+import scala.reflect.ClassTag
 
 /**
  * If used on a case class field, determines the name of the JSON field. Defaults to the case class field name.
