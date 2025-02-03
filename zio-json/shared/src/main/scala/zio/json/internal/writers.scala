@@ -43,7 +43,7 @@ final class FastStringWrite(initial: Int) extends Write {
   def buffer: CharSequence = sb
 }
 
-// like StringBuilder but doesn't have any encoding or range checks
+// FIXME: remove in the next major version
 private[zio] final class FastStringBuilder(initial: Int) {
   private[this] var chars: Array[Char] = new Array[Char](initial)
   private[this] var i: Int             = 0

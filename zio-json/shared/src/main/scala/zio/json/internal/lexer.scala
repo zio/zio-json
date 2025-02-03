@@ -203,7 +203,8 @@ object Lexer {
   def string(trace: List[JsonError], in: OneCharReader): CharSequence = {
     var c = in.nextNonWhitespace()
     if (c != '"') error("'\"'", c, trace)
-    val sb = new FastStringBuilder(64)
+    var cs = new Array[Char](64)
+    var i = 0
     while ({
       c = in.readChar()
       c != '"'
@@ -222,9 +223,11 @@ object Lexer {
           case _    => error(c, trace)
         }
       } else if (c < ' ') error("invalid control in string", trace)
-      sb.append(c)
+      if (i == cs.length) cs = java.util.Arrays.copyOf(cs, i << 1)
+      cs(i) = c
+      i += 1
     }
-    sb.buffer
+    new String(cs, 0, i)
   }
 
   def char(trace: List[JsonError], in: OneCharReader): Char = {
