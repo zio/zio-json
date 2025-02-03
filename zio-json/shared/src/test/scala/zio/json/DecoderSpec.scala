@@ -508,17 +508,17 @@ object DecoderSpec extends ZIOSpecDefault {
         test("option custom codec") {
           val json = """{"keyStatus": "certified"}"""
           final case class Foo(v: String)
-          final case class RudderSettings(keyStatus:  String, policyMode: Option[Foo])
-          implicit val encoderOptionPolicyMode:  JsonEncoder[Option[Foo]]  = JsonEncoder.string.contramap {
+          final case class RudderSettings(keyStatus: String, policyMode: Option[Foo])
+          implicit val encoderOptionPolicyMode: JsonEncoder[Option[Foo]] = JsonEncoder.string.contramap {
             case None    => "default"
             case Some(f) => f.v
           }
-          implicit val decoderOptionPolicyMode:  JsonDecoder[Option[Foo]]  = JsonDecoder[Option[String]].mapOrFail {
+          implicit val decoderOptionPolicyMode: JsonDecoder[Option[Foo]] = JsonDecoder[Option[String]].mapOrFail {
             case None | Some("default") => Right(None)
             case Some(s)                => Right(Some(Foo(s)))
           }
           implicit lazy val codecRudderSettings: JsonCodec[RudderSettings] = DeriveJsonCodec.gen
-          assertTrue(json.fromJson[RudderSettings] == Right(RudderSettings("certified",None)))
+          assertTrue(json.fromJson[RudderSettings] == Right(RudderSettings("certified", None)))
         }
       ),
       suite("fromJsonAST")(
