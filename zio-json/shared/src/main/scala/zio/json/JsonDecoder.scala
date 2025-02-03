@@ -161,7 +161,9 @@ trait JsonDecoder[A] extends JsonDecoderPlatformSpecific[A] {
    * with some type of error.
    */
   final def mapOrFail[B](f: A => Either[String, B]): JsonDecoder[B] =
-    new JsonDecoder[B] {
+    new MappedJsonDecoder[B] {
+      private[json] def underlying: JsonDecoder[A] = self
+
       def unsafeDecode(trace: List[JsonError], in: RetractReader): B =
         f(self.unsafeDecode(trace, in)) match {
           case Right(b)  => b
@@ -254,7 +256,9 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority1 with 
   }
 
   def suspend[A](decoder0: => JsonDecoder[A]): JsonDecoder[A] =
-    new JsonDecoder[A] {
+    new MappedJsonDecoder[A] {
+      private[json] def underlying: JsonDecoder[A] = decoder0
+
       lazy val decoder = decoder0
 
       override def unsafeDecode(trace: List[JsonError], in: RetractReader): A = decoder.unsafeDecode(trace, in)
