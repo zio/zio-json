@@ -204,7 +204,7 @@ object Lexer {
     var c = in.nextNonWhitespace()
     if (c != '"') error("'\"'", c, trace)
     var cs = new Array[Char](64)
-    var i = 0
+    var i  = 0
     while ({
       c = in.readChar()
       c != '"'
