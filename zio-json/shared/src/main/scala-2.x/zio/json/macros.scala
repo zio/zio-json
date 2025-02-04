@@ -297,6 +297,7 @@ object DeriveJsonDecoder {
 
         @tailrec
         private[this] def allowMissingValueDecoder(d: JsonDecoder[_]): Boolean = d match {
+          case _: OptionJsonDecoder[_]     => true
           case _: CollectionJsonDecoder[_] => !explicitEmptyCollections
           case d: MappedJsonDecoder[_]     => allowMissingValueDecoder(d.underlying)
           case _                           => true

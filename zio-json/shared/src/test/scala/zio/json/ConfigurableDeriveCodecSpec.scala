@@ -579,6 +579,48 @@ object ConfigurableDeriveCodecSpec extends ZIOSpecDefault {
           implicit val codec: JsonCodec[EmptyListMap] = DeriveJsonCodec.gen
 
           assertTrue("""{}""".fromJson[EmptyListMap].toOption.contains(expectedObj), expectedObj.toJson == expectedStr)
+        },
+        test("for a transform collection") {
+          case class MappedCollection(a: List[Int])
+          case class EmptyMappedCollection(a: MappedCollection)
+          val expectedStr = """{"a":[]}"""
+          val expectedObj = EmptyMappedCollection(MappedCollection(List.empty))
+
+          implicit val config: JsonCodecConfiguration =
+            JsonCodecConfiguration(explicitEmptyCollections = ExplicitEmptyCollections(decoding = false))
+          implicit val codec: JsonCodec[MappedCollection] = JsonCodec
+            .list[Int]
+            .transform(
+              v => MappedCollection(v),
+              _.a
+            )
+          implicit val emptyMappedCollectionCodec: JsonCodec[EmptyMappedCollection] = DeriveJsonCodec.gen
+
+          assertTrue(
+            """{}""".fromJson[EmptyMappedCollection].toOption.contains(expectedObj),
+            expectedObj.toJson == expectedStr
+          )
+        },
+        test("for a transformOrFail collection") {
+          case class MappedCollection(a: List[Int])
+          case class EmptyMappedCollection(a: MappedCollection)
+          val expectedStr = """{"a":[]}"""
+          val expectedObj = EmptyMappedCollection(MappedCollection(List.empty))
+
+          implicit val config: JsonCodecConfiguration =
+            JsonCodecConfiguration(explicitEmptyCollections = ExplicitEmptyCollections(decoding = false))
+          implicit val codec: JsonCodec[MappedCollection] = JsonCodec
+            .list[Int]
+            .transformOrFail(
+              v => Right(MappedCollection(v)),
+              _.a
+            )
+          implicit val emptyMappedCollectionCodec: JsonCodec[EmptyMappedCollection] = DeriveJsonCodec.gen
+
+          assertTrue(
+            """{}""".fromJson[EmptyMappedCollection].toOption.contains(expectedObj),
+            expectedObj.toJson == expectedStr
+          )
         }
       ),
       suite("should not write empty collections and fail missing empty collections")(
@@ -768,6 +810,42 @@ object ConfigurableDeriveCodecSpec extends ZIOSpecDefault {
           implicit val codec: JsonCodec[EmptyListMap] = DeriveJsonCodec.gen
 
           assertTrue(expectedStr.fromJson[EmptyListMap].isLeft, expectedObj.toJson == expectedStr)
+        },
+        test("for a transform collection") {
+          case class MappedCollection(a: List[Int])
+          case class EmptyMappedCollection(a: MappedCollection)
+          val expectedStr = """{}"""
+          val expectedObj = EmptyMappedCollection(MappedCollection(List.empty))
+
+          implicit val config: JsonCodecConfiguration =
+            JsonCodecConfiguration(explicitEmptyCollections = ExplicitEmptyCollections(false))
+          implicit val codec: JsonCodec[MappedCollection] = JsonCodec
+            .list[Int]
+            .transform(
+              v => MappedCollection(v),
+              _.a
+            )
+          implicit val emptyMappedCollectionCodec: JsonCodec[EmptyMappedCollection] = DeriveJsonCodec.gen
+
+          assertTrue(expectedStr.fromJson[EmptyMappedCollection].isLeft, expectedObj.toJson == expectedStr)
+        },
+        test("for a transformOrFail collection") {
+          case class MappedCollection(a: List[Int])
+          case class EmptyMappedCollection(a: MappedCollection)
+          val expectedStr = """{}"""
+          val expectedObj = EmptyMappedCollection(MappedCollection(List.empty))
+
+          implicit val config: JsonCodecConfiguration =
+            JsonCodecConfiguration(explicitEmptyCollections = ExplicitEmptyCollections(false))
+          implicit val codec: JsonCodec[MappedCollection] = JsonCodec
+            .list[Int]
+            .transformOrFail(
+              v => Right(MappedCollection(v)),
+              _.a
+            )
+          implicit val emptyMappedCollectionCodec: JsonCodec[EmptyMappedCollection] = DeriveJsonCodec.gen
+
+          assertTrue(expectedStr.fromJson[EmptyMappedCollection].isLeft, expectedObj.toJson == expectedStr)
         }
       )
     )
