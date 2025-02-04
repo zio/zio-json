@@ -300,7 +300,7 @@ object DeriveJsonDecoder {
           case _: OptionJsonDecoder[_]     => true
           case _: CollectionJsonDecoder[_] => !explicitEmptyCollections
           case d: MappedJsonDecoder[_]     => allowMissingValueDecoder(d.underlying)
-          case _                           => false
+          case _                           => true
         }
 
         override def unsafeDecodeMissing(trace: List[JsonError]): A = {
