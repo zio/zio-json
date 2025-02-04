@@ -359,7 +359,54 @@ private[json] trait EncoderLowPriority1 extends EncoderLowPriority2 {
 
   implicit def treeSet[A: JsonEncoder]: JsonEncoder[immutable.TreeSet[A]] = iterable[A, immutable.TreeSet]
 
-  implicit def list[A: JsonEncoder]: JsonEncoder[List[A]] = iterable[A, List]
+  implicit def list[A](implicit A: JsonEncoder[A]): JsonEncoder[List[A]] =
+    new JsonEncoder[List[A]] {
+      override def isEmpty(as: List[A]): Boolean = as eq Nil
+
+      def unsafeEncode(as: List[A], indent: Option[Int], out: Write): Unit =
+        if (as eq Nil) out.write("[]")
+        else {
+          out.write('[')
+          if (indent.isDefined) unsafeEncodePadded(as, indent, out)
+          else unsafeEncodeCompact(as, indent, out)
+          out.write(']')
+        }
+
+      private[this] def unsafeEncodeCompact(as: List[A], indent: Option[Int], out: Write): Unit = {
+        var as_   = as
+        var first = true
+        while (as_ ne Nil) {
+          if (first) first = false
+          else out.write(',')
+          A.unsafeEncode(as_.head, indent, out)
+          as_ = as_.tail
+        }
+      }
+
+      private[this] def unsafeEncodePadded(as: List[A], indent: Option[Int], out: Write): Unit = {
+        val indent_ = bump(indent)
+        pad(indent_, out)
+        var as_   = as
+        var first = true
+        while (as_ ne Nil) {
+          if (first) first = false
+          else {
+            out.write(',')
+            pad(indent_, out)
+          }
+          A.unsafeEncode(as_.head, indent_, out)
+          as_ = as_.tail
+        }
+        pad(indent, out)
+      }
+
+      override final def toJsonAST(as: List[A]): Either[String, Json] =
+        as.map(A.toJsonAST)
+          .foldLeft[Either[String, Chunk[Json]]](Right(Chunk.empty)) { (s, i) =>
+            s.flatMap(chunk => i.map(item => chunk :+ item))
+          }
+          .map(Json.Arr(_))
+    }
 
   implicit def vector[A: JsonEncoder]: JsonEncoder[Vector[A]] = iterable[A, Vector]
 
