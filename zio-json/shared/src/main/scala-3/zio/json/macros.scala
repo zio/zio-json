@@ -330,7 +330,7 @@ sealed class JsonDecoderDerivation(config: JsonCodecConfiguration) extends Deriv
             }
             idx += 1
           }
-          ctx.rawConstruct(new ArraySeq(ps))
+          ctx.rawConstruct(ps)
         }
           
         override def unsafeDecode(trace: List[JsonError], in: RetractReader): A = {
@@ -362,7 +362,7 @@ sealed class JsonDecoderDerivation(config: JsonCodecConfiguration) extends Deriv
             }
             idx += 1
           }
-          ctx.rawConstruct(new ArraySeq(ps))
+          ctx.rawConstruct(ps)
         }
 
         override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): A =
@@ -391,7 +391,7 @@ sealed class JsonDecoderDerivation(config: JsonCodecConfiguration) extends Deriv
                 }
                 idx += 1
               }
-              ctx.rawConstruct(new ArraySeq(ps))
+              ctx.rawConstruct(ps)
             case _ => Lexer.error("Not an object", trace)
           }
       }
@@ -512,13 +512,10 @@ sealed class JsonDecoderDerivation(config: JsonCodecConfiguration) extends Deriv
 
   inline def gen[A](using mirror: Mirror.Of[A]) = self.derived[A]
 
-  // Backcompat for 2.12, otherwise we'd use ArraySeq.unsafeWrapArray
+  // FIXME: remove in the next major version
   private final class ArraySeq(p: Array[Any]) extends IndexedSeq[Any] {
     def apply(i: Int): Any = p(i)
     def length: Int        = p.length
-    override def to[A](factory: Factory[Any, A]): A =
-      if (factory.isInstanceOf[Factory[Any, Array[Any]]]) p.asInstanceOf[A]
-      else super.to(factory)
   }
 }
 
@@ -539,13 +536,10 @@ object DeriveJsonDecoder extends JsonDecoderDerivation(JsonCodecConfiguration.de
     derivation.derived[A]
   }
 
-  // Backcompat for 2.12, otherwise we'd use ArraySeq.unsafeWrapArray
+  // FIXME: remove in the next major version
   private final class ArraySeq(p: Array[Any]) extends IndexedSeq[Any] {
     def apply(i: Int): Any = p(i)
     def length: Int        = p.length
-    override def to[A](factory: Factory[Any, A]): A =
-      if (factory.isInstanceOf[Factory[Any, Array[Any]]]) p.asInstanceOf[A]
-      else super.to(factory)
   }
 }
 
