@@ -85,20 +85,8 @@ object Lexer {
       c = in.readChar()
       c != '"'
     }) {
-      if (c == '\\') {
-        (in.readChar(): @switch) match {
-          case '"'  => c = '"'
-          case '\\' => c = '\\'
-          case '/'  => c = '/'
-          case 'b'  => c = '\b'
-          case 'f'  => c = '\f'
-          case 'n'  => c = '\n'
-          case 'r'  => c = '\r'
-          case 't'  => c = '\t'
-          case 'u'  => c = nextHex4(trace, in)
-          case _    => error(c, trace)
-        }
-      } else if (c < ' ') error("invalid control in string", trace)
+      if (c == '\\') c = nextEscaped(trace, in)
+      else if (c < ' ') error("invalid control in string", trace)
       bs = matrix.update(bs, i, c)
       i += 1
     }
@@ -181,7 +169,7 @@ object Lexer {
             case 'r'              => '\r'
             case 't'              => '\t'
             case 'u'              => Lexer.nextHex4(trace, in)
-            case _                => Lexer.error(c, trace)
+            case c                => Lexer.error(c, trace)
           }).toInt
         } else if (c == '\\') {
           escaped = true
@@ -209,20 +197,8 @@ object Lexer {
       c = in.readChar()
       c != '"'
     }) {
-      if (c == '\\') {
-        (in.readChar(): @switch) match {
-          case '"'  => c = '"'
-          case '\\' => c = '\\'
-          case '/'  => c = '/'
-          case 'b'  => c = '\b'
-          case 'f'  => c = '\f'
-          case 'n'  => c = '\n'
-          case 'r'  => c = '\r'
-          case 't'  => c = '\t'
-          case 'u'  => c = nextHex4(trace, in)
-          case _    => error(c, trace)
-        }
-      } else if (c < ' ') error("invalid control in string", trace)
+      if (c == '\\') c = nextEscaped(trace, in)
+      else if (c < ' ') error("invalid control in string", trace)
       if (i == cs.length) cs = java.util.Arrays.copyOf(cs, i << 1)
       cs(i) = c
       i += 1
@@ -236,28 +212,29 @@ object Lexer {
     c = in.readChar()
     if (
       c == '"' || {
-        if (c == '\\') {
-          (in.readChar(): @switch) match {
-            case '"'  => c = '"'
-            case '\\' => c = '\\'
-            case '/'  => c = '/'
-            case 'b'  => c = '\b'
-            case 'f'  => c = '\f'
-            case 'n'  => c = '\n'
-            case 'r'  => c = '\r'
-            case 't'  => c = '\t'
-            case 'u'  => c = nextHex4(trace, in)
-            case _    => error(c, trace)
-          }
-        } else if (c < ' ') error("invalid control in string", trace)
+        if (c == '\\') c = nextEscaped(trace, in)
+        else if (c < ' ') error("invalid control in string", trace)
         in.readChar() != '"'
       }
     ) error("expected single character string", trace)
     c
   }
 
-  // consumes 4 hex characters after current
-  @noinline def nextHex4(trace: List[JsonError], in: OneCharReader): Char = {
+  @noinline private[this] def nextEscaped(trace: List[JsonError], in: OneCharReader): Char =
+    (in.readChar(): @switch) match {
+      case '"'  => '"'
+      case '\\' => '\\'
+      case '/'  => '/'
+      case 'b'  => '\b'
+      case 'f'  => '\f'
+      case 'n'  => '\n'
+      case 'r'  => '\r'
+      case 't'  => '\t'
+      case 'u'  => nextHex4(trace, in)
+      case c    => error(c, trace)
+    }
+
+  def nextHex4(trace: List[JsonError], in: OneCharReader): Char = {
     var i, accum = 0
     while (i < 4) {
       val c = in.readChar()

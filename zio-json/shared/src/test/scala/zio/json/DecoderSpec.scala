@@ -16,6 +16,25 @@ object DecoderSpec extends ZIOSpecDefault {
   val spec: Spec[Environment, Any] =
     suite("Decoder")(
       suite("fromJson")(
+        test("string") {
+          assert(""""abc"""".fromJson[String])(isRight(equalTo("abc"))) &&
+          assert(""""abc\n"""".fromJson[String])(isRight(equalTo("abc\n"))) &&
+          assert("\"abc\\u0182\"".fromJson[String])(isRight(equalTo("abcƂ"))) &&
+          assert("\"abc\\u1Ee1\"".fromJson[String])(isRight(equalTo("abcỡ"))) &&
+          assert(""""abc\x"""".fromJson[String])(isLeft(equalTo("""(invalid '\x' in string)"""))) &&
+          assert("\"\u0000\"".fromJson[String])(isLeft(equalTo("""(invalid control in string)"""))) &&
+          assert("\"\\u0000\"".replace('0', 'g').fromJson[String])(isLeft(equalTo("""(invalid charcode in string)""")))
+        },
+        test("char") {
+          assert(""""a"""".fromJson[Char])(isRight(equalTo('a'))) &&
+          assert(""""\n"""".fromJson[Char])(isRight(equalTo('\n'))) &&
+          assert("\"\\u0182\"".fromJson[Char])(isRight(equalTo('Ƃ'))) &&
+          assert("\"\\u1Ee1\"".fromJson[Char])(isRight(equalTo('ỡ'))) &&
+          assert(""""aa"""".fromJson[Char])(isLeft(equalTo("""(expected single character string)"""))) &&
+          assert(""""\x"""".fromJson[Char])(isLeft(equalTo("""(invalid '\x' in string)"""))) &&
+          assert("\"\u0000\"".fromJson[Char])(isLeft(equalTo("""(invalid control in string)"""))) &&
+          assert("\"\\u0000\"".replace('0', 'g').fromJson[Char])(isLeft(equalTo("""(invalid charcode in string)""")))
+        },
         test("byte") {
           assert("-123".fromJson[Byte])(isRight(equalTo(-123: Byte))) &&
           assert("123".fromJson[Byte])(isRight(equalTo(123: Byte))) &&
