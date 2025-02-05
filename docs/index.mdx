@@ -4,6 +4,9 @@ title: "Getting Started with ZIO Json"
 sidebar_label: "Getting Started"
 ---
 
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
 [ZIO Json](https://github.com/zio/zio-json) is a fast and secure JSON library with tight ZIO integration.
 
 @PROJECT_BADGES@
@@ -42,9 +45,22 @@ Let's try a simple example of encoding and decoding JSON using ZIO JSON.
 
 All the following code snippets assume that the following imports have been declared
 
+<Tabs groupId="language">
+  <TabItem value="scala 2" label="Scala 2">
+
 ```scala
 import zio.json._
 ```
+
+  </TabItem>
+  <TabItem value="scala 3" label="Scala 3" default>
+
+```scala
+import zio.json.*
+```
+
+  </TabItem>
+</Tabs>
 
 Say we want to be able to read some JSON like
 
@@ -58,21 +74,30 @@ into a Scala `case class`
 case class Banana(curvature: Double)
 ```
 
+<Tabs groupId="language">
+  <TabItem value="scala 2" label="Scala 2">
+
+To do this, we create an *instance* of the `JsonDecoder` typeclass for `Banana` using the `zio-json` code generator. It is best practice to put it on the companion of `Banana`, like so
+
+```scala
+object Banana {
+  implicit val decoder: JsonDecoder[Banana] = DeriveJsonDecoder.gen[Banana]
+}
+```
+
+  </TabItem>
+  <TabItem value="scala 3" label="Scala 3" default>
+
 To do this, we derive an *instance* of the `JsonDecoder` typeclass for `Banana`.
 
 ```scala
 case class Banana(curvature: Double) derives JsonDecoder
 ```
 
-> [!NOTE]
->
-> In scala 2, we need to use the `zio-json` code generator. It is best practice to put it on the companion of `Banana`, like so
->
-> ```scala
-> object Banana {
->   implicit val decoder: JsonDecoder[Banana] = DeriveJsonDecoder.gen[Banana]
-> }
-> ```
+Note: If your case class is defining default parameters, -Yretain-trees needs to be added to scalacOptions.
+
+  </TabItem>
+</Tabs>
 
 Now we can parse JSON into our object
 
@@ -83,9 +108,27 @@ val res: Either[String, Banana] = Right(Banana(0.5))
 
 Likewise, to produce JSON from our data we derive a `JsonEncoder`
 
+<Tabs groupId="language">
+  <TabItem value="scala 2" label="Scala 2">
+
+```scala
+object Banana {
+  ...
+  implicit val encoder: JsonEncoder[Banana] = DeriveJsonEncoder.gen[Banana]
+}
+```
+
+  </TabItem>
+  <TabItem value="scala 3" label="Scala 3" default>
+
 ```scala
 case class Banana(curvature: Double) derives JsonEncoder
+```
 
+  </TabItem>
+</Tabs>
+
+```
 scala> Banana(0.5).toJson
 val res: String = {"curvature":0.5}
 
@@ -96,16 +139,6 @@ val res: String =
 }
 ```
 
-> [!NOTE]
->
-> In scala 2:
-> ```scala
-> object Banana {
->   ...
->   implicit val encoder: JsonEncoder[Banana] = DeriveJsonEncoder.gen[Banana]
-> }
-> ```
-
 And bad JSON will produce an error in `jq` syntax with an additional piece of contextual information (in parentheses)
 
 ```
@@ -115,49 +148,50 @@ val res: Either[String, Banana] = Left(.curvature(expected a Double))
 
 Say we extend our data model to include more data types
 
+<Tabs groupId="language">
+  <TabItem value="scala 2" label="Scala 2">
+
+```scala
+sealed trait Fruit
+case class Banana(curvature: Double) extends Fruit
+case class Apple (poison: Boolean)   extends Fruit
+```
+
+  </TabItem>
+  <TabItem value="scala 3" label="Scala 3" default>
+
 ```scala
 enum Fruit:
   case Banana(curvature: Double) extends Fruit
-  case Apple(poison: Boolean)    extends Fruit
+  case Apple (poison: Boolean)    extends Fruit
 ```
 
-we can generate the encoder and decoder for the entire `sealed` family using `JsonCodec`
+  </TabItem>
+</Tabs>
+
+we can generate the encoder and decoder for the entire `sealed` family
+
+<Tabs groupId="language">
+  <TabItem value="scala 2" label="Scala 2">
+
+```scala
+object Fruit {
+  implicit val decoder: JsonDecoder[Fruit] = DeriveJsonDecoder.gen[Fruit]
+  implicit val encoder: JsonEncoder[Fruit] = DeriveJsonEncoder.gen[Fruit]
+}
+```
+
+  </TabItem>
+  <TabItem value="scala 3" label="Scala 3" default>
 
 ```scala
 enum Fruit derives JsonCodec:
   case Banana(curvature: Double)
-  case Apple(poison: Boolean)
+  case Apple (poison: Boolean)
 ```
 
-> [!NOTE]
->
-> In scala 2:
->
-> ```scala mdoc:compile-only
-> import zio.json._
-> 
-> sealed trait Fruit                   extends Product with Serializable
-> case class Banana(curvature: Double) extends Fruit
-> case class Apple(poison: Boolean)    extends Fruit
-> 
-> object Fruit {
->   implicit val decoder: JsonDecoder[Fruit] =
->     DeriveJsonDecoder.gen[Fruit]
-> 
->   implicit val encoder: JsonEncoder[Fruit] =
->     DeriveJsonEncoder.gen[Fruit]
-> }
-> 
-> val json1         = """{ "Banana":{ "curvature":0.5 }}"""
-> val json2         = """{ "Apple": { "poison": false }}"""
-> val malformedJson = """{ "Banana":{ "curvature": true }}"""
-> 
-> json1.fromJson[Fruit]
-> json2.fromJson[Fruit]
-> malformedJson.fromJson[Fruit]
-> 
-> List(Apple(false), Banana(0.4)).toJsonPretty
-> ```
+  </TabItem>
+</Tabs>
 
 allowing us to load the fruit based on a single field type tag in the JSON
 
@@ -170,6 +204,38 @@ val res: Either[String, Fruit] = Right(Apple(false))
 ```
 
 Almost all of the standard library data types are supported as fields on the case class, and it is easy to add support if one is missing.
+
+<Tabs groupId="language">
+  <TabItem value="scala 2" label="Scala 2">
+
+```scala mdoc:compile-only
+import zio.json._
+
+sealed trait Fruit                   extends Product with Serializable
+case class Banana(curvature: Double) extends Fruit
+case class Apple(poison: Boolean)    extends Fruit
+
+object Fruit {
+  implicit val decoder: JsonDecoder[Fruit] =
+    DeriveJsonDecoder.gen[Fruit]
+
+  implicit val encoder: JsonEncoder[Fruit] =
+    DeriveJsonEncoder.gen[Fruit]
+}
+
+val json1         = """{ "Banana":{ "curvature":0.5 }}"""
+val json2         = """{ "Apple": { "poison": false }}"""
+val malformedJson = """{ "Banana":{ "curvature": true }}"""
+
+json1.fromJson[Fruit]
+json2.fromJson[Fruit]
+malformedJson.fromJson[Fruit]
+
+List(Apple(false), Banana(0.4)).toJsonPretty
+```
+
+  </TabItem>
+  <TabItem value="scala 3" label="Scala 3" default>
 
 ```scala
 import zio.json.*
@@ -190,6 +256,9 @@ malformedJson.fromJson[Fruit]
 
 List(Apple(false), Banana(0.4)).toJsonPretty
 ```
+
+  </TabItem>
+</Tabs>
 
 # How
 
