@@ -204,20 +204,18 @@ object JsonEncoder extends GeneratedTupleEncoders with EncoderLowPriority1 with 
       override def toJsonAST(a: A): Either[String, Json] = encoder.toJsonAST(a)
     }
 
-  implicit val boolean: JsonEncoder[Boolean] = explicit(_.toString, Json.Bool.apply)
-  implicit val symbol: JsonEncoder[Symbol]   = string.contramap(_.name)
-  implicit val byte: JsonEncoder[Byte]       = explicit(_.toString, n => Json.Num(n))
-  implicit val short: JsonEncoder[Short]     = explicit(_.toString, n => Json.Num(n))
-  implicit val int: JsonEncoder[Int]         = explicit(_.toString, n => Json.Num(n))
-  implicit val long: JsonEncoder[Long]       = explicit(_.toString, n => Json.Num(n))
-  implicit val bigInteger: JsonEncoder[java.math.BigInteger] =
-    explicit(_.toString, n => Json.Num(new java.math.BigDecimal(n)))
-  implicit val scalaBigInt: JsonEncoder[BigInt] =
-    explicit(_.toString, n => Json.Num(new java.math.BigDecimal(n.bigInteger)))
-  implicit val double: JsonEncoder[Double]                   = explicit(SafeNumbers.toString, n => Json.Num(n))
-  implicit val float: JsonEncoder[Float]                     = explicit(SafeNumbers.toString, n => Json.Num(n))
-  implicit val bigDecimal: JsonEncoder[java.math.BigDecimal] = explicit(_.toString, Json.Num.apply)
-  implicit val scalaBigDecimal: JsonEncoder[BigDecimal]      = explicit(_.toString, n => Json.Num(n.bigDecimal))
+  implicit val boolean: JsonEncoder[Boolean]                 = explicit(_.toString, Json.Bool.apply)
+  implicit val symbol: JsonEncoder[Symbol]                   = string.contramap(_.name)
+  implicit val byte: JsonEncoder[Byte]                       = explicit(_.toString, Json.Num.apply)
+  implicit val short: JsonEncoder[Short]                     = explicit(_.toString, Json.Num.apply)
+  implicit val int: JsonEncoder[Int]                         = explicit(_.toString, Json.Num.apply)
+  implicit val long: JsonEncoder[Long]                       = explicit(_.toString, Json.Num.apply)
+  implicit val bigInteger: JsonEncoder[java.math.BigInteger] = explicit(_.toString, Json.Num.apply)
+  implicit val scalaBigInt: JsonEncoder[BigInt]              = explicit(_.toString, Json.Num.apply)
+  implicit val double: JsonEncoder[Double]                   = explicit(SafeNumbers.toString, Json.Num.apply)
+  implicit val float: JsonEncoder[Float]                     = explicit(SafeNumbers.toString, Json.Num.apply)
+  implicit val bigDecimal: JsonEncoder[java.math.BigDecimal] = explicit(_.toString, n => new Json.Num(n))
+  implicit val scalaBigDecimal: JsonEncoder[BigDecimal]      = explicit(_.toString, Json.Num.apply)
 
   implicit def option[A](implicit A: JsonEncoder[A]): JsonEncoder[Option[A]] = new JsonEncoder[Option[A]] {
     def unsafeEncode(oa: Option[A], indent: Option[Int], out: Write): Unit =
