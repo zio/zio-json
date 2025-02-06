@@ -104,13 +104,13 @@ object CodecSpec extends ZIOSpecDefault {
         },
         test("key transformation") {
           import exampletransformkeys._
-          val kebabed       = """{"shish123-kebab":""}"""
-          val snaked        = """{"indiana123_jones":""}"""
+          val kebabed       = """{"shi-sh123-kebab":""}"""
+          val snaked        = """{"indi_ana123_jones":""}"""
           val pascaled      = """{"Anders123Hejlsberg":""}"""
           val cameled       = """{"small123Talk":""}"""
           val overrides     = """{"not_modified":"","but-this-should-be":0}"""
-          val kebabedLegacy = """{"shish-123-kebab":""}"""
-          val snakedLegacy  = """{"indiana_123_jones":""}"""
+          val kebabedLegacy = """{"shi-sh-123-kebab":""}"""
+          val snakedLegacy  = """{"indi_ana_123_jones":""}"""
 
           assert(kebabed.fromJson[Kebabed])(isRight(equalTo(Kebabed("")))) &&
           assert(kebabedLegacy.fromJson[legacy.Kebabed])(isRight(equalTo(legacy.Kebabed("")))) &&
@@ -249,6 +249,7 @@ object CodecSpec extends ZIOSpecDefault {
     object Parent {
       implicit val codec: JsonCodec[Parent] = DeriveJsonCodec.gen[Parent]
     }
+    @jsonNoExtraFields
     case class Child1() extends Parent
     case class Child2() extends Parent
   }
@@ -307,13 +308,13 @@ object CodecSpec extends ZIOSpecDefault {
 
   object exampletransformkeys {
     @jsonMemberNames(KebabCase)
-    case class Kebabed(shish123Kebab: String)
+    case class Kebabed(`shi_sh123Kebab`: String)
     object Kebabed {
       implicit val codec: JsonCodec[Kebabed] = DeriveJsonCodec.gen[Kebabed]
     }
 
     @jsonMemberNames(SnakeCase)
-    case class Snaked(indiana123Jones: String)
+    case class Snaked(`indi-ana123Jones`: String)
     object Snaked {
       implicit val codec: JsonCodec[Snaked] = DeriveJsonCodec.gen[Snaked]
     }
@@ -350,14 +351,14 @@ object CodecSpec extends ZIOSpecDefault {
 
     object legacy {
       @jsonMemberNames(ziojson_03.KebabCase)
-      case class Kebabed(shish123Kebab: String)
+      case class Kebabed(shi_sh123Kebab: String)
 
       object Kebabed {
         implicit val codec: JsonCodec[Kebabed] = DeriveJsonCodec.gen[Kebabed]
       }
 
       @jsonMemberNames(ziojson_03.SnakeCase)
-      case class Snaked(indiana123Jones: String)
+      case class Snaked(`indi-ana123Jones`: String)
 
       object Snaked {
         implicit val codec: JsonCodec[Snaked] = DeriveJsonCodec.gen[Snaked]
