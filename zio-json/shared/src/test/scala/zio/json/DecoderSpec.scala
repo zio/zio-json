@@ -634,15 +634,15 @@ object DecoderSpec extends ZIOSpecDefault {
 
           assert(Json.Obj("Child1" -> Json.Obj()).as[Parent])(isRight(equalTo(Child1()))) &&
           assert(Json.Obj("Child2" -> Json.Obj()).as[Parent])(isRight(equalTo(Child2()))) &&
-          assert(Json.Obj("type" -> Json.Str("Child1")).as[Parent])(isLeft(equalTo("(Invalid disambiguator)")))
+          assert(Json.Obj("type" -> Json.Str("Child1")).as[Parent])(isLeft(equalTo("(invalid disambiguator)")))
         },
         test("sum alternative encoding") {
           import examplealtsum._
 
           assert(Json.Obj("hint" -> Json.Str("Cain")).as[Parent])(isRight(equalTo(Child1()))) &&
           assert(Json.Obj("hint" -> Json.Str("Abel")).as[Parent])(isRight(equalTo(Child2()))) &&
-          assert(Json.Obj("hint" -> Json.Str("Samson")).as[Parent])(isLeft(equalTo("(Invalid disambiguator)"))) &&
-          assert(Json.Obj("Cain" -> Json.Obj()).as[Parent])(isLeft(equalTo("(Missing hint 'hint')")))
+          assert(Json.Obj("hint" -> Json.Str("Samson")).as[Parent])(isLeft(equalTo("(invalid disambiguator)"))) &&
+          assert(Json.Obj("Cain" -> Json.Obj()).as[Parent])(isLeft(equalTo("(missing hint 'hint')")))
         },
         test("Seq") {
           val json     = Json.Arr(Json.Str("5XL"), Json.Str("2XL"), Json.Str("XL"))
