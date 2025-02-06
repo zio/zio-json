@@ -369,7 +369,7 @@ object Json {
       Json.Obj(Chunk.fromArray(array))
     }
 
-    override def asObject: Some[Json.Obj]                                          = Some(this)
+    override def asObject: Some[Json.Obj]                                          = new Some(this)
     override def mapObject(f: Json.Obj => Json.Obj): Json.Obj                      = f(this)
     override def mapObjectKeys(f: String => String): Json.Obj                      = Json.Obj(fields.map(e => f(e._1) -> e._2))
     override def mapObjectValues(f: Json => Json): Json.Obj                        = mapValues(f)
@@ -393,8 +393,8 @@ object Json {
 
       override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): Obj =
         json match {
-          case obj @ Obj(_) => obj
-          case _            => Lexer.error("Not an object", trace)
+          case obj: Obj => obj
+          case _        => Lexer.error("Not an object", trace)
         }
     }
     private lazy val obje = JsonEncoder.keyValueChunk[String, Json]
@@ -402,7 +402,7 @@ object Json {
       def unsafeEncode(a: Obj, indent: Option[Int], out: Write): Unit =
         obje.unsafeEncode(a.fields, indent, out)
 
-      override final def toJsonAST(a: Obj): Either[String, Json] = Right(a)
+      override final def toJsonAST(a: Obj): Either[String, Json] = new Right(a)
     }
 
     implicit val codec: JsonCodec[Obj] = JsonCodec(encoder, decoder)
@@ -424,7 +424,7 @@ object Json {
       } ++ leftover)
     }
 
-    override def asArray: Some[Chunk[Json]]                        = Some(elements)
+    override def asArray: Some[Chunk[Json]]                        = new Some(elements)
     override def mapArray(f: Chunk[Json] => Chunk[Json]): Json.Arr = Json.Arr(f(elements))
     override def mapArrayValues(f: Json => Json): Json.Arr         = Json.Arr(elements.map(f))
   }
@@ -446,8 +446,8 @@ object Json {
 
       override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): Arr =
         json match {
-          case arr @ Arr(_) => arr
-          case _            => Lexer.error("Not an array", trace)
+          case arr: Arr => arr
+          case _        => Lexer.error("Not an array", trace)
         }
     }
     private lazy val arre = JsonEncoder.chunk[Json]
@@ -455,13 +455,13 @@ object Json {
       def unsafeEncode(a: Arr, indent: Option[Int], out: Write): Unit =
         arre.unsafeEncode(a.elements, indent, out)
 
-      override final def toJsonAST(a: Arr): Either[String, Json] = Right(a)
+      override final def toJsonAST(a: Arr): Either[String, Json] = new Right(a)
     }
 
     implicit val codec: JsonCodec[Arr] = JsonCodec(encoder, decoder)
   }
   final case class Bool(value: Boolean) extends Json {
-    override def asBoolean: Some[Boolean]                     = Some(value)
+    override def asBoolean: Some[Boolean]                     = new Some(value)
     override def mapBoolean(f: Boolean => Boolean): Json.Bool = Json.Bool(f(value))
   }
 
@@ -479,22 +479,22 @@ object Json {
 
       override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): Bool =
         json match {
-          case b @ Bool(_) => b
-          case _           => Lexer.error("Not a bool value", trace)
+          case b: Bool => b
+          case _       => Lexer.error("Not a bool value", trace)
         }
     }
     implicit val encoder: JsonEncoder[Bool] = new JsonEncoder[Bool] {
       def unsafeEncode(a: Bool, indent: Option[Int], out: Write): Unit =
         JsonEncoder.boolean.unsafeEncode(a.value, indent, out)
 
-      override final def toJsonAST(a: Bool): Either[String, Json] = Right(a)
+      override final def toJsonAST(a: Bool): Either[String, Json] = new Right(a)
     }
 
     implicit val codec: JsonCodec[Bool] = JsonCodec(encoder, decoder)
   }
   final case class Str(value: String) extends Json {
-    override def asString: Some[String]                   = Some(value)
-    override def mapString(f: String => String): Json.Str = Json.Str(f(value))
+    override def asString: Some[String]                   = new Some(value)
+    override def mapString(f: String => String): Json.Str = new Json.Str(f(value))
   }
   object Str {
     implicit val decoder: JsonDecoder[Str] = new JsonDecoder[Str] {
@@ -503,31 +503,43 @@ object Json {
 
       override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): Str =
         json match {
-          case s @ Str(_) => s
-          case _          => Lexer.error("Not a string value", trace)
+          case s: Str => s
+          case _      => Lexer.error("Not a string value", trace)
         }
     }
     implicit val encoder: JsonEncoder[Str] = new JsonEncoder[Str] {
       def unsafeEncode(a: Str, indent: Option[Int], out: Write): Unit =
         JsonEncoder.string.unsafeEncode(a.value, indent, out)
 
-      override final def toJsonAST(a: Str): Either[String, Json] = Right(a)
+      override final def toJsonAST(a: Str): Either[String, Json] = new Right(a)
     }
 
     implicit val codec: JsonCodec[Str] = JsonCodec(encoder, decoder)
   }
   final case class Num(value: java.math.BigDecimal) extends Json {
-    override def asNumber: Some[Json.Num]                                             = Some(this)
-    override def mapNumber(f: java.math.BigDecimal => java.math.BigDecimal): Json.Num = Json.Num(f(value))
+    override def asNumber: Some[Json.Num]                                             = new Some(this)
+    override def mapNumber(f: java.math.BigDecimal => java.math.BigDecimal): Json.Num = new Json.Num(f(value))
   }
   object Num {
-    def apply(value: Byte): Num       = Num(BigDecimal(value.toInt).bigDecimal)
-    def apply(value: Short): Num      = Num(BigDecimal(value.toInt).bigDecimal)
-    def apply(value: Int): Num        = Num(BigDecimal(value).bigDecimal)
-    def apply(value: Long): Num       = Num(BigDecimal(value).bigDecimal)
-    def apply(value: BigDecimal): Num = Num(value.bigDecimal)
-    def apply(value: Float): Num      = Num(BigDecimal.decimal(value).bigDecimal)
-    def apply(value: Double): Num     = Num(BigDecimal(value).bigDecimal)
+    @inline def apply(value: Byte): Num  = apply(value.toInt)
+    @inline def apply(value: Short): Num = apply(value.toInt)
+    def apply(value: Int): Num = new Num({
+      if (value < 512 && value > -512) new java.math.BigDecimal(value)
+      else BigDecimal(value).bigDecimal
+    })
+    def apply(value: Long): Num = new Num({
+      if (value < 512 && value > -512) new java.math.BigDecimal(value)
+      else BigDecimal(value).bigDecimal
+    })
+    @inline def apply(value: BigDecimal): Num = new Num(value.bigDecimal)
+    def apply(value: BigInt): Num =
+      if (value.isValidLong) apply(value.toLong)
+      else new Json.Num(new java.math.BigDecimal(value.bigInteger))
+    def apply(value: java.math.BigInteger): Num =
+      if (value.bitCount < 64) apply(value.longValue)
+      else new Json.Num(new java.math.BigDecimal(value))
+    def apply(value: Float): Num  = new Num(new java.math.BigDecimal(value.toString))
+    def apply(value: Double): Num = new Num(new java.math.BigDecimal(value))
 
     implicit val decoder: JsonDecoder[Num] = new JsonDecoder[Num] {
       def unsafeDecode(trace: List[JsonError], in: RetractReader): Num =
@@ -535,15 +547,15 @@ object Json {
 
       override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): Num =
         json match {
-          case n @ Num(_) => n
-          case _          => Lexer.error("Not a number", trace)
+          case n: Num => n
+          case _      => Lexer.error("Not a number", trace)
         }
     }
     implicit val encoder: JsonEncoder[Num] = new JsonEncoder[Num] {
       def unsafeEncode(a: Num, indent: Option[Int], out: Write): Unit =
         JsonEncoder.bigDecimal.unsafeEncode(a.value, indent, out)
 
-      override final def toJsonAST(a: Num): Either[String, Num] = Right(a)
+      override final def toJsonAST(a: Num): Either[String, Num] = new Right(a)
     }
 
     implicit val codec: JsonCodec[Num] = JsonCodec(encoder, decoder)
@@ -557,22 +569,21 @@ object Json {
         Null
       }
 
-      override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): Null.type =
-        json match {
-          case Null => Null
-          case _    => Lexer.error("Not null", trace)
-        }
+      override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): Null.type = {
+        if (json ne Null) Lexer.error("Not null", trace)
+        Null
+      }
     }
     implicit val encoder: JsonEncoder[Null.type] = new JsonEncoder[Null.type] {
       def unsafeEncode(a: Null.type, indent: Option[Int], out: Write): Unit =
         out.write("null")
 
-      override final def toJsonAST(a: Null.type): Either[String, Json] = Right(a)
+      override final def toJsonAST(a: Null.type): Either[String, Json] = new Right(a)
     }
 
     implicit val codec: JsonCodec[Null.type] = JsonCodec(encoder, decoder)
 
-    override def asNull: Some[Unit] = Some(())
+    override def asNull: Some[Unit] = new Some(())
   }
 
   implicit val decoder: JsonDecoder[Json] = new JsonDecoder[Json] {
@@ -606,7 +617,7 @@ object Json {
         case Null    => Null.encoder.unsafeEncode(Null, indent, out)
       }
 
-    override final def toJsonAST(a: Json): Either[String, Json] = Right(a)
+    override final def toJsonAST(a: Json): Either[String, Json] = new Right(a)
   }
 
   implicit val codec: JsonCodec[Json] = JsonCodec(encoder, decoder)
