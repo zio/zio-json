@@ -72,21 +72,34 @@ object SafeNumbers {
     try Some(UnsafeNumbers.bigDecimal(num, max_bits))
     catch { case _: UnexpectedEnd | UnsafeNumber => None }
 
+  def toString(x: Double): String = {
+    val out = new FastStringWrite(24)
+    write(x, out)
+    out.toString
+  }
+
+  def toString(x: Float): String = {
+    val out = new FastStringWrite(16)
+    write(x, out)
+    out.toString
+  }
+
   // Based on the amazing work of Raffaello Giulietti
   // "The Schubfach way to render doubles": https://drive.google.com/file/d/1luHhyQF9zKlM8yJ1nebU0OgVYhfC6CBN/view
   // Sources with the license are here: https://github.com/c4f7fcce9cb06515/Schubfach/blob/3c92d3c9b1fead540616c918cdfef432bca53dfa/todec/src/math/DoubleToDecimal.java
-  def toString(x: Double): String = {
+  def write(x: Double, out: Write): Unit = {
     val bits         = java.lang.Double.doubleToLongBits(x)
     val ieeeExponent = (bits >> 52).toInt & 0x7ff
     val ieeeMantissa = bits & 0xfffffffffffffL
     if (ieeeExponent == 2047) {
-      if (x != x) """"NaN""""
-      else if (bits < 0) """"-Infinity""""
-      else """"Infinity""""
+      out.write(
+        if (x != x) """"NaN""""
+        else if (bits < 0) """"-Infinity""""
+        else """"Infinity""""
+      )
     } else {
-      val s = new java.lang.StringBuilder(24)
-      if (bits < 0) s.append('-')
-      if (x == 0.0f) s.append('0').append('.').append('0')
+      if (bits < 0) out.write('-')
+      if (x == 0.0f) out.write('0', '.', '0')
       else {
         var e   = ieeeExponent - 1075
         var m   = ieeeMantissa | 0x10000000000000L
@@ -143,40 +156,55 @@ object SafeNumbers {
         val len = digitCount(dv)
         exp += len - 1
         if (exp < -3 || exp >= 7) {
-          val dotOff = s.length + 1
-          val sdv    = stripTrailingZeros(dv)
-          s.append(sdv)
-          if (sdv < 10) s.append('0')
-          s.insert(dotOff, '.').append('E').append(exp)
+          val sdv = stripTrailingZeros(dv)
+          if (sdv < 10) out.write((sdv.toInt | '0').toChar, '.', '0', 'E')
+          else {
+            val w = writes.get
+            write(sdv, w)
+            val cs = w.getChars
+            out.write(cs(0), '.')
+            out.write(cs, 1, w.length)
+            out.write('E')
+          }
+          write(exp, out)
         } else if (exp < 0) {
-          s.append('0').append('.')
+          out.write('0', '.')
           while ({
             exp += 1
             exp != 0
-          }) s.append('0')
-          s.append(stripTrailingZeros(dv))
-        } else if (exp + 1 < len) {
-          val dotOff = s.length + exp + 1
-          s.append(stripTrailingZeros(dv))
-          s.insert(dotOff, '.')
-        } else s.append(dv.toInt).append('.').append('0')
+          }) out.write('0')
+          write(stripTrailingZeros(dv), out)
+        } else {
+          exp += 1
+          if (exp < len) {
+            val w = writes.get
+            write(stripTrailingZeros(dv), w)
+            val cs = w.getChars
+            out.write(cs, 0, exp)
+            out.write('.')
+            out.write(cs, exp, w.length)
+          } else {
+            write(dv.toInt, out)
+            out.write('.', '0')
+          }
+        }
       }
-      s.toString
     }
   }
 
-  def toString(x: Float): String = {
+  def write(x: Float, out: Write): Unit = {
     val bits         = java.lang.Float.floatToIntBits(x)
     val ieeeExponent = (bits >> 23) & 0xff
     val ieeeMantissa = bits & 0x7fffff
     if (ieeeExponent == 255) {
-      if (x != x) """"NaN""""
-      else if (bits < 0) """"-Infinity""""
-      else """"Infinity""""
+      out.write(
+        if (x != x) """"NaN""""
+        else if (bits < 0) """"-Infinity""""
+        else """"Infinity""""
+      )
     } else {
-      val s = new java.lang.StringBuilder(16)
-      if (bits < 0) s.append('-')
-      if (x == 0.0f) s.append('0').append('.').append('0')
+      if (bits < 0) out.write('-')
+      if (x == 0.0f) out.write('0', '.', '0')
       else {
         var e       = ieeeExponent - 150
         var m       = ieeeMantissa | 0x800000
@@ -230,25 +258,59 @@ object SafeNumbers {
         val len = digitCount(dv.toLong)
         exp += len - 1
         if (exp < -3 || exp >= 7) {
-          val dotOff = s.length + 1
-          val sdv    = stripTrailingZeros(dv)
-          s.append(sdv)
-          if (sdv < 10) s.append('0')
-          s.insert(dotOff, '.').append('E').append(exp)
+          val sdv = stripTrailingZeros(dv)
+          if (sdv < 10) out.write((sdv | '0').toChar, '.', '0', 'E')
+          else {
+            val w = writes.get
+            write(sdv, w)
+            val cs = w.getChars
+            out.write(cs(0), '.')
+            out.write(cs, 1, w.length)
+            out.write('E')
+          }
+          write(exp, out)
         } else if (exp < 0) {
-          s.append('0').append('.')
+          out.write('0', '.')
           while ({
             exp += 1
             exp != 0
-          }) s.append('0')
-          s.append(stripTrailingZeros(dv))
-        } else if (exp + 1 < len) {
-          val dotOff = s.length + exp + 1
-          s.append(stripTrailingZeros(dv))
-          s.insert(dotOff, '.')
-        } else s.append(dv).append('.').append('0')
+          }) out.write('0')
+          write(stripTrailingZeros(dv), out)
+        } else {
+          exp += 1
+          if (exp < len) {
+            val w = writes.get
+            write(stripTrailingZeros(dv), w)
+            val cs = w.getChars
+            out.write(cs, 0, exp)
+            out.write('.')
+            out.write(cs, exp, w.length)
+          } else {
+            write(dv, out)
+            out.write('.', '0')
+          }
+        }
       }
-      s.toString
+    }
+  }
+
+  private[json] def writeNano(x: Int, out: Write): Unit = {
+    out.write('.')
+    var coeff = 100000000
+    while (coeff > x) {
+      out.write('0')
+      coeff = (coeff * 3435973837L >> 35).toInt // divide a positive int by 10
+    }
+    write(stripTrailingZeros(x), out)
+  }
+
+  private[this] val writes = new ThreadLocal[FastStringWrite] {
+    override def initialValue(): FastStringWrite = new FastStringWrite(24)
+
+    override def get: FastStringWrite = {
+      val w = super.get
+      w.reset()
+      w
     }
   }
 
@@ -291,6 +353,114 @@ object SafeNumbers {
     if ((qp & 0x7e0000000L) == 0) return q1 // check if q is divisible by 10
     q0
   }
+
+  def write(a: Long, out: Write): Unit = {
+    var q0 = a
+    if (q0 < 0) {
+      q0 = -q0
+      out.write('-')
+      if (q0 == a) {
+        out.write('9', '2', '2')
+        q0 = 3372036854775808L
+      }
+    }
+    val m1 = 100000000L
+    if (q0 < m1) write(q0.toInt, out)
+    else {
+      val m2 = 6189700196426901375L
+      val q1 = NativeMath.multiplyHigh(q0, m2) >>> 25 // divide a positive long by 100000000
+      if (q1 < m1) write(q1.toInt, out)
+      else {
+        val q2 = NativeMath.multiplyHigh(q1, m2) >>> 25 // divide a small positive long by 100000000
+        write(q2.toInt, out)
+        write8Digits((q1 - q2 * m1).toInt, out)
+      }
+      write8Digits((q0 - q1 * m1).toInt, out)
+    }
+  }
+
+  def write(a: Int, out: Write): Unit = {
+    val ds = digits
+    var q0 = a
+    if (q0 < 0) {
+      q0 = -q0
+      out.write('-')
+      if (q0 == a) {
+        out.write('2')
+        q0 = 147483648
+      }
+    }
+    if (q0 < 100) { // Based on James Anhalt's algorithm: https://jk-jeon.github.io/posts/2022/02/jeaiii-algorithm/
+      if (q0 < 10) out.write((q0 | '0').toChar)
+      else out.write(ds(q0))
+    } else if (q0 < 10000) {
+      val q1 = q0 * 5243 >> 19 // divide a small positive int by 100
+      val d2 = ds(q0 - q1 * 100)
+      if (q0 < 1000) out.write((q1 | '0').toChar)
+      else out.write(ds(q1))
+      out.write(d2)
+    } else if (q0 < 1000000) {
+      val y1 = q0 * 429497L
+      val y2 = (y1 & 0xffffffffL) * 100
+      val y3 = (y2 & 0xffffffffL) * 100
+      if (q0 < 100000) out.write(((y1 >> 32).toInt | '0').toChar)
+      else out.write(ds((y1 >> 32).toInt))
+      out.write(ds((y2 >> 32).toInt), ds((y3 >> 32).toInt))
+    } else if (q0 < 100000000) {
+      val y1 = q0 * 140737489L
+      val y2 = (y1 & 0x7fffffffffffL) * 100
+      val y3 = (y2 & 0x7fffffffffffL) * 100
+      val y4 = (y3 & 0x7fffffffffffL) * 100
+      if (q0 < 10000000) out.write(((y1 >> 47).toInt | '0').toChar)
+      else out.write(ds((y1 >> 47).toInt))
+      out.write(ds((y2 >> 47).toInt), ds((y3 >> 47).toInt), ds((y4 >> 47).toInt))
+    } else {
+      val y1 = q0 * 1441151881L
+      val y2 = (y1 & 0x1ffffffffffffffL) * 100
+      val y3 = (y2 & 0x1ffffffffffffffL) * 100
+      val y4 = (y3 & 0x1ffffffffffffffL) * 100
+      val y5 = (y4 & 0x1ffffffffffffffL) * 100
+      if (q0 < 1000000000) out.write(((y1 >>> 57).toInt | '0').toChar)
+      else out.write(ds((y1 >>> 57).toInt))
+      out.write(ds((y2 >>> 57).toInt), ds((y3 >>> 57).toInt), ds((y4 >>> 57).toInt), ds((y5 >>> 57).toInt))
+    }
+  }
+
+  private[this] def write8Digits(x: Int, out: Write): Unit = {
+    val ds = digits // Based on James Anhalt's algorithm: https://jk-jeon.github.io/posts/2022/02/jeaiii-algorithm/
+    val y1 = x * 140737489L
+    val m1 = 0x7fffffffffffL
+    val m2 = 100L
+    val y2 = (y1 & m1) * m2
+    val y3 = (y2 & m1) * m2
+    val y4 = (y3 & m1) * m2
+    out.write(ds((y1 >> 47).toInt), ds((y2 >> 47).toInt), ds((y3 >> 47).toInt), ds((y4 >> 47).toInt))
+  }
+
+  @inline private[json] def write4Digits(x: Int, out: Write): Unit = {
+    val ds = digits
+    val q  = x * 5243 >> 19 // divide a 4-digit positive int by 100
+    out.write(ds(q), ds(x - q * 100))
+  }
+
+  @inline private[json] def write3Digits(x: Int, out: Write): Unit = {
+    val q = x * 1311 >> 17 // divide a 3-digit positive int by 100
+    out.write((q + '0').toChar)
+    out.write(digits(x - q * 100))
+  }
+
+  @inline private[json] def write2Digits(x: Int, out: Write): Unit =
+    out.write(digits(x))
+
+  private[this] final val digits: Array[Short] = Array(
+    12336, 12592, 12848, 13104, 13360, 13616, 13872, 14128, 14384, 14640, 12337, 12593, 12849, 13105, 13361, 13617,
+    13873, 14129, 14385, 14641, 12338, 12594, 12850, 13106, 13362, 13618, 13874, 14130, 14386, 14642, 12339, 12595,
+    12851, 13107, 13363, 13619, 13875, 14131, 14387, 14643, 12340, 12596, 12852, 13108, 13364, 13620, 13876, 14132,
+    14388, 14644, 12341, 12597, 12853, 13109, 13365, 13621, 13877, 14133, 14389, 14645, 12342, 12598, 12854, 13110,
+    13366, 13622, 13878, 14134, 14390, 14646, 12343, 12599, 12855, 13111, 13367, 13623, 13879, 14135, 14391, 14647,
+    12344, 12600, 12856, 13112, 13368, 13624, 13880, 14136, 14392, 14648, 12345, 12601, 12857, 13113, 13369, 13625,
+    13881, 14137, 14393, 14649
+  )
 
   // Adoption of a nice trick form Daniel Lemire's blog that works for numbers up to 10^18:
   // https://lemire.me/blog/2021/06/03/computing-the-number-of-digits-of-an-integer-even-faster/

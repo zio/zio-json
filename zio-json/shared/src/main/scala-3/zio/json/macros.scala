@@ -730,13 +730,15 @@ object DeriveJsonEncoder extends JsonEncoderDerivation(JsonCodecConfiguration.de
   private[json] final class NestedWriter(out: Write, indent: Option[Int]) extends Write {
     private var state = 2
 
-    def write(c: Char): Unit =
-      if (state != 0) {
-        if (c == ' ' || c == '\n') {
-          ()
-        } else if (state == 2 && c == '{') {
-          state = 1
-        } else if (state == 1) {
+    @inline def write(c: Char): Unit =
+      if (state == 0) out.write(c)
+      else nonZeroStateWrite(c)
+
+    @noinline private def nonZeroStateWrite(c: Char): Unit = {
+      if (c != ' ' && c != '\n') {
+        if (state == 2) {
+          if (c == '{') state = 1
+        } else {
           state = 0
           if (c != '}') {
             out.write(',')
@@ -744,18 +746,21 @@ object DeriveJsonEncoder extends JsonEncoderDerivation(JsonCodecConfiguration.de
           }
           out.write(c)
         }
-      } else out.write(c)
+      }
+    }
 
-    def write(s: String): Unit =
-      if (state != 0) {
-        var i = 0
-        while (i < s.length) {
-          val c = s.charAt(i)
-          if (c == ' ' || c == '\n') {
-            ()
-          } else if (state == 2 && c == '{') {
-            state = 1
-          } else if (state == 1) {
+    @inline def write(s: String): Unit =
+      if (state == 0) out.write(s)
+      else nonZeroStateWrite(s)
+
+    @noinline private def nonZeroStateWrite(s: String): Unit = {
+      var i = 0
+      while (i < s.length) {
+        val c = s.charAt(i)
+        if (c != ' ' && c != '\n') {
+          if (state == 2) {
+            if (c == '{') state = 1
+          } else {
             state = 0
             if (c != '}') {
               out.write(',')
@@ -767,9 +772,35 @@ object DeriveJsonEncoder extends JsonEncoderDerivation(JsonCodecConfiguration.de
             }
             return
           }
-          i += 1
         }
-      } else out.write(s)
+        i += 1
+      }
+    }
+
+    @inline override def write(cs: Array[Char], from: Int, to: Int): Unit =
+      if (state == 0) out.write(cs, from, to)
+      else nonZeroStateWrite(cs, from, to)
+
+    @noinline def nonZeroStateWrite(cs: Array[Char], from: Int, to: Int): Unit = {
+      var i = from
+      while (i < to) {
+        val c = cs(i)
+        if (c != ' ' && c != '\n') {
+          if (state == 2) {
+            if (c == '{') state = 1
+          } else {
+            state = 0
+            if (c != '}') {
+              out.write(',')
+              JsonEncoder.pad(indent, out)
+            }
+            out.write(cs, i, to)
+            return
+          }
+        }
+        i += 1
+      }
+    }
   }
 }
 

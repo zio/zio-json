@@ -15,15 +15,22 @@
  */
 package zio.json.javatime
 
+import zio.json.internal.{ FastStringWrite, SafeNumbers, Write }
+
 import java.time._
 
 private[json] object serializers {
   def toString(x: Duration): String = {
-    val s = new java.lang.StringBuilder(16)
-    s.append('P').append('T')
+    val out = writes.get
+    write(x, out)
+    out.buffer.toString
+  }
+
+  def write(x: Duration, out: Write): Unit = {
+    out.write('P', 'T')
     val totalSecs = x.getSeconds
     var nano      = x.getNano
-    if ((totalSecs | nano) == 0) s.append('0').append('S')
+    if ((totalSecs | nano) == 0) out.write('0', 'S')
     else {
       var effectiveTotalSecs = totalSecs
       if (totalSecs < 0 && nano > 0) effectiveTotalSecs += 1
@@ -31,28 +38,33 @@ private[json] object serializers {
       val secsOfHour = (effectiveTotalSecs - hours * 3600).toInt
       val minutes    = secsOfHour / 60
       val seconds    = secsOfHour - minutes * 60
-      if (hours != 0) s.append(hours).append('H')
-      if (minutes != 0) s.append(minutes).append('M')
+      if (hours != 0) {
+        SafeNumbers.write(hours, out)
+        out.write('H')
+      }
+      if (minutes != 0) {
+        SafeNumbers.write(minutes, out)
+        out.write('M')
+      }
       if ((seconds | nano) != 0) {
-        if (totalSecs < 0 && seconds == 0) s.append('-').append('0')
-        else s.append(seconds)
+        if (totalSecs < 0 && seconds == 0) out.write('-', '0')
+        else SafeNumbers.write(seconds, out)
         if (nano != 0) {
           if (totalSecs < 0) nano = 1000000000 - nano
-          val dotPos = s.length
-          s.append(nano + 1000000000)
-          var i = s.length - 1
-          while (s.charAt(i) == '0') i -= 1
-          s.setLength(i + 1)
-          s.setCharAt(dotPos, '.')
+          SafeNumbers.writeNano(nano, out)
         }
-        s.append('S')
+        out.write('S')
       }
     }
-    s.toString
   }
 
   def toString(x: Instant): String = {
-    val s           = new java.lang.StringBuilder(32)
+    val out = writes.get
+    write(x, out)
+    out.buffer.toString
+  }
+
+  def write(x: Instant, out: Write): Unit = {
     val epochSecond = x.getEpochSecond
     val epochDay =
       (if (epochSecond >= 0) epochSecond
@@ -82,187 +94,243 @@ private[json] object serializers {
     val secsOfHour = secsOfDay - hour * 3600
     val minute     = secsOfHour * 17477 >> 20 // divide a small positive int by 60
     val second     = secsOfHour - minute * 60
-    appendYear(year, s)
-    append2Digits(month, s.append('-'))
-    append2Digits(day, s.append('-'))
-    append2Digits(hour, s.append('T'))
-    append2Digits(minute, s.append(':'))
-    append2Digits(second, s.append(':'))
+    writeYear(year, out)
+    out.write('-')
+    SafeNumbers.write2Digits(month, out)
+    out.write('-')
+    SafeNumbers.write2Digits(day, out)
+    out.write('T')
+    SafeNumbers.write2Digits(hour, out)
+    out.write(':')
+    SafeNumbers.write2Digits(minute, out)
+    out.write(':')
+    SafeNumbers.write2Digits(second, out)
     val nano = x.getNano
     if (nano != 0) {
-      s.append('.')
+      out.write('.')
       val q1 = nano / 1000000
       val r1 = nano - q1 * 1000000
-      append3Digits(q1, s)
+      SafeNumbers.write3Digits(q1, out)
       if (r1 != 0) {
         val q2 = r1 / 1000
         val r2 = r1 - q2 * 1000
-        append3Digits(q2, s)
-        if (r2 != 0) append3Digits(r2, s)
+        SafeNumbers.write3Digits(q2, out)
+        if (r2 != 0) SafeNumbers.write3Digits(r2, out)
       }
     }
-    s.append('Z').toString
+    out.write('Z')
   }
 
   def toString(x: LocalDate): String = {
-    val s = new java.lang.StringBuilder(16)
-    appendLocalDate(x, s)
-    s.toString
+    val out = writes.get
+    write(x, out)
+    out.buffer.toString
+  }
+
+  def write(x: LocalDate, out: Write): Unit = {
+    writeYear(x.getYear, out)
+    out.write('-')
+    SafeNumbers.write2Digits(x.getMonthValue, out)
+    out.write('-')
+    SafeNumbers.write2Digits(x.getDayOfMonth, out)
   }
 
   def toString(x: LocalDateTime): String = {
-    val s = new java.lang.StringBuilder(32)
-    appendLocalDate(x.toLocalDate, s)
-    appendLocalTime(x.toLocalTime, s.append('T'))
-    s.toString
+    val out = writes.get
+    write(x, out)
+    write(x.toLocalDate, out)
+    out.buffer.toString
+  }
+
+  def write(x: LocalDateTime, out: Write): Unit = {
+    write(x.toLocalDate, out)
+    out.write('T')
+    write(x.toLocalTime, out)
   }
 
   def toString(x: LocalTime): String = {
-    val s = new java.lang.StringBuilder(24)
-    appendLocalTime(x, s)
-    s.toString
+    val out = writes.get
+    write(x, out)
+    out.buffer.toString
+  }
+
+  def write(x: LocalTime, out: Write): Unit = {
+    SafeNumbers.write2Digits(x.getHour, out)
+    out.write(':')
+    SafeNumbers.write2Digits(x.getMinute, out)
+    out.write(':')
+    SafeNumbers.write2Digits(x.getSecond, out)
+    val nano = x.getNano
+    if (nano != 0) SafeNumbers.writeNano(nano, out)
   }
 
   def toString(x: MonthDay): String = {
-    val s = new java.lang.StringBuilder(8)
-    append2Digits(x.getMonthValue, s.append('-').append('-'))
-    append2Digits(x.getDayOfMonth, s.append('-'))
-    s.toString
+    val out = writes.get
+    write(x, out)
+    out.buffer.toString
+  }
+
+  def write(x: MonthDay, out: Write): Unit = {
+    out.write('-', '-')
+    SafeNumbers.write2Digits(x.getMonthValue, out)
+    out.write('-')
+    SafeNumbers.write2Digits(x.getDayOfMonth, out)
   }
 
   def toString(x: OffsetDateTime): String = {
-    val s = new java.lang.StringBuilder(48)
-    appendLocalDate(x.toLocalDate, s)
-    appendLocalTime(x.toLocalTime, s.append('T'))
-    appendZoneOffset(x.getOffset, s)
-    s.toString
+    val out = writes.get
+    write(x, out)
+    out.buffer.toString
+  }
+
+  def write(x: OffsetDateTime, out: Write): Unit = {
+    write(x.toLocalDate, out)
+    out.write('T')
+    write(x.toLocalTime, out)
+    write(x.getOffset, out)
   }
 
   def toString(x: OffsetTime): String = {
-    val s = new java.lang.StringBuilder(32)
-    appendLocalTime(x.toLocalTime, s)
-    appendZoneOffset(x.getOffset, s)
-    s.toString
+    val out = writes.get
+    write(x, out)
+    out.buffer.toString
+  }
+
+  def write(x: OffsetTime, out: Write): Unit = {
+    write(x.toLocalTime, out)
+    write(x.getOffset, out)
   }
 
   def toString(x: Period): String = {
-    val s = new java.lang.StringBuilder(16)
-    s.append('P')
-    if (x.isZero) s.append('0').append('D')
+    val out = writes.get
+    write(x, out)
+    out.buffer.toString
+  }
+
+  def write(x: Period, out: Write): Unit = {
+    out.write('P')
+    if (x.isZero) out.write('0', 'D')
     else {
       val years  = x.getYears
       val months = x.getMonths
       val days   = x.getDays
-      if (years != 0) s.append(years).append('Y')
-      if (months != 0) s.append(months).append('M')
-      if (days != 0) s.append(days).append('D')
+      if (years != 0) {
+        SafeNumbers.write(years, out)
+        out.write('Y')
+      }
+      if (months != 0) {
+        SafeNumbers.write(months, out)
+        out.write('M')
+      }
+      if (days != 0) {
+        SafeNumbers.write(days, out)
+        out.write('D')
+      }
     }
-    s.toString
   }
 
   def toString(x: Year): String = {
-    val s = new java.lang.StringBuilder(16)
-    appendYear(x.getValue, s)
-    s.toString
+    val out = writes.get
+    write(x, out)
+    out.buffer.toString
   }
 
+  @inline def write(x: Year, out: Write): Unit = writeYear(x.getValue, out)
+
   def toString(x: YearMonth): String = {
-    val s = new java.lang.StringBuilder(16)
-    appendYear(x.getYear, s)
-    append2Digits(x.getMonthValue, s.append('-'))
-    s.toString
+    val out = writes.get
+    write(x, out)
+    out.buffer.toString
+  }
+
+  def write(x: YearMonth, out: Write): Unit = {
+    writeYear(x.getYear, out)
+    out.write('-')
+    SafeNumbers.write2Digits(x.getMonthValue, out)
   }
 
   def toString(x: ZonedDateTime): String = {
-    val s = new java.lang.StringBuilder(48)
-    appendLocalDate(x.toLocalDate, s)
-    appendLocalTime(x.toLocalTime, s.append('T'))
-    appendZoneOffset(x.getOffset, s)
+    val out = writes.get
+    write(x, out)
+    out.buffer.toString
+  }
+
+  def write(x: ZonedDateTime, out: Write): Unit = {
+    write(x.toLocalDate, out)
+    out.write('T')
+    write(x.toLocalTime, out)
+    write(x.getOffset, out)
     val zone = x.getZone
-    if (!zone.isInstanceOf[ZoneOffset]) s.append('[').append(zone.getId).append(']')
-    s.toString
-  }
-
-  def toString(x: ZoneId): String = x.getId
-
-  def toString(x: ZoneOffset): String = {
-    val s = new java.lang.StringBuilder(16)
-    appendZoneOffset(x, s)
-    s.toString
-  }
-
-  private[this] def appendLocalDate(x: LocalDate, s: java.lang.StringBuilder): Unit = {
-    appendYear(x.getYear, s)
-    append2Digits(x.getMonthValue, s.append('-'))
-    append2Digits(x.getDayOfMonth, s.append('-'))
-  }
-
-  private[this] def appendLocalTime(x: LocalTime, s: java.lang.StringBuilder): Unit = {
-    append2Digits(x.getHour, s)
-    append2Digits(x.getMinute, s.append(':'))
-    append2Digits(x.getSecond, s.append(':'))
-    val nano = x.getNano
-    if (nano != 0) {
-      val dotPos = s.length
-      s.append(nano + 1000000000)
-      var i = s.length - 1
-      while (s.charAt(i) == '0') i -= 1
-      s.setLength(i + 1)
-      s.setCharAt(dotPos, '.')
+    if (!zone.isInstanceOf[ZoneOffset]) {
+      out.write('[')
+      out.write(zone.getId)
+      out.write(']')
     }
   }
 
-  private[this] def appendZoneOffset(x: ZoneOffset, s: java.lang.StringBuilder): Unit = {
+  @inline def toString(x: ZoneId): String = x.getId
+
+  @inline def write(x: ZoneId, out: Write): Unit = out.write(x.getId)
+
+  def toString(x: ZoneOffset): String = {
+    val out = writes.get
+    write(x, out)
+    out.buffer.toString
+  }
+
+  def write(x: ZoneOffset, out: Write): Unit = {
     val totalSeconds = x.getTotalSeconds
-    if (totalSeconds == 0) s.append('Z'): Unit
+    if (totalSeconds == 0) out.write('Z'): Unit
     else {
       val q0 =
         if (totalSeconds > 0) {
-          s.append('+')
+          out.write('+')
           totalSeconds
         } else {
-          s.append('-')
+          out.write('-')
           -totalSeconds
         }
       val q1 = q0 * 37283 >>> 27 // divide a small positive int by 3600
       val r1 = q0 - q1 * 3600
-      append2Digits(q1, s)
-      s.append(':')
+      SafeNumbers.write2Digits(q1, out)
+      out.write(':')
       val q2 = r1 * 17477 >> 20 // divide a small positive int by 60
       val r2 = r1 - q2 * 60
-      append2Digits(q2, s)
-      if (r2 != 0) append2Digits(r2, s.append(':'))
+      SafeNumbers.write2Digits(q2, out)
+      if (r2 != 0) {
+        out.write(':')
+        SafeNumbers.write2Digits(r2, out)
+      }
     }
   }
 
-  private[this] def appendYear(x: Int, s: java.lang.StringBuilder): Unit =
+  private[this] def writeYear(x: Int, out: Write): Unit =
     if (x >= 0) {
-      if (x < 10000) append4Digits(x, s)
-      else s.append('+').append(x): Unit
-    } else if (x > -10000) append4Digits(-x, s.append('-'))
-    else s.append(x): Unit
+      if (x < 10000) SafeNumbers.write4Digits(x, out)
+      else {
+        out.write('+')
+        SafeNumbers.write(x, out): Unit
+      }
+    } else if (x > -10000) {
+      out.write('-')
+      SafeNumbers.write4Digits(-x, out)
+    } else SafeNumbers.write(x, out): Unit
 
-  private[this] def append4Digits(x: Int, s: java.lang.StringBuilder): Unit = {
-    val q = x * 5243 >> 19 // divide a 4-digit positive int by 100
-    append2Digits(q, s)
-    append2Digits(x - q * 100, s)
-  }
-
-  private[this] def append3Digits(x: Int, s: java.lang.StringBuilder): Unit = {
-    val q = x * 1311 >> 17 // divide a 3-digit positive int by 100
-    append2Digits(x - q * 100, s.append((q + '0').toChar))
-  }
-
-  private[this] def append2Digits(x: Int, s: java.lang.StringBuilder): Unit = {
-    val q = x * 103 >> 10 // divide a 2-digit positive int by 10
-    s.append((q + '0').toChar).append((x + '0' - q * 10).toChar): Unit
-  }
-
-  private[this] def to400YearCycle(day: Long): Int =
+  @inline private[this] def to400YearCycle(day: Long): Int =
     (day / 146097).toInt // 146097 == number of days in a 400 year cycle
 
-  private[this] def toMarchDayOfYear(marchZeroDay: Long, year: Int): Int = {
+  @inline private[this] def toMarchDayOfYear(marchZeroDay: Long, year: Int): Int = {
     val century = year / 100
     (marchZeroDay - year * 365L).toInt - (year >> 2) + century - (century >> 2)
+  }
+
+  private[this] val writes = new ThreadLocal[FastStringWrite] {
+    override def initialValue(): FastStringWrite = new FastStringWrite(64)
+
+    override def get: FastStringWrite = {
+      val w = super.get
+      w.reset()
+      w
+    }
   }
 }
