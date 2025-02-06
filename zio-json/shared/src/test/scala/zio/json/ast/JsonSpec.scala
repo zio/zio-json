@@ -10,6 +10,10 @@ object JsonSpec extends ZIOSpecDefault {
   val spec: Spec[Environment, Any] =
     suite("Json")(
       suite("apply")(
+        test("Bool()") {
+          assertTrue(Json.Bool.True eq Json.Bool(true)) &&
+          assertTrue(Json.Bool.False eq Json.Bool(false))
+        },
         test("()") {
           assertTrue(Json.Obj.empty eq Json()) &&
           assertTrue(Json.Obj.empty eq Json.Obj()) &&
