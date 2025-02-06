@@ -466,8 +466,12 @@ object Json {
   }
 
   object Bool {
-    val False: Bool = Bool(false)
-    val True: Bool  = Bool(true)
+    val False: Bool = new Bool(false)
+    val True: Bool  = new Bool(true)
+
+    def apply(value: Boolean): Bool =
+      if (value) True
+      else False
 
     implicit val decoder: JsonDecoder[Bool] = new JsonDecoder[Bool] {
       def unsafeDecode(trace: List[JsonError], in: RetractReader): Bool =
