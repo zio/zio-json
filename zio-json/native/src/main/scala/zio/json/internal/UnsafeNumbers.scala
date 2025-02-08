@@ -344,12 +344,12 @@ object UnsafeNumbers {
 
   // Based on the 'Moderate Path' algorithm from the awesome library of Alexander Huszagh: https://github.com/Alexhuszagh/rust-lexical
   // Here is his inspiring post: https://www.reddit.com/r/rust/comments/a6j5j1/making_rust_float_parsing_fast_and_correct
-  @noinline private[this] def toFloat(m10: Long, e10: Int): Float =
+  private[this] def toFloat(m10: Long, e10: Int): Float =
     if (m10 == 0 || e10 < -64) 0.0f
     else if (e10 >= 39) Float.PositiveInfinity
     else {
       var shift = java.lang.Long.numberOfLeadingZeros(m10)
-      var m2    = NativeMath.unsignedMultiplyHigh(pow10Mantissas(e10 + 343), m10 << shift)
+      var m2    = unsignedMultiplyHigh(pow10Mantissas(e10 + 343), m10 << shift)
       var e2    = (e10 * 108853 >> 15) - shift + 1 // (e10 * Math.log(10) / Math.log(2)).toInt - shift + 1
       shift = java.lang.Long.numberOfLeadingZeros(m2)
       m2 <<= shift
@@ -481,7 +481,7 @@ object UnsafeNumbers {
     else if (e10 >= 310) Double.PositiveInfinity
     else {
       var shift = java.lang.Long.numberOfLeadingZeros(m10)
-      var m2    = NativeMath.unsignedMultiplyHigh(pow10Mantissas(e10 + 343), m10 << shift)
+      var m2    = unsignedMultiplyHigh(pow10Mantissas(e10 + 343), m10 << shift)
       var e2    = (e10 * 108853 >> 15) - shift + 1 // (e10 * Math.log(10) / Math.log(2)).toInt - shift + 1
       shift = java.lang.Long.numberOfLeadingZeros(m2)
       m2 <<= shift
@@ -517,6 +517,9 @@ object UnsafeNumbers {
     val current = in.read() // to be consistent read the terminator
     if (consume && current != -1) throw UnsafeNumber
   }
+
+  @inline private[this] def unsignedMultiplyHigh(x: Long, y: Long): Long =
+    Math.multiplyHigh(x, y) + x + y // FIXME: Use Math.unsignedMultiplyHigh after dropping of JDK 17 support
 
   private[this] final val pow10Doubles: Array[Double] =
     Array(1, 1e+1, 1e+2, 1e+3, 1e+4, 1e+5, 1e+6, 1e+7, 1e+8, 1e+9, 1e+10, 1e+11, 1e+12, 1e+13, 1e+14, 1e+15, 1e+16,
