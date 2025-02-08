@@ -134,7 +134,7 @@ object SafeNumbers {
           val s     = vb >> 2
           if (
             s < 100 || {
-              dv = NativeMath.multiplyHigh(s, 1844674407370955168L) // divide a positive long by 10
+              dv = Math.multiplyHigh(s, 1844674407370955168L) // divide a positive long by 10
               val sp40 = dv * 40
               val upin = (vbls - sp40).toInt
               (((sp40 + vbrd).toInt + 40) ^ upin) >= 0 || {
@@ -315,12 +315,12 @@ object SafeNumbers {
   }
 
   private[this] def rop(g1: Long, g0: Long, cp: Long): Long = {
-    val x = NativeMath.multiplyHigh(g0, cp) + (g1 * cp >>> 1)
-    NativeMath.multiplyHigh(g1, cp) + (x >>> 63) | (-x ^ x) >>> 63
+    val x = Math.multiplyHigh(g0, cp) + (g1 * cp >>> 1)
+    Math.multiplyHigh(g1, cp) + (x >>> 63) | (-x ^ x) >>> 63
   }
 
   private[this] def rop(g: Long, cp: Int): Int = {
-    val x = NativeMath.multiplyHigh(g, cp.toLong << 32)
+    val x = Math.multiplyHigh(g, cp.toLong << 32)
     (x >>> 31).toInt | -x.toInt >>> 31
   }
 
@@ -328,13 +328,13 @@ object SafeNumbers {
     var q0 = x.toInt
     if (
       q0 == x || {
-        q0 = (NativeMath.multiplyHigh(x, 6189700196426901375L) >>> 25).toInt // divide a positive long by 100000000
+        q0 = (Math.multiplyHigh(x, 6189700196426901375L) >>> 25).toInt // divide a positive long by 100000000
         (x - q0 * 100000000L).toInt == 0
       }
     ) return stripTrailingZeros(q0).toLong
     var y, q1 = x
     while ({
-      q1 = NativeMath.multiplyHigh(q1, 1844674407370955168L) // divide a positive long by 10
+      q1 = Math.multiplyHigh(q1, 1844674407370955168L) // divide a positive long by 10
       q1 * 10 == y
     }) y = q1
     y
@@ -368,10 +368,10 @@ object SafeNumbers {
     if (q0 < m1) write(q0.toInt, out)
     else {
       val m2 = 6189700196426901375L
-      val q1 = NativeMath.multiplyHigh(q0, m2) >>> 25 // divide a positive long by 100000000
+      val q1 = Math.multiplyHigh(q0, m2) >>> 25 // divide a positive long by 100000000
       if (q1 < m1) write(q1.toInt, out)
       else {
-        val q2 = NativeMath.multiplyHigh(q1, m2) >>> 25 // divide a small positive long by 100000000
+        val q2 = Math.multiplyHigh(q1, m2) >>> 25 // divide a small positive long by 100000000
         write(q2.toInt, out)
         write8Digits((q1 - q2 * m1).toInt, out)
       }
