@@ -130,20 +130,20 @@ object JsonEncoder extends GeneratedTupleEncoders with EncoderLowPriority1 with 
       out.write('"')
     }
 
-    override final def toJsonAST(a: String): Either[String, Json] = new Right(Json.Str(a))
+    override final def toJsonAST(a: String): Either[String, Json] = new Right(new Json.Str(a))
 
     private[this] def writeEncoded(a: String, out: Write): Unit = {
       val len = a.length
       var i   = 0
       while (i < len) {
         (a.charAt(i): @switch) match {
-          case '"'  => out.write("\\\"")
-          case '\\' => out.write("\\\\")
-          case '\b' => out.write("\\b")
-          case '\f' => out.write("\\f")
-          case '\n' => out.write("\\n")
-          case '\r' => out.write("\\r")
-          case '\t' => out.write("\\t")
+          case '"'  => out.write('\\', '"')
+          case '\\' => out.write('\\', '\\')
+          case '\b' => out.write('\\', 'b')
+          case '\f' => out.write('\\', 'f')
+          case '\n' => out.write('\\', 'n')
+          case '\r' => out.write('\\', 'r')
+          case '\t' => out.write('\\', 't')
           case c =>
             if (c < ' ') out.write("\\u%04x".format(c.toInt))
             else out.write(c)
@@ -158,13 +158,13 @@ object JsonEncoder extends GeneratedTupleEncoders with EncoderLowPriority1 with 
     override def unsafeEncode(a: Char, indent: Option[Int], out: Write): Unit = {
       out.write('"')
       (a: @switch) match {
-        case '"'  => out.write("\\\"")
-        case '\\' => out.write("\\\\")
-        case '\b' => out.write("\\b")
-        case '\f' => out.write("\\f")
-        case '\n' => out.write("\\n")
-        case '\r' => out.write("\\r")
-        case '\t' => out.write("\\t")
+        case '"'  => out.write('\\', '"')
+        case '\\' => out.write('\\', '\\')
+        case '\b' => out.write('\\', 'b')
+        case '\f' => out.write('\\', 'f')
+        case '\n' => out.write('\\', 'n')
+        case '\r' => out.write('\\', 'r')
+        case '\t' => out.write('\\', 't')
         case c =>
           if (c < ' ') out.write("\\u%04x".format(c.toInt))
           else out.write(c)
@@ -172,7 +172,7 @@ object JsonEncoder extends GeneratedTupleEncoders with EncoderLowPriority1 with 
       out.write('"')
     }
 
-    override final def toJsonAST(a: Char): Either[String, Json] = new Right(Json.Str(a.toString))
+    override final def toJsonAST(a: Char): Either[String, Json] = new Right(new Json.Str(a.toString))
   }
 
   private[json] def explicit[A](f: A => String, g: A => Json): JsonEncoder[A] = new JsonEncoder[A] {
@@ -188,7 +188,7 @@ object JsonEncoder extends GeneratedTupleEncoders with EncoderLowPriority1 with 
       out.write('"')
     }
 
-    override final def toJsonAST(a: A): Either[String, Json] = new Right(Json.Str(f(a)))
+    override final def toJsonAST(a: A): Either[String, Json] = new Right(new Json.Str(f(a)))
   }
 
   def suspend[A](encoder0: => JsonEncoder[A]): JsonEncoder[A] =
@@ -204,22 +204,52 @@ object JsonEncoder extends GeneratedTupleEncoders with EncoderLowPriority1 with 
       override def toJsonAST(a: A): Either[String, Json] = encoder.toJsonAST(a)
     }
 
-  implicit val boolean: JsonEncoder[Boolean]                 = explicit(_.toString, Json.Bool.apply)
-  implicit val symbol: JsonEncoder[Symbol]                   = string.contramap(_.name)
-  implicit val byte: JsonEncoder[Byte]                       = explicit(_.toString, Json.Num.apply)
-  implicit val short: JsonEncoder[Short]                     = explicit(_.toString, Json.Num.apply)
-  implicit val int: JsonEncoder[Int]                         = explicit(_.toString, Json.Num.apply)
-  implicit val long: JsonEncoder[Long]                       = explicit(_.toString, Json.Num.apply)
+  implicit val boolean: JsonEncoder[Boolean] = new JsonEncoder[Boolean] {
+    def unsafeEncode(a: Boolean, indent: Option[Int], out: Write): Unit =
+      if (a) out.write('t', 'r', 'u', 'e')
+      else out.write('f', 'a', 'l', 's', 'e')
+
+    override final def toJsonAST(a: Boolean): Either[String, Json] = new Right(Json.Bool(a))
+  }
+  implicit val symbol: JsonEncoder[Symbol] = string.contramap(_.name)
+  implicit val byte: JsonEncoder[Byte] = new JsonEncoder[Byte] {
+    def unsafeEncode(a: Byte, indent: Option[Int], out: Write): Unit = SafeNumbers.write(a.toInt, out)
+
+    override def toJsonAST(a: Byte): Either[String, Json] = new Right(Json.Num(a))
+  }
+  implicit val short: JsonEncoder[Short] = new JsonEncoder[Short] {
+    def unsafeEncode(a: Short, indent: Option[Int], out: Write): Unit = SafeNumbers.write(a.toInt, out)
+
+    override def toJsonAST(a: Short): Either[String, Json] = new Right(Json.Num(a))
+  }
+  implicit val int: JsonEncoder[Int] = new JsonEncoder[Int] {
+    def unsafeEncode(a: Int, indent: Option[Int], out: Write): Unit = SafeNumbers.write(a, out)
+
+    override def toJsonAST(a: Int): Either[String, Json] = new Right(Json.Num(a))
+  }
+  implicit val long: JsonEncoder[Long] = new JsonEncoder[Long] {
+    def unsafeEncode(a: Long, indent: Option[Int], out: Write): Unit = SafeNumbers.write(a, out)
+
+    override def toJsonAST(a: Long): Either[String, Json] = new Right(Json.Num(a))
+  }
   implicit val bigInteger: JsonEncoder[java.math.BigInteger] = explicit(_.toString, Json.Num.apply)
   implicit val scalaBigInt: JsonEncoder[BigInt]              = explicit(_.toString, Json.Num.apply)
-  implicit val double: JsonEncoder[Double]                   = explicit(SafeNumbers.toString, Json.Num.apply)
-  implicit val float: JsonEncoder[Float]                     = explicit(SafeNumbers.toString, Json.Num.apply)
+  implicit val double: JsonEncoder[Double] = new JsonEncoder[Double] {
+    def unsafeEncode(a: Double, indent: Option[Int], out: Write): Unit = SafeNumbers.write(a, out)
+
+    override def toJsonAST(a: Double): Either[String, Json] = new Right(Json.Num(a))
+  }
+  implicit val float: JsonEncoder[Float] = new JsonEncoder[Float] {
+    def unsafeEncode(a: Float, indent: Option[Int], out: Write): Unit = SafeNumbers.write(a, out)
+
+    override def toJsonAST(a: Float): Either[String, Json] = new Right(Json.Num(a))
+  }
   implicit val bigDecimal: JsonEncoder[java.math.BigDecimal] = explicit(_.toString, n => new Json.Num(n))
   implicit val scalaBigDecimal: JsonEncoder[BigDecimal]      = explicit(_.toString, Json.Num.apply)
 
   implicit def option[A](implicit A: JsonEncoder[A]): JsonEncoder[Option[A]] = new JsonEncoder[Option[A]] {
     def unsafeEncode(oa: Option[A], indent: Option[Int], out: Write): Unit =
-      if (oa eq None) out.write("null")
+      if (oa eq None) out.write('n', 'u', 'l', 'l')
       else A.unsafeEncode(oa.get, indent, out)
 
     override def isNothing(oa: Option[A]): Boolean = (oa eq None) || A.isNothing(oa.get)
@@ -238,7 +268,7 @@ object JsonEncoder extends GeneratedTupleEncoders with EncoderLowPriority1 with 
       out.write('\n')
       var i = indent.get
       while (i > 0) {
-        out.write("  ")
+        out.write(' ', ' ')
         i -= 1
       }
     }
@@ -291,6 +321,7 @@ object JsonEncoder extends GeneratedTupleEncoders with EncoderLowPriority1 with 
           case Right(b) => B.unsafeEncode(b, indent, out)
         }
     }
+
 }
 
 private[json] trait EncoderLowPriority1 extends EncoderLowPriority2 {
@@ -301,7 +332,7 @@ private[json] trait EncoderLowPriority1 extends EncoderLowPriority2 {
       override def isEmpty(as: Array[A]): Boolean = as.isEmpty
 
       def unsafeEncode(as: Array[A], indent: Option[Int], out: Write): Unit =
-        if (as.isEmpty) out.write("[]")
+        if (as.isEmpty) out.write('[', ']')
         else {
           out.write('[')
           if (indent.isDefined) unsafeEncodePadded(as, indent, out)
@@ -362,7 +393,7 @@ private[json] trait EncoderLowPriority1 extends EncoderLowPriority2 {
       override def isEmpty(as: List[A]): Boolean = as eq Nil
 
       def unsafeEncode(as: List[A], indent: Option[Int], out: Write): Unit =
-        if (as eq Nil) out.write("[]")
+        if (as eq Nil) out.write('[', ']')
         else {
           out.write('[')
           if (indent.isDefined) unsafeEncodePadded(as, indent, out)
@@ -438,7 +469,7 @@ private[json] trait EncoderLowPriority2 extends EncoderLowPriority3 {
       override def isEmpty(as: T[A]): Boolean = as.isEmpty
 
       def unsafeEncode(as: T[A], indent: Option[Int], out: Write): Unit =
-        if (as.isEmpty) out.write("[]")
+        if (as.isEmpty) out.write('[', ']')
         else {
           out.write('[')
           if (indent.isDefined) unsafeEncodePadded(as, indent, out)
@@ -487,7 +518,7 @@ private[json] trait EncoderLowPriority2 extends EncoderLowPriority3 {
     override def isEmpty(a: T[K, A]): Boolean = a.isEmpty
 
     def unsafeEncode(kvs: T[K, A], indent: Option[Int], out: Write): Unit =
-      if (kvs.isEmpty) out.write("{}")
+      if (kvs.isEmpty) out.write('{', '}')
       else {
         out.write('{')
         if (indent.isDefined) unsafeEncodePadded(kvs, indent, out)
@@ -553,22 +584,163 @@ private[json] trait EncoderLowPriority3 extends EncoderLowPriority4 {
 
   import java.time._
 
-  implicit val dayOfWeek: JsonEncoder[DayOfWeek]           = stringify(_.toString)
-  implicit val duration: JsonEncoder[Duration]             = stringify(serializers.toString)
-  implicit val instant: JsonEncoder[Instant]               = stringify(serializers.toString)
-  implicit val localDate: JsonEncoder[LocalDate]           = stringify(serializers.toString)
-  implicit val localDateTime: JsonEncoder[LocalDateTime]   = stringify(serializers.toString)
-  implicit val localTime: JsonEncoder[LocalTime]           = stringify(serializers.toString)
-  implicit val month: JsonEncoder[Month]                   = stringify(_.toString)
-  implicit val monthDay: JsonEncoder[MonthDay]             = stringify(serializers.toString)
-  implicit val offsetDateTime: JsonEncoder[OffsetDateTime] = stringify(serializers.toString)
-  implicit val offsetTime: JsonEncoder[OffsetTime]         = stringify(serializers.toString)
-  implicit val period: JsonEncoder[Period]                 = stringify(serializers.toString)
-  implicit val year: JsonEncoder[Year]                     = stringify(serializers.toString)
-  implicit val yearMonth: JsonEncoder[YearMonth]           = stringify(serializers.toString)
-  implicit val zonedDateTime: JsonEncoder[ZonedDateTime]   = stringify(serializers.toString)
-  implicit val zoneId: JsonEncoder[ZoneId]                 = stringify(serializers.toString)
-  implicit val zoneOffset: JsonEncoder[ZoneOffset]         = stringify(serializers.toString)
+  implicit val dayOfWeek: JsonEncoder[DayOfWeek] = stringify(_.toString)
+
+  implicit val duration: JsonEncoder[Duration] = new JsonEncoder[Duration] {
+    def unsafeEncode(a: Duration, indent: Option[Int], out: Write): Unit = {
+      out.write('"')
+      serializers.write(a, out)
+      out.write('"')
+    }
+
+    override final def toJsonAST(a: Duration): Either[String, Json] =
+      new Right(new Json.Str(serializers.toString(a)))
+  }
+
+  implicit val instant: JsonEncoder[Instant] = new JsonEncoder[Instant] {
+    def unsafeEncode(a: Instant, indent: Option[Int], out: Write): Unit = {
+      out.write('"')
+      serializers.write(a, out)
+      out.write('"')
+    }
+
+    override final def toJsonAST(a: Instant): Either[String, Json] =
+      new Right(new Json.Str(serializers.toString(a)))
+  }
+
+  implicit val localDate: JsonEncoder[LocalDate] = new JsonEncoder[LocalDate] {
+    def unsafeEncode(a: LocalDate, indent: Option[Int], out: Write): Unit = {
+      out.write('"')
+      serializers.write(a, out)
+      out.write('"')
+    }
+
+    override final def toJsonAST(a: LocalDate): Either[String, Json] =
+      new Right(new Json.Str(serializers.toString(a)))
+  }
+
+  implicit val localDateTime: JsonEncoder[LocalDateTime] = new JsonEncoder[LocalDateTime] {
+    def unsafeEncode(a: LocalDateTime, indent: Option[Int], out: Write): Unit = {
+      out.write('"')
+      serializers.write(a, out)
+      out.write('"')
+    }
+
+    override final def toJsonAST(a: LocalDateTime): Either[String, Json] =
+      new Right(new Json.Str(serializers.toString(a)))
+  }
+
+  implicit val localTime: JsonEncoder[LocalTime] = new JsonEncoder[LocalTime] {
+    def unsafeEncode(a: LocalTime, indent: Option[Int], out: Write): Unit = {
+      out.write('"')
+      serializers.write(a, out)
+      out.write('"')
+    }
+
+    override final def toJsonAST(a: LocalTime): Either[String, Json] =
+      new Right(new Json.Str(serializers.toString(a)))
+  }
+
+  implicit val month: JsonEncoder[Month] = stringify(_.toString)
+
+  implicit val monthDay: JsonEncoder[MonthDay] = new JsonEncoder[MonthDay] {
+    def unsafeEncode(a: MonthDay, indent: Option[Int], out: Write): Unit = {
+      out.write('"')
+      serializers.write(a, out)
+      out.write('"')
+    }
+
+    override final def toJsonAST(a: MonthDay): Either[String, Json] =
+      new Right(new Json.Str(serializers.toString(a)))
+  }
+
+  implicit val offsetDateTime: JsonEncoder[OffsetDateTime] = new JsonEncoder[OffsetDateTime] {
+    def unsafeEncode(a: OffsetDateTime, indent: Option[Int], out: Write): Unit = {
+      out.write('"')
+      serializers.write(a, out)
+      out.write('"')
+    }
+
+    override final def toJsonAST(a: OffsetDateTime): Either[String, Json] =
+      new Right(new Json.Str(serializers.toString(a)))
+  }
+
+  implicit val offsetTime: JsonEncoder[OffsetTime] = new JsonEncoder[OffsetTime] {
+    def unsafeEncode(a: OffsetTime, indent: Option[Int], out: Write): Unit = {
+      out.write('"')
+      serializers.write(a, out)
+      out.write('"')
+    }
+
+    override final def toJsonAST(a: OffsetTime): Either[String, Json] =
+      new Right(new Json.Str(serializers.toString(a)))
+  }
+
+  implicit val period: JsonEncoder[Period] = new JsonEncoder[Period] {
+    def unsafeEncode(a: Period, indent: Option[Int], out: Write): Unit = {
+      out.write('"')
+      serializers.write(a, out)
+      out.write('"')
+    }
+
+    override final def toJsonAST(a: Period): Either[String, Json] =
+      new Right(new Json.Str(serializers.toString(a)))
+  }
+
+  implicit val year: JsonEncoder[Year] = new JsonEncoder[Year] {
+    def unsafeEncode(a: Year, indent: Option[Int], out: Write): Unit = {
+      out.write('"')
+      serializers.write(a, out)
+      out.write('"')
+    }
+
+    override final def toJsonAST(a: Year): Either[String, Json] =
+      new Right(new Json.Str(serializers.toString(a)))
+  }
+
+  implicit val yearMonth: JsonEncoder[YearMonth] = new JsonEncoder[YearMonth] {
+    def unsafeEncode(a: YearMonth, indent: Option[Int], out: Write): Unit = {
+      out.write('"')
+      serializers.write(a, out)
+      out.write('"')
+    }
+
+    override final def toJsonAST(a: YearMonth): Either[String, Json] =
+      new Right(new Json.Str(serializers.toString(a)))
+  }
+
+  implicit val zonedDateTime: JsonEncoder[ZonedDateTime] = new JsonEncoder[ZonedDateTime] {
+    def unsafeEncode(a: ZonedDateTime, indent: Option[Int], out: Write): Unit = {
+      out.write('"')
+      serializers.write(a, out)
+      out.write('"')
+    }
+
+    override final def toJsonAST(a: ZonedDateTime): Either[String, Json] =
+      new Right(new Json.Str(serializers.toString(a)))
+  }
+
+  implicit val zoneId: JsonEncoder[ZoneId] = new JsonEncoder[ZoneId] {
+    def unsafeEncode(a: ZoneId, indent: Option[Int], out: Write): Unit = {
+      out.write('"')
+      serializers.write(a, out)
+      out.write('"')
+    }
+
+    override final def toJsonAST(a: ZoneId): Either[String, Json] =
+      new Right(new Json.Str(serializers.toString(a)))
+  }
+
+  implicit val zoneOffset: JsonEncoder[ZoneOffset] = new JsonEncoder[ZoneOffset] {
+    def unsafeEncode(a: ZoneOffset, indent: Option[Int], out: Write): Unit = {
+      out.write('"')
+      serializers.write(a, out)
+      out.write('"')
+    }
+
+    override final def toJsonAST(a: ZoneOffset): Either[String, Json] =
+      new Right(new Json.Str(serializers.toString(a)))
+  }
 
   implicit val uuid: JsonEncoder[UUID] = stringify(_.toString)
 
