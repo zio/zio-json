@@ -723,12 +723,12 @@ private[json] trait EncoderLowPriority3 extends EncoderLowPriority4 {
   implicit val zoneId: JsonEncoder[ZoneId] = new JsonEncoder[ZoneId] {
     def unsafeEncode(a: ZoneId, indent: Option[Int], out: Write): Unit = {
       out.write('"')
-      serializers.write(a, out)
+      out.write(a.getId)
       out.write('"')
     }
 
     override final def toJsonAST(a: ZoneId): Either[String, Json] =
-      new Right(new Json.Str(serializers.toString(a)))
+      new Right(new Json.Str(a.getId))
   }
 
   implicit val zoneOffset: JsonEncoder[ZoneOffset] = new JsonEncoder[ZoneOffset] {
@@ -742,7 +742,16 @@ private[json] trait EncoderLowPriority3 extends EncoderLowPriority4 {
       new Right(new Json.Str(serializers.toString(a)))
   }
 
-  implicit val uuid: JsonEncoder[UUID] = stringify(_.toString)
+  implicit val uuid: JsonEncoder[UUID] = new JsonEncoder[UUID] {
+    def unsafeEncode(a: UUID, indent: Option[Int], out: Write): Unit = {
+      out.write('"')
+      SafeNumbers.write(a, out)
+      out.write('"')
+    }
+
+    override final def toJsonAST(a: UUID): Either[String, Json] =
+      new Right(new Json.Str(SafeNumbers.toString(a)))
+  }
 
   implicit val currency: JsonEncoder[java.util.Currency] = stringify(_.toString)
 }
