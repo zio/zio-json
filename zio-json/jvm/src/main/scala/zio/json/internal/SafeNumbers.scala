@@ -307,18 +307,18 @@ object SafeNumbers {
     val msb  = x.getMostSignificantBits
     val lsb  = x.getLeastSignificantBits
     val msb1 = (msb >> 32).toInt
+    val msb2 = msb.toInt
+    val lsb1 = (lsb >>> 32).toInt
+    val lsb2 = lsb.toInt
     out.write(ds(msb1 >>> 24), ds(msb1 >> 16 & 0xff), ds(msb1 >> 8 & 0xff), ds(msb1 & 0xff))
     out.write('-')
-    val msb2 = msb.toInt
     out.write(ds(msb2 >>> 24), ds(msb2 >> 16 & 0xff))
     out.write('-')
     out.write(ds(msb2 >> 8 & 0xff), ds(msb2 & 0xff))
     out.write('-')
-    val lsb1 = (lsb >>> 32).toInt
     out.write(ds(lsb1 >>> 24), ds(lsb1 >> 16 & 0xff))
     out.write('-')
     out.write(ds(lsb1 >> 8 & 0xff), ds(lsb1 & 0xff))
-    val lsb2 = lsb.toInt
     out.write(ds(lsb2 >>> 24), ds(lsb2 >> 16 & 0xff), ds(lsb2 >> 8 & 0xff), ds(lsb2 & 0xff))
   }
 
@@ -369,16 +369,12 @@ object SafeNumbers {
   }
 
   private[this] def stripTrailingZeros(x: Int): Int = {
-    var q0 = x
-    var q1 = 0
+    var q0, q1 = x
     while ({
-      val qp = q0 * 1374389535L
-      q1 = (qp >> 37).toInt     // divide a positive int by 100
-      (qp & 0x1fc0000000L) == 0 // check if q is divisible by 100
+      val qp = q1 * 3435973837L
+      q1 = (qp >> 35).toInt    // divide a positive int by 10
+      (qp & 0x7e0000000L) == 0 // check if q is divisible by 10
     }) q0 = q1
-    val qp = q0 * 3435973837L
-    q1 = (qp >> 35).toInt                   // divide a positive int by 10
-    if ((qp & 0x7e0000000L) == 0) return q1 // check if q is divisible by 10
     q0
   }
 
@@ -510,7 +506,7 @@ object SafeNumbers {
     576460752303423478L, 576460752303423478L, 576460752303423478L, 576460752303423478L, 576460752303423478L
   )
 
-  private final val lowerCaseHexDigits: Array[Short] = Array(
+  private[this] final val lowerCaseHexDigits: Array[Short] = Array(
     12336, 12592, 12848, 13104, 13360, 13616, 13872, 14128, 14384, 14640, 24880, 25136, 25392, 25648, 25904, 26160,
     12337, 12593, 12849, 13105, 13361, 13617, 13873, 14129, 14385, 14641, 24881, 25137, 25393, 25649, 25905, 26161,
     12338, 12594, 12850, 13106, 13362, 13618, 13874, 14130, 14386, 14642, 24882, 25138, 25394, 25650, 25906, 26162,
