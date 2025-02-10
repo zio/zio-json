@@ -254,17 +254,14 @@ object UnsafeNumbers {
     var current =
       if (consume) in.readChar().toInt
       else in.nextNonWhitespace().toInt
-    if (current == 'N') {
+    val negate = current == '-'
+    if (negate) current = in.readChar().toInt
+    else if (current == 'N') {
       readAll(in, "aN", consume)
       return Float.NaN
     }
-    val negate = current == '-'
-    if (negate) current = in.readChar().toInt
     if (current == 'I' || current == '+') {
-      if (current == '+') {
-        current = in.readChar().toInt
-        if (current != 'I') throw UnsafeNumber
-      }
+      if (current == '+' && in.readChar() != 'I') throw UnsafeNumber
       readAll(in, "nfinity", consume)
       return if (negate) Float.NegativeInfinity else Float.PositiveInfinity
     }
@@ -382,17 +379,14 @@ object UnsafeNumbers {
     var current =
       if (consume) in.readChar().toInt
       else in.nextNonWhitespace().toInt
-    if (current == 'N') {
+    val negate = current == '-'
+    if (negate) current = in.readChar().toInt
+    else if (current == 'N') {
       readAll(in, "aN", consume)
       return Double.NaN
     }
-    val negate = current == '-'
-    if (negate) current = in.readChar().toInt
     if (current == 'I' || current == '+') {
-      if (current == '+') {
-        current = in.readChar().toInt
-        if (current != 'I') throw UnsafeNumber
-      }
+      if (current == '+' && in.readChar() != 'I') throw UnsafeNumber
       readAll(in, "nfinity", consume)
       return if (negate) Double.NegativeInfinity else Double.PositiveInfinity
     }
