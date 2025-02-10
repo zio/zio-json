@@ -5,11 +5,32 @@ import zio.json._
 import zio.test.Assertion._
 import zio.test._
 
+import java.math.BigInteger
+
 object JsonSpec extends ZIOSpecDefault {
 
   val spec: Spec[Environment, Any] =
     suite("Json")(
       suite("apply")(
+        test("Num()") {
+          assertTrue(Json.Num(0).toString == "0") &&
+          assertTrue(Json.Num(0.0).toString == "0.0") &&
+          assertTrue(Json.Num(1.0).toString == "1.0") &&
+          assertTrue(Json.Num(-0.0).toString == "0.0") &&
+          assertTrue(Json.Num(-1.0).toString == "-1.0") &&
+          assertTrue(Json.Num(7: Byte).toString == "7") &&
+          assertTrue(Json.Num(777: Short).toString == "777") &&
+          assertTrue(Json.Num(123456789).toString == "123456789") &&
+          assertTrue(Json.Num(1.2345678f).toString == "1.2345678") &&
+          assertTrue(Json.Num(1.2345678901234567).toString == "1.2345678901234567") &&
+          assertTrue(Json.Num(1234567890123456789L).toString == "1234567890123456789") &&
+          assertTrue(Json.Num(BigInteger.valueOf(1234567890123456789L)).toString == "1234567890123456789") &&
+          assertTrue(Json.Num(new BigInteger("12345678901234567890")).toString == "12345678901234567890") &&
+          assertTrue(Json.Num(BigInt(1234567890123456789L)).toString == "1234567890123456789") &&
+          assertTrue(Json.Num(BigInt("12345678901234567890")).toString == "12345678901234567890") &&
+          assertTrue(Json.Num(BigDecimal(1234567890123456789L)).toString == "1234567890123456789") &&
+          assertTrue(Json.Num(BigDecimal("12345678901234567890")).toString == "12345678901234567890")
+        },
         test("Bool()") {
           assertTrue(Json.Bool.True eq Json.Bool(true)) &&
           assertTrue(Json.Bool.False eq Json.Bool(false))

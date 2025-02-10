@@ -536,10 +536,10 @@ object Json {
       if (value.isValidLong) apply(value.toLong)
       else new Json.Num(new java.math.BigDecimal(value.bigInteger))
     def apply(value: java.math.BigInteger): Num =
-      if (value.bitCount < 64) apply(value.longValue)
+      if (value.bitLength < 64) apply(value.longValue)
       else new Json.Num(new java.math.BigDecimal(value))
-    def apply(value: Float): Num  = new Num(new java.math.BigDecimal(value.toString))
-    def apply(value: Double): Num = new Num(new java.math.BigDecimal(value))
+    def apply(value: Float): Num  = new Num(new java.math.BigDecimal(SafeNumbers.toString(value)))
+    def apply(value: Double): Num = new Num(new java.math.BigDecimal(SafeNumbers.toString(value)))
 
     implicit val decoder: JsonDecoder[Num] = new JsonDecoder[Num] {
       def unsafeDecode(trace: List[JsonError], in: RetractReader): Num =
