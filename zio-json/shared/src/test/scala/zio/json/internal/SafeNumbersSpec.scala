@@ -114,7 +114,7 @@ object SafeNumbersSpec extends ZIOSpecDefault {
           check(Gen.long)(i => assert(SafeNumbers.double(i.toString))(equalTo(DoubleSome(i.toDouble))))
         },
         test("valid (from BigDecimal)") {
-          check(genBigDecimal)(i => assert(SafeNumbers.double(i.toString))(equalTo(DoubleSome(i.doubleValue()))))
+          check(genBigDecimal)(i => assert(SafeNumbers.double(i.toString))(equalTo(DoubleSome(i.doubleValue))))
         },
         test("invalid edge cases") {
           val inputs = List(
@@ -277,7 +277,7 @@ object SafeNumbersSpec extends ZIOSpecDefault {
           }
         },
         test("valid (from BigDecimal)") {
-          check(genBigDecimal)(i => assert(SafeNumbers.float(i.toString))(equalTo(FloatSome(i.floatValue()))))
+          check(genBigDecimal)(i => assert(SafeNumbers.float(i.toString))(equalTo(FloatSome(i.floatValue))))
         },
         test("invalid float (text)") {
           check(genAlphaLowerString)(s => assert(SafeNumbers.float(s))(equalTo(FloatNone)))
