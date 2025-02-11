@@ -139,12 +139,9 @@ object UnsafeNumbers {
       }
     }
     if (consume && current != -1) throw UnsafeNumber
-    if (hiM10 eq null) {
-      if (negate) loM10 = -loM10
-      return java.math.BigInteger.valueOf(loM10)
-    }
+    if (negate) loM10 = -loM10
+    if (hiM10 eq null) return java.math.BigInteger.valueOf(loM10)
     if (loDigits != 0) {
-      if (negate) loM10 = -loM10
       hiM10 = hiM10.scaleByPowerOfTen(loDigits).add(java.math.BigDecimal.valueOf(loM10))
       if (hiM10.unscaledValue.bitLength >= max_bits) throw UnsafeNumber
     }
@@ -224,8 +221,6 @@ object UnsafeNumbers {
       if (negate) loM10 = -loM10
       return java.math.BigDecimal.valueOf(loM10, -e10)
     }
-    val scale = loDigits + e10
-    if (((loDigits ^ scale) & (e10 ^ scale)) < 0) throw UnsafeNumber
     toBigDecimal(hiM10, loM10, loDigits, e10, max_bits, negate)
   }
 
@@ -241,8 +236,12 @@ object UnsafeNumbers {
     if (negate) loM10 = -loM10
     val bd = java.math.BigDecimal.valueOf(loM10, -e10)
     if (hi eq null) return bd
-    val scale = loDigits + e10
+    var scale = loDigits
     var hiM10 = hi
+    if (e10 != 0) {
+      scale += e10
+      if (((loDigits ^ scale) & (e10 ^ scale)) < 0) throw UnsafeNumber
+    }
     if (scale != 0) hiM10 = hiM10.scaleByPowerOfTen(scale)
     hiM10 = hiM10.add(bd)
     if (hiM10.unscaledValue.bitLength >= max_bits) throw UnsafeNumber
@@ -340,8 +339,6 @@ object UnsafeNumbers {
       if (negate) x = -x
       return x
     }
-    val scale = loDigits + e10
-    if (((loDigits ^ scale) & (e10 ^ scale)) < 0) throw UnsafeNumber
     toBigDecimal(hiM10, loM10, loDigits, e10, max_bits, negate).floatValue
   }
 
@@ -473,8 +470,6 @@ object UnsafeNumbers {
       if (negate) x = -x
       return x
     }
-    val scale = loDigits + e10
-    if (((loDigits ^ scale) & (e10 ^ scale)) < 0) throw UnsafeNumber
     toBigDecimal(hiM10, loM10, loDigits, e10, max_bits, negate).doubleValue
   }
 
@@ -519,7 +514,7 @@ object UnsafeNumbers {
       i += 1
     }
     val current = in.read() // to be consistent read the terminator
-    if (consume && current != -1) throw UnsafeNumber
+    if (consume && current != -1 || !consume && current != '"') throw UnsafeNumber
   }
 
   // 64-bit unsigned multiplication was adopted from the great Hacker's Delight function
