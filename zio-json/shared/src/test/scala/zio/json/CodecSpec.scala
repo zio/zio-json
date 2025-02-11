@@ -72,6 +72,13 @@ object CodecSpec extends ZIOSpecDefault {
           assert("""{"s":""}""".fromJson[OnlyString])(isRight(equalTo(OnlyString("")))) &&
           assert("""{"s":"","t":""}""".fromJson[OnlyString])(isLeft(equalTo("(invalid extra field)")))
         },
+        test("sum of objects encoding") {
+          import examplesumofobjects._
+
+          assert("""{"Child1":{}}""".fromJson[Parent])(isRight(equalTo(Child1))) &&
+          assert("""{"Child2":{}}""".fromJson[Parent])(isRight(equalTo(Child2))) &&
+          assert("""{"type":"Child1"}""".fromJson[Parent])(isLeft(equalTo("(invalid disambiguator)")))
+        },
         test("sum encoding") {
           import examplesum._
 
@@ -241,6 +248,16 @@ object CodecSpec extends ZIOSpecDefault {
     object OnlyString {
       implicit val codec: JsonCodec[OnlyString] = DeriveJsonCodec.gen[OnlyString]
     }
+  }
+
+  object examplesumofobjects {
+    sealed abstract class Parent
+
+    object Parent {
+      implicit val codec: JsonCodec[Parent] = DeriveJsonCodec.gen[Parent]
+    }
+    case object Child1 extends Parent
+    case object Child2 extends Parent
   }
 
   object examplesum {
