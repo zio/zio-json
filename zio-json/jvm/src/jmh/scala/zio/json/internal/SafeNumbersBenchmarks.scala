@@ -115,7 +115,7 @@ class SafeNumbersBenchFloat {
 
   @Benchmark
   def decodeFommilUnsafeValid(): Array[Float] =
-    valids.map(UnsafeNumbers.float(_, 128))
+    valids.map(UnsafeNumbers.float(_, 256))
 
   @Benchmark
   def decodeStdlibInvalid(): Array[FloatOption] = invalids.map(stdlib)
@@ -182,7 +182,7 @@ class SafeNumbersBenchBigDecimal {
 
   @Benchmark
   def decodeFommilUnsafeValid(): Array[java.math.BigDecimal] =
-    valids.map(UnsafeNumbers.bigDecimal(_, 128))
+    valids.map(UnsafeNumbers.bigDecimal(_, 256))
 
   @Benchmark
   def decodeStdlibInvalid(): Array[Option[java.math.BigDecimal]] =
