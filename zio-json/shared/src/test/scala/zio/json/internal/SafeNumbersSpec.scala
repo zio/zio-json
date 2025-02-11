@@ -284,6 +284,11 @@ object SafeNumbersSpec extends ZIOSpecDefault {
         }
       ),
       suite("Int")(
+        test("valid edge cases") {
+          val input = List("00", "01", "0000001", "-2147483648", "2147483647")
+
+          check(Gen.fromIterable(input))(x => assert(SafeNumbers.int(x))(equalTo(IntSome(x.toInt))))
+        },
         test("valid") {
           check(Gen.int)(d => assert(SafeNumbers.int(d.toString))(equalTo(IntSome(d))))
         },
@@ -311,7 +316,7 @@ object SafeNumbersSpec extends ZIOSpecDefault {
       ),
       suite("Long")(
         test("valid edge cases") {
-          val input = List("00", "01", "0000001", "-9223372036854775807", "9223372036854775806")
+          val input = List("00", "01", "0000001", "-9223372036854775808", "9223372036854775807")
 
           check(Gen.fromIterable(input))(x => assert(SafeNumbers.long(x))(equalTo(LongSome(x.toLong))))
         },

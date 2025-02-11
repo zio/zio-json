@@ -15,13 +15,13 @@ object EncoderSpec extends ZIOSpecDefault {
   val spec: Spec[Environment, Any] =
     suite("Encoder")(
       suite("toJson")(
+        test("strings") {
+          assert("hello world".toJson)(equalTo("\"hello world\"")) &&
+          assert("hello\nworld".toJson)(equalTo("\"hello\\nworld\"")) &&
+          assert("hello\rworld".toJson)(equalTo("\"hello\\rworld\"")) &&
+          assert("hello\u0000world".toJson)(equalTo("\"hello\\u0000world\""))
+        },
         suite("primitives")(
-          test("strings") {
-            assert("hello world".toJson)(equalTo("\"hello world\"")) &&
-            assert("hello\nworld".toJson)(equalTo("\"hello\\nworld\"")) &&
-            assert("hello\rworld".toJson)(equalTo("\"hello\\rworld\"")) &&
-            assert("hello\u0000world".toJson)(equalTo("\"hello\\u0000world\""))
-          },
           test("boolean") {
             assert(true.toJson)(equalTo("true")) &&
             assert(false.toJson)(equalTo("false"))
@@ -29,6 +29,63 @@ object EncoderSpec extends ZIOSpecDefault {
           test("char") {
             assert('c'.toJson)(equalTo("\"c\"")) &&
             assert(Symbol("c").toJson)(equalTo("\"c\""))
+          },
+          test("byte") {
+            assert((0: Short).toJson)(equalTo("0")) &&
+            assert((1: Short).toJson)(equalTo("1")) &&
+            assert((12: Short).toJson)(equalTo("12")) &&
+            assert((123: Short).toJson)(equalTo("123")) &&
+            assert((127: Short).toJson)(equalTo("127")) &&
+            assert((-128: Short).toJson)(equalTo("-128"))
+          },
+          test("short") {
+            assert((0: Short).toJson)(equalTo("0")) &&
+            assert((1: Short).toJson)(equalTo("1")) &&
+            assert((12: Short).toJson)(equalTo("12")) &&
+            assert((123: Short).toJson)(equalTo("123")) &&
+            assert((1234: Short).toJson)(equalTo("1234")) &&
+            assert((12345: Short).toJson)(equalTo("12345")) &&
+            assert((32767: Short).toJson)(equalTo("32767")) &&
+            assert((-32768: Short).toJson)(equalTo("-32768"))
+          },
+          test("int") {
+            assert(0.toJson)(equalTo("0")) &&
+            assert(1.toJson)(equalTo("1")) &&
+            assert(12.toJson)(equalTo("12")) &&
+            assert(123.toJson)(equalTo("123")) &&
+            assert(1234.toJson)(equalTo("1234")) &&
+            assert(12345.toJson)(equalTo("12345")) &&
+            assert(123456.toJson)(equalTo("123456")) &&
+            assert(1234567.toJson)(equalTo("1234567")) &&
+            assert(12345678.toJson)(equalTo("12345678")) &&
+            assert(123456789.toJson)(equalTo("123456789")) &&
+            assert(1234567890.toJson)(equalTo("1234567890")) &&
+            assert(2147483647.toJson)(equalTo("2147483647")) &&
+            assert(-2147483648.toJson)(equalTo("-2147483648"))
+          },
+          test("long") {
+            assert(0L.toJson)(equalTo("0")) &&
+            assert(1L.toJson)(equalTo("1")) &&
+            assert(12L.toJson)(equalTo("12")) &&
+            assert(123L.toJson)(equalTo("123")) &&
+            assert(1234L.toJson)(equalTo("1234")) &&
+            assert(12345L.toJson)(equalTo("12345")) &&
+            assert(123456L.toJson)(equalTo("123456")) &&
+            assert(1234567L.toJson)(equalTo("1234567")) &&
+            assert(12345678L.toJson)(equalTo("12345678")) &&
+            assert(123456789L.toJson)(equalTo("123456789")) &&
+            assert(1234567890L.toJson)(equalTo("1234567890")) &&
+            assert(12345678901L.toJson)(equalTo("12345678901")) &&
+            assert(123456789012L.toJson)(equalTo("123456789012")) &&
+            assert(1234567890123L.toJson)(equalTo("1234567890123")) &&
+            assert(12345678901234L.toJson)(equalTo("12345678901234")) &&
+            assert(123456789012345L.toJson)(equalTo("123456789012345")) &&
+            assert(1234567890123456L.toJson)(equalTo("1234567890123456")) &&
+            assert(12345678901234567L.toJson)(equalTo("12345678901234567")) &&
+            assert(123456789012345678L.toJson)(equalTo("123456789012345678")) &&
+            assert(1234567890123456789L.toJson)(equalTo("1234567890123456789")) &&
+            assert(9223372036854775807L.toJson)(equalTo("9223372036854775807")) &&
+            assert(-9223372036854775808L.toJson)(equalTo("-9223372036854775808"))
           },
           test("float") {
             assert(Float.NaN.toJson)(equalTo("\"NaN\"")) &&
@@ -137,6 +194,7 @@ object EncoderSpec extends ZIOSpecDefault {
             assert(7.1202363472230444e-307d.toJson)(equalTo("7.120236347223045E-307")) &&
             assert(3.67301024534615e16d.toJson)(equalTo("3.67301024534615E16")) &&
             assert(5.9604644775390625e-8d.toJson)(equalTo("5.960464477539063E-8")) &&
+            assert(5.829003601188985e15d.toJson)(equalTo("5.829003601188985E15")) &&
             assert(1.0e-322d.toJson)(equalTo("9.9E-323")) && // 20 * 2 ^ -1074 == 9.88... * 10 ^ -323
             assert(5.0e-324d.toJson)(equalTo("4.9E-324")) && // 1 * 2 ^ -1074 == 4.94... * 10 ^ -324
             assert(1.0e23d.toJson)(
