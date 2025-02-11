@@ -106,6 +106,20 @@ object DecoderSpec extends ZIOSpecDefault {
           assertTrue("\"-Infinity\"".fromJson[BigDecimal].isLeft) &&
           assertTrue("\"NaN\"".fromJson[BigDecimal].isLeft)
         },
+        test("BigDecimal from JSON AST") {
+          assert("13.38885989999999992505763657391071319580078125".fromJson[Json])(
+            isRight(equalTo(Json.Num(BigDecimal("13.38885989999999992505763657391071319580078125"))))
+          )
+        },
+        test("BigDecimal too large") {
+          // this big integer consumes more than 256 bits
+          assert(
+            "170141183460469231731687303715884105728489465165484668486513574864654818964653168465316546851"
+              .fromJson[BigDecimal]
+          )(
+            isLeft(equalTo("(expected a BigDecimal with 256-bit mantissa)"))
+          )
+        },
         test("BigInteger") {
           assert("170141183460469231731687303715884105728".fromJson[BigInteger])(
             isRight(equalTo(new BigInteger("170141183460469231731687303715884105728")))
