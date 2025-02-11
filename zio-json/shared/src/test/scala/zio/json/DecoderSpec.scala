@@ -83,6 +83,9 @@ object DecoderSpec extends ZIOSpecDefault {
           assert("-1.234567e9".fromJson[Float])(isRight(equalTo(-1.234567e9f))) &&
           assert("1.234567e9".fromJson[Float])(isRight(equalTo(1.234567e9f))) &&
           assert("\"-1.234567e9\"".fromJson[Float])(isRight(equalTo(-1.234567e9f))) &&
+          assert("-1.23456789012345678901e-2147483648".fromJson[Float])(isLeft(equalTo("(expected a Float)"))) &&
+          assert("123456789012345678901e+2147483647".fromJson[Float])(isLeft(equalTo("(expected a Float)"))) &&
+          assert("-123456789012345678901e+2147483647".fromJson[Float])(isLeft(equalTo("(expected a Float)"))) &&
           assert("\"Infinity\"".fromJson[Float])(isRight(equalTo(Float.PositiveInfinity))) &&
           assert("\"+Infinity\"".fromJson[Float])(isRight(equalTo(Float.PositiveInfinity))) &&
           assert("\"-Infinity\"".fromJson[Float])(isRight(equalTo(Float.NegativeInfinity))) &&
@@ -92,6 +95,9 @@ object DecoderSpec extends ZIOSpecDefault {
         test("double") {
           assert("-1.23456789012345e9".fromJson[Double])(isRight(equalTo(-1.23456789012345e9))) &&
           assert("\"-1.23456789012345e9\"".fromJson[Double])(isRight(equalTo(-1.23456789012345e9))) &&
+          assert("-1.23456789012345678901e-2147483648".fromJson[Double])(isLeft(equalTo("(expected a Double)"))) &&
+          assert("123456789012345678901e+2147483647".fromJson[Double])(isLeft(equalTo("(expected a Double)"))) &&
+          assert("-123456789012345678901e+2147483647".fromJson[Double])(isLeft(equalTo("(expected a Double)"))) &&
           assert("\"Infinity\"".fromJson[Double])(isRight(equalTo(Double.PositiveInfinity))) &&
           assert("\"+Infinity\"".fromJson[Double])(isRight(equalTo(Double.PositiveInfinity))) &&
           assert("\"-Infinity\"".fromJson[Double])(isRight(equalTo(Double.NegativeInfinity))) &&
@@ -117,6 +123,17 @@ object DecoderSpec extends ZIOSpecDefault {
             "170141183460469231731687303715884105728489465165484668486513574864654818964653168465316546851"
               .fromJson[BigDecimal]
           )(
+            isLeft(equalTo("(expected a BigDecimal with 256-bit mantissa)"))
+          )
+        },
+        test("BigDecimal exponent too large") {
+          assert("1.23456789012345678901e-2147483648".fromJson[BigDecimal])(
+            isLeft(equalTo("(expected a BigDecimal with 256-bit mantissa)"))
+          ) &&
+          assert("123456789012345678901e+2147483647".fromJson[BigDecimal])(
+            isLeft(equalTo("(expected a BigDecimal with 256-bit mantissa)"))
+          ) &&
+          assert("-123456789012345678901e+2147483647".fromJson[BigDecimal])(
             isLeft(equalTo("(expected a BigDecimal with 256-bit mantissa)"))
           )
         },

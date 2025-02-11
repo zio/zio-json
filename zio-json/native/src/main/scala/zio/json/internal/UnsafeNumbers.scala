@@ -195,7 +195,6 @@ object UnsafeNumbers {
         }
       }
     }
-    if ((hiM10 eq null) && loDigits == 0) throw UnsafeNumber
     if ((current | 0x20) == 'e') {
       current = in.readChar().toInt
       val negateExp = current == '-'
@@ -213,15 +212,20 @@ object UnsafeNumbers {
           }
         ) throw UnsafeNumber
       }
-      if (negateExp) e10 += exp
-      else if (exp != -2147483648) e10 -= exp
+      if (negateExp) {
+        e10 += exp
+        if (e10 > 0) throw UnsafeNumber
+      } else if (exp != -2147483648) e10 -= exp
       else throw UnsafeNumber
     }
     if (consume && current != -1) throw UnsafeNumber
     if (hiM10 eq null) {
+      if (loDigits == 0) throw UnsafeNumber
       if (negate) loM10 = -loM10
       return java.math.BigDecimal.valueOf(loM10, -e10)
     }
+    val scale = loDigits + e10
+    if (((loDigits ^ scale) & (e10 ^ scale)) < 0) throw UnsafeNumber
     toBigDecimal(hiM10, loM10, loDigits, e10, max_bits, negate)
   }
 
@@ -235,12 +239,10 @@ object UnsafeNumbers {
   ): java.math.BigDecimal = {
     var loM10 = lo
     if (negate) loM10 = -loM10
-    val bd =
-      if (loDigits != 0) java.math.BigDecimal.valueOf(loM10, -e10)
-      else java.math.BigDecimal.ZERO
+    val bd = java.math.BigDecimal.valueOf(loM10, -e10)
     if (hi eq null) return bd
-    var hiM10 = hi
     val scale = loDigits + e10
+    var hiM10 = hi
     if (scale != 0) hiM10 = hiM10.scaleByPowerOfTen(scale)
     hiM10 = hiM10.add(bd)
     if (hiM10.unscaledValue.bitLength >= max_bits) throw UnsafeNumber
@@ -300,7 +302,6 @@ object UnsafeNumbers {
         }
       }
     }
-    if ((hiM10 eq null) && loDigits == 0) throw UnsafeNumber
     if ((current | 0x20) == 'e') {
       current = in.readChar().toInt
       val negateExp = current == '-'
@@ -318,12 +319,15 @@ object UnsafeNumbers {
           }
         ) throw UnsafeNumber
       }
-      if (negateExp) e10 += exp
-      else if (exp != -2147483648) e10 -= exp
+      if (negateExp) {
+        e10 += exp
+        if (e10 > 0) throw UnsafeNumber
+      } else if (exp != -2147483648) e10 -= exp
       else throw UnsafeNumber
     }
     if (consume && current != -1) throw UnsafeNumber
     if (hiM10 eq null) {
+      if (loDigits == 0) throw UnsafeNumber
       var x =
         if (e10 == 0) loM10.toFloat
         else {
@@ -336,6 +340,8 @@ object UnsafeNumbers {
       if (negate) x = -x
       return x
     }
+    val scale = loDigits + e10
+    if (((loDigits ^ scale) & (e10 ^ scale)) < 0) throw UnsafeNumber
     toBigDecimal(hiM10, loM10, loDigits, e10, max_bits, negate).floatValue
   }
 
@@ -425,7 +431,6 @@ object UnsafeNumbers {
         }
       }
     }
-    if ((hiM10 eq null) && loDigits == 0) throw UnsafeNumber
     if ((current | 0x20) == 'e') {
       current = in.readChar().toInt
       val negateExp = current == '-'
@@ -443,12 +448,15 @@ object UnsafeNumbers {
           }
         ) throw UnsafeNumber
       }
-      if (negateExp) e10 += exp
-      else if (exp != -2147483648) e10 -= exp
+      if (negateExp) {
+        e10 += exp
+        if (e10 > 0) throw UnsafeNumber
+      } else if (exp != -2147483648) e10 -= exp
       else throw UnsafeNumber
     }
     if (consume && current != -1) throw UnsafeNumber
     if (hiM10 eq null) {
+      if (loDigits == 0) throw UnsafeNumber
       var x =
         if (e10 == 0) loM10.toDouble
         else {
@@ -465,6 +473,8 @@ object UnsafeNumbers {
       if (negate) x = -x
       return x
     }
+    val scale = loDigits + e10
+    if (((loDigits ^ scale) & (e10 ^ scale)) < 0) throw UnsafeNumber
     toBigDecimal(hiM10, loM10, loDigits, e10, max_bits, negate).doubleValue
   }
 
