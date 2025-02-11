@@ -40,7 +40,7 @@ object CodecSpec extends ZIOSpecDefault {
             "170141183460469231731687303715884105728489465165484668486513574864654818964653168465316546851"
               .fromJson[java.math.BigInteger]
           )(
-            isLeft(equalTo("(expected a 256 bit BigInteger)"))
+            isLeft(equalTo("(expected a 256-bit BigInteger)"))
           )
         },
         test("java.util.Currency") {

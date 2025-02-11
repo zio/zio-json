@@ -308,7 +308,7 @@ object Lexer {
       in.retract()
       i
     } catch {
-      case UnsafeNumbers.UnsafeNumber => error(s"expected a $NumberMaxBits bit BigInteger", trace)
+      case UnsafeNumbers.UnsafeNumber => error(s"expected a $NumberMaxBits-bit BigInteger", trace)
     }
 
   def float(trace: List[JsonError], in: RetractReader): Float =
@@ -335,7 +335,7 @@ object Lexer {
       in.retract()
       i
     } catch {
-      case UnsafeNumbers.UnsafeNumber => error(s"expected a $NumberMaxBits BigDecimal", trace)
+      case UnsafeNumbers.UnsafeNumber => error(s"expected a BigDecimal with $NumberMaxBits-bit mantissa", trace)
     }
 
   @inline def char(trace: List[JsonError], in: OneCharReader, c: Char): Unit = {
@@ -343,6 +343,7 @@ object Lexer {
     if (got != c) error(s"'$c'", got, trace)
   }
 
+  // FIXME: remove on next major version release
   @inline def charOnly(trace: List[JsonError], in: OneCharReader, c: Char): Unit = {
     val got = in.readChar()
     if (got != c) error(s"'$c'", got, trace)
