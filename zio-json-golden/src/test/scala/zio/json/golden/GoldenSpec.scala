@@ -40,9 +40,9 @@ object GoldenSpec extends ZIOSpecDefault {
        */
       val genBigDecimal: Gen[Any, java.math.BigDecimal] =
         Gen
-          .bigDecimal((BigDecimal(2).pow(128) - 1) * -1, BigDecimal(2).pow(128) - 1)
+          .bigDecimal((BigDecimal(2).pow(256) - 1) * -1, BigDecimal(2).pow(256) - 1)
           .map(_.bigDecimal)
-          .filter(_.toBigInteger.bitLength < 128)
+          .filter(_.toBigInteger.bitLength < 256)
 
       genBigDecimal.map(FilteredGenType.apply)
     }

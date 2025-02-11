@@ -254,17 +254,14 @@ object UnsafeNumbers {
     var current =
       if (consume) in.readChar().toInt
       else in.nextNonWhitespace().toInt
-    if (current == 'N') {
+    val negate = current == '-'
+    if (negate) current = in.readChar().toInt
+    else if (current == 'N') {
       readAll(in, "aN", consume)
       return Float.NaN
     }
-    val negate = current == '-'
-    if (negate) current = in.readChar().toInt
     if (current == 'I' || current == '+') {
-      if (current == '+') {
-        current = in.readChar().toInt
-        if (current != 'I') throw UnsafeNumber
-      }
+      if (current == '+' && in.readChar() != 'I') throw UnsafeNumber
       readAll(in, "nfinity", consume)
       return if (negate) Float.NegativeInfinity else Float.PositiveInfinity
     }
@@ -327,7 +324,7 @@ object UnsafeNumbers {
     }
     if (consume && current != -1) throw UnsafeNumber
     if (hiM10 eq null) {
-      var x: Float =
+      var x =
         if (e10 == 0) loM10.toFloat
         else {
           if (loM10 < 4294967296L && e10 >= loDigits - 23 && e10 <= 19 - loDigits) {
@@ -339,7 +336,7 @@ object UnsafeNumbers {
       if (negate) x = -x
       return x
     }
-    toBigDecimal(hiM10, loM10, loDigits, e10, max_bits, negate).floatValue()
+    toBigDecimal(hiM10, loM10, loDigits, e10, max_bits, negate).floatValue
   }
 
   // Based on the 'Moderate Path' algorithm from the awesome library of Alexander Huszagh: https://github.com/Alexhuszagh/rust-lexical
@@ -372,7 +369,7 @@ object UnsafeNumbers {
         else if (e2 >= 105) 0x7f800000
         else e2 + 150 << 23 | mf & 0x7fffff
       }
-      else java.math.BigDecimal.valueOf(m10, -e10).floatValue()
+      else java.math.BigDecimal.valueOf(m10, -e10).floatValue
     }
 
   def double(num: String, max_bits: Int): Double =
@@ -382,17 +379,14 @@ object UnsafeNumbers {
     var current =
       if (consume) in.readChar().toInt
       else in.nextNonWhitespace().toInt
-    if (current == 'N') {
+    val negate = current == '-'
+    if (negate) current = in.readChar().toInt
+    else if (current == 'N') {
       readAll(in, "aN", consume)
       return Double.NaN
     }
-    val negate = current == '-'
-    if (negate) current = in.readChar().toInt
     if (current == 'I' || current == '+') {
-      if (current == '+') {
-        current = in.readChar().toInt
-        if (current != 'I') throw UnsafeNumber
-      }
+      if (current == '+' && in.readChar() != 'I') throw UnsafeNumber
       readAll(in, "nfinity", consume)
       return if (negate) Double.NegativeInfinity else Double.PositiveInfinity
     }
@@ -455,7 +449,7 @@ object UnsafeNumbers {
     }
     if (consume && current != -1) throw UnsafeNumber
     if (hiM10 eq null) {
-      var x: Double =
+      var x =
         if (e10 == 0) loM10.toDouble
         else {
           if (loM10 < 4503599627370496L && e10 >= -22 && e10 <= 38 - loDigits) {
@@ -471,7 +465,7 @@ object UnsafeNumbers {
       if (negate) x = -x
       return x
     }
-    toBigDecimal(hiM10, loM10, loDigits, e10, max_bits, negate).doubleValue()
+    toBigDecimal(hiM10, loM10, loDigits, e10, max_bits, negate).doubleValue
   }
 
   // Based on the 'Moderate Path' algorithm from the awesome library of Alexander Huszagh: https://github.com/Alexhuszagh/rust-lexical
@@ -504,7 +498,7 @@ object UnsafeNumbers {
         else if (e2 >= 972) 0x7ff0000000000000L
         else (e2 + 1075).toLong << 52 | m2 & 0xfffffffffffffL
       }
-      else java.math.BigDecimal.valueOf(m10, -e10).doubleValue()
+      else java.math.BigDecimal.valueOf(m10, -e10).doubleValue
     }
 
   @noinline private[this] def readAll(in: OneCharReader, s: String, consume: Boolean): Unit = {

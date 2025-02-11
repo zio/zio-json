@@ -9,15 +9,15 @@ import scala.util.Try
 object Gens {
   val genBigInteger =
     Gen
-      .bigInt((BigInt(2).pow(128) - 1) * -1, BigInt(2).pow(128) - 1)
+      .bigInt((BigInt(2).pow(256) - 1) * -1, BigInt(2).pow(256) - 1)
       .map(_.bigInteger)
-      .filter(_.bitLength < 128)
+      .filter(_.bitLength < 256)
 
   val genBigDecimal =
     Gen
-      .bigDecimal((BigDecimal(2).pow(128) - 1) * -1, BigDecimal(2).pow(128) - 1)
+      .bigDecimal((BigDecimal(2).pow(256) - 1) * -1, BigDecimal(2).pow(256) - 1)
       .map(_.bigDecimal)
-      .filter(_.unscaledValue.bitLength < 128)
+      .filter(_.unscaledValue.bitLength < 256)
 
   val genUsAsciiString =
     Gen.string(Gen.oneOf(Gen.char('!', '~')))

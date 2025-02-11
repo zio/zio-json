@@ -35,7 +35,7 @@ import java.util.UUID
  * "1.000e-5", which is useful in cases where the trailing zeros denote measurement accuracy.
  *
  * `BigInteger`, `BigDecimal`, `Float` and `Double` have a configurable bit limit on the size of the significand, to
- * avoid OOM style attacks, which is 128 bits by default.
+ * avoid OOM style attacks, which is 256 bits by default.
  *
  * Results are contained in a specialisation of Option that avoids boxing.
  */
@@ -58,19 +58,19 @@ object SafeNumbers {
     try LongSome(UnsafeNumbers.long(num))
     catch { case _: UnexpectedEnd | UnsafeNumber => LongNone }
 
-  def bigInteger(num: String, max_bits: Int = 128): Option[java.math.BigInteger] =
+  def bigInteger(num: String, max_bits: Int = 256): Option[java.math.BigInteger] =
     try Some(UnsafeNumbers.bigInteger(num, max_bits))
     catch { case _: UnexpectedEnd | UnsafeNumber => None }
 
-  def float(num: String, max_bits: Int = 128): FloatOption =
+  def float(num: String, max_bits: Int = 256): FloatOption =
     try FloatSome(UnsafeNumbers.float(num, max_bits))
     catch { case _: UnexpectedEnd | UnsafeNumber => FloatNone }
 
-  def double(num: String, max_bits: Int = 128): DoubleOption =
+  def double(num: String, max_bits: Int = 256): DoubleOption =
     try DoubleSome(UnsafeNumbers.double(num, max_bits))
     catch { case _: UnexpectedEnd | UnsafeNumber => DoubleNone }
 
-  def bigDecimal(num: String, max_bits: Int = 128): Option[java.math.BigDecimal] =
+  def bigDecimal(num: String, max_bits: Int = 256): Option[java.math.BigDecimal] =
     try Some(UnsafeNumbers.bigDecimal(num, max_bits))
     catch { case _: UnexpectedEnd | UnsafeNumber => None }
 
