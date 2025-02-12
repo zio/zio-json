@@ -87,11 +87,11 @@ object DecoderSpec extends ZIOSpecDefault {
           assert("-8.3e38".fromJson[Float])(isRight(equalTo(Float.NegativeInfinity))) &&
           assert("1.23456789012345678901e-2147483648".fromJson[Float])(isLeft(equalTo("(expected a Float)"))) &&
           assert("123456789012345678901e+2147483647".fromJson[Float])(isLeft(equalTo("(expected a Float)"))) &&
-          assert("1234567890123456789.01e+2147483647".fromJson[Float])(isLeft(equalTo("(expected a Float)"))) &&
+          assert("12345678901234567890.1e+2147483647".fromJson[Float])(isLeft(equalTo("(expected a Float)"))) &&
           assert("1.0e-2147483647".fromJson[Float])(isRight(equalTo(0.0f))) &&
           assert("-1.0e-2147483647".fromJson[Float])(isRight(equalTo(-0.0f))) &&
-          assert("123456789012345678.901e+2147483647".fromJson[Float])(isRight(equalTo(Float.PositiveInfinity))) &&
-          assert("-123456789012345678.901e+2147483647".fromJson[Float])(isRight(equalTo(Float.NegativeInfinity))) &&
+          assert("1234567890123456789.01e+2147483647".fromJson[Float])(isRight(equalTo(Float.PositiveInfinity))) &&
+          assert("-1234567890123456789.01e+2147483647".fromJson[Float])(isRight(equalTo(Float.NegativeInfinity))) &&
           assert("\"Infinity\"".fromJson[Float])(isRight(equalTo(Float.PositiveInfinity))) &&
           assert("\"+Infinity\"".fromJson[Float])(isRight(equalTo(Float.PositiveInfinity))) &&
           assert("\"-Infinity\"".fromJson[Float])(isRight(equalTo(Float.NegativeInfinity))) &&
@@ -109,12 +109,12 @@ object DecoderSpec extends ZIOSpecDefault {
           assert("1.8e308".fromJson[Double])(isRight(equalTo(Double.PositiveInfinity))) &&
           assert("-1.8e308".fromJson[Double])(isRight(equalTo(Double.NegativeInfinity))) &&
           assert("1.23456789012345678901e-2147483648".fromJson[Double])(isLeft(equalTo("(expected a Double)"))) &&
-          assert("1234567890123456789.01e+2147483647".fromJson[Double])(isLeft(equalTo("(expected a Double)"))) &&
+          assert("12345678901234567890.1e+2147483647".fromJson[Double])(isLeft(equalTo("(expected a Double)"))) &&
           assert("123456789012345678901e+2147483647".fromJson[Double])(isLeft(equalTo("(expected a Double)"))) &&
           assert("1.0e-2147483647".fromJson[Double])(isRight(equalTo(0.0))) &&
           assert("-1.0e-2147483647".fromJson[Double])(isRight(equalTo(-0.0))) &&
-          assert("123456789012345678.901e+2147483647".fromJson[Double])(isRight(equalTo(Double.PositiveInfinity))) &&
-          assert("-123456789012345678.901e+2147483647".fromJson[Double])(isRight(equalTo(Double.NegativeInfinity))) &&
+          assert("1234567890123456789.01e+2147483647".fromJson[Double])(isRight(equalTo(Double.PositiveInfinity))) &&
+          assert("-1234567890123456789.01e+2147483647".fromJson[Double])(isRight(equalTo(Double.NegativeInfinity))) &&
           assert("\"Infinity\"".fromJson[Double])(isRight(equalTo(Double.PositiveInfinity))) &&
           assert("\"+Infinity\"".fromJson[Double])(isRight(equalTo(Double.PositiveInfinity))) &&
           assert("\"-Infinity\"".fromJson[Double])(isRight(equalTo(Double.NegativeInfinity))) &&
@@ -151,7 +151,7 @@ object DecoderSpec extends ZIOSpecDefault {
           assert("1.23456789012345678901e-2147483648".fromJson[BigDecimal])(
             isLeft(equalTo("(expected a BigDecimal with 256-bit mantissa)"))
           ) &&
-          assert("1234567890123456789.01e+2147483647".fromJson[BigDecimal])(
+          assert("12345678901234567890.1e+2147483647".fromJson[BigDecimal])(
             isLeft(equalTo("(expected a BigDecimal with 256-bit mantissa)"))
           ) &&
           assert("123456789012345678901e+2147483647".fromJson[BigDecimal])(
