@@ -249,7 +249,13 @@ object BuildHelper {
     mimaBinaryIssueFilters ++= Seq(
       exclude[Problem]("zio.json.internal.*"),
       exclude[Problem]("zio.json.yaml.internal.*")
-    ),
+    ) ++ (CrossVersion.partialVersion(scalaVersion.value) match {
+      case Some((2, _)) =>
+        Seq(
+          exclude[Problem]("zio.json.JsonFieldDecoder.stringLike") // FIXME: remove after v0.7.19 release
+        )
+      case _ => Seq.empty
+    }),
     mimaFailOnProblem := true
   )
 

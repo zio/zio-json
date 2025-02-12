@@ -930,4 +930,16 @@ object DecoderSpec extends ZIOSpecDefault {
     implicit val eventDecoder: JsonDecoder[Event] = DeriveJsonDecoder.gen[Event]
     implicit val eventEncoder: JsonEncoder[Event] = DeriveJsonEncoder.gen[Event]
   }
+
+  object fieldDecoder {
+    case class PersonId(value: String)
+
+    object PersonId {
+      implicit val jsonFieldEncoder: JsonFieldEncoder[PersonId] = JsonFieldEncoder.string.contramap(_.value)
+      implicit val jsonFieldDecoder: JsonFieldDecoder[PersonId] = JsonFieldDecoder.string.map(PersonId.apply)
+    }
+
+    implicitly[JsonFieldEncoder[PersonId]]
+    implicitly[JsonFieldDecoder[PersonId]]
+  }
 }
