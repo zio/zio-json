@@ -124,9 +124,10 @@ object UnsafeNumbers {
       current = in.read()
       '0' <= current && current <= '9'
     }) {
-      loM10 = (loM10 << 3) + (loM10 << 1) + (current - '0')
-      loDigits += 1
-      if (loM10 >= 100000000000000000L) {
+      if (loM10 < 922337203685477580L) {
+        loM10 = (loM10 << 3) + (loM10 << 1) + (current - '0')
+        loDigits += 1
+      } else {
         if (negate) loM10 = -loM10
         val bd = java.math.BigDecimal.valueOf(loM10)
         if (hiM10 eq null) hiM10 = bd
@@ -134,17 +135,15 @@ object UnsafeNumbers {
           hiM10 = hiM10.scaleByPowerOfTen(loDigits).add(bd)
           if (hiM10.unscaledValue.bitLength >= max_bits) throw UnsafeNumber
         }
-        loM10 = 0
-        loDigits = 0
+        loM10 = (current - '0').toLong
+        loDigits = 1
       }
     }
     if (consume && current != -1) throw UnsafeNumber
     if (negate) loM10 = -loM10
     if (hiM10 eq null) return java.math.BigInteger.valueOf(loM10)
-    if (loDigits != 0) {
-      hiM10 = hiM10.scaleByPowerOfTen(loDigits).add(java.math.BigDecimal.valueOf(loM10))
-      if (hiM10.unscaledValue.bitLength >= max_bits) throw UnsafeNumber
-    }
+    hiM10 = hiM10.scaleByPowerOfTen(loDigits).add(java.math.BigDecimal.valueOf(loM10))
+    if (hiM10.unscaledValue.bitLength >= max_bits) throw UnsafeNumber
     hiM10.unscaledValue
   }
 
@@ -162,17 +161,18 @@ object UnsafeNumbers {
     var hiM10: java.math.BigDecimal = null
     if ('0' <= current && current <= '9') {
       loM10 = (current - '0').toLong
-      loDigits += 1
+      loDigits = 1
       while ({
         current = in.read()
         '0' <= current && current <= '9'
       }) {
-        loM10 = (loM10 << 3) + (loM10 << 1) + (current - '0')
-        loDigits += 1
-        if (loM10 >= 100000000000000000L) {
+        if (loM10 < 922337203685477580L) {
+          loM10 = (loM10 << 3) + (loM10 << 1) + (current - '0')
+          loDigits += 1
+        } else {
           hiM10 = toBigDecimal(hiM10, loM10, loDigits, 0, max_bits, negate)
-          loM10 = 0
-          loDigits = 0
+          loM10 = (current - '0').toLong
+          loDigits = 1
         }
       }
     }
@@ -182,13 +182,15 @@ object UnsafeNumbers {
         current = in.read()
         '0' <= current && current <= '9'
       }) {
-        loM10 = (loM10 << 3) + (loM10 << 1) + (current - '0')
-        loDigits += 1
-        e10 -= 1
-        if (loM10 >= 100000000000000000L) {
+        if (loM10 < 922337203685477580L) {
+          loM10 = (loM10 << 3) + (loM10 << 1) + (current - '0')
+          loDigits += 1
+          e10 -= 1
+        } else {
           hiM10 = toBigDecimal(hiM10, loM10, loDigits, 0, max_bits, negate)
-          loM10 = 0
-          loDigits = 0
+          loM10 = (current - '0').toLong
+          loDigits = 1
+          e10 -= 1
         }
       }
     }
@@ -234,16 +236,16 @@ object UnsafeNumbers {
   ): java.math.BigDecimal = {
     var loM10 = lo
     if (negate) loM10 = -loM10
-    val bd = java.math.BigDecimal.valueOf(loM10, -e10)
-    if (hi eq null) return bd
-    var scale = loDigits
-    var hiM10 = hi
-    if (e10 != 0) {
-      scale += e10
-      if (((loDigits ^ scale) & (e10 ^ scale)) < 0) throw UnsafeNumber
-    }
-    if (scale != 0) hiM10 = hiM10.scaleByPowerOfTen(scale)
-    hiM10 = hiM10.add(bd)
+    var hiM10 = java.math.BigDecimal.valueOf(loM10, -e10)
+    if (hi eq null) return hiM10
+    val n = loDigits.toLong + e10
+    if (
+      n.toInt != n || {
+        val scale = hi.scale - n
+        scale.toInt != scale
+      }
+    ) throw UnsafeNumber
+    hiM10 = hi.scaleByPowerOfTen(n.toInt).add(hiM10)
     if (hiM10.unscaledValue.bitLength >= max_bits) throw UnsafeNumber
     hiM10
   }
@@ -271,17 +273,18 @@ object UnsafeNumbers {
     var hiM10: java.math.BigDecimal = null
     if ('0' <= current && current <= '9') {
       loM10 = (current - '0').toLong
-      loDigits += 1
+      loDigits = 1
       while ({
         current = in.read()
         '0' <= current && current <= '9'
       }) {
-        loM10 = (loM10 << 3) + (loM10 << 1) + (current - '0')
-        loDigits += 1
-        if (loM10 >= 100000000000000000L) {
+        if (loM10 < 922337203685477580L) {
+          loM10 = (loM10 << 3) + (loM10 << 1) + (current - '0')
+          loDigits += 1
+        } else {
           hiM10 = toBigDecimal(hiM10, loM10, loDigits, 0, max_bits, negate)
-          loM10 = 0
-          loDigits = 0
+          loM10 = (current - '0').toLong
+          loDigits = 1
         }
       }
     }
@@ -291,13 +294,15 @@ object UnsafeNumbers {
         current = in.read()
         '0' <= current && current <= '9'
       }) {
-        loM10 = (loM10 << 3) + (loM10 << 1) + (current - '0')
-        loDigits += 1
-        e10 -= 1
-        if (loM10 >= 100000000000000000L) {
+        if (loM10 < 922337203685477580L) {
+          loM10 = (loM10 << 3) + (loM10 << 1) + (current - '0')
+          loDigits += 1
+          e10 -= 1
+        } else {
           hiM10 = toBigDecimal(hiM10, loM10, loDigits, 0, max_bits, negate)
-          loM10 = 0
-          loDigits = 0
+          loM10 = (current - '0').toLong
+          loDigits = 1
+          e10 -= 1
         }
       }
     }
@@ -398,17 +403,18 @@ object UnsafeNumbers {
     var hiM10: java.math.BigDecimal = null
     if ('0' <= current && current <= '9') {
       loM10 = (current - '0').toLong
-      loDigits += 1
+      loDigits = 1
       while ({
         current = in.read()
         '0' <= current && current <= '9'
       }) {
-        loM10 = (loM10 << 3) + (loM10 << 1) + (current - '0')
-        loDigits += 1
-        if (loM10 >= 100000000000000000L) {
+        if (loM10 < 922337203685477580L) {
+          loM10 = (loM10 << 3) + (loM10 << 1) + (current - '0')
+          loDigits += 1
+        } else {
           hiM10 = toBigDecimal(hiM10, loM10, loDigits, 0, max_bits, negate)
-          loM10 = 0
-          loDigits = 0
+          loM10 = (current - '0').toLong
+          loDigits = 1
         }
       }
     }
@@ -418,13 +424,15 @@ object UnsafeNumbers {
         current = in.read()
         '0' <= current && current <= '9'
       }) {
-        loM10 = (loM10 << 3) + (loM10 << 1) + (current - '0')
-        loDigits += 1
-        e10 -= 1
-        if (loM10 >= 100000000000000000L) {
+        if (loM10 < 922337203685477580L) {
+          loM10 = (loM10 << 3) + (loM10 << 1) + (current - '0')
+          loDigits += 1
+          e10 -= 1
+        } else {
           hiM10 = toBigDecimal(hiM10, loM10, loDigits, 0, max_bits, negate)
-          loM10 = 0
-          loDigits = 0
+          loM10 = (current - '0').toLong
+          loDigits = 1
+          e10 -= 1
         }
       }
     }
