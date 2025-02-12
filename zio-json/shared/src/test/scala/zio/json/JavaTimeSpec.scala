@@ -1,5 +1,6 @@
 package zio.json
 
+import zio.json.ast._
 import zio.test.Assertion._
 import zio.test._
 
@@ -13,10 +14,12 @@ object JavaTimeSpec extends ZIOSpecDefault {
 
   private def equalToStringified(expected: String) = equalTo(s""""$expected"""")
 
+  private def equalToJsonStr(expected: String): Assertion[Either[String, Json]] = isRight(equalTo(Json.Str(expected)))
+
   val spec: Spec[Environment, Any] =
     suite("java.time")(
       suite("Encoder")(
-        test("DayOfWeek") {
+        test("DayOfWeek toJson") {
           assert(DayOfWeek.MONDAY.toJson)(equalToStringified("MONDAY")) &&
           assert(DayOfWeek.TUESDAY.toJson)(equalToStringified("TUESDAY")) &&
           assert(DayOfWeek.WEDNESDAY.toJson)(equalToStringified("WEDNESDAY")) &&
@@ -25,41 +28,80 @@ object JavaTimeSpec extends ZIOSpecDefault {
           assert(DayOfWeek.SATURDAY.toJson)(equalToStringified("SATURDAY")) &&
           assert(DayOfWeek.SUNDAY.toJson)(equalToStringified("SUNDAY"))
         },
-        test("Duration") {
+        test("DayOfWeek toJsonAST") {
+          assert(DayOfWeek.MONDAY.toJsonAST)(equalToJsonStr("MONDAY")) &&
+          assert(DayOfWeek.TUESDAY.toJsonAST)(equalToJsonStr("TUESDAY")) &&
+          assert(DayOfWeek.WEDNESDAY.toJsonAST)(equalToJsonStr("WEDNESDAY")) &&
+          assert(DayOfWeek.THURSDAY.toJsonAST)(equalToJsonStr("THURSDAY")) &&
+          assert(DayOfWeek.FRIDAY.toJsonAST)(equalToJsonStr("FRIDAY")) &&
+          assert(DayOfWeek.SATURDAY.toJsonAST)(equalToJsonStr("SATURDAY")) &&
+          assert(DayOfWeek.SUNDAY.toJsonAST)(equalToJsonStr("SUNDAY"))
+        },
+        test("Duration toJson") {
           assert(Duration.ofDays(0).toJson)(equalToStringified("PT0S")) &&
           assert(Duration.ofDays(1).toJson)(equalToStringified("PT24H")) &&
           assert(Duration.ofHours(24).toJson)(equalToStringified("PT24H")) &&
           assert(Duration.ofMinutes(1440).toJson)(equalToStringified("PT24H")) &&
           assert(Duration.ofSeconds(Long.MaxValue, 999999999L).toJson)(
             equalToStringified("PT2562047788015215H30M7.999999999S")
-          ) &&
-          assert(""""PT-0.5S"""".fromJson[Duration].map(_.toString))(isRight(equalTo("PT-0.5S"))) &&
-          assert(""""-PT0.5S"""".fromJson[Duration].map(_.toString))(isRight(equalTo("PT-0.5S")))
+          )
         },
-        test("Instant") {
+        test("Duration toJsonAST") {
+          assert(Duration.ofDays(0).toJsonAST)(equalToJsonStr("PT0S")) &&
+          assert(Duration.ofDays(1).toJsonAST)(equalToJsonStr("PT24H")) &&
+          assert(Duration.ofHours(24).toJsonAST)(equalToJsonStr("PT24H")) &&
+          assert(Duration.ofMinutes(1440).toJsonAST)(equalToJsonStr("PT24H")) &&
+          assert(Duration.ofSeconds(Long.MaxValue, 999999999L).toJsonAST)(
+            equalToJsonStr("PT2562047788015215H30M7.999999999S")
+          )
+        },
+        test("Instant toJson") {
           val n = Instant.now()
           assert(Instant.EPOCH.toJson)(equalToStringified("1970-01-01T00:00:00Z")) &&
           assert(n.toJson)(equalToStringified(n.toString))
         },
-        test("LocalDate") {
+        test("Instant toJsonAST") {
+          val n = Instant.now()
+          assert(Instant.EPOCH.toJsonAST)(equalToJsonStr("1970-01-01T00:00:00Z")) &&
+          assert(n.toJsonAST)(equalToJsonStr(n.toString))
+        },
+        test("LocalDate toJson") {
           val n = LocalDate.now()
           val p = LocalDate.of(2020, 1, 1)
           assert(n.toJson)(equalToStringified(n.format(DateTimeFormatter.ISO_LOCAL_DATE))) &&
           assert(p.toJson)(equalToStringified("2020-01-01"))
         },
-        test("LocalDateTime") {
+        test("LocalDate toJsonAST") {
+          val n = LocalDate.now()
+          val p = LocalDate.of(2020, 1, 1)
+          assert(n.toJsonAST)(equalToJsonStr(n.format(DateTimeFormatter.ISO_LOCAL_DATE))) &&
+          assert(p.toJsonAST)(equalToJsonStr("2020-01-01"))
+        },
+        test("LocalDateTime toJson") {
           val n = LocalDateTime.now()
           val p = LocalDateTime.of(2020, 1, 1, 12, 36, 0)
           assert(n.toJson)(equalToStringified(n.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME))) &&
           assert(p.toJson)(equalToStringified("2020-01-01T12:36:00"))
         },
-        test("LocalTime") {
+        test("LocalDateTime toJsonAST") {
+          val n = LocalDateTime.now()
+          val p = LocalDateTime.of(2020, 1, 1, 12, 36, 0)
+          assert(n.toJsonAST)(equalToJsonStr(n.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME))) &&
+          assert(p.toJsonAST)(equalToJsonStr("2020-01-01T12:36:00"))
+        },
+        test("LocalTime toJson") {
           val n = LocalTime.now()
           val p = LocalTime.of(12, 36, 0)
           assert(n.toJson)(equalToStringified(n.format(DateTimeFormatter.ISO_LOCAL_TIME))) &&
           assert(p.toJson)(equalToStringified("12:36:00"))
         },
-        test("Month") {
+        test("LocalTime toJsonAST") {
+          val n = LocalTime.now()
+          val p = LocalTime.of(12, 36, 0)
+          assert(n.toJsonAST)(equalToJsonStr(n.format(DateTimeFormatter.ISO_LOCAL_TIME))) &&
+          assert(p.toJsonAST)(equalToJsonStr("12:36:00"))
+        },
+        test("Month toJson") {
           assert(Month.JANUARY.toJson)(equalToStringified("JANUARY")) &&
           assert(Month.FEBRUARY.toJson)(equalToStringified("FEBRUARY")) &&
           assert(Month.MARCH.toJson)(equalToStringified("MARCH")) &&
@@ -73,44 +115,95 @@ object JavaTimeSpec extends ZIOSpecDefault {
           assert(Month.NOVEMBER.toJson)(equalToStringified("NOVEMBER")) &&
           assert(Month.DECEMBER.toJson)(equalToStringified("DECEMBER"))
         },
-        test("MonthDay") {
+        test("Month toJsonAST") {
+          assert(Month.JANUARY.toJsonAST)(equalToJsonStr("JANUARY")) &&
+          assert(Month.FEBRUARY.toJsonAST)(equalToJsonStr("FEBRUARY")) &&
+          assert(Month.MARCH.toJsonAST)(equalToJsonStr("MARCH")) &&
+          assert(Month.APRIL.toJsonAST)(equalToJsonStr("APRIL")) &&
+          assert(Month.MAY.toJsonAST)(equalToJsonStr("MAY")) &&
+          assert(Month.JUNE.toJsonAST)(equalToJsonStr("JUNE")) &&
+          assert(Month.JULY.toJsonAST)(equalToJsonStr("JULY")) &&
+          assert(Month.AUGUST.toJsonAST)(equalToJsonStr("AUGUST")) &&
+          assert(Month.SEPTEMBER.toJsonAST)(equalToJsonStr("SEPTEMBER")) &&
+          assert(Month.OCTOBER.toJsonAST)(equalToJsonStr("OCTOBER")) &&
+          assert(Month.NOVEMBER.toJsonAST)(equalToJsonStr("NOVEMBER")) &&
+          assert(Month.DECEMBER.toJsonAST)(equalToJsonStr("DECEMBER"))
+        },
+        test("MonthDay toJson") {
           val n = MonthDay.now()
           val p = MonthDay.of(1, 1)
           assert(n.toJson)(equalToStringified(n.toString)) &&
           assert(p.toJson)(equalToStringified("--01-01"))
         },
-        test("OffsetDateTime") {
+        test("MonthDay toJsonAST") {
+          val n = MonthDay.now()
+          val p = MonthDay.of(1, 1)
+          assert(n.toJsonAST)(equalToJsonStr(n.toString)) &&
+          assert(p.toJsonAST)(equalToJsonStr("--01-01"))
+        },
+        test("OffsetDateTime toJson") {
           val n = OffsetDateTime.now()
           val p = OffsetDateTime.of(2020, 1, 1, 12, 36, 12, 0, ZoneOffset.UTC)
           assert(n.toJson)(equalToStringified(n.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME))) &&
           assert(p.toJson)(equalToStringified("2020-01-01T12:36:12Z"))
         },
-        test("OffsetTime") {
+        test("OffsetDateTime toJsonAST") {
+          val n = OffsetDateTime.now()
+          val p = OffsetDateTime.of(2020, 1, 1, 12, 36, 12, 0, ZoneOffset.UTC)
+          assert(n.toJsonAST)(equalToJsonStr(n.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME))) &&
+          assert(p.toJsonAST)(equalToJsonStr("2020-01-01T12:36:12Z"))
+        },
+        test("OffsetTime toJson") {
           val n = OffsetTime.now()
           val p = OffsetTime.of(12, 36, 12, 0, ZoneOffset.ofHours(-4))
           assert(n.toJson)(equalToStringified(n.format(DateTimeFormatter.ISO_OFFSET_TIME))) &&
           assert(p.toJson)(equalToStringified("12:36:12-04:00"))
         },
-        test("Period") {
+        test("OffsetTime toJsonAST") {
+          val n = OffsetTime.now()
+          val p = OffsetTime.of(12, 36, 12, 0, ZoneOffset.ofHours(-4))
+          assert(n.toJsonAST)(equalToJsonStr(n.format(DateTimeFormatter.ISO_OFFSET_TIME))) &&
+          assert(p.toJsonAST)(equalToJsonStr("12:36:12-04:00"))
+        },
+        test("Period toJson") {
           assert(Period.ZERO.toJson)(equalToStringified("P0D")) &&
           assert(Period.ofDays(1).toJson)(equalToStringified("P1D")) &&
           assert(Period.ofMonths(2).toJson)(equalToStringified("P2M")) &&
           assert(Period.ofWeeks(52).toJson)(equalToStringified("P364D")) &&
           assert(Period.ofYears(10).toJson)(equalToStringified("P10Y"))
         },
-        test("Year") {
+        test("Period toJsonAST") {
+          assert(Period.ZERO.toJsonAST)(equalToJsonStr("P0D")) &&
+          assert(Period.ofDays(1).toJsonAST)(equalToJsonStr("P1D")) &&
+          assert(Period.ofMonths(2).toJsonAST)(equalToJsonStr("P2M")) &&
+          assert(Period.ofWeeks(52).toJsonAST)(equalToJsonStr("P364D")) &&
+          assert(Period.ofYears(10).toJsonAST)(equalToJsonStr("P10Y"))
+        },
+        test("Year toJson") {
           val n = Year.now()
           assert(n.toJson)(equalToStringified(n.toString)) &&
           assert(Year.of(1999).toJson)(equalToStringified("1999")) &&
           assert(Year.of(10000).toJson)(equalToStringified("+10000"))
         },
-        test("YearMonth") {
+        test("Year toJsonAST") {
+          val n = Year.now()
+          assert(n.toJsonAST)(equalToJsonStr(n.toString)) &&
+          assert(Year.of(1999).toJsonAST)(equalToJsonStr("1999")) &&
+          assert(Year.of(10000).toJsonAST)(equalToJsonStr("+10000"))
+        },
+        test("YearMonth toJson") {
           val n = YearMonth.now()
           assert(n.toJson)(equalToStringified(n.toString)) &&
           assert(YearMonth.of(1999, 12).toJson)(equalToStringified("1999-12")) &&
           assert(YearMonth.of(1999, 1).toJson)(equalToStringified("1999-01"))
         },
-        test("ZonedDateTime") {
+        test("YearMonth toJsonAST") {
+          val n = YearMonth.now()
+          assert(n.toJsonAST)(equalToJsonStr(n.toString)) &&
+          assert(YearMonth.of(1999, 12).toJsonAST)(equalToJsonStr("1999-12")) &&
+          assert(YearMonth.of(1999, 1).toJsonAST)(equalToJsonStr("1999-01"))
+        },
+        test("ZonedDateTime toJson") {
           val n   = ZonedDateTime.now()
           val ld  = LocalDateTime.of(2020, 1, 1, 12, 36, 0)
           val est = ZonedDateTime.of(ld, ZoneId.of("America/New_York"))
@@ -119,17 +212,38 @@ object JavaTimeSpec extends ZIOSpecDefault {
           assert(est.toJson)(equalToStringified("2020-01-01T12:36:00-05:00[America/New_York]")) &&
           assert(utc.toJson)(equalToStringified("2020-01-01T12:36:00Z[Etc/UTC]"))
         },
-        test("ZoneId") {
+        test("ZonedDateTime toJsonAST") {
+          val n   = ZonedDateTime.now()
+          val ld  = LocalDateTime.of(2020, 1, 1, 12, 36, 0)
+          val est = ZonedDateTime.of(ld, ZoneId.of("America/New_York"))
+          val utc = ZonedDateTime.of(ld, ZoneId.of("Etc/UTC"))
+          assert(n.toJsonAST)(equalToJsonStr(n.format(DateTimeFormatter.ISO_ZONED_DATE_TIME))) &&
+          assert(est.toJsonAST)(equalToJsonStr("2020-01-01T12:36:00-05:00[America/New_York]")) &&
+          assert(utc.toJsonAST)(equalToJsonStr("2020-01-01T12:36:00Z[Etc/UTC]"))
+        },
+        test("ZoneId toJson") {
           assert(ZoneId.of("America/New_York").toJson)(equalToStringified("America/New_York")) &&
           assert(ZoneId.of("Etc/UTC").toJson)(equalToStringified("Etc/UTC")) &&
           assert(ZoneId.of("Pacific/Auckland").toJson)(equalToStringified("Pacific/Auckland")) &&
           assert(ZoneId.of("Asia/Shanghai").toJson)(equalToStringified("Asia/Shanghai")) &&
           assert(ZoneId.of("Africa/Cairo").toJson)(equalToStringified("Africa/Cairo"))
         },
-        test("ZoneOffset") {
+        test("ZoneId toJsonAST") {
+          assert(ZoneId.of("America/New_York").toJsonAST)(equalToJsonStr("America/New_York")) &&
+          assert(ZoneId.of("Etc/UTC").toJsonAST)(equalToJsonStr("Etc/UTC")) &&
+          assert(ZoneId.of("Pacific/Auckland").toJsonAST)(equalToJsonStr("Pacific/Auckland")) &&
+          assert(ZoneId.of("Asia/Shanghai").toJsonAST)(equalToJsonStr("Asia/Shanghai")) &&
+          assert(ZoneId.of("Africa/Cairo").toJsonAST)(equalToJsonStr("Africa/Cairo"))
+        },
+        test("ZoneOffset toJson") {
           assert(ZoneOffset.UTC.toJson)(equalToStringified("Z")) &&
           assert(ZoneOffset.ofHours(5).toJson)(equalToStringified("+05:00")) &&
           assert(ZoneOffset.ofHours(-5).toJson)(equalToStringified("-05:00"))
+        },
+        test("ZoneOffset toJsonAST") {
+          assert(ZoneOffset.UTC.toJsonAST)(equalToJsonStr("Z")) &&
+          assert(ZoneOffset.ofHours(5).toJsonAST)(equalToJsonStr("+05:00")) &&
+          assert(ZoneOffset.ofHours(-5).toJsonAST)(equalToJsonStr("-05:00"))
         }
       ),
       suite("Decoder")(

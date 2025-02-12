@@ -138,7 +138,6 @@ private[json] object serializers {
   def toString(x: LocalDateTime): String = {
     val out = writes.get
     write(x, out)
-    write(x.toLocalDate, out)
     out.buffer.toString
   }
 
