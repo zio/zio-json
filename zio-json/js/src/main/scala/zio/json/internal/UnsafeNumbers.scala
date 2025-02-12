@@ -60,23 +60,25 @@ object UnsafeNumbers {
       else in.nextNonWhitespace().toInt
     val negate = current == '-'
     if (negate) current = in.readChar().toInt
-    if (current < '0' || current > '9') throw UnsafeNumber
-    var accum = '0' - current
-    while ({
-      current = in.read()
-      '0' <= current && current <= '9'
-    }) {
-      if (
-        accum < -214748364 || {
-          accum = accum * 10 + ('0' - current)
-          accum > 0
-        }
-      ) throw UnsafeNumber
+    if (current >= '0' && current <= '9') {
+      var accum = '0' - current
+      while ({
+        current = in.read()
+        current >= '0' && current <= '9'
+      }) {
+        if (
+          accum < -214748364 || {
+            accum = accum * 10 + ('0' - current)
+            accum > 0
+          }
+        ) throw UnsafeNumber
+      }
+      if (!consume || current == -1) {
+        if (negate) return accum
+        else if (accum != -2147483648) return -accum
+      }
     }
-    if (consume && current != -1) throw UnsafeNumber
-    if (negate) accum
-    else if (accum != -2147483648) -accum
-    else throw UnsafeNumber
+    throw UnsafeNumber
   }
 
   def long(num: String): Long =
@@ -88,23 +90,25 @@ object UnsafeNumbers {
       else in.nextNonWhitespace().toInt
     val negate = current == '-'
     if (negate) current = in.readChar().toInt
-    if (current < '0' || current > '9') throw UnsafeNumber
-    var accum = ('0' - current).toLong
-    while ({
-      current = in.read()
-      '0' <= current && current <= '9'
-    }) {
-      if (
-        accum < -922337203685477580L || {
-          accum = (accum << 3) + (accum << 1) + ('0' - current)
-          accum > 0
-        }
-      ) throw UnsafeNumber
+    if (current >= '0' && current <= '9') {
+      var accum = ('0' - current).toLong
+      while ({
+        current = in.read()
+        '0' <= current && current <= '9'
+      }) {
+        if (
+          accum < -922337203685477580L || {
+            accum = (accum << 3) + (accum << 1) + ('0' - current)
+            accum > 0
+          }
+        ) throw UnsafeNumber
+      }
+      if (!consume || current == -1) {
+        if (negate) return accum
+        else if (accum != -9223372036854775808L) return -accum
+      }
     }
-    if (consume && current != -1) throw UnsafeNumber
-    if (negate) accum
-    else if (accum != -9223372036854775808L) -accum
-    else throw UnsafeNumber
+    throw UnsafeNumber
   }
 
   def bigInteger(num: String, max_bits: Int): java.math.BigInteger =
@@ -116,35 +120,37 @@ object UnsafeNumbers {
       else in.nextNonWhitespace().toInt
     val negate = current == '-'
     if (negate) current = in.readChar().toInt
-    if (current < '0' || current > '9') throw UnsafeNumber
-    var loM10                       = (current - '0').toLong
-    var loDigits                    = 1
-    var hiM10: java.math.BigDecimal = null
-    while ({
-      current = in.read()
-      '0' <= current && current <= '9'
-    }) {
-      if (loM10 < 922337203685477580L) {
-        loM10 = (loM10 << 3) + (loM10 << 1) + (current - '0')
-        loDigits += 1
-      } else {
-        if (negate) loM10 = -loM10
-        val bd = java.math.BigDecimal.valueOf(loM10)
-        if (hiM10 eq null) hiM10 = bd
-        else {
-          hiM10 = hiM10.scaleByPowerOfTen(loDigits).add(bd)
-          if (hiM10.unscaledValue.bitLength >= max_bits) throw UnsafeNumber
+    if (current >= '0' && current <= '9') {
+      var loM10                       = (current - '0').toLong
+      var loDigits                    = 1
+      var hiM10: java.math.BigDecimal = null
+      while ({
+        current = in.read()
+        current >= '0' && current <= '9'
+      }) {
+        if (loM10 < 922337203685477580L) {
+          loM10 = (loM10 << 3) + (loM10 << 1) + (current - '0')
+          loDigits += 1
+        } else {
+          if (negate) loM10 = -loM10
+          val bd = java.math.BigDecimal.valueOf(loM10)
+          if (hiM10 eq null) hiM10 = bd
+          else {
+            hiM10 = hiM10.scaleByPowerOfTen(loDigits).add(bd)
+            if (hiM10.unscaledValue.bitLength >= max_bits) throw UnsafeNumber
+          }
+          loM10 = (current - '0').toLong
+          loDigits = 1
         }
-        loM10 = (current - '0').toLong
-        loDigits = 1
+      }
+      if (!consume || current == -1) {
+        if (negate) loM10 = -loM10
+        if (hiM10 eq null) return java.math.BigInteger.valueOf(loM10)
+        val bi = hiM10.scaleByPowerOfTen(loDigits).add(java.math.BigDecimal.valueOf(loM10)).unscaledValue
+        if (bi.bitLength < max_bits) return bi
       }
     }
-    if (consume && current != -1) throw UnsafeNumber
-    if (negate) loM10 = -loM10
-    if (hiM10 eq null) return java.math.BigInteger.valueOf(loM10)
-    hiM10 = hiM10.scaleByPowerOfTen(loDigits).add(java.math.BigDecimal.valueOf(loM10))
-    if (hiM10.unscaledValue.bitLength >= max_bits) throw UnsafeNumber
-    hiM10.unscaledValue
+    throw UnsafeNumber
   }
 
   def bigDecimal(num: String, max_bits: Int): java.math.BigDecimal =
@@ -159,18 +165,18 @@ object UnsafeNumbers {
     var loM10                       = 0L
     var loDigits                    = 0
     var hiM10: java.math.BigDecimal = null
-    if ('0' <= current && current <= '9') {
+    if (current >= '0' && current <= '9') {
       loM10 = (current - '0').toLong
       loDigits = 1
       while ({
         current = in.read()
-        '0' <= current && current <= '9'
+        current >= '0' && current <= '9'
       }) {
         if (loM10 < 922337203685477580L) {
           loM10 = (loM10 << 3) + (loM10 << 1) + (current - '0')
           loDigits += 1
         } else {
-          hiM10 = toBigDecimal(hiM10, loM10, loDigits, 0, max_bits, negate)
+          hiM10 = toBigDecimal(hiM10, loM10, loDigits, max_bits, negate)
           loM10 = (current - '0').toLong
           loDigits = 1
         }
@@ -180,50 +186,71 @@ object UnsafeNumbers {
     if (current == '.') {
       while ({
         current = in.read()
-        '0' <= current && current <= '9'
+        current >= '0' && current <= '9'
       }) {
         if (loM10 < 922337203685477580L) {
           loM10 = (loM10 << 3) + (loM10 << 1) + (current - '0')
           loDigits += 1
           e10 -= 1
         } else {
-          hiM10 = toBigDecimal(hiM10, loM10, loDigits, 0, max_bits, negate)
+          hiM10 = toBigDecimal(hiM10, loM10, loDigits, max_bits, negate)
           loM10 = (current - '0').toLong
           loDigits = 1
           e10 -= 1
         }
       }
     }
-    if ((current | 0x20) == 'e') {
-      current = in.readChar().toInt
-      val negateExp = current == '-'
-      if (negateExp || current == '+') current = in.readChar().toInt
-      if (current < '0' || current > '9') throw UnsafeNumber
-      var exp = '0' - current
-      while ({
-        current = in.read()
-        '0' <= current && current <= '9'
-      }) {
-        if (
-          exp < -214748364 || {
-            exp = exp * 10 + ('0' - current)
-            exp > 0
+    if (
+      loDigits != 0 && ((current | 0x20) != 'e' || {
+        current = in.readChar().toInt
+        val negateExp = current == '-'
+        if (negateExp || current == '+') current = in.readChar().toInt
+        (current >= '0' && current <= '9') && {
+          var exp = '0' - current
+          while ({
+            current = in.read()
+            current >= '0' && current <= '9'
+          }) {
+            if (
+              exp < -214748364 || {
+                exp = exp * 10 + ('0' - current)
+                exp > 0
+              }
+            ) throw UnsafeNumber
           }
-        ) throw UnsafeNumber
+          negateExp && {
+            e10 += exp
+            e10 <= 0
+          } || !negateExp && {
+            e10 -= exp
+            exp != -2147483648
+          }
+        }
+      }) && (!consume || current == -1)
+    ) {
+      if (hiM10 eq null) {
+        if (negate) loM10 = -loM10
+        return java.math.BigDecimal.valueOf(loM10, -e10)
       }
-      if (negateExp) {
-        e10 += exp
-        if (e10 > 0) throw UnsafeNumber
-      } else if (exp != -2147483648) e10 -= exp
-      else throw UnsafeNumber
+      return toBigDecimal(hiM10, loM10, loDigits, e10, max_bits, negate)
     }
-    if (consume && current != -1) throw UnsafeNumber
-    if (hiM10 eq null) {
-      if (loDigits == 0) throw UnsafeNumber
-      if (negate) loM10 = -loM10
-      return java.math.BigDecimal.valueOf(loM10, -e10)
-    }
-    toBigDecimal(hiM10, loM10, loDigits, e10, max_bits, negate)
+    throw UnsafeNumber
+  }
+
+  @noinline private[this] def toBigDecimal(
+    hi: java.math.BigDecimal,
+    lo: Long,
+    loDigits: Int,
+    max_bits: Int,
+    negate: Boolean
+  ): java.math.BigDecimal = {
+    var loM10 = lo
+    if (negate) loM10 = -loM10
+    var hiM10 = java.math.BigDecimal.valueOf(loM10)
+    if (hi eq null) return hiM10
+    hiM10 = hi.scaleByPowerOfTen(loDigits).add(hiM10)
+    if (hiM10.unscaledValue.bitLength < max_bits) return hiM10
+    throw UnsafeNumber
   }
 
   @noinline private[this] def toBigDecimal(
@@ -240,14 +267,15 @@ object UnsafeNumbers {
     if (hi eq null) return hiM10
     val n = loDigits.toLong + e10
     if (
-      n.toInt != n || {
+      n.toInt == n && {
         val scale = hi.scale - n
-        scale.toInt != scale
+        scale.toInt == scale
+      } && {
+        hiM10 = hi.scaleByPowerOfTen(n.toInt).add(hiM10)
+        hiM10.unscaledValue.bitLength < max_bits
       }
-    ) throw UnsafeNumber
-    hiM10 = hi.scaleByPowerOfTen(n.toInt).add(hiM10)
-    if (hiM10.unscaledValue.bitLength >= max_bits) throw UnsafeNumber
-    hiM10
+    ) return hiM10
+    throw UnsafeNumber
   }
 
   def float(num: String, max_bits: Int): Float =
@@ -271,18 +299,18 @@ object UnsafeNumbers {
     var loM10                       = 0L
     var loDigits                    = 0
     var hiM10: java.math.BigDecimal = null
-    if ('0' <= current && current <= '9') {
+    if (current >= '0' && current <= '9') {
       loM10 = (current - '0').toLong
       loDigits = 1
       while ({
         current = in.read()
-        '0' <= current && current <= '9'
+        current >= '0' && current <= '9'
       }) {
         if (loM10 < 922337203685477580L) {
           loM10 = (loM10 << 3) + (loM10 << 1) + (current - '0')
           loDigits += 1
         } else {
-          hiM10 = toBigDecimal(hiM10, loM10, loDigits, 0, max_bits, negate)
+          hiM10 = toBigDecimal(hiM10, loM10, loDigits, max_bits, negate)
           loM10 = (current - '0').toLong
           loDigits = 1
         }
@@ -292,59 +320,64 @@ object UnsafeNumbers {
     if (current == '.') {
       while ({
         current = in.read()
-        '0' <= current && current <= '9'
+        current >= '0' && current <= '9'
       }) {
         if (loM10 < 922337203685477580L) {
           loM10 = (loM10 << 3) + (loM10 << 1) + (current - '0')
           loDigits += 1
           e10 -= 1
         } else {
-          hiM10 = toBigDecimal(hiM10, loM10, loDigits, 0, max_bits, negate)
+          hiM10 = toBigDecimal(hiM10, loM10, loDigits, max_bits, negate)
           loM10 = (current - '0').toLong
           loDigits = 1
           e10 -= 1
         }
       }
     }
-    if ((current | 0x20) == 'e') {
-      current = in.readChar().toInt
-      val negateExp = current == '-'
-      if (negateExp || current == '+') current = in.readChar().toInt
-      if (current < '0' || current > '9') throw UnsafeNumber
-      var exp = '0' - current
-      while ({
-        current = in.read()
-        '0' <= current && current <= '9'
-      }) {
-        if (
-          exp < -214748364 || {
-            exp = exp * 10 + ('0' - current)
-            exp > 0
+    if (
+      loDigits != 0 && ((current | 0x20) != 'e' || {
+        current = in.readChar().toInt
+        val negateExp = current == '-'
+        if (negateExp || current == '+') current = in.readChar().toInt
+        (current >= '0' && current <= '9') && {
+          var exp = '0' - current
+          while ({
+            current = in.read()
+            current >= '0' && current <= '9'
+          }) {
+            if (
+              exp < -214748364 || {
+                exp = exp * 10 + ('0' - current)
+                exp > 0
+              }
+            ) throw UnsafeNumber
           }
-        ) throw UnsafeNumber
-      }
-      if (negateExp) {
-        e10 += exp
-        if (e10 > 0) throw UnsafeNumber
-      } else if (exp != -2147483648) e10 -= exp
-      else throw UnsafeNumber
-    }
-    if (consume && current != -1) throw UnsafeNumber
-    if (hiM10 eq null) {
-      if (loDigits == 0) throw UnsafeNumber
-      var x =
-        if (e10 == 0) loM10.toFloat
-        else {
-          if (loM10 < 4294967296L && e10 >= loDigits - 23 && e10 <= 19 - loDigits) {
-            val pow10 = pow10Doubles
-            (if (e10 < 0) loM10 / pow10(-e10)
-             else loM10 * pow10(e10)).toFloat
-          } else toFloat(loM10, e10)
+          negateExp && {
+            e10 += exp
+            e10 <= 0
+          } || !negateExp && {
+            e10 -= exp
+            exp != -2147483648
+          }
         }
-      if (negate) x = -x
-      return x
+      }) && (!consume || current == -1)
+    ) {
+      if (hiM10 eq null) {
+        var x =
+          if (e10 == 0) loM10.toFloat
+          else {
+            if (loM10 < 4294967296L && e10 >= loDigits - 23 && e10 <= 19 - loDigits) {
+              val pow10 = pow10Doubles
+              (if (e10 < 0) loM10 / pow10(-e10)
+               else loM10 * pow10(e10)).toFloat
+            } else toFloat(loM10, e10)
+          }
+        if (negate) x = -x
+        return x
+      }
+      return toBigDecimal(hiM10, loM10, loDigits, e10, max_bits, negate).floatValue
     }
-    toBigDecimal(hiM10, loM10, loDigits, e10, max_bits, negate).floatValue
+    throw UnsafeNumber
   }
 
   // Based on the 'Moderate Path' algorithm from the awesome library of Alexander Huszagh: https://github.com/Alexhuszagh/rust-lexical
@@ -401,12 +434,12 @@ object UnsafeNumbers {
     var loM10                       = 0L
     var loDigits                    = 0
     var hiM10: java.math.BigDecimal = null
-    if ('0' <= current && current <= '9') {
+    if (current >= '0' && current <= '9') {
       loM10 = (current - '0').toLong
       loDigits = 1
       while ({
         current = in.read()
-        '0' <= current && current <= '9'
+        current >= '0' && current <= '9'
       }) {
         if (loM10 < 922337203685477580L) {
           loM10 = (loM10 << 3) + (loM10 << 1) + (current - '0')
@@ -422,7 +455,7 @@ object UnsafeNumbers {
     if (current == '.') {
       while ({
         current = in.read()
-        '0' <= current && current <= '9'
+        current >= '0' && current <= '9'
       }) {
         if (loM10 < 922337203685477580L) {
           loM10 = (loM10 << 3) + (loM10 << 1) + (current - '0')
@@ -436,49 +469,54 @@ object UnsafeNumbers {
         }
       }
     }
-    if ((current | 0x20) == 'e') {
-      current = in.readChar().toInt
-      val negateExp = current == '-'
-      if (negateExp || current == '+') current = in.readChar().toInt
-      if (current < '0' || current > '9') throw UnsafeNumber
-      var exp = '0' - current
-      while ({
-        current = in.read()
-        '0' <= current && current <= '9'
-      }) {
-        if (
-          exp < -214748364 || {
-            exp = exp * 10 + ('0' - current)
-            exp > 0
+    if (
+      loDigits != 0 && ((current | 0x20) != 'e' || {
+        current = in.readChar().toInt
+        val negateExp = current == '-'
+        if (negateExp || current == '+') current = in.readChar().toInt
+        (current >= '0' && current <= '9') && {
+          var exp = '0' - current
+          while ({
+            current = in.read()
+            current >= '0' && current <= '9'
+          }) {
+            if (
+              exp < -214748364 || {
+                exp = exp * 10 + ('0' - current)
+                exp > 0
+              }
+            ) throw UnsafeNumber
           }
-        ) throw UnsafeNumber
-      }
-      if (negateExp) {
-        e10 += exp
-        if (e10 > 0) throw UnsafeNumber
-      } else if (exp != -2147483648) e10 -= exp
-      else throw UnsafeNumber
-    }
-    if (consume && current != -1) throw UnsafeNumber
-    if (hiM10 eq null) {
-      if (loDigits == 0) throw UnsafeNumber
-      var x =
-        if (e10 == 0) loM10.toDouble
-        else {
-          if (loM10 < 4503599627370496L && e10 >= -22 && e10 <= 38 - loDigits) {
-            val pow10 = pow10Doubles
-            if (e10 < 0) loM10 / pow10(-e10)
-            else if (e10 <= 22) loM10 * pow10(e10)
-            else {
-              val slop = 16 - loDigits
-              (loM10 * pow10(slop)) * pow10(e10 - slop)
-            }
-          } else toDouble(loM10, e10)
+          negateExp && {
+            e10 += exp
+            e10 <= 0
+          } || !negateExp && {
+            e10 -= exp
+            exp != -2147483648
+          }
         }
-      if (negate) x = -x
-      return x
+      }) && (!consume || current == -1)
+    ) {
+      if (hiM10 eq null) {
+        var x =
+          if (e10 == 0) loM10.toDouble
+          else {
+            if (loM10 < 4503599627370496L && e10 >= -22 && e10 <= 38 - loDigits) {
+              val pow10 = pow10Doubles
+              if (e10 < 0) loM10 / pow10(-e10)
+              else if (e10 <= 22) loM10 * pow10(e10)
+              else {
+                val slop = 16 - loDigits
+                (loM10 * pow10(slop)) * pow10(e10 - slop)
+              }
+            } else toDouble(loM10, e10)
+          }
+        if (negate) x = -x
+        return x
+      }
+      return toBigDecimal(hiM10, loM10, loDigits, e10, max_bits, negate).doubleValue
     }
-    toBigDecimal(hiM10, loM10, loDigits, e10, max_bits, negate).doubleValue
+    throw UnsafeNumber
   }
 
   // Based on the 'Moderate Path' algorithm from the awesome library of Alexander Huszagh: https://github.com/Alexhuszagh/rust-lexical
