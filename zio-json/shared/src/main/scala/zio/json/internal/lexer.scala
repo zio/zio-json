@@ -191,7 +191,7 @@ object Lexer {
   def string(trace: List[JsonError], in: OneCharReader): CharSequence = {
     var c = in.nextNonWhitespace()
     if (c != '"') error("'\"'", c, trace)
-    var cs = new Array[Char](64)
+    var cs = charArrays.get
     var i  = 0
     while ({
       c = in.readChar()
@@ -204,6 +204,10 @@ object Lexer {
       i += 1
     }
     new String(cs, 0, i)
+  }
+
+  private[this] val charArrays = new ThreadLocal[Array[Char]] {
+    override def initialValue(): Array[Char] = new Array[Char](1024)
   }
 
   def char(trace: List[JsonError], in: OneCharReader): Char = {
