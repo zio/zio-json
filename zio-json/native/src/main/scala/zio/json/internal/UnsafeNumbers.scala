@@ -94,7 +94,7 @@ object UnsafeNumbers {
       var accum = ('0' - current).toLong
       while ({
         current = in.read()
-        '0' <= current && current <= '9'
+        current >= '0' && current <= '9'
       }) {
         if (
           accum < -922337203685477580L || {

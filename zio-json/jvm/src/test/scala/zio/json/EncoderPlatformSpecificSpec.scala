@@ -89,8 +89,16 @@ object EncoderPlatformSpecificSpec extends ZIOSpecDefault {
         test("writeJsonLines writes JSON lines") {
           val path = Files.createTempFile("log", "json")
           val events = Chunk(
-            Event(1603669876, "hello"),
-            Event(1603669875, "world")
+            Event(1, "hello", priority = 1111.1111111),
+            Event(12, "hello", priority = 11111111.111),
+            Event(123, "world", priority = 1.1111111111),
+            Event(1234, "world"),
+            Event(12345, "world"),
+            Event(123456, "world"),
+            Event(1234567, "world"),
+            Event(12345678, "world"),
+            Event(123456789, "world"),
+            Event(1234567890, "world", true)
           )
 
           for {
