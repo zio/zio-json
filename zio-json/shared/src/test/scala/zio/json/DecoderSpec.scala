@@ -83,6 +83,7 @@ object DecoderSpec extends ZIOSpecDefault {
           assert("1.234567e9".fromJson[Float])(isRight(equalTo(1.234567e9f))) &&
           assert("-1.234567e9".fromJson[Float])(isRight(equalTo(-1.234567e9f))) &&
           assert("\"-1.234567e9\"".fromJson[Float])(isRight(equalTo(-1.234567e9f))) &&
+          assert("1.4e-45".fromJson[Float])(isRight(equalTo(1.4e-45f))) &&
           assert("8.3e38".fromJson[Float])(isRight(equalTo(Float.PositiveInfinity))) &&
           assert("-8.3e38".fromJson[Float])(isRight(equalTo(Float.NegativeInfinity))) &&
           assert("1.23456789012345678901e-2147483648".fromJson[Float])(isLeft(equalTo("(expected a Float)"))) &&
@@ -106,6 +107,7 @@ object DecoderSpec extends ZIOSpecDefault {
           assert("1.23456789012345e9".fromJson[Double])(isRight(equalTo(1.23456789012345e9))) &&
           assert("-1.23456789012345e9".fromJson[Double])(isRight(equalTo(-1.23456789012345e9))) &&
           assert("\"-1.23456789012345e9\"".fromJson[Double])(isRight(equalTo(-1.23456789012345e9))) &&
+          assert("4.9e-324".fromJson[Double])(isRight(equalTo(4.9e-324))) &&
           assert("1.8e308".fromJson[Double])(isRight(equalTo(Double.PositiveInfinity))) &&
           assert("-1.8e308".fromJson[Double])(isRight(equalTo(Double.NegativeInfinity))) &&
           assert("1.23456789012345678901e-2147483648".fromJson[Double])(isLeft(equalTo("(expected a Double)"))) &&
@@ -172,7 +174,7 @@ object DecoderSpec extends ZIOSpecDefault {
         },
         test("BigInteger too large") {
           assert(
-            "170141183460469231731687303715884105728489465165484668486513574864654818964653168465316546851"
+            "170141183460469231731687303715884105728489465165484668486513574864654818964653168465316546851316546851"
               .fromJson[java.math.BigInteger]
           )(isLeft(equalTo("(expected a 256-bit BigInteger)"))) &&
           assert(
@@ -925,7 +927,7 @@ object DecoderSpec extends ZIOSpecDefault {
 
   object logEvent {
 
-    case class Event(at: Long, message: String)
+    case class Event(at: Long, message: String, fatal: Boolean = false, priority: Double = 0.0)
 
     implicit val eventDecoder: JsonDecoder[Event] = DeriveJsonDecoder.gen[Event]
     implicit val eventEncoder: JsonEncoder[Event] = DeriveJsonEncoder.gen[Event]

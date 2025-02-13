@@ -1,5 +1,6 @@
 package zio.json.internal
 
+import zio.ZIO
 import zio.json.Gens._
 import zio.test.Assertion._
 import zio.test.TestAspect.jvmOnly
@@ -100,6 +101,9 @@ object SafeNumbersSpec extends ZIOSpecDefault {
         },
         test("invalid Byte (text)") {
           check(genAlphaLowerString)(s => assert(SafeNumbers.byte(s).isEmpty)(equalTo(true)))
+        },
+        test("ByteNone") {
+          ZIO.attempt(ByteNone.value).flip.map(error => assertTrue(error.isInstanceOf[NoSuchElementException]))
         }
       ),
       suite("Double")(
@@ -188,6 +192,9 @@ object SafeNumbersSpec extends ZIOSpecDefault {
         },
         test("invalid doubles (text)") {
           check(genAlphaLowerString)(s => assert(SafeNumbers.double(s).isEmpty)(equalTo(true)))
+        },
+        test("DoubleNone") {
+          ZIO.attempt(DoubleNone.value).flip.map(error => assertTrue(error.isInstanceOf[NoSuchElementException]))
         }
       ),
       suite("Float")(
@@ -286,6 +293,9 @@ object SafeNumbersSpec extends ZIOSpecDefault {
         },
         test("invalid float (text)") {
           check(genAlphaLowerString)(s => assert(SafeNumbers.float(s).isEmpty)(equalTo(true)))
+        },
+        test("FloatNone") {
+          ZIO.attempt(FloatNone.value).flip.map(error => assertTrue(error.isInstanceOf[NoSuchElementException]))
         }
       ),
       suite("Int")(
@@ -319,7 +329,10 @@ object SafeNumbersSpec extends ZIOSpecDefault {
           )
         },
         test("invalid (text)") {
-          check(genAlphaLowerString)(s => assert(SafeNumbers.int(s))(equalTo(IntNone)))
+          check(genAlphaLowerString)(s => assert(SafeNumbers.int(s).isEmpty)(equalTo(true)))
+        },
+        test("IntNone") {
+          ZIO.attempt(IntNone.value).flip.map(error => assertTrue(error.isInstanceOf[NoSuchElementException]))
         }
       ),
       suite("Long")(
@@ -354,6 +367,9 @@ object SafeNumbersSpec extends ZIOSpecDefault {
         },
         test("invalid (text)") {
           check(genAlphaLowerString)(s => assert(SafeNumbers.long(s).isEmpty)(equalTo(true)))
+        },
+        test("LongNone") {
+          ZIO.attempt(LongNone.value).flip.map(error => assertTrue(error.isInstanceOf[NoSuchElementException]))
         }
       ),
       suite("Short")(
@@ -370,6 +386,9 @@ object SafeNumbersSpec extends ZIOSpecDefault {
         },
         test("invalid (text)") {
           check(genAlphaLowerString)(s => assert(SafeNumbers.short(s).isEmpty)(equalTo(true)))
+        },
+        test("ShortNone") {
+          ZIO.attempt(ShortNone.value).flip.map(error => assertTrue(error.isInstanceOf[NoSuchElementException]))
         }
       )
     )
