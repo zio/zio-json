@@ -37,18 +37,52 @@ object UnsafeNumbers {
     byte_(new FastStringReader(num), true)
 
   def byte_(in: OneCharReader, consume: Boolean): Byte = {
-    val n = int_(in, consume)
-    if (n < -128 || n > 127) throw UnsafeNumber
-    n.toByte
+    var current =
+      if (consume) in.readChar().toInt
+      else in.nextNonWhitespace().toInt
+    val negate = current == '-'
+    if (negate) current = in.readChar().toInt
+    if (current >= '0' && current <= '9') {
+      var accum = current - '0'
+      while ({
+        current = in.read()
+        current >= '0' && current <= '9'
+      }) {
+        accum = accum * 10 + (current - '0')
+        if (accum > 128) throw UnsafeNumber
+      }
+      if (!consume || current == -1) {
+        if (negate) return (-accum).toByte
+        else if (accum < 128) return accum.toByte
+      }
+    }
+    throw UnsafeNumber
   }
 
   def short(num: String): Short =
     short_(new FastStringReader(num), true)
 
   def short_(in: OneCharReader, consume: Boolean): Short = {
-    val n = int_(in, consume)
-    if (n < -32768 || n > 32767) throw UnsafeNumber
-    n.toShort
+    var current =
+      if (consume) in.readChar().toInt
+      else in.nextNonWhitespace().toInt
+    val negate = current == '-'
+    if (negate) current = in.readChar().toInt
+    if (current >= '0' && current <= '9') {
+      var accum = current - '0'
+      while ({
+        current = in.read()
+        current >= '0' && current <= '9'
+      }) {
+        accum = accum * 10 + (current - '0')
+        if (accum > 32768) throw UnsafeNumber
+      }
+      if (!consume || current == -1) {
+        if (negate) return (-accum).toShort
+        else if (accum < 32768) return accum.toShort
+      }
+    }
+    throw UnsafeNumber
   }
 
   def int(num: String): Int =
@@ -148,6 +182,48 @@ object UnsafeNumbers {
         if (hiM10 eq null) return java.math.BigInteger.valueOf(loM10)
         val bi = hiM10.scaleByPowerOfTen(loDigits).add(java.math.BigDecimal.valueOf(loM10)).unscaledValue
         if (bi.bitLength < max_bits) return bi
+      }
+    }
+    throw UnsafeNumber
+  }
+
+  def bigInt(num: String, max_bits: Int): BigInt =
+    bigInt_(new FastStringReader(num), true, max_bits)
+
+  def bigInt_(in: OneCharReader, consume: Boolean, max_bits: Int): BigInt = {
+    var current =
+      if (consume) in.readChar().toInt
+      else in.nextNonWhitespace().toInt
+    val negate = current == '-'
+    if (negate) current = in.readChar().toInt
+    if (current >= '0' && current <= '9') {
+      var loM10                       = (current - '0').toLong
+      var loDigits                    = 1
+      var hiM10: java.math.BigDecimal = null
+      while ({
+        current = in.read()
+        current >= '0' && current <= '9'
+      }) {
+        if (loM10 < 922337203685477580L) {
+          loM10 = loM10 * 10 + (current - '0')
+          loDigits += 1
+        } else {
+          if (negate) loM10 = -loM10
+          val bd = java.math.BigDecimal.valueOf(loM10)
+          if (hiM10 eq null) hiM10 = bd
+          else {
+            hiM10 = hiM10.scaleByPowerOfTen(loDigits).add(bd)
+            if (hiM10.unscaledValue.bitLength >= max_bits) throw UnsafeNumber
+          }
+          loM10 = (current - '0').toLong
+          loDigits = 1
+        }
+      }
+      if (!consume || current == -1) {
+        if (negate) loM10 = -loM10
+        if (hiM10 eq null) return BigInt(loM10)
+        val bi = hiM10.scaleByPowerOfTen(loDigits).add(java.math.BigDecimal.valueOf(loM10)).unscaledValue
+        if (bi.bitLength < max_bits) return new BigInt(bi)
       }
     }
     throw UnsafeNumber

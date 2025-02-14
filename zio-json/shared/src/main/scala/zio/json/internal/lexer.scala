@@ -315,6 +315,15 @@ object Lexer {
       case UnsafeNumbers.UnsafeNumber => error(s"expected a $NumberMaxBits-bit BigInteger", trace)
     }
 
+  def bigInt(trace: List[JsonError], in: RetractReader): BigInt =
+    try {
+      val i = UnsafeNumbers.bigInt_(in, false, NumberMaxBits)
+      in.retract()
+      i
+    } catch {
+      case UnsafeNumbers.UnsafeNumber => error(s"expected a $NumberMaxBits-bit BigInt", trace)
+    }
+
   def float(trace: List[JsonError], in: RetractReader): Float =
     try {
       val i = UnsafeNumbers.float_(in, false, NumberMaxBits)

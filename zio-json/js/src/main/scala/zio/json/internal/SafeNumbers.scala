@@ -62,6 +62,10 @@ object SafeNumbers {
     try Some(UnsafeNumbers.bigInteger(num, max_bits))
     catch { case _: UnexpectedEnd | UnsafeNumber => None }
 
+  def bigInt(num: String, max_bits: Int = 256): Option[BigInt] =
+    try Some(UnsafeNumbers.bigInt(num, max_bits))
+    catch { case _: UnexpectedEnd | UnsafeNumber => None }
+
   def float(num: String, max_bits: Int = 256): FloatOption =
     try FloatSome(UnsafeNumbers.float(num, max_bits))
     catch { case _: UnexpectedEnd | UnsafeNumber => FloatNone }
