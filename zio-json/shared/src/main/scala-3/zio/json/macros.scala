@@ -362,16 +362,16 @@ sealed class JsonDecoderDerivation(config: JsonCodecConfiguration) extends Deriv
 
         override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): A =
           json match {
-            case Json.Obj(keyValues) =>
+            case o: Json.Obj =>
               val ps = new Array[Any](len)
-              for ((key, value) <- keyValues) {
-                namesMap.get(key) match {
+              o.fields.foreach { kv =>
+                namesMap.get(kv._1) match {
                   case Some(idx) =>
                     if (ps(idx) != null) Lexer.error("duplicate", trace)
                     val default = defaults(idx)
                     ps(idx) =
-                      if ((default ne null) && (value eq Json.Null)) default()
-                      else tcs(idx).unsafeFromJsonAST(spans(idx) :: trace, value)
+                      if ((default ne null) && (kv._2 eq Json.Null)) default()
+                      else tcs(idx).unsafeFromJsonAST(spans(idx) :: trace, kv._2)
                   case _ =>
                     if (no_extra) Lexer.error("invalid extra field", trace)
                 }
@@ -427,7 +427,7 @@ sealed class JsonDecoderDerivation(config: JsonCodecConfiguration) extends Deriv
 
         override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): A =
           json match {
-            case Json.Str(typeName) => namesMap.get(typeName) match {
+            case s: Json.Str => namesMap.get(s.value) match {
               case Some(idx) => tcs(idx).asInstanceOf[CaseObjectDecoder[JsonDecoder, A]].ctx.rawConstruct(Nil)
               case _         => Lexer.error("invalid enumeration value", trace)
             }
@@ -453,8 +453,8 @@ sealed class JsonDecoderDerivation(config: JsonCodecConfiguration) extends Deriv
 
         override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): A =
           json match {
-            case Json.Obj(chunk) if chunk.size == 1 =>
-              val keyValue = chunk.head
+            case o: Json.Obj if o.fields.length == 1 =>
+              val keyValue = o.fields(0)
               namesMap.get(keyValue._1) match {
                 case Some(idx) => tcs(idx).unsafeFromJsonAST(spans(idx) :: trace, keyValue._2).asInstanceOf[A]
                 case _         => Lexer.error("invalid disambiguator", trace)
@@ -487,9 +487,11 @@ sealed class JsonDecoderDerivation(config: JsonCodecConfiguration) extends Deriv
 
         override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): A =
           json match {
-            case Json.Obj(fields) =>
-              fields.find { case (key, _) => key == hintfield } match {
-                case Some((_, Json.Str(name))) =>
+            case o: Json.Obj =>
+              o.fields.collectFirst { case kv if kv._1 == hintfield && kv._2.isInstanceOf[Json.Str] =>
+                kv._2.asInstanceOf[Json.Str].value
+              } match {
+                case Some(name) =>
                   namesMap.get(name) match {
                     case Some(idx) => tcs(idx).unsafeFromJsonAST(spans(idx) :: trace, json).asInstanceOf[A]
                     case _         => Lexer.error("invalid disambiguator", trace)
@@ -705,11 +707,11 @@ sealed class JsonEncoderDerivation(config: JsonCodecConfiguration) extends Deriv
 
         override final def toJsonAST(a: A): Either[String, Json] = ctx.choose(a) { sub =>
           sub.typeclass.toJsonAST(sub.cast(a)).flatMap {
-            case Json.Obj(fields) =>
+            case o: Json.Obj =>
               val name = sub.annotations.collectFirst {
                 case jsonHint(name) => name
               }.getOrElse(jsonHintFormat(sub.typeInfo.short))
-              new Right(new Json.Obj((hintField -> new Json.Str(name)) +: fields)) // hint field is always first
+              new Right(Json.Obj((hintField -> new Json.Str(name)) +: o.fields)) // hint field is always first
             case _ =>
               new Left("expected object")
           }

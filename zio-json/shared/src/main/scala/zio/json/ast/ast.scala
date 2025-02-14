@@ -59,7 +59,7 @@ sealed abstract class Json { self =>
     jsonArray: Chunk[Json] => X,
     jsonObject: Json.Obj => X
   ): X = self match {
-    case Json.Arr(a) => jsonArray(a)
+    case a: Json.Arr => jsonArray(a.elements)
     case o: Json.Obj => jsonObject(o)
     case _           => or
   }
@@ -149,15 +149,15 @@ sealed abstract class Json { self =>
 
       case JsonCursor.DownField(parent, field) =>
         self.get(parent).flatMap { case Obj(fields) =>
-          fields.collectFirst { case (key, value) if key == field => Right(value) } match {
+          fields.collectFirst { case kv if kv._1 == field => Right(kv._2) } match {
             case Some(x) => x
             case None    => Left(s"No such field: '$field'")
           }
         }
 
       case JsonCursor.DownElement(parent, index) =>
-        self.get(parent).flatMap { case Arr(elements) =>
-          elements.lift(index).map(Right(_)).getOrElse(Left(s"The array does not have index ${index}"))
+        self.get(parent).flatMap { case a: Arr =>
+          a.elements.lift(index).map(Right(_)).getOrElse(Left(s"The array does not have index ${index}"))
         }
 
       case JsonCursor.FilterType(parent, t @ jsonType) =>
@@ -167,22 +167,22 @@ sealed abstract class Json { self =>
   override final def hashCode: Int =
     31 * {
       self match {
-        case Obj(fields) =>
+        case s: Str  => s.value.hashCode
+        case n: Num  => n.value.hashCode
+        case b: Bool => b.value.hashCode
+        case o: Obj =>
           var result = 0
-          fields.foreach(tuple => result = result ^ tuple.hashCode)
+          o.fields.foreach(tuple => result = result ^ tuple.hashCode)
           result
-        case Arr(elements) =>
+        case a: Arr =>
           var result = 0
           var index  = 0
-          elements.foreach { json =>
+          a.elements.foreach { json =>
             result = result ^ (index, json).hashCode
             index += 1
           }
           result
-        case Bool(value) => value.hashCode
-        case Str(value)  => value.hashCode
-        case Num(value)  => value.hashCode
-        case Json.Null   => 1
+        case _ => 1
       }
     }
 
@@ -250,9 +250,9 @@ sealed abstract class Json { self =>
   final def transformDown(f: Json => Json): Json = {
     def loop(json: Json): Json =
       f(json) match {
-        case Obj(fields)   => Obj(fields.map { case (name, value) => (name, loop(value)) })
-        case Arr(elements) => Arr(elements.map(loop(_)))
-        case json          => json
+        case o: Obj => Obj(o.fields.map(kv => (kv._1, loop(kv._2))))
+        case a: Arr => Arr(a.elements.map(loop(_)))
+        case json   => json
       }
 
     loop(self)
@@ -302,9 +302,9 @@ sealed abstract class Json { self =>
   final def transformUp(f: Json => Json): Json = {
     def loop(json: Json): Json =
       json match {
-        case Obj(fields)   => f(Obj(fields.map { case (name, value) => (name, loop(value)) }))
-        case Arr(elements) => f(Arr(elements.map(loop(_))))
-        case json          => f(json)
+        case o: Obj => f(Obj(o.fields.map(kv => (kv._1, loop(kv._2)))))
+        case a: Arr => f(Arr(a.elements.map(loop(_))))
+        case json   => f(json)
       }
 
     loop(self)
