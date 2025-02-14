@@ -62,6 +62,10 @@ object SafeNumbers {
     try Some(UnsafeNumbers.bigInteger(num, max_bits))
     catch { case _: UnexpectedEnd | UnsafeNumber => None }
 
+  def bigInt(num: String, max_bits: Int = 256): Option[BigInt] =
+    try Some(UnsafeNumbers.bigInt(num, max_bits))
+    catch { case _: UnexpectedEnd | UnsafeNumber => None }
+
   def float(num: String, max_bits: Int = 256): FloatOption =
     try FloatSome(UnsafeNumbers.float(num, max_bits))
     catch { case _: UnexpectedEnd | UnsafeNumber => FloatNone }
@@ -307,18 +311,18 @@ object SafeNumbers {
     val msb  = x.getMostSignificantBits
     val lsb  = x.getLeastSignificantBits
     val msb1 = (msb >> 32).toInt
+    val msb2 = msb.toInt
+    val lsb1 = (lsb >>> 32).toInt
+    val lsb2 = lsb.toInt
     out.write(ds(msb1 >>> 24), ds(msb1 >> 16 & 0xff), ds(msb1 >> 8 & 0xff), ds(msb1 & 0xff))
     out.write('-')
-    val msb2 = msb.toInt
     out.write(ds(msb2 >>> 24), ds(msb2 >> 16 & 0xff))
     out.write('-')
     out.write(ds(msb2 >> 8 & 0xff), ds(msb2 & 0xff))
     out.write('-')
-    val lsb1 = (lsb >>> 32).toInt
     out.write(ds(lsb1 >>> 24), ds(lsb1 >> 16 & 0xff))
     out.write('-')
     out.write(ds(lsb1 >> 8 & 0xff), ds(lsb1 & 0xff))
-    val lsb2 = lsb.toInt
     out.write(ds(lsb2 >>> 24), ds(lsb2 >> 16 & 0xff), ds(lsb2 >> 8 & 0xff), ds(lsb2 & 0xff))
   }
 

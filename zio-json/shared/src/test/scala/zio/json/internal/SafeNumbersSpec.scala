@@ -10,10 +10,10 @@ object SafeNumbersSpec extends ZIOSpecDefault {
   val spec =
     suite("SafeNumbers")(
       suite("BigDecimal")(
-        test("valid big decimals") {
+        test("valid") {
           check(genBigDecimal)(x => assert(SafeNumbers.bigDecimal(x.toString))(isSome(equalTo(x))))
         },
-        test("invalid big decimals") {
+        test("invalid edge cases") {
           val invalidBigDecimalEdgeCases = List(
             "N",
             "Inf",
@@ -35,7 +35,7 @@ object SafeNumbersSpec extends ZIOSpecDefault {
 
           assert(invalidBigDecimalEdgeCases)(forall(isNone))
         },
-        test("valid big decimal edge cases") {
+        test("valid edge cases") {
           val invalidBigDecimalEdgeCases = List(
             ".0",
             "-.0",
@@ -51,12 +51,12 @@ object SafeNumbersSpec extends ZIOSpecDefault {
             assert(SafeNumbers.bigDecimal(s).get.compareTo(new java.math.BigDecimal(s)))(equalTo(0))
           }
         },
-        test("invalid BigDecimal text") {
+        test("invalid (text)") {
           check(genAlphaLowerString)(s => assert(SafeNumbers.bigDecimal(s))(isNone))
         }
       ),
       suite("BigInteger")(
-        test("valid BigInteger edge cases") {
+        test("valid edge cases") {
           val inputs = List(
             "0",
             "0123",
@@ -75,31 +75,63 @@ object SafeNumbersSpec extends ZIOSpecDefault {
             )
           }
         },
-        test("invalid BigInteger edge cases") {
+        test("invalid edge cases") {
           val inputs = List("0e+1", "01E-1", "0.1", "", "1 ")
 
           check(Gen.fromIterable(inputs))(s => assert(SafeNumbers.bigInteger(s))(isNone))
         },
-        test("valid big Integer") {
+        test("valid") {
           check(genBigInteger)(x => assert(SafeNumbers.bigInteger(x.toString, 2048))(isSome(equalTo(x))))
         },
-        test("invalid BigInteger") {
+        test("invalid (text)") {
           check(genAlphaLowerString)(s => assert(SafeNumbers.bigInteger(s))(isNone))
         }
       ),
+      suite("BigInt")(
+        test("valid edge cases") {
+          val inputs = List(
+            "0",
+            "0123",
+            "-123",
+            "-9223372036854775807",
+            "9223372036854775806",
+            "-9223372036854775809",
+            "9223372036854775808"
+          )
+
+          check(Gen.fromIterable(inputs)) { s =>
+            assert(SafeNumbers.bigInt(s))(
+              isSome(
+                equalTo(BigInt(s))
+              )
+            )
+          }
+        },
+        test("invalid edge cases") {
+          val inputs = List("0e+1", "01E-1", "0.1", "", "1 ")
+
+          check(Gen.fromIterable(inputs))(s => assert(SafeNumbers.bigInt(s))(isNone))
+        },
+        test("valid") {
+          check(genBigInteger)(x => assert(SafeNumbers.bigInt(x.toString, 2048))(isSome(equalTo(BigInt(x)))))
+        },
+        test("invalid (text)") {
+          check(genAlphaLowerString)(s => assert(SafeNumbers.bigInt(s))(isNone))
+        }
+      ),
       suite("Byte")(
-        test("valid Byte") {
+        test("valid") {
           check(Gen.byte(Byte.MinValue, Byte.MaxValue)) { x =>
             val r = SafeNumbers.byte(x.toString)
             assert(r)(equalTo(ByteSome(x))) && assert(r.isEmpty)(equalTo(false))
           }
         },
-        test("invalid Byte (numbers)") {
+        test("invalid (numbers)") {
           check(Gen.int.filter(x => x < Byte.MinValue || x > Byte.MaxValue)) { x =>
             assert(SafeNumbers.byte(x.toString))(equalTo(ByteNone))
           }
         },
-        test("invalid Byte (text)") {
+        test("invalid (text)") {
           check(genAlphaLowerString)(s => assert(SafeNumbers.byte(s).isEmpty)(equalTo(true)))
         },
         test("ByteNone") {

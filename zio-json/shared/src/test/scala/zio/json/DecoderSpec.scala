@@ -145,9 +145,7 @@ object DecoderSpec extends ZIOSpecDefault {
           assert(
             "170141183460469231731687303715884105728489465165484668486513574864654818964653168465316546851"
               .fromJson[BigDecimal]
-          )(
-            isLeft(equalTo("(expected a BigDecimal with 256-bit mantissa)"))
-          )
+          )(isLeft(equalTo("(expected a BigDecimal with 256-bit mantissa)")))
         },
         test("BigDecimal exponent too large") {
           assert("1.23456789012345678901e-2147483648".fromJson[BigDecimal])(
@@ -175,12 +173,32 @@ object DecoderSpec extends ZIOSpecDefault {
         test("BigInteger too large") {
           assert(
             "170141183460469231731687303715884105728489465165484668486513574864654818964653168465316546851316546851"
-              .fromJson[java.math.BigInteger]
+              .fromJson[BigInteger]
           )(isLeft(equalTo("(expected a 256-bit BigInteger)"))) &&
           assert(
-            "17014118346046923173168730371588410572848946516548466848651357486465481896465316846"
-              .fromJson[java.math.BigInteger]
+            "17014118346046923173168730371588410572848946516548466848651357486465481896465316846".fromJson[BigInteger]
           )(isLeft(equalTo("(expected a 256-bit BigInteger)")))
+        },
+        test("BigInt") {
+          assert("170141183460469231731687303715884105728".fromJson[BigInt])(
+            isRight(equalTo(BigInt("170141183460469231731687303715884105728")))
+          ) &&
+          assert("-170141183460469231731687303715884105728".fromJson[BigInt])(
+            isRight(equalTo(BigInt("-170141183460469231731687303715884105728")))
+          ) &&
+          assertTrue("\"Infinity\"".fromJson[BigInt].isLeft) &&
+          assertTrue("\"+Infinity\"".fromJson[BigInt].isLeft) &&
+          assertTrue("\"-Infinity\"".fromJson[BigInt].isLeft) &&
+          assertTrue("\"NaN\"".fromJson[BigInt].isLeft)
+        },
+        test("BigInt too large") {
+          assert(
+            "170141183460469231731687303715884105728489465165484668486513574864654818964653168465316546851316546851"
+              .fromJson[BigInt]
+          )(isLeft(equalTo("(expected a 256-bit BigInt)"))) &&
+          assert(
+            "17014118346046923173168730371588410572848946516548466848651357486465481896465316846".fromJson[BigInt]
+          )(isLeft(equalTo("(expected a 256-bit BigInt)")))
         },
         test("collections") {
           val arr = """[1, 2, 3]"""

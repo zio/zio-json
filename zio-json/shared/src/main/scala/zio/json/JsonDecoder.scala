@@ -300,44 +300,223 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority1 with 
 
   implicit val symbol: JsonDecoder[Symbol] = string.map(Symbol(_))
 
-  implicit val byte: JsonDecoder[Byte]                       = number(Lexer.byte, _.byteValueExact)
-  implicit val short: JsonDecoder[Short]                     = number(Lexer.short, _.shortValueExact)
-  implicit val int: JsonDecoder[Int]                         = number(Lexer.int, _.intValueExact)
-  implicit val long: JsonDecoder[Long]                       = number(Lexer.long, _.longValueExact)
-  implicit val bigInteger: JsonDecoder[java.math.BigInteger] = number(Lexer.bigInteger, _.toBigIntegerExact)
-  implicit val scalaBigInt: JsonDecoder[BigInt]              = number(Lexer.bigInteger, _.toBigIntegerExact)
-  implicit val float: JsonDecoder[Float]                     = number(Lexer.float, _.floatValue)
-  implicit val double: JsonDecoder[Double]                   = number(Lexer.double, _.doubleValue)
-  implicit val bigDecimal: JsonDecoder[java.math.BigDecimal] = number(Lexer.bigDecimal, identity)
-  implicit val scalaBigDecimal: JsonDecoder[BigDecimal] =
-    number(Lexer.bigDecimal, new BigDecimal(_, BigDecimal.defaultMathContext))
+  implicit val byte: JsonDecoder[Byte] = new JsonDecoder[Byte] {
+    def unsafeDecode(trace: List[JsonError], in: RetractReader): Byte =
+      if (in.nextNonWhitespace() != '"') {
+        in.retract()
+        Lexer.byte(trace, in)
+      } else {
+        val a = Lexer.byte(trace, in)
+        val c = in.readChar()
+        if (c != '"') Lexer.error("'\"'", c, trace)
+        a
+      }
 
-  // numbers decode from numbers or strings for maximum compatibility
-  private[this] def number[A](f: (List[JsonError], RetractReader) => A, g: java.math.BigDecimal => A): JsonDecoder[A] =
-    new JsonDecoder[A] {
-      def unsafeDecode(trace: List[JsonError], in: RetractReader): A =
-        if (in.nextNonWhitespace() != '"') {
-          in.retract()
-          f(trace, in)
-        } else {
-          val a = f(trace, in)
-          val c = in.readChar()
-          if (c != '"') Lexer.error("'\"'", c, trace)
-          a
-        }
+    override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): Byte =
+      json match {
+        case Json.Num(value) =>
+          try value.byteValueExact
+          catch {
+            case ex: ArithmeticException => Lexer.error(ex.getMessage, trace)
+          }
+        case Json.Str(value) => Lexer.byte(trace, new FastStringReader(value))
+        case _               => Lexer.error("expected number", trace)
+      }
+  }
 
-      override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): A =
-        json match {
-          case Json.Num(value) =>
-            try g(value)
-            catch {
-              case ex: ArithmeticException => Lexer.error(ex.getMessage, trace)
-            }
-          case Json.Str(value) => f(trace, new FastStringReader(value))
-          case _               => Lexer.error("expected number", trace)
-        }
-    }
+  implicit val short: JsonDecoder[Short] = new JsonDecoder[Short] {
+    def unsafeDecode(trace: List[JsonError], in: RetractReader): Short =
+      if (in.nextNonWhitespace() != '"') {
+        in.retract()
+        Lexer.short(trace, in)
+      } else {
+        val a = Lexer.short(trace, in)
+        val c = in.readChar()
+        if (c != '"') Lexer.error("'\"'", c, trace)
+        a
+      }
 
+    override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): Short =
+      json match {
+        case Json.Num(value) =>
+          try value.shortValueExact
+          catch {
+            case ex: ArithmeticException => Lexer.error(ex.getMessage, trace)
+          }
+        case Json.Str(value) => Lexer.short(trace, new FastStringReader(value))
+        case _               => Lexer.error("expected number", trace)
+      }
+  }
+
+  implicit val int: JsonDecoder[Int] = new JsonDecoder[Int] {
+    def unsafeDecode(trace: List[JsonError], in: RetractReader): Int =
+      if (in.nextNonWhitespace() != '"') {
+        in.retract()
+        Lexer.int(trace, in)
+      } else {
+        val a = Lexer.int(trace, in)
+        val c = in.readChar()
+        if (c != '"') Lexer.error("'\"'", c, trace)
+        a
+      }
+
+    override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): Int =
+      json match {
+        case Json.Num(value) =>
+          try value.intValueExact
+          catch {
+            case ex: ArithmeticException => Lexer.error(ex.getMessage, trace)
+          }
+        case Json.Str(value) => Lexer.int(trace, new FastStringReader(value))
+        case _               => Lexer.error("expected number", trace)
+      }
+  }
+  implicit val long: JsonDecoder[Long] = new JsonDecoder[Long] {
+    def unsafeDecode(trace: List[JsonError], in: RetractReader): Long =
+      if (in.nextNonWhitespace() != '"') {
+        in.retract()
+        Lexer.long(trace, in)
+      } else {
+        val a = Lexer.long(trace, in)
+        val c = in.readChar()
+        if (c != '"') Lexer.error("'\"'", c, trace)
+        a
+      }
+
+    override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): Long =
+      json match {
+        case Json.Num(value) =>
+          try value.longValueExact
+          catch {
+            case ex: ArithmeticException => Lexer.error(ex.getMessage, trace)
+          }
+        case Json.Str(value) => Lexer.long(trace, new FastStringReader(value))
+        case _               => Lexer.error("expected number", trace)
+      }
+  }
+
+  implicit val bigInteger: JsonDecoder[java.math.BigInteger] = new JsonDecoder[java.math.BigInteger] {
+    def unsafeDecode(trace: List[JsonError], in: RetractReader): java.math.BigInteger =
+      if (in.nextNonWhitespace() != '"') {
+        in.retract()
+        Lexer.bigInteger(trace, in)
+      } else {
+        val a = Lexer.bigInteger(trace, in)
+        val c = in.readChar()
+        if (c != '"') Lexer.error("'\"'", c, trace)
+        a
+      }
+
+    override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): java.math.BigInteger =
+      json match {
+        case Json.Num(value) =>
+          try value.toBigIntegerExact
+          catch {
+            case ex: ArithmeticException => Lexer.error(ex.getMessage, trace)
+          }
+        case Json.Str(value) => Lexer.bigInteger(trace, new FastStringReader(value))
+        case _               => Lexer.error("expected number", trace)
+      }
+  }
+  implicit val scalaBigInt: JsonDecoder[BigInt] = new JsonDecoder[BigInt] {
+    def unsafeDecode(trace: List[JsonError], in: RetractReader): BigInt =
+      if (in.nextNonWhitespace() != '"') {
+        in.retract()
+        Lexer.bigInt(trace, in)
+      } else {
+        val a = Lexer.bigInt(trace, in)
+        val c = in.readChar()
+        if (c != '"') Lexer.error("'\"'", c, trace)
+        a
+      }
+
+    override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): BigInt =
+      json match {
+        case Json.Num(value) =>
+          try BigInt(value.toBigIntegerExact)
+          catch {
+            case ex: ArithmeticException => Lexer.error(ex.getMessage, trace)
+          }
+        case Json.Str(value) => Lexer.bigInt(trace, new FastStringReader(value))
+        case _               => Lexer.error("expected number", trace)
+      }
+  }
+  implicit val float: JsonDecoder[Float] = new JsonDecoder[Float] {
+    def unsafeDecode(trace: List[JsonError], in: RetractReader): Float =
+      if (in.nextNonWhitespace() != '"') {
+        in.retract()
+        Lexer.float(trace, in)
+      } else {
+        val a = Lexer.float(trace, in)
+        val c = in.readChar()
+        if (c != '"') Lexer.error("'\"'", c, trace)
+        a
+      }
+
+    override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): Float =
+      json match {
+        case Json.Num(value) => value.floatValue
+        case Json.Str(value) => Lexer.float(trace, new FastStringReader(value))
+        case _               => Lexer.error("expected number", trace)
+      }
+  }
+  implicit val double: JsonDecoder[Double] = new JsonDecoder[Double] {
+    def unsafeDecode(trace: List[JsonError], in: RetractReader): Double =
+      if (in.nextNonWhitespace() != '"') {
+        in.retract()
+        Lexer.double(trace, in)
+      } else {
+        val a = Lexer.double(trace, in)
+        val c = in.readChar()
+        if (c != '"') Lexer.error("'\"'", c, trace)
+        a
+      }
+
+    override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): Double =
+      json match {
+        case Json.Num(value) => value.doubleValue
+        case Json.Str(value) => Lexer.double(trace, new FastStringReader(value))
+        case _               => Lexer.error("expected number", trace)
+      }
+  }
+  implicit val bigDecimal: JsonDecoder[java.math.BigDecimal] = new JsonDecoder[java.math.BigDecimal] {
+    def unsafeDecode(trace: List[JsonError], in: RetractReader): java.math.BigDecimal =
+      if (in.nextNonWhitespace() != '"') {
+        in.retract()
+        Lexer.bigDecimal(trace, in)
+      } else {
+        val a = Lexer.bigDecimal(trace, in)
+        val c = in.readChar()
+        if (c != '"') Lexer.error("'\"'", c, trace)
+        a
+      }
+
+    override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): java.math.BigDecimal =
+      json match {
+        case Json.Num(value) => value
+        case Json.Str(value) => Lexer.bigDecimal(trace, new FastStringReader(value))
+        case _               => Lexer.error("expected number", trace)
+      }
+  }
+  implicit val scalaBigDecimal: JsonDecoder[BigDecimal] = new JsonDecoder[BigDecimal] {
+    def unsafeDecode(trace: List[JsonError], in: RetractReader): BigDecimal =
+      if (in.nextNonWhitespace() != '"') {
+        in.retract()
+        Lexer.bigDecimal(trace, in)
+      } else {
+        val a = Lexer.bigDecimal(trace, in)
+        val c = in.readChar()
+        if (c != '"') Lexer.error("'\"'", c, trace)
+        a
+      }
+
+    override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): BigDecimal =
+      json match {
+        case Json.Num(value) => new BigDecimal(value, BigDecimal.defaultMathContext)
+        case Json.Str(value) => Lexer.bigDecimal(trace, new FastStringReader(value))
+        case _               => Lexer.error("expected number", trace)
+      }
+  }
   // Option treats empty and null values as Nothing and passes values to the decoder.
   //
   // If alternative behaviour is desired, e.g. pass null to the underlying, then
