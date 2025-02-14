@@ -23,48 +23,48 @@ object JsonType {
   case object Null extends JsonType[Json.Null] {
     def get(json: Json): Either[String, Json.Null] =
       json match {
-        case Json.Null => Right(Json.Null)
-        case _         => Left("expected null")
+        case _: Json.Null.type => new Right(Json.Null)
+        case _                 => new Left("expected null")
       }
   }
 
   case object Bool extends JsonType[Json.Bool] {
     def get(json: Json): Either[String, Json.Bool] =
       json match {
-        case x @ Json.Bool(_) => Right(x)
-        case _                => Left("expected boolean")
+        case x: Json.Bool => new Right(x)
+        case _            => new Left("expected boolean")
       }
   }
 
   case object Obj extends JsonType[Json.Obj] {
     def get(json: Json): Either[String, Json.Obj] =
       json match {
-        case x @ Json.Obj(_) => Right(x)
-        case _               => Left("expected object")
+        case x: Json.Obj => new Right(x)
+        case _           => new Left("expected object")
       }
   }
 
   case object Arr extends JsonType[Json.Arr] {
     def get(json: Json): Either[String, Json.Arr] =
       json match {
-        case x @ Json.Arr(_) => Right(x)
-        case _               => Left("expected array")
+        case x: Json.Arr => new Right(x)
+        case _           => new Left("expected array")
       }
   }
 
   case object Str extends JsonType[Json.Str] {
     def get(json: Json): Either[String, Json.Str] =
       json match {
-        case x @ Json.Str(_) => Right(x)
-        case _               => Left("expected string")
+        case x: Json.Str => new Right(x)
+        case _           => new Left("expected string")
       }
   }
 
   case object Num extends JsonType[Json.Num] {
     def get(json: Json): Either[String, Json.Num] =
       json match {
-        case x @ Json.Num(_) => Right(x)
-        case _               => Left("expected number")
+        case x: Json.Num => new Right(x)
+        case _           => new Left("expected number")
       }
   }
 }
