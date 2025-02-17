@@ -178,15 +178,9 @@ object SafeNumbers {
         exp += len - 1
         if (exp < -3 || exp >= 7) {
           val sdv = stripTrailingZeros(dv)
-          if (sdv < 10) out.write((sdv.toInt | '0').toChar, '.', '0', 'E')
-          else {
-            val w = writes.get
-            write(sdv, w)
-            val cs = w.getChars
-            out.write(cs(0), '.')
-            out.write(cs, 1, w.length)
-            out.write('E')
-          }
+          writeMantissaWithDot(sdv, out)
+          if (sdv >= 10) out.write('E')
+          else out.write('0', 'E')
           write(exp, out)
         } else if (exp < 0) {
           out.write('0', '.')
@@ -194,18 +188,18 @@ object SafeNumbers {
             exp += 1
             exp != 0
           }) out.write('0')
-          write(stripTrailingZeros(dv), out)
+          writeMantissa(stripTrailingZeros(dv), out)
         } else {
           exp += 1
           if (exp < len) {
             val w = writes.get
-            write(stripTrailingZeros(dv), w)
+            writeMantissa(stripTrailingZeros(dv), w)
             val cs = w.getChars
             out.write(cs, 0, exp)
             out.write('.')
             out.write(cs, exp, w.length)
           } else {
-            write(dv.toInt, out)
+            writeMantissa(dv.toInt, out)
             out.write('.', '0')
           }
         }
@@ -280,15 +274,9 @@ object SafeNumbers {
         exp += len - 1
         if (exp < -3 || exp >= 7) {
           val sdv = stripTrailingZeros(dv)
-          if (sdv < 10) out.write((sdv | '0').toChar, '.', '0', 'E')
-          else {
-            val w = writes.get
-            write(sdv, w)
-            val cs = w.getChars
-            out.write(cs(0), '.')
-            out.write(cs, 1, w.length)
-            out.write('E')
-          }
+          writeMantissaWithDot(sdv, out)
+          if (sdv >= 10) out.write('E')
+          else out.write('0', 'E')
           write(exp, out)
         } else if (exp < 0) {
           out.write('0', '.')
@@ -296,18 +284,18 @@ object SafeNumbers {
             exp += 1
             exp != 0
           }) out.write('0')
-          write(stripTrailingZeros(dv), out)
+          writeMantissa(stripTrailingZeros(dv), out)
         } else {
           exp += 1
           if (exp < len) {
             val w = writes.get
-            write(stripTrailingZeros(dv), w)
+            writeMantissa(stripTrailingZeros(dv), w)
             val cs = w.getChars
             out.write(cs, 0, exp)
             out.write('.')
             out.write(cs, exp, w.length)
           } else {
-            write(dv, out)
+            writeMantissa(dv, out)
             out.write('.', '0')
           }
         }
@@ -379,16 +367,16 @@ object SafeNumbers {
   }
 
   @inline private[this] def stripTrailingZeros(x: Long): Long = {
-    var q0 = x.toInt
+    var q0, q1 = x
     if (
-      q0 == x || {
-        q0 = ((x >>> 8) * 2.56e-6).toInt // divide a medium positive long by 100000000
+      (q1 << 56 == 0L) && {
+        q0 = ((q1 >>> 8) * 2.56e-6).toLong // divide a medium positive long by 100000000
         q0 * 100000000L == x
       }
-    ) return stripTrailingZeros(q0).toLong
-    var q1, y, z = x
-    var r1       = 0
+    ) return stripTrailingZeros(q0.toInt).toLong
     while ({
+      q0 = q1
+      var z = q1
       q1 = (q1 >>> 1) + (q1 >>> 2) // Based upon the divu10() code from Hacker's Delight 2nd Edition by Henry Warren
       q1 += q1 >>> 4
       q1 += q1 >>> 8
@@ -396,25 +384,23 @@ object SafeNumbers {
       q1 += q1 >>> 32
       z -= q1 & 0xfffffffffffffff8L
       q1 >>>= 3
-      r1 = (z - (q1 << 1)).toInt
+      var r1 = (z - (q1 << 1)).toInt
       if (r1 >= 10) {
         q1 += 1L
         r1 -= 10
       }
       r1 == 0
-    }) {
-      y = q1
-      z = q1
-    }
-    y
+    }) ()
+    q0
   }
 
   @inline private[this] def stripTrailingZeros(x: Int): Int = {
     var q0, q1 = x
     while ({
+      q0 = q1
       q1 /= 10
       q1 * 10 == q0 // check if q is divisible by 100
-    }) q0 = q1
+    }) ()
     q0
   }
 
@@ -461,8 +447,23 @@ object SafeNumbers {
     }
   }
 
-  @inline def write(a: Int, out: Write): Unit = {
-    val ds = digits
+  @inline private[this] def writeMantissa(q0: Long, out: Write): Unit =
+    if (q0.toInt == q0) writeMantissa(q0.toInt, out)
+    else {
+      val q1 = ((q0 >>> 8) * 2.56e-6).toLong // divide a medium positive long by 100000000
+      writeMantissa(q1.toInt, out)
+      write8Digits((q0 - q1 * 100000000L).toInt, out)
+    }
+
+  @inline private[this] def writeMantissaWithDot(q0: Long, out: Write): Unit =
+    if (q0.toInt == q0) writeMantissaWithDot(q0.toInt, out)
+    else {
+      val q1 = ((q0 >>> 8) * 2.56e-6).toLong // divide a medium positive long by 100000000
+      writeMantissaWithDot(q1.toInt, out)
+      write8Digits((q0 - q1 * 100000000L).toInt, out)
+    }
+
+  def write(a: Int, out: Write): Unit = {
     var q0 = a
     if (q0 < 0) {
       q0 = -q0
@@ -472,6 +473,11 @@ object SafeNumbers {
         q0 = 147483648
       }
     }
+    writeMantissa(q0, out)
+  }
+
+  private[this] def writeMantissa(q0: Int, out: Write): Unit = {
+    val ds = digits
     if (q0 < 100) {
       if (q0 < 10) out.write((q0 | '0').toChar)
       else out.write(ds(q0))
@@ -509,7 +515,60 @@ object SafeNumbers {
     }
   }
 
-  @inline private[this] def write8Digits(x: Int, out: Write): Unit = {
+  private[this] def writeMantissaWithDot(q0: Int, out: Write): Unit = {
+    val ds = digits
+    if (q0 < 100) {
+      if (q0 < 10) out.write((q0 | '0').toChar, '.')
+      else {
+        val d1 = ds(q0)
+        out.write((d1 & 0xff).toChar, '.', (d1 >> 8).toChar)
+      }
+    } else if (q0 < 10000) {
+      val q1 = q0 * 5243 >> 19 // divide a small positive int by 100
+      val d2 = ds(q0 - q1 * 100)
+      if (q0 < 1000) out.write((q1 | '0').toChar, '.')
+      else {
+        val d1 = ds(q1)
+        out.write((d1 & 0xff).toChar, '.', (d1 >> 8).toChar)
+      }
+      out.write(d2)
+    } else if (q0 < 1000000) {
+      val q1 = q0 / 100
+      val r1 = q0 - q1 * 100
+      val q2 = q1 * 5243 >> 19 // divide a small positive int by 100
+      val r2 = q1 - q2 * 100
+      if (q0 < 100000) out.write((q2 | '0').toChar, '.')
+      else {
+        val d1 = ds(q2)
+        out.write((d1 & 0xff).toChar, '.', (d1 >> 8).toChar)
+      }
+      out.write(ds(r2), ds(r1))
+    } else if (q0 < 100000000) {
+      val q1 = q0 / 100
+      val r1 = q0 - q1 * 100
+      val q2 = q1 / 100
+      val r2 = q1 - q2 * 100
+      val q3 = q2 * 5243 >> 19 // divide a small positive int by 100
+      val r3 = q2 - q3 * 100
+      if (q0 < 10000000) out.write((q3 | '0').toChar, '.')
+      else {
+        val d1 = ds(q3)
+        out.write((d1 & 0xff).toChar, '.', (d1 >> 8).toChar)
+      }
+      out.write(ds(r3), ds(r2), ds(r1))
+    } else {
+      val q1 = q0 / 100000000
+      val r1 = q0 - q1 * 100000000
+      if (q0 < 1000000000) out.write((q1 | '0').toChar, '.')
+      else {
+        val d1 = ds(q1)
+        out.write((d1 & 0xff).toChar, '.', (d1 >> 8).toChar)
+      }
+      write8Digits(r1, out)
+    }
+  }
+
+  private[this] def write8Digits(x: Int, out: Write): Unit = {
     val ds = digits
     val q1 = x / 10000
     val q2 = q1 * 5243 >> 19 // divide a small positive int by 100
