@@ -190,14 +190,19 @@ object SafeNumbers {
           }) out.write('0')
           writeMantissa(stripTrailingZeros(dv), out)
         } else {
-          exp += 1
-          if (exp < len) {
-            val w = writes.get
-            writeMantissa(stripTrailingZeros(dv), w)
-            val cs = w.getChars
-            out.write(cs, 0, exp)
+          var pow10i = len - exp - 1
+          if (pow10i > 0) {
+            val pow10 = pow10longs(pow10i)
+            val q     = dv / pow10
+            val r     = dv - q * pow10
+            writeMantissa(q, out)
             out.write('.')
-            out.write(cs, exp, w.length)
+            pow10i -= digitCount(r)
+            while (pow10i > 0) {
+              out.write('0')
+              pow10i -= 1
+            }
+            writeMantissa(stripTrailingZeros(r), out)
           } else {
             writeMantissa(dv.toInt, out)
             out.write('.', '0')
@@ -286,14 +291,19 @@ object SafeNumbers {
           }) out.write('0')
           writeMantissa(stripTrailingZeros(dv), out)
         } else {
-          exp += 1
-          if (exp < len) {
-            val w = writes.get
-            writeMantissa(stripTrailingZeros(dv), w)
-            val cs = w.getChars
-            out.write(cs, 0, exp)
+          var pow10i = len - exp - 1
+          if (pow10i > 0) {
+            val pow10 = pow10ints(pow10i)
+            val q     = dv / pow10
+            val r     = dv - q * pow10
+            writeMantissa(q, out)
             out.write('.')
-            out.write(cs, exp, w.length)
+            pow10i -= digitCount(r)
+            while (pow10i > 0) {
+              out.write('0')
+              pow10i -= 1
+            }
+            writeMantissa(stripTrailingZeros(r), out)
           } else {
             writeMantissa(dv, out)
             out.write('.', '0')
@@ -394,7 +404,7 @@ object SafeNumbers {
     q0
   }
 
-  @inline private[this] def stripTrailingZeros(x: Int): Int = {
+  private[this] def stripTrailingZeros(x: Int): Int = {
     var q0, q1 = x
     while ({
       q0 = q1
@@ -415,7 +425,7 @@ object SafeNumbers {
       }
     }
     var q = q0.toInt
-    if (q0 == q) write(q, out)
+    if (q0 == q) writeMantissa(q, out)
     else {
       var last: Char = 0
       if (q0 >= 1000000000000000000L) {
@@ -436,10 +446,10 @@ object SafeNumbers {
       }
       val q1 = ((q0 >>> 8) * 2.56e-6).toLong // divide a medium positive long by 100000000
       q = q1.toInt
-      if (q1 == q) write(q, out)
+      if (q1 == q) writeMantissa(q, out)
       else {
         q = ((q1 >>> 8) * 1441151881L >>> 49).toInt // divide a small positive long by 100000000
-        write(q, out)
+        writeMantissa(q, out)
         write8Digits((q1 - q * 100000000L).toInt, out)
       }
       write8Digits((q0 - q1 * 100000000L).toInt, out)
@@ -592,6 +602,14 @@ object SafeNumbers {
 
   @inline private[json] def write2Digits(x: Int, out: Write): Unit =
     out.write(digits(x))
+
+  private[this] final val pow10ints: Array[Int] =
+    Array(1, 10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000, 1000000000)
+
+  private[this] final val pow10longs: Array[Long] =
+    Array(1L, 10L, 100L, 1000L, 10000L, 100000L, 1000000L, 10000000L, 100000000L, 1000000000L, 10000000000L,
+      100000000000L, 1000000000000L, 10000000000000L, 100000000000000L, 1000000000000000L, 10000000000000000L,
+      100000000000000000L)
 
   private[this] final val digits: Array[Short] = Array(
     12336, 12592, 12848, 13104, 13360, 13616, 13872, 14128, 14384, 14640, 12337, 12593, 12849, 13105, 13361, 13617,
