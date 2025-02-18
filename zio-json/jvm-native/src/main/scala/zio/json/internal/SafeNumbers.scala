@@ -141,13 +141,14 @@ object SafeNumbers {
       val exp    = (digits - 1) - dotOff
       if (scale >= 0 && exp >= -6) {
         if (exp < 0) {
-          out.write('0', '.')
+          if (v >= 0) out.write('0', '.')
+          else out.write('-', '0', '.')
           var zeros = -exp - 1
           while (zeros > 0) {
             out.write('0')
             zeros -= 1
           }
-          write(v, out)
+          write(pv, out)
         } else if (dotOff > 0) writeLongWithDot(v, dotOff, out)
         else write(v, out)
         0

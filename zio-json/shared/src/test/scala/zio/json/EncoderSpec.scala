@@ -256,7 +256,7 @@ object EncoderSpec extends ZIOSpecDefault {
           assert(BigDecimal("-1.0").toJson)(equalTo("-1.0")) &&
           assert(BigDecimal("1.0E+5").toJson)(equalTo("1.0E+5")) &&
           assert(BigDecimal("0.000100").toJson)(equalTo("0.000100")) &&
-          assert(BigDecimal("0.000001").toJson)(equalTo("0.000001")) &&
+          assert(BigDecimal("-0.000001").toJson)(equalTo("-0.000001")) &&
           assert(BigDecimal("100000.00").toJson)(equalTo("100000.00")) &&
           assert(BigDecimal("1E-2147483647").toJson)(equalTo("1E-2147483647")) &&
           assert(BigDecimal("1E+2147483647").toJson)(equalTo("1E+2147483647")) &&
