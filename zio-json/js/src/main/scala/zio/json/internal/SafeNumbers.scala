@@ -78,14 +78,20 @@ object SafeNumbers {
     try Some(UnsafeNumbers.bigDecimal(num, max_bits))
     catch { case _: UnexpectedEnd | UnsafeNumber => None }
 
+  def toString(x: java.math.BigInteger): String = {
+    val out = writes.get
+    write(x, out)
+    out.buffer.toString
+  }
+
   def toString(x: Double): String = {
-    val out = new FastStringWrite(24)
+    val out = writes.get
     write(x, out)
     out.buffer.toString
   }
 
   def toString(x: Float): String = {
-    val out = new FastStringWrite(16)
+    val out = writes.get
     write(x, out)
     out.buffer.toString
   }
@@ -94,6 +100,59 @@ object SafeNumbers {
     val out = writes.get
     write(x, out)
     out.buffer.toString
+  }
+
+  def write(x: java.math.BigInteger, out: Write): Unit = writeBigInteger(x, null, out)
+
+  private[this] def writeBigInteger(x: java.math.BigInteger, ss: Array[java.math.BigInteger], out: Write): Unit = {
+    val bitLen = x.bitLength
+    if (bitLen < 64) write(x.longValue, out)
+    else {
+      val n = calculateTenPow18SquareNumber(bitLen)
+      val ss1 =
+        if (ss eq null) getTenPow18Squares(n)
+        else ss
+      val qr = x.divideAndRemainder(ss1(n))
+      writeBigInteger(qr(0), ss1, out)
+      writeBigIntegerRemainder(qr(1), n - 1, ss1, out)
+    }
+  }
+
+  private[this] def writeBigIntegerRemainder(
+    x: java.math.BigInteger,
+    n: Int,
+    ss: Array[java.math.BigInteger],
+    out: Write
+  ): Unit =
+    if (n < 0) write18Digits(Math.abs(x.longValue), out)
+    else {
+      val qr = x.divideAndRemainder(ss(n))
+      writeBigIntegerRemainder(qr(0), n - 1, ss, out)
+      writeBigIntegerRemainder(qr(1), n - 1, ss, out)
+    }
+
+  private[this] def calculateTenPow18SquareNumber(bitLen: Int): Int = {
+    val m = Math.max(
+      (bitLen * 0.016723888647998956).toInt - 1,
+      1
+    ) // Math.max((x.bitLength * Math.log(2) / Math.log(1e18)).toInt - 1, 1)
+    31 - java.lang.Integer.numberOfLeadingZeros(m)
+  }
+
+  private[this] def getTenPow18Squares(n: Int): Array[java.math.BigInteger] = {
+    var ss = tenPow18Squares
+    var i  = ss.length
+    if (n >= i) {
+      var s = ss(i - 1)
+      ss = java.util.Arrays.copyOf(ss, n + 1)
+      while (i <= n) {
+        s = s.multiply(s)
+        ss(i) = s
+        i += 1
+      }
+      tenPow18Squares = ss
+    }
+    ss
   }
 
   // Based on the amazing work of Raffaello Giulietti
@@ -343,16 +402,6 @@ object SafeNumbers {
     write(stripTrailingZeros(x), out)
   }
 
-  private[this] val writes = new ThreadLocal[FastStringWrite] {
-    override def initialValue(): FastStringWrite = new FastStringWrite(24)
-
-    override def get: FastStringWrite = {
-      val w = super.get
-      w.reset()
-      w
-    }
-  }
-
   @inline private[this] def rop(g1: Long, g0: Long, cp: Long): Long = {
     val x = multiplyHigh(g0, cp) + (g1 * cp >>> 1)
     var y = multiplyHigh(g1, cp)
@@ -578,6 +627,14 @@ object SafeNumbers {
     }
   }
 
+  @inline private[this] def write18Digits(x: Long, out: Write): Unit = {
+    val q1 = ((x >>> 8) * 2.56e-6).toLong    // divide a medium positive long by 100000000
+    val q2 = (q1 >>> 8) * 1441151881L >>> 49 // divide a small positive long by 100000000
+    out.write(digits(q2.toInt))
+    write8Digits((q1 - q2 * 100000000L).toInt, out)
+    write8Digits((x - q1 * 100000000L).toInt, out)
+  }
+
   private[this] def write8Digits(x: Int, out: Write): Unit = {
     val ds = digits
     val q1 = x / 10000
@@ -602,24 +659,6 @@ object SafeNumbers {
 
   @inline private[json] def write2Digits(x: Int, out: Write): Unit =
     out.write(digits(x))
-
-  private[this] final val pow10ints: Array[Int] =
-    Array(1, 10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000, 1000000000)
-
-  private[this] final val pow10longs: Array[Long] =
-    Array(1L, 10L, 100L, 1000L, 10000L, 100000L, 1000000L, 10000000L, 100000000L, 1000000000L, 10000000000L,
-      100000000000L, 1000000000000L, 10000000000000L, 100000000000000L, 1000000000000000L, 10000000000000000L,
-      100000000000000000L)
-
-  private[this] final val digits: Array[Short] = Array(
-    12336, 12592, 12848, 13104, 13360, 13616, 13872, 14128, 14384, 14640, 12337, 12593, 12849, 13105, 13361, 13617,
-    13873, 14129, 14385, 14641, 12338, 12594, 12850, 13106, 13362, 13618, 13874, 14130, 14386, 14642, 12339, 12595,
-    12851, 13107, 13363, 13619, 13875, 14131, 14387, 14643, 12340, 12596, 12852, 13108, 13364, 13620, 13876, 14132,
-    14388, 14644, 12341, 12597, 12853, 13109, 13365, 13621, 13877, 14133, 14389, 14645, 12342, 12598, 12854, 13110,
-    13366, 13622, 13878, 14134, 14390, 14646, 12343, 12599, 12855, 13111, 13367, 13623, 13879, 14135, 14391, 14647,
-    12344, 12600, 12856, 13112, 13368, 13624, 13880, 14136, 14392, 14648, 12345, 12601, 12857, 13113, 13369, 13625,
-    13881, 14137, 14393, 14649
-  )
 
   @inline
   private[this] def digitCount(x: Long): Int =
@@ -654,6 +693,16 @@ object SafeNumbers {
       if (x < 1000000000) 9
       else 10
     }
+
+  private[this] final val digits: Array[Short] = Array(
+    12336, 12592, 12848, 13104, 13360, 13616, 13872, 14128, 14384, 14640, 12337, 12593, 12849, 13105, 13361, 13617,
+    13873, 14129, 14385, 14641, 12338, 12594, 12850, 13106, 13362, 13618, 13874, 14130, 14386, 14642, 12339, 12595,
+    12851, 13107, 13363, 13619, 13875, 14131, 14387, 14643, 12340, 12596, 12852, 13108, 13364, 13620, 13876, 14132,
+    14388, 14644, 12341, 12597, 12853, 13109, 13365, 13621, 13877, 14133, 14389, 14645, 12342, 12598, 12854, 13110,
+    13366, 13622, 13878, 14134, 14390, 14646, 12343, 12599, 12855, 13111, 13367, 13623, 13879, 14135, 14391, 14647,
+    12344, 12600, 12856, 13112, 13368, 13624, 13880, 14136, 14392, 14648, 12345, 12601, 12857, 13113, 13369, 13625,
+    13881, 14137, 14393, 14649
+  )
 
   private[this] final val lowerCaseHexDigits: Array[Short] = Array(
     12336, 12592, 12848, 13104, 13360, 13616, 13872, 14128, 14384, 14640, 24880, 25136, 25392, 25648, 25904, 26160,
@@ -919,4 +968,25 @@ object SafeNumbers {
     8988465674311579538L, 5963149404718312264L, 7190772539449263630L, 8459868338516560134L, 5752618031559410904L,
     6767894670813248108L, 9204188850495057447L, 5294608251188331487L
   )
+
+  private[this] final val pow10ints: Array[Int] =
+    Array(1, 10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000, 1000000000)
+
+  private[this] final val pow10longs: Array[Long] =
+    Array(1L, 10L, 100L, 1000L, 10000L, 100000L, 1000000L, 10000000L, 100000000L, 1000000000L, 10000000000L,
+      100000000000L, 1000000000000L, 10000000000000L, 100000000000000L, 1000000000000000L, 10000000000000000L,
+      100000000000000000L)
+
+  @volatile private[this] var tenPow18Squares: Array[java.math.BigInteger] =
+    Array(java.math.BigInteger.valueOf(1000000000000000000L))
+
+  private[this] val writes = new ThreadLocal[FastStringWrite] {
+    override def initialValue(): FastStringWrite = new FastStringWrite(64)
+
+    override def get: FastStringWrite = {
+      val w = super.get
+      w.reset()
+      w
+    }
+  }
 }

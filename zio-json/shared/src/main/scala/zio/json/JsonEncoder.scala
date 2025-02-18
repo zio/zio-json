@@ -232,8 +232,18 @@ object JsonEncoder extends GeneratedTupleEncoders with EncoderLowPriority1 with 
 
     override def toJsonAST(a: Long): Either[String, Json] = new Right(Json.Num(a))
   }
-  implicit val bigInteger: JsonEncoder[java.math.BigInteger] = explicit(_.toString, Json.Num.apply)
-  implicit val scalaBigInt: JsonEncoder[BigInt]              = explicit(_.toString, Json.Num.apply)
+  implicit val bigInteger: JsonEncoder[java.math.BigInteger] = new JsonEncoder[java.math.BigInteger] {
+    def unsafeEncode(a: java.math.BigInteger, indent: Option[Int], out: Write): Unit = SafeNumbers.write(a, out)
+
+    override def toJsonAST(a: java.math.BigInteger): Either[String, Json] = new Right(Json.Num(a))
+  }
+  implicit val scalaBigInt: JsonEncoder[BigInt] = new JsonEncoder[BigInt] {
+    def unsafeEncode(a: BigInt, indent: Option[Int], out: Write): Unit =
+      if (a.isValidLong) SafeNumbers.write(a.longValue, out)
+      else SafeNumbers.write(a.bigInteger, out)
+
+    override def toJsonAST(a: BigInt): Either[String, Json] = new Right(Json.Num(a))
+  }
   implicit val double: JsonEncoder[Double] = new JsonEncoder[Double] {
     def unsafeEncode(a: Double, indent: Option[Int], out: Write): Unit = SafeNumbers.write(a, out)
 
