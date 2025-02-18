@@ -30,6 +30,9 @@ object RoundTripSpec extends ZIOSpecDefault {
       test("bigInts") {
         check(genBigInteger)(assertRoundtrips[java.math.BigInteger])
       } @@ jvm(samples(10000)),
+      test("bigDecimals") {
+        check(genBigDecimal)(assertRoundtrips[java.math.BigDecimal])
+      } @@ jvm(samples(10000)),
       test("floats") {
         // NaN / Infinity is tested manually, because of == semantics
         check(Gen.float.filter(java.lang.Float.isFinite))(assertRoundtrips[Float])
