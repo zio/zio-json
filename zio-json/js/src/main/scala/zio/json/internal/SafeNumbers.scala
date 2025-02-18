@@ -178,7 +178,7 @@ object SafeNumbers {
     val r     = Math.abs(v - q * pow10)
     write(q, out)
     out.write('.')
-    var zeros = dotOff - digitCount(r)
+    var zeros = dotOff - (if (v >= 100000000000000000L) 18 else digitCount(r))
     while (zeros > 0) {
       out.write('0')
       zeros -= 1
