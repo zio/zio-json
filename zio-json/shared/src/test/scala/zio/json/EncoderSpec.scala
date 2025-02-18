@@ -245,20 +245,28 @@ object EncoderSpec extends ZIOSpecDefault {
             assert((-6939.0464d).toJson)(
               equalTo("-6939.0464")
             ) // See the issue: https://github.com/zio/zio-json/pull/375
-          },
-          test("other numerics") {
-            val exampleBigIntStr     = "170141183460469231731687303715884105728"
-            val exampleBigDecimalStr = "170141183460469231731687303715884105728.4433"
-            assert((1: Byte).toJson)(equalTo("1")) &&
-            assert((1: Short).toJson)(equalTo("1")) &&
-            assert((1: Int).toJson)(equalTo("1")) &&
-            assert(1L.toJson)(equalTo("1")) &&
-            assert(new java.math.BigInteger("1").toJson)(equalTo("1")) &&
-            assert(new java.math.BigInteger(exampleBigIntStr).toJson)(equalTo(exampleBigIntStr)) &&
-            assert(BigInt(exampleBigIntStr).toJson)(equalTo(exampleBigIntStr)) &&
-            assert(BigDecimal(exampleBigDecimalStr).toJson)(equalTo(exampleBigDecimalStr))
           }
         ),
+        test("BigInt") {
+          assert(BigInt("-1").toJson)(equalTo("-1")) &&
+          assert(BigInt("-316873037158841").toJson)(equalTo("-316873037158841")) &&
+          assert(BigInt("1701411834604692317316873037158841").toJson)(equalTo("1701411834604692317316873037158841"))
+        },
+        test("BigDecimal") {
+          assert(BigDecimal("-1.0").toJson)(equalTo("-1.0")) &&
+          assert(BigDecimal("1.0E+5").toJson)(equalTo("1.0E+5")) &&
+          assert(BigDecimal("0.000100").toJson)(equalTo("0.000100")) &&
+          assert(BigDecimal("0.000001").toJson)(equalTo("0.000001")) &&
+          assert(BigDecimal("100000.00").toJson)(equalTo("100000.00")) &&
+          assert(BigDecimal("1E-2147483647").toJson)(equalTo("1E-2147483647")) &&
+          assert(BigDecimal("1E+2147483647").toJson)(equalTo("1E+2147483647")) &&
+          assert(BigDecimal("-234316873037.008841").toJson)(equalTo("-234316873037.008841")) &&
+          assert(BigDecimal("141183460469231731687303715.8841").toJson)(equalTo("141183460469231731687303715.8841")) &&
+          assert(BigDecimal("1.7014118346046923173168730E+119").toJson)(equalTo("1.7014118346046923173168730E+119")) &&
+          assert(
+            BigDecimal("-9.999999999999874791608720182523363282786709588281885514820801359042815031E-4571018").toJson
+          )(equalTo("-9.999999999999874791608720182523363282786709588281885514820801359042815031E-4571018"))
+        },
         test("options") {
           assert((None: Option[Int]).toJson)(equalTo("null")) &&
           assert((Some(1): Option[Int]).toJson)(equalTo("1"))

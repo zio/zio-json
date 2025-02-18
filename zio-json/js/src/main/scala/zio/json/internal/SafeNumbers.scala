@@ -78,6 +78,12 @@ object SafeNumbers {
     try Some(UnsafeNumbers.bigDecimal(num, max_bits))
     catch { case _: UnexpectedEnd | UnsafeNumber => None }
 
+  def toString(x: java.math.BigDecimal): String = {
+    val out = writes.get
+    write(x, out)
+    out.buffer.toString
+  }
+
   def toString(x: java.math.BigInteger): String = {
     val out = writes.get
     write(x, out)
@@ -101,6 +107,121 @@ object SafeNumbers {
     write(x, out)
     out.buffer.toString
   }
+
+  def write(x: java.math.BigDecimal, out: Write): Unit = {
+    var exp = writeBigDecimal(x.unscaledValue, x.scale, 0, null, out)
+    if (exp != 0) {
+      var sc = '+'
+      if (exp < 0) {
+        sc = '-'
+        exp = -exp
+      }
+      out.write('E', sc)
+      writeMantissa(exp, out)
+    }
+  }
+
+  private[this] def writeBigDecimal(
+    x: java.math.BigInteger,
+    scale: Int,
+    blockScale: Int,
+    ss: Array[java.math.BigInteger],
+    out: Write
+  ): Int = {
+    val bitLen = x.bitLength
+    if (bitLen < 64) {
+      val v  = x.longValue
+      val pv = Math.abs(v)
+      val digits =
+        if (pv >= 100000000000000000L) {
+          if (pv >= 1000000000000000000L) 19
+          else 18
+        } else digitCount(pv)
+      val dotOff = scale - blockScale
+      val exp    = (digits - 1) - dotOff
+      if (scale >= 0 && exp >= -6) {
+        if (exp < 0) {
+          out.write('0', '.')
+          var zeros = -exp - 1
+          while (zeros > 0) {
+            out.write('0')
+            zeros -= 1
+          }
+          write(v, out)
+        } else if (dotOff > 0) writeLongWithDot(v, dotOff, out)
+        else write(v, out)
+        0
+      } else {
+        if (digits > 1) writeLongWithDot(v, digits - 1, out)
+        else {
+          write(v, out)
+          if (blockScale > 0) out.write('.')
+        }
+        exp
+      }
+    } else {
+      val n = calculateTenPow18SquareNumber(bitLen)
+      val ss1 =
+        if (ss eq null) getTenPow18Squares(n)
+        else ss
+      val qr  = x.divideAndRemainder(ss1(n))
+      val exp = writeBigDecimal(qr(0), scale, (18 << n) + blockScale, ss1, out)
+      writeBigDecimalRemainder(qr(1), scale, blockScale, n - 1, ss1, out)
+      exp
+    }
+  }
+
+  @inline private[this] def writeLongWithDot(v: Long, dotOff: Int, out: Write): Unit = {
+    val pow10 = pow10longs(dotOff)
+    val q     = v / pow10
+    val r     = Math.abs(v - q * pow10)
+    write(q, out)
+    out.write('.')
+    var zeros = dotOff - digitCount(r)
+    while (zeros > 0) {
+      out.write('0')
+      zeros -= 1
+    }
+    write(r, out)
+  }
+
+  private[this] def writeBigDecimalRemainder(
+    x: java.math.BigInteger,
+    scale: Int,
+    blockScale: Int,
+    n: Int,
+    ss: Array[java.math.BigInteger],
+    out: Write
+  ): Unit =
+    if (n < 0) {
+      val v      = Math.abs(x.longValue)
+      var dotOff = scale - blockScale
+      if (dotOff > 0 && dotOff < 18) {
+        val pow10 = pow10longs(dotOff)
+        val q     = v / pow10
+        val r     = v - q * pow10
+        var zeros = 18 - dotOff - digitCount(q)
+        while (zeros > 0) {
+          out.write('0')
+          zeros -= 1
+        }
+        writeMantissa(q, out)
+        out.write('.')
+        dotOff -= digitCount(r)
+        while (dotOff > 0) {
+          out.write('0')
+          dotOff -= 1
+        }
+        writeMantissa(r, out)
+      } else {
+        if (dotOff == 18) out.write('.')
+        write18Digits(v, out)
+      }
+    } else {
+      val qr = x.divideAndRemainder(ss(n))
+      writeBigDecimalRemainder(qr(0), scale, (18 << n) + blockScale, n - 1, ss, out)
+      writeBigDecimalRemainder(qr(1), scale, blockScale, n - 1, ss, out)
+    }
 
   def write(x: java.math.BigInteger, out: Write): Unit = writeBigInteger(x, null, out)
 
@@ -660,8 +781,7 @@ object SafeNumbers {
   @inline private[json] def write2Digits(x: Int, out: Write): Unit =
     out.write(digits(x))
 
-  @inline
-  private[this] def digitCount(x: Long): Int =
+  @inline private[this] def digitCount(x: Long): Int =
     if (x >= 1000000000000000L) {
       if (x >= 10000000000000000L) 17
       else 16
@@ -975,7 +1095,7 @@ object SafeNumbers {
   private[this] final val pow10longs: Array[Long] =
     Array(1L, 10L, 100L, 1000L, 10000L, 100000L, 1000000L, 10000000L, 100000000L, 1000000000L, 10000000000L,
       100000000000L, 1000000000000L, 10000000000000L, 100000000000000L, 1000000000000000L, 10000000000000000L,
-      100000000000000000L)
+      100000000000000000L, 1000000000000000000L)
 
   @volatile private[this] var tenPow18Squares: Array[java.math.BigInteger] =
     Array(java.math.BigInteger.valueOf(1000000000000000000L))

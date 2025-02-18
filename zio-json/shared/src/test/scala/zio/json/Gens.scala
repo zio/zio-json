@@ -14,10 +14,13 @@ object Gens {
       .filter(_.bitLength < 256)
 
   val genBigDecimal =
-    Gen
-      .bigDecimal((BigDecimal(2).pow(256) - 1) * -1, BigDecimal(2).pow(256) - 1)
-      .map(_.bigDecimal)
-      .filter(_.unscaledValue.bitLength < 256)
+    for {
+      unscaled <- Gen
+                    .bigInt((BigInt(2).pow(256) - 1) * -1, BigInt(2).pow(256) - 1)
+                    .map(_.bigInteger)
+                    .filter(_.bitLength < 256)
+      scale <- Gen.oneOf(Gen.int(-20, 20), Gen.int(-1000000000, 1000000000))
+    } yield new java.math.BigDecimal(unscaled, scale)
 
   val genUsAsciiString =
     Gen.string(Gen.oneOf(Gen.char('!', '~')))

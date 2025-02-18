@@ -215,12 +215,12 @@ object JsonEncoder extends GeneratedTupleEncoders with EncoderLowPriority1 with 
   implicit val byte: JsonEncoder[Byte] = new JsonEncoder[Byte] {
     def unsafeEncode(a: Byte, indent: Option[Int], out: Write): Unit = SafeNumbers.write(a.toInt, out)
 
-    override def toJsonAST(a: Byte): Either[String, Json] = new Right(Json.Num(a))
+    override def toJsonAST(a: Byte): Either[String, Json] = new Right(Json.Num(a.toInt))
   }
   implicit val short: JsonEncoder[Short] = new JsonEncoder[Short] {
     def unsafeEncode(a: Short, indent: Option[Int], out: Write): Unit = SafeNumbers.write(a.toInt, out)
 
-    override def toJsonAST(a: Short): Either[String, Json] = new Right(Json.Num(a))
+    override def toJsonAST(a: Short): Either[String, Json] = new Right(Json.Num(a.toInt))
   }
   implicit val int: JsonEncoder[Int] = new JsonEncoder[Int] {
     def unsafeEncode(a: Int, indent: Option[Int], out: Write): Unit = SafeNumbers.write(a, out)
@@ -254,8 +254,16 @@ object JsonEncoder extends GeneratedTupleEncoders with EncoderLowPriority1 with 
 
     override def toJsonAST(a: Float): Either[String, Json] = new Right(Json.Num(a))
   }
-  implicit val bigDecimal: JsonEncoder[java.math.BigDecimal] = explicit(_.toString, n => new Json.Num(n))
-  implicit val scalaBigDecimal: JsonEncoder[BigDecimal]      = explicit(_.toString, Json.Num.apply)
+  implicit val bigDecimal: JsonEncoder[java.math.BigDecimal] = new JsonEncoder[java.math.BigDecimal] {
+    def unsafeEncode(a: java.math.BigDecimal, indent: Option[Int], out: Write): Unit = SafeNumbers.write(a, out)
+
+    override def toJsonAST(a: java.math.BigDecimal): Either[String, Json] = new Right(new Json.Num(a))
+  }
+  implicit val scalaBigDecimal: JsonEncoder[BigDecimal] = new JsonEncoder[BigDecimal] {
+    def unsafeEncode(a: BigDecimal, indent: Option[Int], out: Write): Unit = SafeNumbers.write(a.bigDecimal, out)
+
+    override def toJsonAST(a: BigDecimal): Either[String, Json] = new Right(new Json.Num(a.bigDecimal))
+  }
 
   implicit def option[A](implicit A: JsonEncoder[A]): JsonEncoder[Option[A]] = new JsonEncoder[Option[A]] {
     def unsafeEncode(oa: Option[A], indent: Option[Int], out: Write): Unit =
