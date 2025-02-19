@@ -130,8 +130,8 @@ object SafeNumbers {
   ): Int = {
     val bitLen = x.bitLength
     if (bitLen < 64) {
-      val v  = x.longValue
-      val pv = Math.abs(v)
+      val v      = x.longValue
+      val pv     = Math.abs(v)
       val digits = digitCount(pv)
       val dotOff = scale - blockScale
       val exp    = (digits - 1) - dotOff
