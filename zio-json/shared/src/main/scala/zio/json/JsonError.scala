@@ -22,14 +22,17 @@ package zio.json
 sealed abstract class JsonError
 
 object JsonError {
-
   def render(trace: List[JsonError]): String =
-    trace.reverse.map {
-      case Message(txt)        => s"($txt)"
-      case ArrayAccess(i)      => s"[$i]"
-      case ObjectAccess(field) => s".$field"
-      case SumType(cons)       => s"{$cons}"
-    }.mkString
+    trace
+      .foldRight(new java.lang.StringBuilder) { (err, sb) =>
+        err match {
+          case o: ObjectAccess => sb.append('.').append(o.field)
+          case a: ArrayAccess  => sb.append('[').append(a.i).append(']')
+          case s: SumType      => sb.append('{').append(s.cons).append('}')
+          case m: Message      => sb.append('(').append(m.txt).append(')')
+        }
+      }
+      .toString
 
   final case class Message(txt: String) extends JsonError
 
@@ -38,5 +41,4 @@ object JsonError {
   final case class ObjectAccess(field: String) extends JsonError
 
   final case class SumType(cons: String) extends JsonError
-
 }
