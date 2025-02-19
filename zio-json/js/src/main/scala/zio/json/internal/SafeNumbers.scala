@@ -132,11 +132,7 @@ object SafeNumbers {
     if (bitLen < 64) {
       val v  = x.longValue
       val pv = Math.abs(v)
-      val digits =
-        if (pv >= 100000000000000000L) {
-          if (pv >= 1000000000000000000L) 19
-          else 18
-        } else digitCount(pv)
+      val digits = digitCount(pv)
       val dotOff = scale - blockScale
       val exp    = (digits - 1) - dotOff
       if (scale >= 0 && exp >= -6) {
@@ -178,7 +174,7 @@ object SafeNumbers {
     val r     = Math.abs(v - q * pow10)
     write(q, out)
     out.write('.')
-    var zeros = dotOff - (if (v >= 100000000000000000L) 18 else digitCount(r))
+    var zeros = dotOff - digitCount(r)
     while (zeros > 0) {
       out.write('0')
       zeros -= 1
@@ -783,7 +779,10 @@ object SafeNumbers {
     out.write(digits(x))
 
   @inline private[this] def digitCount(x: Long): Int =
-    if (x >= 1000000000000000L) {
+    if (x >= 100000000000000000L) {
+      if (x >= 1000000000000000000L) 19
+      else 18
+    } else if (x >= 1000000000000000L) {
       if (x >= 10000000000000000L) 17
       else 16
     } else if (x >= 10000000000000L) {
