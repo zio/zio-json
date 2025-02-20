@@ -19,7 +19,6 @@ import zio.json.ast.Json
 import zio.json.internal.{ FastStringWrite, SafeNumbers, Write }
 import zio.json.javatime.serializers
 import zio.{ Chunk, NonEmptyChunk }
-
 import java.util.UUID
 import scala.annotation._
 import scala.collection.{ immutable, mutable }
@@ -67,9 +66,12 @@ trait JsonEncoder[A] extends JsonEncoderPlatformSpecific[A] {
    * Encodes the specified value into a JSON string, with the specified indentation level.
    */
   final def encodeJson(a: A, indent: Option[Int] = None): CharSequence = {
-    val writer = new FastStringWrite(64)
-    unsafeEncode(a, indent, writer)
-    writer.buffer
+    val writePool = JsonEncoder.writePools.get
+    try {
+      val write = writePool.acquire()
+      unsafeEncode(a, indent, write)
+      write.toString
+    } finally writePool.release()
   }
 
   /**
@@ -111,6 +113,35 @@ trait JsonEncoder[A] extends JsonEncoderPlatformSpecific[A] {
 }
 
 object JsonEncoder extends GeneratedTupleEncoders with EncoderLowPriority1 with JsonEncoderVersionSpecific {
+  private class FastStringWritePool {
+    private[this] var weakRef: java.lang.ref.WeakReference[Array[FastStringWrite]] =
+      new java.lang.ref.WeakReference(Array(new FastStringWrite(64)))
+    private[this] var level: Int = 0
+
+    def acquire(): FastStringWrite = {
+      var writes = weakRef.get
+      if (writes eq null) { // the reference was collected by GC
+        level = 0
+        writes = new Array(0)
+      }
+      if (level == writes.length) { // exceding the deepest level of recusion
+        writes = java.util.Arrays.copyOf(writes, level + 1)
+        writes(level) = new FastStringWrite(64)
+        weakRef = new java.lang.ref.WeakReference(writes)
+      }
+      val write = writes(level)
+      level += 1 // increase the level of recusrion
+      write.reset()
+      write
+    }
+
+    def release(): Unit = level -= 1 // decrease the level of recusrion
+  }
+
+  private val writePools = new ThreadLocal[FastStringWritePool] {
+    override def initialValue(): FastStringWritePool = new FastStringWritePool
+  }
+
   @inline def apply[A](implicit a: JsonEncoder[A]): JsonEncoder[A] = a
 
   implicit val string: JsonEncoder[String] = new JsonEncoder[String] {

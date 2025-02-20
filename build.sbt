@@ -227,8 +227,9 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform, NativePlatform)
       exclude[Problem]("zio.json.package.*")
     ),
     libraryDependencies ++= Seq(
-      "io.github.cquiroz" %%% "scala-java-time"      % scalaJavaTimeVersion,
-      "io.github.cquiroz" %%% "scala-java-time-tzdb" % scalaJavaTimeVersion % "test"
+      ("org.scala-js"     %%% "scalajs-weakreferences" % "1.0.0").cross(CrossVersion.for3Use2_13),
+      "io.github.cquiroz" %%% "scala-java-time"        % scalaJavaTimeVersion,
+      "io.github.cquiroz" %%% "scala-java-time-tzdb"   % scalaJavaTimeVersion % "test"
     )
   )
   .nativeSettings(nativeSettings)

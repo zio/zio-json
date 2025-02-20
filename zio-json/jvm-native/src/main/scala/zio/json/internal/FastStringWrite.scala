@@ -10,10 +10,6 @@ final class FastStringWrite(initial: Int) extends Write {
 
   @inline def reset(): Unit = count = 0
 
-  @inline private[internal] def length: Int = count
-
-  @inline private[internal] def getChars: Array[Char] = chars
-
   def write(s: String): Unit = {
     val l  = s.length
     var cs = chars
@@ -168,4 +164,6 @@ final class FastStringWrite(initial: Int) extends Write {
   }
 
   def buffer: CharSequence = CharBuffer.wrap(chars, 0, count)
+
+  override def toString: String = new String(chars, 0, count)
 }
