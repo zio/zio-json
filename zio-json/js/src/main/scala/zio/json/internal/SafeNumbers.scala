@@ -81,31 +81,31 @@ object SafeNumbers {
   def toString(x: java.math.BigDecimal): String = {
     val out = writes.get
     write(x, out)
-    out.buffer.toString
+    out.toString
   }
 
   def toString(x: java.math.BigInteger): String = {
     val out = writes.get
     write(x, out)
-    out.buffer.toString
+    out.toString
   }
 
   def toString(x: Double): String = {
     val out = writes.get
     write(x, out)
-    out.buffer.toString
+    out.toString
   }
 
   def toString(x: Float): String = {
     val out = writes.get
     write(x, out)
-    out.buffer.toString
+    out.toString
   }
 
   def toString(x: UUID): String = {
     val out = writes.get
     write(x, out)
-    out.buffer.toString
+    out.toString
   }
 
   def write(x: java.math.BigDecimal, out: Write): Unit = {

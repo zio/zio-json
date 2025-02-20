@@ -6,10 +6,6 @@ final class FastStringWrite(initial: Int) extends Write {
 
   @inline def reset(): Unit = chars = ""
 
-  @inline private[internal] def length: Int = chars.length
-
-  @inline private[internal] def getChars: Array[Char] = chars.toCharArray
-
   @inline def write(s: String): Unit = chars += s
 
   @inline def write(c: Char): Unit = chars += c
@@ -81,4 +77,6 @@ final class FastStringWrite(initial: Int) extends Write {
   }
 
   @inline def buffer: CharSequence = chars
+
+  @inline override def toString: String = chars
 }

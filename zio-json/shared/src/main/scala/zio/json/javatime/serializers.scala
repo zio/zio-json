@@ -23,7 +23,7 @@ private[json] object serializers {
   def toString(x: Duration): String = {
     val out = writes.get
     write(x, out)
-    out.buffer.toString
+    out.toString
   }
 
   def write(x: Duration, out: Write): Unit = {
@@ -61,7 +61,7 @@ private[json] object serializers {
   def toString(x: Instant): String = {
     val out = writes.get
     write(x, out)
-    out.buffer.toString
+    out.toString
   }
 
   def write(x: Instant, out: Write): Unit = {
@@ -124,7 +124,7 @@ private[json] object serializers {
   def toString(x: LocalDate): String = {
     val out = writes.get
     write(x, out)
-    out.buffer.toString
+    out.toString
   }
 
   def write(x: LocalDate, out: Write): Unit = {
@@ -138,7 +138,7 @@ private[json] object serializers {
   def toString(x: LocalDateTime): String = {
     val out = writes.get
     write(x, out)
-    out.buffer.toString
+    out.toString
   }
 
   def write(x: LocalDateTime, out: Write): Unit = {
@@ -150,7 +150,7 @@ private[json] object serializers {
   def toString(x: LocalTime): String = {
     val out = writes.get
     write(x, out)
-    out.buffer.toString
+    out.toString
   }
 
   def write(x: LocalTime, out: Write): Unit = {
@@ -166,7 +166,7 @@ private[json] object serializers {
   def toString(x: MonthDay): String = {
     val out = writes.get
     write(x, out)
-    out.buffer.toString
+    out.toString
   }
 
   def write(x: MonthDay, out: Write): Unit = {
@@ -179,7 +179,7 @@ private[json] object serializers {
   def toString(x: OffsetDateTime): String = {
     val out = writes.get
     write(x, out)
-    out.buffer.toString
+    out.toString
   }
 
   def write(x: OffsetDateTime, out: Write): Unit = {
@@ -192,7 +192,7 @@ private[json] object serializers {
   def toString(x: OffsetTime): String = {
     val out = writes.get
     write(x, out)
-    out.buffer.toString
+    out.toString
   }
 
   def write(x: OffsetTime, out: Write): Unit = {
@@ -203,7 +203,7 @@ private[json] object serializers {
   def toString(x: Period): String = {
     val out = writes.get
     write(x, out)
-    out.buffer.toString
+    out.toString
   }
 
   def write(x: Period, out: Write): Unit = {
@@ -231,7 +231,7 @@ private[json] object serializers {
   def toString(x: Year): String = {
     val out = writes.get
     write(x, out)
-    out.buffer.toString
+    out.toString
   }
 
   @inline def write(x: Year, out: Write): Unit = writeYear(x.getValue, out)
@@ -239,7 +239,7 @@ private[json] object serializers {
   def toString(x: YearMonth): String = {
     val out = writes.get
     write(x, out)
-    out.buffer.toString
+    out.toString
   }
 
   def write(x: YearMonth, out: Write): Unit = {
@@ -251,7 +251,7 @@ private[json] object serializers {
   def toString(x: ZonedDateTime): String = {
     val out = writes.get
     write(x, out)
-    out.buffer.toString
+    out.toString
   }
 
   def write(x: ZonedDateTime, out: Write): Unit = {
@@ -274,7 +274,7 @@ private[json] object serializers {
   def toString(x: ZoneOffset): String = {
     val out = writes.get
     write(x, out)
-    out.buffer.toString
+    out.toString
   }
 
   def write(x: ZoneOffset, out: Write): Unit = {
