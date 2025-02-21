@@ -15,16 +15,13 @@
  */
 package zio.json.uuid
 
-import scala.annotation.nowarn
+import java.util.UUID
 import scala.util.control.NoStackTrace
 
-// A port of https://github.com/openjdk/jdk/commit/ebadfaeb2e1cc7b5ce5f101cd8a539bc5478cf5b with optimizations applied
 private[json] object UUIDParser {
-  // Converts characters to their numeric representation (for example 'E' or 'e' becomes 0XE)
-  private[this] val CharToNumeric: Array[Byte] = {
-    // by filling in -1's we prevent from trying to parse invalid characters
-    val ns = Array.fill[Byte](256)(-1)
-
+  private[this] val hexDigits: Array[Byte] = {
+    val ns = new Array[Byte](256)
+    java.util.Arrays.fill(ns, -1: Byte)
     ns('0') = 0
     ns('1') = 1
     ns('2') = 2
@@ -35,104 +32,92 @@ private[json] object UUIDParser {
     ns('7') = 7
     ns('8') = 8
     ns('9') = 9
-
     ns('A') = 10
     ns('B') = 11
     ns('C') = 12
     ns('D') = 13
     ns('E') = 14
     ns('F') = 15
-
     ns('a') = 10
     ns('b') = 11
     ns('c') = 12
     ns('d') = 13
     ns('e') = 14
     ns('f') = 15
-
     ns
   }
 
-  def unsafeParse(input: String): java.util.UUID =
+  def unsafeParse(input: String): java.util.UUID = {
     if (
-      input.length != 36 || {
+      input.length == 36 && {
         val ch1 = input.charAt(8)
         val ch2 = input.charAt(13)
         val ch3 = input.charAt(18)
         val ch4 = input.charAt(23)
-        ch1 != '-' || ch2 != '-' || ch3 != '-' || ch4 != '-'
+        ch1 == '-' && ch2 == '-' && ch3 == '-' && ch4 == '-'
       }
-    ) unsafeParseExtended(input)
-    else {
-      val ch2n = CharToNumeric
-      val msb1 = parseNibbles(ch2n, input, 0)
-      val msb2 = parseNibbles(ch2n, input, 4)
-      val msb3 = parseNibbles(ch2n, input, 9)
-      val msb4 = parseNibbles(ch2n, input, 14)
-      val lsb1 = parseNibbles(ch2n, input, 19)
-      val lsb2 = parseNibbles(ch2n, input, 24)
-      val lsb3 = parseNibbles(ch2n, input, 28)
-      val lsb4 = parseNibbles(ch2n, input, 32)
-      if ((msb1 | msb2 | msb3 | msb4 | lsb1 | lsb2 | lsb3 | lsb4) < 0) invalidUUIDError()
-      new java.util.UUID(msb1 << 48 | msb2 << 32 | msb3 << 16 | msb4, lsb1 << 48 | lsb2 << 32 | lsb3 << 16 | lsb4)
+    ) {
+      val ds   = hexDigits
+      val msb1 = uuidNibble(ds, input, 0)
+      val msb2 = uuidNibble(ds, input, 4)
+      val msb3 = uuidNibble(ds, input, 9)
+      val msb4 = uuidNibble(ds, input, 14)
+      val lsb1 = uuidNibble(ds, input, 19)
+      val lsb2 = uuidNibble(ds, input, 24)
+      val lsb3 = uuidNibble(ds, input, 28)
+      val lsb4 = uuidNibble(ds, input, 32)
+      if ((msb1 | msb2 | msb3 | msb4 | lsb1 | lsb2 | lsb3 | lsb4) >= 0) {
+        return new UUID(
+          msb1.toLong << 48 | msb2.toLong << 32 | msb3.toLong << 16 | msb4,
+          lsb1.toLong << 48 | lsb2.toLong << 32 | lsb3.toLong << 16 | lsb4
+        )
+      }
+    } else if (input.length <= 36) {
+      return uuidExtended(input)
     }
-
-  // A nibble is 4 bits
-  @nowarn("msg=implicit numeric widening")
-  private[this] def parseNibbles(ch2n: Array[Byte], input: String, position: Int): Long = {
-    val ch1 = input.charAt(position)
-    val ch2 = input.charAt(position + 1)
-    val ch3 = input.charAt(position + 2)
-    val ch4 = input.charAt(position + 3)
-    if ((ch1 | ch2 | ch3 | ch4) > 0xff) -1L
-    else ch2n(ch1) << 12 | ch2n(ch2) << 8 | ch2n(ch3) << 4 | ch2n(ch4)
+    uuidError()
   }
 
-  private[this] def unsafeParseExtended(input: String): java.util.UUID = {
-    val len = input.length
-    if (len > 36) invalidUUIDError()
-    val dash1 = input.indexOf('-', 0)
-    val dash2 = input.indexOf('-', dash1 + 1)
-    val dash3 = input.indexOf('-', dash2 + 1)
-    val dash4 = input.indexOf('-', dash3 + 1)
-    val dash5 = input.indexOf('-', dash4 + 1)
-
-    // For any valid input, dash1 through dash4 will be positive and dash5 will be negative,
-    // but it's enough to check dash4 and dash5:
-    // - if dash1 is -1, dash4 will be -1
-    // - if dash1 is positive but dash2 is -1, dash4 will be -1
-    // - if dash1 and dash2 is positive, dash3 will be -1, dash4 will be positive, but so will dash5
-    if (dash4 < 0 || dash5 >= 0) invalidUUIDError()
-
-    val ch2n     = CharToNumeric
-    val section1 = parseSection(ch2n, input, 0, dash1, 0xfffffff00000000L)
-    val section2 = parseSection(ch2n, input, dash1 + 1, dash2, 0xfffffffffff0000L)
-    val section3 = parseSection(ch2n, input, dash2 + 1, dash3, 0xfffffffffff0000L)
-    val section4 = parseSection(ch2n, input, dash3 + 1, dash4, 0xfffffffffff0000L)
-    val section5 = parseSection(ch2n, input, dash4 + 1, len, 0xfff000000000000L)
-    new java.util.UUID((section1 << 32) | (section2 << 16) | section3, (section4 << 48) | section5)
+  private[this] def uuidNibble(ds: Array[Byte], input: String, offset: Int): Int = {
+    val ch1 = input.charAt(offset).toInt
+    val ch2 = input.charAt(offset + 1).toInt
+    val ch3 = input.charAt(offset + 2).toInt
+    val ch4 = input.charAt(offset + 3).toInt
+    if ((ch1 | ch2 | ch3 | ch4) > 0xff) -1
+    else ds(ch1) << 12 | ds(ch2) << 8 | ds(ch3) << 4 | ds(ch4)
   }
 
-  @nowarn("msg=implicit numeric widening")
-  private[this] def parseSection(
-    ch2n: Array[Byte],
-    input: String,
-    beginIndex: Int,
-    endIndex: Int,
-    zeroMask: Long
-  ): Long = {
-    if (beginIndex >= endIndex || beginIndex + 16 < endIndex) invalidUUIDError()
-    var result = 0L
-    var i      = beginIndex
-    while (i < endIndex) {
-      result = (result << 4) | ch2n(input.charAt(i))
-      i += 1
+  private[this] def uuidExtended(input: String): UUID = {
+    val dash1 = input.indexOf('-', 1)
+    val dash2 = input.indexOf('-', dash1 + 2)
+    val dash3 = input.indexOf('-', dash2 + 2)
+    val dash4 = input.indexOf('-', dash3 + 2)
+    if (dash4 >= 0) {
+      val ds       = hexDigits
+      val section1 = uuidSection(ds, input, 0, dash1, 0xffffffff00000000L)
+      val section2 = uuidSection(ds, input, dash1 + 1, dash2, 0xffffffffffff0000L)
+      val section3 = uuidSection(ds, input, dash2 + 1, dash3, 0xffffffffffff0000L)
+      val section4 = uuidSection(ds, input, dash3 + 1, dash4, 0xffffffffffff0000L)
+      val section5 = uuidSection(ds, input, dash4 + 1, input.length, 0xffff000000000000L)
+      return new UUID((section1 << 32) | (section2 << 16) | section3, (section4 << 48) | section5)
     }
-    if ((result & zeroMask) != 0) invalidUUIDError()
-    result
+    uuidError()
   }
 
-  @noinline
-  private[this] def invalidUUIDError(): Nothing =
-    throw new IllegalArgumentException with NoStackTrace
+  private[this] def uuidSection(ds: Array[Byte], input: String, from: Int, to: Int, mask: Long): Long = {
+    if (from < to && from + 16 >= to) {
+      var result = 0L
+      var i      = from
+      while (i < to) {
+        val c = input.charAt(i).toInt
+        if (c > 0xff) uuidError()
+        result = (result << 4) | ds(c)
+        i += 1
+      }
+      if ((result & mask) == 0L) return result
+    }
+    uuidError()
+  }
+
+  @noinline private[this] def uuidError(): Nothing = throw new IllegalArgumentException with NoStackTrace
 }

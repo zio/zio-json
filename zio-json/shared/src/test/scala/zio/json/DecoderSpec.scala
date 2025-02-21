@@ -481,6 +481,8 @@ object DecoderSpec extends ZIOSpecDefault {
           val bad5 = """{"64d7c38d-2afd-XXXX-9832-4e70afe4b0f8": "value"}"""
           val bad6 = """{"64d7c38d-2afd-X-9832-4e70afe4b0f8": "value"}"""
           val bad7 = """{"0-0-0-0-00000000000000000": "value"}"""
+          val bad8 = """{"64d7c38d-2аfd-4514-9832-4e70afe4b0f8": "value"}"""
+          val bad9 = """{"0000000064D7C38D-FD-14-32-70АFE4B0f8": "value"}"""
 
           assert(ok1.fromJson[Map[UUID, String]])(
             isRight(equalTo(expectedMap("64d7c38d-2afd-4514-9832-4e70afe4b0f8")))
@@ -491,23 +493,15 @@ object DecoderSpec extends ZIOSpecDefault {
           assert(ok3.fromJson[Map[UUID, String]])(
             isRight(equalTo(expectedMap("00000000-0000-0000-0000-000000000000")))
           ) &&
-          assert(bad1.fromJson[Map[UUID, String]])(isLeft(containsString("Invalid UUID: "))) &&
-          assert(bad2.fromJson[Map[UUID, String]])(
-            isLeft(containsString("Invalid UUID: 64d7c38d-2afd-4514-9832-4e70afe4b0f80"))
-          ) &&
-          assert(bad3.fromJson[Map[UUID, String]])(
-            isLeft(containsString("Invalid UUID: 64d7c38d-2afd-4514-983-4e70afe4b0f80"))
-          ) &&
-          assert(bad4.fromJson[Map[UUID, String]])(
-            isLeft(containsString("Invalid UUID: 64d7c38d-2afd--9832-4e70afe4b0f8"))
-          ) &&
-          assert(bad5.fromJson[Map[UUID, String]])(
-            isLeft(containsString("Invalid UUID: 64d7c38d-2afd-XXXX-9832-4e70afe4b0f8"))
-          ) &&
-          assert(bad6.fromJson[Map[UUID, String]])(
-            isLeft(containsString("Invalid UUID: 64d7c38d-2afd-X-9832-4e70afe4b0f8"))
-          ) &&
-          assert(bad7.fromJson[Map[UUID, String]])(isLeft(containsString("Invalid UUID: 0-0-0-0-00000000000000000")))
+          assert(bad1.fromJson[Map[UUID, String]])(isLeft(containsString("(expected UUID string)"))) &&
+          assert(bad2.fromJson[Map[UUID, String]])(isLeft(containsString("(expected UUID string)"))) &&
+          assert(bad3.fromJson[Map[UUID, String]])(isLeft(containsString("(expected UUID string)"))) &&
+          assert(bad4.fromJson[Map[UUID, String]])(isLeft(containsString("(expected UUID string)"))) &&
+          assert(bad5.fromJson[Map[UUID, String]])(isLeft(containsString("(expected UUID string)"))) &&
+          assert(bad6.fromJson[Map[UUID, String]])(isLeft(containsString("(expected UUID string)"))) &&
+          assert(bad7.fromJson[Map[UUID, String]])(isLeft(containsString("(expected UUID string)"))) &&
+          assert(bad8.fromJson[Map[UUID, String]])(isLeft(containsString("(expected UUID string)"))) &&
+          assert(bad9.fromJson[Map[UUID, String]])(isLeft(containsString("(expected UUID string)")))
         },
         test("zio.Chunk") {
           val jsonStr  = """["5XL","2XL","XL"]"""
@@ -537,17 +531,21 @@ object DecoderSpec extends ZIOSpecDefault {
           val bad5 = """"64d7c38d-2afd-XXXX-9832-4e70afe4b0f8""""
           val bad6 = """"64d7c38d-2afd-X-9832-4e70afe4b0f8""""
           val bad7 = """"0-0-0-0-00000000000000000""""
+          val bad8 = """"64d7c38d-2аfd-4514-9832-4e70afe4b0f8""""
+          val bad9 = """"0000000064D7C38D-FD-14-32-70АFE4B0f8""""
 
           assert(ok1.fromJson[UUID])(isRight(equalTo(UUID.fromString("64d7c38d-2afd-4514-9832-4e70afe4b0f8")))) &&
           assert(ok2.fromJson[UUID])(isRight(equalTo(UUID.fromString("64D7C38D-00FD-0014-0032-0070AfE4B0f8")))) &&
           assert(ok3.fromJson[UUID])(isRight(equalTo(UUID.fromString("00000000-0000-0000-0000-000000000000")))) &&
-          assert(bad1.fromJson[UUID])(isLeft(containsString("Invalid UUID: "))) &&
-          assert(bad2.fromJson[UUID])(isLeft(containsString("Invalid UUID: 64d7c38d-2afd-4514-9832-4e70afe4b0f80"))) &&
-          assert(bad3.fromJson[UUID])(isLeft(containsString("Invalid UUID: 64d7c38d-2afd-4514-983-4e70afe4b0f80"))) &&
-          assert(bad4.fromJson[UUID])(isLeft(containsString("Invalid UUID: 64d7c38d-2afd--9832-4e70afe4b0f8"))) &&
-          assert(bad5.fromJson[UUID])(isLeft(containsString("Invalid UUID: 64d7c38d-2afd-XXXX-9832-4e70afe4b0f8"))) &&
-          assert(bad6.fromJson[UUID])(isLeft(containsString("Invalid UUID: 64d7c38d-2afd-X-9832-4e70afe4b0f8"))) &&
-          assert(bad7.fromJson[UUID])(isLeft(containsString("Invalid UUID: 0-0-0-0-00000000000000000")))
+          assert(bad1.fromJson[UUID])(isLeft(containsString("(expected UUID string)"))) &&
+          assert(bad2.fromJson[UUID])(isLeft(containsString("(expected UUID string)"))) &&
+          assert(bad3.fromJson[UUID])(isLeft(containsString("(expected UUID string)"))) &&
+          assert(bad4.fromJson[UUID])(isLeft(containsString("(expected UUID string)"))) &&
+          assert(bad5.fromJson[UUID])(isLeft(containsString("(expected UUID string)"))) &&
+          assert(bad6.fromJson[UUID])(isLeft(containsString("(expected UUID string)"))) &&
+          assert(bad7.fromJson[UUID])(isLeft(containsString("(expected UUID string)"))) &&
+          assert(bad8.fromJson[UUID])(isLeft(containsString("(expected UUID string)"))) &&
+          assert(bad9.fromJson[UUID])(isLeft(containsString("(expected UUID string)")))
         },
         test("java.util.Currency") {
           assert(""""USD"""".fromJson[java.util.Currency])(isRight(equalTo(java.util.Currency.getInstance("USD")))) &&
@@ -818,17 +816,21 @@ object DecoderSpec extends ZIOSpecDefault {
           val bad5 = Json.Str("64d7c38d-2afd-XXXX-9832-4e70afe4b0f8")
           val bad6 = Json.Str("64d7c38d-2afd-X-9832-4e70afe4b0f8")
           val bad7 = Json.Str("0-0-0-0-00000000000000000")
+          val bad8 = Json.Str("64d7c38d-2аfd-4514-9832-4e70afe4b0f8")
+          val bad9 = Json.Str("0000000064D7C38D-FD-14-32-70АFE4B0f8")
 
           assert(ok1.as[UUID])(isRight(equalTo(UUID.fromString("64d7c38d-2afd-4514-9832-4e70afe4b0f8")))) &&
           assert(ok2.as[UUID])(isRight(equalTo(UUID.fromString("64D7C38D-00FD-0014-0032-0070AFE4B0f8")))) &&
           assert(ok3.as[UUID])(isRight(equalTo(UUID.fromString("00000000-0000-0000-0000-000000000000")))) &&
-          assert(bad1.as[UUID])(isLeft(containsString("Invalid UUID: "))) &&
-          assert(bad2.as[UUID])(isLeft(containsString("Invalid UUID: 64d7c38d-2afd-4514-9832-4e70afe4b0f80"))) &&
-          assert(bad3.as[UUID])(isLeft(containsString("Invalid UUID: 64d7c38d-2afd-4514-983-4e70afe4b0f80"))) &&
-          assert(bad4.as[UUID])(isLeft(containsString("Invalid UUID: 64d7c38d-2afd--9832-4e70afe4b0f8"))) &&
-          assert(bad5.as[UUID])(isLeft(containsString("Invalid UUID: 64d7c38d-2afd-XXXX-9832-4e70afe4b0f8"))) &&
-          assert(bad6.as[UUID])(isLeft(containsString("Invalid UUID: 64d7c38d-2afd-X-9832-4e70afe4b0f8"))) &&
-          assert(bad7.as[UUID])(isLeft(containsString("Invalid UUID: 0-0-0-0-00000000000000000")))
+          assert(bad1.as[UUID])(isLeft(containsString("(expected UUID string)"))) &&
+          assert(bad2.as[UUID])(isLeft(containsString("(expected UUID string)"))) &&
+          assert(bad3.as[UUID])(isLeft(containsString("(expected UUID string)"))) &&
+          assert(bad4.as[UUID])(isLeft(containsString("(expected UUID string)"))) &&
+          assert(bad5.as[UUID])(isLeft(containsString("(expected UUID string)"))) &&
+          assert(bad6.as[UUID])(isLeft(containsString("(expected UUID string)"))) &&
+          assert(bad7.as[UUID])(isLeft(containsString("(expected UUID string)"))) &&
+          assert(bad8.as[UUID])(isLeft(containsString("(expected UUID string)"))) &&
+          assert(bad9.as[UUID])(isLeft(containsString("(expected UUID string)")))
         }
       )
     )
