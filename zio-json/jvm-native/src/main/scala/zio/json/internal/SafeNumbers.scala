@@ -505,6 +505,11 @@ object SafeNumbers {
     out.write(ds(lsb2 >>> 24), ds(lsb2 >> 16 & 0xff), ds(lsb2 >> 8 & 0xff), ds(lsb2 & 0xff))
   }
 
+  private[json] def writeHex(c: Char, out: Write): Unit = {
+    val ds = lowerCaseHexDigits
+    out.write(ds(c >> 8 & 0xff), ds(c & 0xff))
+  }
+
   private[json] def writeNano(x: Int, out: Write): Unit = {
     out.write('.')
     var coeff = 100000000
