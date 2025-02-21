@@ -17,6 +17,7 @@ package zio.json.internal
 
 import zio.json.JsonDecoder.{ JsonError, UnsafeJson }
 
+import java.util.UUID
 import scala.annotation._
 
 // tries to stick to the spec, but maybe a bit loose in places (e.g. numbers)
@@ -206,8 +207,155 @@ object Lexer {
     new String(cs, 0, i)
   }
 
+  def uuid(trace: List[JsonError], in: OneCharReader): UUID = {
+    var c = in.nextNonWhitespace()
+    if (c != '"') error("'\"'", c, trace)
+    var cs = charArrays.get
+    var i  = 0
+    while ({
+      c = in.readChar()
+      c != '"'
+    }) {
+      if (c == '\\') c = nextEscaped(trace, in)
+      if (c > 0xff) uuidError(trace)
+      if (i == cs.length) cs = java.util.Arrays.copyOf(cs, i << 1)
+      cs(i) = c
+      i += 1
+    }
+    if (
+      i == 36 && {
+        val c1 = cs(8)
+        val c2 = cs(13)
+        val c3 = cs(18)
+        val c4 = cs(23)
+        c1 == '-' && c2 == '-' && c3 == '-' && c4 == '-'
+      }
+    ) {
+      val ds = hexDigits
+      val msb1 =
+        ds(cs(0).toInt).toLong << 28 |
+          (ds(cs(1).toInt) << 24 |
+            ds(cs(2).toInt) << 20 |
+            ds(cs(3).toInt) << 16 |
+            ds(cs(4).toInt) << 12 |
+            ds(cs(5).toInt) << 8 |
+            ds(cs(6).toInt) << 4 |
+            ds(cs(7).toInt))
+      val msb2 =
+        ds(cs(9).toInt) << 12 |
+          ds(cs(10).toInt) << 8 |
+          ds(cs(11).toInt) << 4 |
+          ds(cs(12).toInt)
+      val msb3 =
+        ds(cs(14).toInt) << 12 |
+          ds(cs(15).toInt) << 8 |
+          ds(cs(16).toInt) << 4 |
+          ds(cs(17).toInt)
+      val lsb1 =
+        ds(cs(19).toInt) << 12 |
+          ds(cs(20).toInt) << 8 |
+          ds(cs(21).toInt) << 4 |
+          ds(cs(22).toInt)
+      val lsb2 =
+        (ds(cs(24).toInt) << 16 |
+          ds(cs(25).toInt) << 12 |
+          ds(cs(26).toInt) << 8 |
+          ds(cs(27).toInt) << 4 |
+          ds(cs(28).toInt)).toLong << 28 |
+          (ds(cs(29).toInt) << 24 |
+            ds(cs(30).toInt) << 20 |
+            ds(cs(31).toInt) << 16 |
+            ds(cs(32).toInt) << 12 |
+            ds(cs(33).toInt) << 8 |
+            ds(cs(34).toInt) << 4 |
+            ds(cs(35).toInt))
+      if ((msb1 | msb2 | msb3 | lsb1 | lsb2) >= 0L) {
+        return new UUID(msb1 << 32 | msb2.toLong << 16 | msb3, lsb1.toLong << 48 | lsb2)
+      }
+    } else if (i <= 36) {
+      return uuidExtended(trace, cs, i)
+    }
+    uuidError(trace)
+  }
+
+  private[this] def uuidExtended(trace: List[JsonError], cs: Array[Char], len: Int): UUID = {
+    val dash1 = indexOfDash(cs, 1, len)
+    val dash2 = indexOfDash(cs, dash1 + 2, len)
+    val dash3 = indexOfDash(cs, dash2 + 2, len)
+    val dash4 = indexOfDash(cs, dash3 + 2, len)
+    if (dash4 >= 0) {
+      val ds       = hexDigits
+      val section1 = uuidSection(trace, ds, cs, 0, dash1, 0xffffffff00000000L)
+      val section2 = uuidSection(trace, ds, cs, dash1 + 1, dash2, 0xffffffffffff0000L)
+      val section3 = uuidSection(trace, ds, cs, dash2 + 1, dash3, 0xffffffffffff0000L)
+      val section4 = uuidSection(trace, ds, cs, dash3 + 1, dash4, 0xffffffffffff0000L)
+      val section5 = uuidSection(trace, ds, cs, dash4 + 1, len, 0xffff000000000000L)
+      return new UUID((section1 << 32) | (section2 << 16) | section3, (section4 << 48) | section5)
+    }
+    uuidError(trace)
+  }
+
+  private[this] def indexOfDash(cs: Array[Char], from: Int, to: Int): Int = {
+    var i = from
+    while (i < to) {
+      if (cs(i) == '-') return i
+      i += 1
+    }
+    -1
+  }
+
+  private[this] def uuidSection(
+    trace: List[JsonError],
+    ds: Array[Byte],
+    cs: Array[Char],
+    from: Int,
+    to: Int,
+    mask: Long
+  ): Long = {
+    if (from < to && from + 16 >= to) {
+      var result = 0L
+      var i      = from
+      while (i < to) {
+        result = (result << 4) | ds(cs(i).toInt)
+        i += 1
+      }
+      if ((result & mask) == 0L) return result
+    }
+    uuidError(trace)
+  }
+
+  @noinline private[this] def uuidError(trace: List[JsonError]): Nothing = error("expected UUID string", trace)
+
   private[this] val charArrays = new ThreadLocal[Array[Char]] {
     override def initialValue(): Array[Char] = new Array[Char](1024)
+  }
+
+  private[this] val hexDigits: Array[Byte] = {
+    val ns = new Array[Byte](256)
+    java.util.Arrays.fill(ns, -1: Byte)
+    ns('0') = 0
+    ns('1') = 1
+    ns('2') = 2
+    ns('3') = 3
+    ns('4') = 4
+    ns('5') = 5
+    ns('6') = 6
+    ns('7') = 7
+    ns('8') = 8
+    ns('9') = 9
+    ns('A') = 10
+    ns('B') = 11
+    ns('C') = 12
+    ns('D') = 13
+    ns('E') = 14
+    ns('F') = 15
+    ns('a') = 10
+    ns('b') = 11
+    ns('c') = 12
+    ns('d') = 13
+    ns('e') = 14
+    ns('f') = 15
+    ns
   }
 
   def char(trace: List[JsonError], in: OneCharReader): Char = {

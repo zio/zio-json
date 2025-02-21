@@ -910,19 +910,16 @@ private[json] trait DecoderLowPriority3 extends DecoderLowPriority4 {
     }
 
   implicit val uuid: JsonDecoder[UUID] = new JsonDecoder[UUID] {
-    def unsafeDecode(trace: List[JsonError], in: RetractReader): UUID =
-      parseUUID(trace, Lexer.string(trace, in).toString)
+    def unsafeDecode(trace: List[JsonError], in: RetractReader): UUID = Lexer.uuid(trace, in)
 
     override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): UUID =
       json match {
-        case s: Json.Str => parseUUID(trace, s.value)
-        case _           => Lexer.error("expected string", trace)
-      }
-
-    @inline private[this] def parseUUID(trace: List[JsonError], s: String): UUID =
-      try UUIDParser.unsafeParse(s)
-      catch {
-        case _: IllegalArgumentException => Lexer.error(s"Invalid UUID: ${strip(s)}", trace)
+        case s: Json.Str =>
+          try UUIDParser.unsafeParse(s.value)
+          catch {
+            case _: IllegalArgumentException => Lexer.error("expected UUID string", trace)
+          }
+        case _ => Lexer.error("expected UUID string", trace)
       }
   }
 

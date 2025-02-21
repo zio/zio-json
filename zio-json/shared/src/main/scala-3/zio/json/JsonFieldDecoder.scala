@@ -69,11 +69,11 @@ object JsonFieldDecoder extends LowPriorityJsonFieldDecoder {
     def unsafeDecodeField(trace: List[JsonError], in: String): java.util.UUID =
       try UUIDParser.unsafeParse(in)
       catch {
-        case _: IllegalArgumentException => Lexer.error(s"Invalid UUID: ${strip(in)}", trace)
+        case _: IllegalArgumentException => Lexer.error("expected UUID string", trace)
       }
   }
 
-  // use this instead of `string.mapOrFail` in supertypes (to prevent class initialization error at runtime)
+  // FIXME: remove from the next major version
   private[json] def mapStringOrFail[A](f: String => Either[String, A]): JsonFieldDecoder[A] =
     new JsonFieldDecoder[A] {
       def unsafeDecodeField(trace: List[JsonError], in: String): A =
