@@ -324,8 +324,13 @@ object JsonEncoder extends GeneratedTupleEncoders with EncoderLowPriority1 with 
     if (indent ne None) {
       out.write('\n')
       var i = indent.get
+      val ws = 8224: Short
+      while (i > 4) {
+        out.write(ws, ws, ws, ws)
+        i -= 4
+      }
       while (i > 0) {
-        out.write(' ', ' ')
+        out.write(ws)
         i -= 1
       }
     }
