@@ -103,9 +103,9 @@ private[zio] final class FastStringReader(s: CharSequence) extends RetractReader
 
   override def read(): Int = {
     if (i < s.length) {
-      val c = s.charAt(i)
+      val c = s.charAt(i).toInt
       i += 1
-      return c.toInt
+      return c
     }
     -1
   }
