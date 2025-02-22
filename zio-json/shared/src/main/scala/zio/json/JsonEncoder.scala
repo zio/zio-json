@@ -323,7 +323,7 @@ object JsonEncoder extends GeneratedTupleEncoders with EncoderLowPriority1 with 
   def pad(indent: Option[Int], out: Write): Unit =
     if (indent ne None) {
       out.write('\n')
-      var i = indent.get
+      var i  = indent.get
       val ws = 8224: Short
       while (i > 4) {
         out.write(ws, ws, ws, ws)
