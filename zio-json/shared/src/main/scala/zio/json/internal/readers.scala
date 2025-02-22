@@ -95,30 +95,37 @@ final class FastCharSequence(s: Array[Char]) extends CharSequence {
 // java.io.StringReader uses a lock, which reduces perf by x2, this also allows
 // fast retraction and access to raw char arrays (which are faster than Strings)
 private[zio] final class FastStringReader(s: CharSequence) extends RetractReader with PlaybackReader {
-  private[this] var i: Int   = 0
-  private[this] val len: Int = s.length
+  private[this] var i: Int = 0
 
   def offset(): Int = i
 
   def close(): Unit = ()
 
   override def read(): Int = {
-    i += 1
-    if (i > len) -1
-    else s.charAt(i - 1).toInt // -1 is faster than assigning a temp value
-  }
-  override def readChar(): Char = {
-    i += 1
-    if (i > len) throw new UnexpectedEnd
-    s.charAt(i - 1)
-  }
-  override def nextNonWhitespace(): Char = {
-    while ({
+    if (i < s.length) {
+      val c = s.charAt(i)
       i += 1
-      if (i > len) throw new UnexpectedEnd
-      isWhitespace(s.charAt(i - 1))
-    }) ()
-    s.charAt(i - 1)
+      return c.toInt
+    }
+    -1
+  }
+
+  override def readChar(): Char = {
+    if (i < s.length) {
+      val c = s.charAt(i)
+      i += 1
+      return c
+    }
+    throw new UnexpectedEnd
+  }
+
+  override def nextNonWhitespace(): Char = {
+    while (i < s.length) {
+      val c = s.charAt(i)
+      i += 1
+      if (c != ' ' && c != '\n' && (c | 0x4) != '\r') return c
+    }
+    throw new UnexpectedEnd
   }
 
   def retract(): Unit = i -= 1
