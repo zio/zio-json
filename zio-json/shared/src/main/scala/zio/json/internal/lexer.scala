@@ -38,14 +38,12 @@ object Lexer {
   @noinline private[json] def error(c: Char, trace: List[JsonError]): Nothing =
     error(s"invalid '\\$c' in string", trace)
 
-  // True if we got a string (implies a retraction), False for }
+  // FIXME: remove trace paramenter in the next major version
+  // True if we got anything besides a }, False for }
   @inline def firstField(trace: List[JsonError], in: RetractReader): Boolean =
-    (in.nextNonWhitespace(): @switch) match {
-      case '"' =>
-        in.retract()
-        true
-      case '}' => false
-      case c   => error("string or '}'", c, trace)
+    in.nextNonWhitespace() != '}' && {
+      in.retract()
+      true
     }
 
   // True if we got a comma, and False for }

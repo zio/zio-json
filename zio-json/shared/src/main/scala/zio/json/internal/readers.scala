@@ -121,8 +121,7 @@ private[zio] final class FastStringReader(s: CharSequence) extends RetractReader
   }
 
   override def nextNonWhitespace(): Char = {
-    var i   = this.i
-    val len = this.len
+    var i = this.i
     while (i < len) {
       val c = s.charAt(i)
       i += 1
@@ -131,6 +130,7 @@ private[zio] final class FastStringReader(s: CharSequence) extends RetractReader
         return c
       }
     }
+    this.i = i
     throw new UnexpectedEnd
   }
 
@@ -175,8 +175,7 @@ private[zio] sealed trait RecordingReader extends RetractReader {
   def rewind(): Unit
 }
 private[zio] object RecordingReader {
-  def apply(in: OneCharReader): RecordingReader =
-    new WithRecordingReader(in, 64)
+  @inline def apply(in: OneCharReader): RecordingReader = new WithRecordingReader(in, 64)
 }
 
 // used to optimise RecordingReader
@@ -195,66 +194,70 @@ private[zio] sealed trait PlaybackReader extends OneCharReader {
 private[zio] final class WithRecordingReader(in: OneCharReader, initial: Int)
     extends RecordingReader
     with PlaybackReader {
+  private[this] var state: Int        = 0 // -1: neither recording nor replaying, 0: recording, 1: replaying
   private[this] var tape: Array[Char] = new Array(Math.max(initial, 1))
-  private[this] var eob: Int          = -1
+  private[this] var reading: Int      = 0
   private[this] var writing: Int      = 0
-  private[this] var reading: Int      = -1
 
   def close(): Unit = in.close()
 
   override def read(): Int =
-    try readChar().toInt
-    catch {
-      case _: UnexpectedEnd =>
-        eob = reading
-        -1
-    }
-  override def readChar(): Char =
-    if (reading != -1) {
-      if (reading == eob) throw new UnexpectedEnd
-      val v = tape(reading)
+    if (state < 0) in.read()
+    else if (state > 0) {
+      var reading = this.reading
+      val c       = tape(reading).toInt
       reading += 1
-      if (reading >= writing) {
-        reading = -1 // caught up
-        writing = -1 // stop recording
-      }
-      v
+      this.reading = reading
+      if (reading == writing) state = -1 // chatch up, stop replaying
+      c
     } else {
-      val v = in.readChar()
-      if (writing != -1) {
-        tape(writing) = v
-        writing += 1
-        if (writing == tape.length)
-          tape = Arrays.copyOf(tape, tape.length << 1)
+      val writing = this.writing
+      if (writing == tape.length) tape = Arrays.copyOf(tape, writing << 1)
+      val c = in.read()
+      if (c >= 0) {
+        tape(writing) = c.toChar
+        this.writing = writing + 1
       }
-      v
+      c
+    }
+
+  override def readChar(): Char =
+    if (state < 0) in.readChar()
+    else if (state > 0) {
+      var reading = this.reading
+      val c       = tape(reading)
+      reading += 1
+      this.reading = reading
+      if (reading == writing) state = -1 // chatch up, stop replaying
+      c
+    } else {
+      val writing = this.writing
+      if (writing == tape.length) tape = Arrays.copyOf(tape, writing << 1)
+      val c = in.readChar()
+      tape(writing) = c
+      this.writing = writing + 1
+      c
     }
 
   def rewind(): Unit =
-    if (writing != -1)
-      reading = 0
+    if (state == 0) state = 1 // start replaying
     else throw new RewindTwice
 
   def retract(): Unit =
-    if (reading == -1) {
+    if (state > 0) reading -= 1
+    else {
       in match {
         case rr: RetractReader =>
           rr.retract()
-          if (writing != -1) {
-            writing -= 1 // factor in retracted delegate
-          }
-
+          if (state == 0) writing -= 1 // factor in retracted delegate
         case _ =>
-          reading = writing - 1
+          throw new UnsupportedOperationException("underlying reader does not support retract")
       }
-    } else
-      reading -= 1
+    }
 
   def offset(): Int =
-    if (reading == -1)
-      writing
-    else
-      reading
+    if (state > 0) reading
+    else writing
 
   def history(idx: Int): Char = tape(idx)
 }
