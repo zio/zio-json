@@ -41,38 +41,38 @@ object Lexer {
   // FIXME: remove trace paramenter in the next major version
   // True if we got anything besides a }, False for }
   @inline def firstField(trace: List[JsonError], in: RetractReader): Boolean =
-    in.nextNonWhitespace() != '}' && {
+    if (in.nextNonWhitespace() != '}') {
       in.retract()
       true
-    }
+    } else false
 
   // True if we got a comma, and False for }
-  @inline def nextField(trace: List[JsonError], in: OneCharReader): Boolean =
-    (in.nextNonWhitespace(): @switch) match {
-      case ',' => true
-      case '}' => false
-      case c   => error("',' or '}'", c, trace)
-    }
+  @inline def nextField(trace: List[JsonError], in: OneCharReader): Boolean = {
+    val c = in.nextNonWhitespace()
+    if (c == ',') true
+    else if (c == '}') false
+    else error("',' or '}'", c, trace)
+  }
 
   // True if we got anything besides a ], False for ]
   @inline def firstArrayElement(in: RetractReader): Boolean =
-    in.nextNonWhitespace() != ']' && {
+    if (in.nextNonWhitespace() != ']') {
       in.retract()
       true
-    }
+    } else false
 
-  @inline def nextArrayElement(trace: List[JsonError], in: OneCharReader): Boolean =
-    (in.nextNonWhitespace(): @switch) match {
-      case ',' => true
-      case ']' => false
-      case c   => error("',' or ']'", c, trace)
-    }
+  @inline def nextArrayElement(trace: List[JsonError], in: OneCharReader): Boolean = {
+    val c = in.nextNonWhitespace()
+    if (c == ',') true
+    else if (c == ']') false
+    else error("',' or ']'", c, trace)
+  }
 
   @inline def field(trace: List[JsonError], in: OneCharReader, matrix: StringMatrix): Int = {
     val f = enumeration(trace, in, matrix)
     val c = in.nextNonWhitespace()
-    if (c != ':') error("':'", c, trace)
-    f
+    if (c == ':') return f
+    error("':'", c, trace)
   }
 
   def enumeration(trace: List[JsonError], in: OneCharReader, matrix: StringMatrix): Int = {
@@ -89,8 +89,7 @@ object Lexer {
       bs = matrix.update(bs, i, c)
       i += 1
     }
-    bs = matrix.exact(bs, i)
-    matrix.first(bs)
+    matrix.first(matrix.exact(bs, i))
   }
 
   @noinline def skipValue(trace: List[JsonError], in: RetractReader): Unit =
@@ -208,15 +207,14 @@ object Lexer {
   def uuid(trace: List[JsonError], in: OneCharReader): UUID = {
     var c = in.nextNonWhitespace()
     if (c != '"') error("'\"'", c, trace)
-    var cs = charArrays.get
+    val cs = charArrays.get
     var i  = 0
     while ({
       c = in.readChar()
       c != '"'
     }) {
       if (c == '\\') c = nextEscaped(trace, in)
-      if (c > 0xff) uuidError(trace)
-      if (i == cs.length) cs = java.util.Arrays.copyOf(cs, i << 1)
+      if (i == 36 || c > 0xff) uuidError(trace)
       cs(i) = c
       i += 1
     }
@@ -240,20 +238,20 @@ object Lexer {
             ds(cs(6).toInt) << 4 |
             ds(cs(7).toInt))
       val msb2 =
-        ds(cs(9).toInt) << 12 |
+        (ds(cs(9).toInt) << 12 |
           ds(cs(10).toInt) << 8 |
           ds(cs(11).toInt) << 4 |
-          ds(cs(12).toInt)
+          ds(cs(12).toInt)).toLong
       val msb3 =
-        ds(cs(14).toInt) << 12 |
+        (ds(cs(14).toInt) << 12 |
           ds(cs(15).toInt) << 8 |
           ds(cs(16).toInt) << 4 |
-          ds(cs(17).toInt)
+          ds(cs(17).toInt)).toLong
       val lsb1 =
-        ds(cs(19).toInt) << 12 |
+        (ds(cs(19).toInt) << 12 |
           ds(cs(20).toInt) << 8 |
           ds(cs(21).toInt) << 4 |
-          ds(cs(22).toInt)
+          ds(cs(22).toInt)).toLong
       val lsb2 =
         (ds(cs(24).toInt) << 16 |
           ds(cs(25).toInt) << 12 |
@@ -268,7 +266,7 @@ object Lexer {
             ds(cs(34).toInt) << 4 |
             ds(cs(35).toInt))
       if ((msb1 | msb2 | msb3 | lsb1 | lsb2) >= 0L) {
-        return new UUID(msb1 << 32 | msb2.toLong << 16 | msb3, lsb1.toLong << 48 | lsb2)
+        return new UUID(msb1 << 32 | msb2 << 16 | msb3, lsb1 << 48 | lsb2)
       }
     } else if (i <= 36) {
       return uuidExtended(trace, cs, i)
@@ -325,7 +323,7 @@ object Lexer {
   @noinline private[this] def uuidError(trace: List[JsonError]): Nothing = error("expected UUID string", trace)
 
   private[this] val charArrays = new ThreadLocal[Array[Char]] {
-    override def initialValue(): Array[Char] = new Array[Char](1024)
+    override def initialValue(): Array[Char] = new Array[Char](1024) // should be longer than 256
   }
 
   private[this] val hexDigits: Array[Byte] = {
@@ -397,21 +395,12 @@ object Lexer {
     accum.toChar
   }
 
-  def boolean(trace: List[JsonError], in: OneCharReader): Boolean =
-    (in.nextNonWhitespace(): @switch) match {
-      case 't' =>
-        if (in.readChar() != 'r' || in.readChar() != 'u' || in.readChar() != 'e') {
-          error("expected 'true'", trace)
-        }
-        true
-      case 'f' =>
-        if (in.readChar() != 'a' || in.readChar() != 'l' || in.readChar() != 's' || in.readChar() != 'e') {
-          error("expected 'false'", trace)
-        }
-        false
-      case c =>
-        error("'true' or 'false'", c, trace)
-    }
+  def boolean(trace: List[JsonError], in: OneCharReader): Boolean = {
+    val c = in.nextNonWhitespace()
+    if (c == 't' && in.readChar() == 'r' && in.readChar() == 'u' && in.readChar() == 'e') true
+    else if (c == 'f' && in.readChar() == 'a' && in.readChar() == 'l' && in.readChar() == 's' && in.readChar() == 'e') false
+    else error("expected a Boolean", c, trace)
+  }
 
   def byte(trace: List[JsonError], in: RetractReader): Byte =
     try {
