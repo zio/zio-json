@@ -398,7 +398,8 @@ object Lexer {
   def boolean(trace: List[JsonError], in: OneCharReader): Boolean = {
     val c = in.nextNonWhitespace()
     if (c == 't' && in.readChar() == 'r' && in.readChar() == 'u' && in.readChar() == 'e') true
-    else if (c == 'f' && in.readChar() == 'a' && in.readChar() == 'l' && in.readChar() == 's' && in.readChar() == 'e') false
+    else if (c == 'f' && in.readChar() == 'a' && in.readChar() == 'l' && in.readChar() == 's' && in.readChar() == 'e')
+      false
     else error("expected a Boolean", c, trace)
   }
 
