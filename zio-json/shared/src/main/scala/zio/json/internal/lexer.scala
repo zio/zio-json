@@ -167,14 +167,14 @@ object Lexer {
             case 'n'              => '\n'
             case 'r'              => '\r'
             case 't'              => '\t'
-            case 'u'              => Lexer.nextHex4(trace, in)
-            case c                => Lexer.error(c, trace)
+            case 'u'              => nextHex4(trace, in)
+            case c                => error(c, trace)
           }).toInt
         } else if (c == '\\') {
           escaped = true
           read()
         } else if (c == '"') -1 // this is the EOS for the caller
-        else if (c < ' ') Lexer.error("invalid control in string", trace)
+        else if (c < ' ') error("invalid control in string", trace)
         else c.toInt
       }
 
@@ -384,18 +384,15 @@ object Lexer {
       case c    => error(c, trace)
     }
 
-  def nextHex4(trace: List[JsonError], in: OneCharReader): Char = {
+  private[this] def nextHex4(trace: List[JsonError], in: OneCharReader): Char = {
     var i, accum = 0
     while (i < 4) {
-      val c = in.readChar()
-      accum <<= 4
-      accum += {
-        if ('0' <= c && c <= '9') c - '0'
-        else if ('A' <= c && c <= 'F') c - 'A' + 10
-        else if ('a' <= c && c <= 'f') c - 'a' + 10
-        else error("invalid charcode in string", trace)
-      }
+      val c = in.readChar() | 0x20
+      accum = (accum << 4) + c
       i += 1
+      if ('0' <= c && c <= '9') accum -= 48
+      else if ('a' <= c && c <= 'f') accum -= 87
+      else error("invalid charcode in string", trace)
     }
     accum.toChar
   }
