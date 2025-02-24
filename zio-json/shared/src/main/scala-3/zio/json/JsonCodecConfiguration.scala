@@ -20,6 +20,12 @@ case class ExplicitEmptyCollections(encoding: Boolean = true, decoding: Boolean 
  *   see [[jsonNoExtraFields]]
  * @param sumTypeMapping
  *   see [[jsonHintNames]]
+ * @param explicitNulls
+ *   turns on explicit serialization of optional fields with None values
+ * @param explicitEmptyCollections
+ *   turns on explicit serialization of fields with empty collections
+ * @param enumValuesAsStrings
+ *   turns on serialization of enum values and sealed trait's case objects as strings
  */
 final case class JsonCodecConfiguration(
   sumTypeHandling: SumTypeHandling = WrapperWithClassNameField,
@@ -27,8 +33,26 @@ final case class JsonCodecConfiguration(
   allowExtraFields: Boolean = true,
   sumTypeMapping: JsonMemberFormat = IdentityFormat,
   explicitNulls: Boolean = false,
-  explicitEmptyCollections: ExplicitEmptyCollections = ExplicitEmptyCollections()
+  explicitEmptyCollections: ExplicitEmptyCollections = ExplicitEmptyCollections(),
+  enumValuesAsStrings: Boolean = true
 ) {
+  def this(
+    sumTypeHandling: SumTypeHandling,
+    fieldNameMapping: JsonMemberFormat,
+    allowExtraFields: Boolean,
+    sumTypeMapping: JsonMemberFormat,
+    explicitNulls: Boolean,
+    explicitEmptyCollections: ExplicitEmptyCollections
+  ) = this(
+    sumTypeHandling,
+    fieldNameMapping,
+    allowExtraFields,
+    sumTypeMapping,
+    explicitNulls,
+    explicitEmptyCollections,
+    true
+  )
+
   def this(
     sumTypeHandling: SumTypeHandling,
     fieldNameMapping: JsonMemberFormat,
@@ -41,7 +65,8 @@ final case class JsonCodecConfiguration(
     allowExtraFields,
     sumTypeMapping,
     explicitNulls,
-    ExplicitEmptyCollections()
+    ExplicitEmptyCollections(),
+    true
   )
 
   def copy(
@@ -50,14 +75,33 @@ final case class JsonCodecConfiguration(
     allowExtraFields: Boolean = true,
     sumTypeMapping: JsonMemberFormat = IdentityFormat.asInstanceOf[JsonMemberFormat],
     explicitNulls: Boolean = false,
-    explicitEmptyCollections: ExplicitEmptyCollections = ExplicitEmptyCollections()
+    explicitEmptyCollections: ExplicitEmptyCollections = ExplicitEmptyCollections(),
+    enumValuesAsStrings: Boolean = true
   ) = new JsonCodecConfiguration(
     sumTypeHandling,
     fieldNameMapping,
     allowExtraFields,
     sumTypeMapping,
     explicitNulls,
-    explicitEmptyCollections
+    explicitEmptyCollections,
+    enumValuesAsStrings
+  )
+
+  def copy(
+    sumTypeHandling: SumTypeHandling,
+    fieldNameMapping: JsonMemberFormat,
+    allowExtraFields: Boolean,
+    sumTypeMapping: JsonMemberFormat,
+    explicitNulls: Boolean,
+    explicitEmptyCollections: ExplicitEmptyCollections
+  ) = new JsonCodecConfiguration(
+    sumTypeHandling,
+    fieldNameMapping,
+    allowExtraFields,
+    sumTypeMapping,
+    explicitNulls,
+    explicitEmptyCollections,
+    this.enumValuesAsStrings
   )
 
   def copy(
@@ -72,11 +116,29 @@ final case class JsonCodecConfiguration(
     allowExtraFields,
     sumTypeMapping,
     explicitNulls,
-    this.explicitEmptyCollections
+    this.explicitEmptyCollections,
+    this.enumValuesAsStrings
   )
 }
 
 object JsonCodecConfiguration {
+  def apply(
+    sumTypeHandling: SumTypeHandling,
+    fieldNameMapping: JsonMemberFormat,
+    allowExtraFields: Boolean,
+    sumTypeMapping: JsonMemberFormat,
+    explicitNulls: Boolean,
+    explicitEmptyCollections: ExplicitEmptyCollections
+  ) = new JsonCodecConfiguration(
+    sumTypeHandling,
+    fieldNameMapping,
+    allowExtraFields,
+    sumTypeMapping,
+    explicitNulls,
+    explicitEmptyCollections,
+    true
+  )
+
   def apply(
     sumTypeHandling: SumTypeHandling,
     fieldNameMapping: JsonMemberFormat,
@@ -89,7 +151,8 @@ object JsonCodecConfiguration {
     allowExtraFields,
     sumTypeMapping,
     explicitNulls,
-    ExplicitEmptyCollections()
+    ExplicitEmptyCollections(),
+    true
   )
 
   implicit val default: JsonCodecConfiguration = JsonCodecConfiguration()

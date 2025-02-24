@@ -7,11 +7,10 @@ import scala.collection.immutable
 
 object CodecVersionSpecificSpec extends ZIOSpecDefault {
   val spec: Spec[Environment, Any] =
-    suite("CodecSpec")(
+    suite("CodecVersionSpecific")(
       test("ArraySeq") {
         val jsonStr  = """["5XL","2XL","XL"]"""
         val expected = immutable.ArraySeq("5XL", "2XL", "XL")
-
         assert(jsonStr.fromJson[immutable.ArraySeq[String]])(isRight(equalTo(expected)))
       }
     )

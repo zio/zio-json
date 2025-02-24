@@ -376,6 +376,18 @@ object EncoderSpec extends ZIOSpecDefault {
           assert((Child1(): Parent).toJsonPretty)(equalTo("{\n  \"Child1\" : {}\n}")) &&
           assert((Child2(): Parent).toJsonPretty)(equalTo("{\n  \"Cain\" : {}\n}"))
         },
+        test("sum encoding with enumValuesAsStrings = true") {
+          import examplesumobjects1._
+
+          assert((Child1: Parent).toJson)(equalTo(""""Child1"""")) &&
+          assert((Child2: Parent).toJson)(equalTo(""""Cain""""))
+        },
+        test("sum encoding with enumValuesAsStrings = false") {
+          import examplesumobjects2._
+
+          assert((Child1: Parent).toJson)(equalTo("""{"Child1":{}}""")) &&
+          assert((Child2: Parent).toJson)(equalTo("""{"Cain":{}}"""))
+        },
         test("sum alternative encoding") {
           import examplealtsum._
 
@@ -585,6 +597,40 @@ object EncoderSpec extends ZIOSpecDefault {
 
     @jsonHint("Cain")
     case class Child2() extends Parent
+
+  }
+
+  object examplesumobjects1 {
+    implicit val config: JsonCodecConfiguration =
+      JsonCodecConfiguration(enumValuesAsStrings = true)
+
+    sealed abstract class Parent
+
+    object Parent {
+      implicit val encoder: JsonEncoder[Parent] = DeriveJsonEncoder.gen[Parent]
+    }
+
+    case object Child1 extends Parent
+
+    @jsonHint("Cain")
+    case object Child2 extends Parent
+
+  }
+
+  object examplesumobjects2 {
+    implicit val config: JsonCodecConfiguration =
+      JsonCodecConfiguration(enumValuesAsStrings = false)
+
+    sealed abstract class Parent
+
+    object Parent {
+      implicit val encoder: JsonEncoder[Parent] = DeriveJsonEncoder.gen[Parent]
+    }
+
+    case object Child1 extends Parent
+
+    @jsonHint("Cain")
+    case object Child2 extends Parent
 
   }
 
