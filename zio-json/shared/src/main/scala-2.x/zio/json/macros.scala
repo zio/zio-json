@@ -4,7 +4,7 @@ import magnolia1._
 import zio.Chunk
 import zio.json.JsonDecoder.JsonError
 import zio.json.ast.Json
-import zio.json.internal.{ FieldEncoder, Lexer, RecordingReader, RetractReader, StringMatrix, Write }
+import zio.json.internal.{ FastStringWrite, FieldEncoder, Lexer, RecordingReader, RetractReader, StringMatrix, Write }
 
 import scala.annotation._
 import scala.language.experimental.macros
@@ -403,14 +403,11 @@ object DeriveJsonDecoder {
     val matrix        = new StringMatrix(names)
     lazy val tcs      = ctx.subtypes.map(_.typeclass).toArray.asInstanceOf[Array[JsonDecoder[Any]]]
     lazy val namesMap = names.zipWithIndex.toMap
-
-    val isEnumeration = config.enumValuesAsStrings &&
-      ctx.subtypes.forall(_.typeclass.isInstanceOf[CaseObjectDecoder[JsonDecoder, _]])
-
     val discrim =
       ctx.annotations.collectFirst { case jsonDiscriminator(n) => n }.orElse(config.sumTypeHandling.discriminatorField)
-
-    if (isEnumeration && discrim.isEmpty) {
+    lazy val isEnumeration = config.enumValuesAsStrings &&
+      ctx.subtypes.forall(_.typeclass.isInstanceOf[CaseObjectDecoder[JsonDecoder, _]])
+    if (discrim.isEmpty && isEnumeration) {
       new JsonDecoder[A] {
         def unsafeDecode(trace: List[JsonError], in: RetractReader): A = {
           val idx = Lexer.enumeration(trace, in, matrix)
@@ -608,70 +605,131 @@ object DeriveJsonEncoder {
       }
 
   def split[A](ctx: SealedTrait[JsonEncoder, A])(implicit config: JsonCodecConfiguration): JsonEncoder[A] = {
-    val isEnumeration = config.enumValuesAsStrings &&
-      ctx.subtypes.forall(_.typeclass == caseObjectEncoder)
     val jsonHintFormat: JsonMemberFormat =
       ctx.annotations.collectFirst { case jsonHintNames(format) => format }.getOrElse(config.sumTypeMapping)
     val names: Array[String] = ctx.subtypes.map { p =>
       p.annotations.collectFirst { case jsonHint(name) => name }.getOrElse(jsonHintFormat(p.typeName.short))
     }.toArray
+    val encodedNames: Array[String] = names.map { name =>
+      val out = new FastStringWrite(64)
+      JsonEncoder.string.unsafeEncode(name, None, out)
+      out.toString
+    }
+    lazy val tcs = ctx.subtypes.map(_.typeclass).toArray.asInstanceOf[Array[JsonEncoder[Any]]]
     val discrim =
       ctx.annotations.collectFirst { case jsonDiscriminator(n) => n }.orElse(config.sumTypeHandling.discriminatorField)
-
-    if (isEnumeration && discrim.isEmpty) {
+    lazy val isEnumeration = config.enumValuesAsStrings &&
+      ctx.subtypes.forall(_.typeclass == caseObjectEncoder)
+    if (discrim.isEmpty && isEnumeration) {
       new JsonEncoder[A] {
-        def unsafeEncode(a: A, indent: Option[Int], out: Write): Unit = ctx.split(a) { sub =>
-          JsonEncoder.string.unsafeEncode(names(sub.index), indent, out)
+        private[this] val casts = ctx.subtypes.map(_.cast).toArray
+
+        def unsafeEncode(a: A, indent: Option[Int], out: Write): Unit = {
+          var idx = 0
+          while (idx < casts.length) {
+            if (casts(idx).isDefinedAt(a)) {
+              out.write(encodedNames(idx))
+              return
+            }
+            idx += 1
+          }
         }
 
-        override final def toJsonAST(a: A): Either[String, Json] = ctx.split(a) { sub =>
-          new Right(new Json.Str(names(sub.index)))
+        override final def toJsonAST(a: A): Either[String, Json] = {
+          var idx = 0
+          while (idx < casts.length) {
+            if (casts(idx).isDefinedAt(a)) {
+              return new Right(new Json.Str(names(idx)))
+            }
+            idx += 1
+          }
+          throw new IllegalArgumentException // shodn't be reached
         }
       }
     } else if (discrim.isEmpty) {
       new JsonEncoder[A] {
-        def unsafeEncode(a: A, indent: Option[Int], out: Write): Unit = ctx.split(a) { sub =>
-          out.write('{')
-          val indent_ = JsonEncoder.bump(indent)
-          JsonEncoder.pad(indent_, out)
-          JsonEncoder.string.unsafeEncode(names(sub.index), indent_, out)
-          if (indent.isEmpty) out.write(':')
-          else out.write(" : ")
-          sub.typeclass.unsafeEncode(sub.cast(a), indent_, out)
-          JsonEncoder.pad(indent, out)
-          out.write('}')
+        private[this] val casts = ctx.subtypes.map(_.cast).toArray
+
+        def unsafeEncode(a: A, indent: Option[Int], out: Write): Unit = {
+          var idx = 0
+          while (idx < casts.length) {
+            val cast = casts(idx)
+            if (cast.isDefinedAt(a)) {
+              out.write('{')
+              val indent_ = JsonEncoder.bump(indent)
+              JsonEncoder.pad(indent_, out)
+              out.write(encodedNames(idx))
+              if (indent.isEmpty) out.write(':')
+              else out.write(" : ")
+              tcs(idx).unsafeEncode(cast(a), indent_, out)
+              JsonEncoder.pad(indent, out)
+              out.write('}')
+              return
+            }
+            idx += 1
+          }
         }
 
-        override def toJsonAST(a: A): Either[String, Json] = ctx.split(a) { sub =>
-          sub.typeclass.toJsonAST(sub.cast(a)).map { inner =>
-            Json.Obj(Chunk(names(sub.index) -> inner))
+        override def toJsonAST(a: A): Either[String, Json] = {
+          var idx = 0
+          while (idx < casts.length) {
+            val cast = casts(idx)
+            if (cast.isDefinedAt(a)) {
+              return tcs(idx).toJsonAST(cast(a)).map { inner =>
+                new Json.Obj(Chunk(names(idx) -> inner))
+              }
+            }
+            idx += 1
           }
+          throw new IllegalArgumentException // shodn't be reached
         }
       }
     } else {
       new JsonEncoder[A] {
-        private[this] val hintfield = discrim.get
-
-        def unsafeEncode(a: A, indent: Option[Int], out: Write): Unit = ctx.split(a) { sub =>
-          out.write('{')
-          val indent_ = JsonEncoder.bump(indent)
-          JsonEncoder.pad(indent_, out)
-          JsonEncoder.string.unsafeEncode(hintfield, indent_, out)
-          if (indent.isEmpty) out.write(':')
-          else out.write(" : ")
-          JsonEncoder.string.unsafeEncode(names(sub.index), indent_, out)
-          // whitespace is always off by 2 spaces at the end, probably not worth fixing
-          val intermediate = new NestedWriter(out, indent_)
-          sub.typeclass.unsafeEncode(sub.cast(a), indent, intermediate)
+        private[this] val casts         = ctx.subtypes.map(_.cast).toArray
+        private[this] val hintFieldName = discrim.get
+        private[this] val encodedHintFieldName = {
+          val out = new FastStringWrite(64)
+          JsonEncoder.string.unsafeEncode(hintFieldName, None, out)
+          out.toString
         }
 
-        override def toJsonAST(a: A): Either[String, Json] = ctx.split(a) { sub =>
-          sub.typeclass.toJsonAST(sub.cast(a)).flatMap {
-            case o: Json.Obj =>
-              new Right(Json.Obj((hintfield -> Json.Str(names(sub.index))) +: o.fields)) // hint field is always first
-            case _ =>
-              new Left("expected object")
+        def unsafeEncode(a: A, indent: Option[Int], out: Write): Unit = {
+          var idx = 0
+          while (idx < casts.length) {
+            val cast = casts(idx)
+            if (cast.isDefinedAt(a)) {
+              out.write('{')
+              val indent_ = JsonEncoder.bump(indent)
+              JsonEncoder.pad(indent_, out)
+              out.write(encodedHintFieldName)
+              if (indent.isEmpty) out.write(':')
+              else out.write(" : ")
+              out.write(encodedNames(idx))
+              // whitespace is always off by 2 spaces at the end, probably not worth fixing
+              tcs(idx).unsafeEncode(cast(a), indent, new NestedWriter(out, indent_))
+              return
+            }
+            idx += 1
           }
+        }
+
+        override final def toJsonAST(a: A): Either[String, Json] = {
+          var idx = 0
+          while (idx < casts.length) {
+            val cast = casts(idx)
+            if (cast.isDefinedAt(a)) {
+              return tcs(idx).toJsonAST(cast(a)).flatMap {
+                case o: Json.Obj =>
+                  val hintField = hintFieldName -> new Json.Str(names(idx))
+                  new Right(new Json.Obj(hintField +: o.fields)) // hint field is always first
+                case _ =>
+                  new Left("expected object")
+              }
+            }
+            idx += 1
+          }
+          throw new IllegalArgumentException // shodn't be reached
         }
       }
     }
