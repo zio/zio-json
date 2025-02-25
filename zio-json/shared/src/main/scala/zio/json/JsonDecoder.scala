@@ -82,11 +82,11 @@ trait JsonDecoder[A] extends JsonDecoderPlatformSpecific[A] {
    * Note: This method may not entirely consume the specified character sequence.
    */
   final def decodeJson(str: CharSequence): Either[String, A] =
-    try Right(unsafeDecode(Nil, new FastStringReader(str)))
+    try new Right(unsafeDecode(Nil, new FastStringReader(str)))
     catch {
-      case JsonDecoder.UnsafeJson(trace) => Left(JsonError.render(trace))
-      case _: UnexpectedEnd              => Left("Unexpected end of input")
-      case _: StackOverflowError         => Left("Unexpected structure")
+      case e: JsonDecoder.UnsafeJson => new Left(JsonError.render(e.trace))
+      case _: UnexpectedEnd          => new Left("Unexpected end of input")
+      case _: StackOverflowError     => new Left("Unexpected structure")
     }
 
   /**
@@ -120,7 +120,7 @@ trait JsonDecoder[A] extends JsonDecoderPlatformSpecific[A] {
         }
       }
 
-      override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): A1 =
+      override def unsafeFromJsonAST(trace: List[JsonError], json: Json): A1 =
         try self.unsafeFromJsonAST(trace, json)
         catch {
           case _: JsonDecoder.UnsafeJson | _: UnexpectedEnd => that.unsafeFromJsonAST(trace, json)
@@ -129,7 +129,7 @@ trait JsonDecoder[A] extends JsonDecoderPlatformSpecific[A] {
       override def unsafeDecodeMissing(trace: List[JsonError]): A1 =
         try self.unsafeDecodeMissing(trace)
         catch {
-          case _: Throwable => that.unsafeDecodeMissing(trace)
+          case _: JsonDecoder.UnsafeJson | _: UnexpectedEnd => that.unsafeDecodeMissing(trace)
         }
     }
 
@@ -149,9 +149,7 @@ trait JsonDecoder[A] extends JsonDecoderPlatformSpecific[A] {
 
       def unsafeDecode(trace: List[JsonError], in: RetractReader): B = f(self.unsafeDecode(trace, in))
 
-      override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): B = f(
-        self.unsafeFromJsonAST(trace, json)
-      )
+      override def unsafeFromJsonAST(trace: List[JsonError], json: Json): B = f(self.unsafeFromJsonAST(trace, json))
 
       override def unsafeDecodeMissing(trace: List[JsonError]): B = f(self.unsafeDecodeMissing(trace))
     }
@@ -170,7 +168,7 @@ trait JsonDecoder[A] extends JsonDecoderPlatformSpecific[A] {
           case Left(err) => Lexer.error(err, trace)
         }
 
-      override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): B =
+      override def unsafeFromJsonAST(trace: List[JsonError], json: Json): B =
         f(self.unsafeFromJsonAST(trace, json)) match {
           case Right(b)  => b
           case Left(err) => Lexer.error(err, trace)
@@ -222,11 +220,11 @@ trait JsonDecoder[A] extends JsonDecoderPlatformSpecific[A] {
    * more performant implementation.
    */
   final def fromJsonAST(json: Json): Either[String, A] =
-    try Right(unsafeFromJsonAST(Nil, json))
+    try new Right(unsafeFromJsonAST(Nil, json))
     catch {
-      case JsonDecoder.UnsafeJson(trace) => Left(JsonError.render(trace))
-      case _: UnexpectedEnd              => Left("Unexpected end of input")
-      case _: StackOverflowError         => Left("Unexpected structure")
+      case e: JsonDecoder.UnsafeJson => new Left(JsonError.render(e.trace))
+      case _: UnexpectedEnd          => new Left("Unexpected end of input")
+      case _: StackOverflowError     => new Left("Unexpected structure")
     }
 }
 
@@ -271,7 +269,7 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority1 with 
   implicit val string: JsonDecoder[String] = new JsonDecoder[String] {
     def unsafeDecode(trace: List[JsonError], in: RetractReader): String = Lexer.string(trace, in).toString
 
-    override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): String =
+    override def unsafeFromJsonAST(trace: List[JsonError], json: Json): String =
       json match {
         case s: Json.Str => s.value
         case _           => Lexer.error("expected string", trace)
@@ -281,7 +279,7 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority1 with 
   implicit val boolean: JsonDecoder[Boolean] = new JsonDecoder[Boolean] {
     def unsafeDecode(trace: List[JsonError], in: RetractReader): Boolean = Lexer.boolean(trace, in)
 
-    override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): Boolean =
+    override def unsafeFromJsonAST(trace: List[JsonError], json: Json): Boolean =
       json match {
         case b: Json.Bool => b.value
         case _            => Lexer.error("expected boolean", trace)
@@ -291,7 +289,7 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority1 with 
   implicit val char: JsonDecoder[Char] = new JsonDecoder[Char] {
     def unsafeDecode(trace: List[JsonError], in: RetractReader): Char = Lexer.char(trace, in)
 
-    override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): Char =
+    override def unsafeFromJsonAST(trace: List[JsonError], json: Json): Char =
       json match {
         case s: Json.Str if s.value.length == 1 => s.value.charAt(0)
         case _                                  => Lexer.error("expected single character string", trace)
@@ -312,7 +310,7 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority1 with 
         a
       }
 
-    override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): Byte =
+    override def unsafeFromJsonAST(trace: List[JsonError], json: Json): Byte =
       json match {
         case n: Json.Num =>
           try n.value.byteValueExact
@@ -336,7 +334,7 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority1 with 
         a
       }
 
-    override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): Short =
+    override def unsafeFromJsonAST(trace: List[JsonError], json: Json): Short =
       json match {
         case n: Json.Num =>
           try n.value.shortValueExact
@@ -360,7 +358,7 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority1 with 
         a
       }
 
-    override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): Int =
+    override def unsafeFromJsonAST(trace: List[JsonError], json: Json): Int =
       json match {
         case n: Json.Num =>
           try n.value.intValueExact
@@ -383,7 +381,7 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority1 with 
         a
       }
 
-    override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): Long =
+    override def unsafeFromJsonAST(trace: List[JsonError], json: Json): Long =
       json match {
         case n: Json.Num =>
           try n.value.longValueExact
@@ -407,7 +405,7 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority1 with 
         a
       }
 
-    override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): java.math.BigInteger =
+    override def unsafeFromJsonAST(trace: List[JsonError], json: Json): java.math.BigInteger =
       json match {
         case n: Json.Num =>
           try n.value.toBigIntegerExact
@@ -430,7 +428,7 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority1 with 
         a
       }
 
-    override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): BigInt =
+    override def unsafeFromJsonAST(trace: List[JsonError], json: Json): BigInt =
       json match {
         case n: Json.Num =>
           try BigInt(n.value.toBigIntegerExact)
@@ -453,7 +451,7 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority1 with 
         a
       }
 
-    override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): Float =
+    override def unsafeFromJsonAST(trace: List[JsonError], json: Json): Float =
       json match {
         case n: Json.Num => n.value.floatValue
         case s: Json.Str => Lexer.float(trace, new FastStringReader(s.value))
@@ -472,7 +470,7 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority1 with 
         a
       }
 
-    override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): Double =
+    override def unsafeFromJsonAST(trace: List[JsonError], json: Json): Double =
       json match {
         case n: Json.Num => n.value.doubleValue
         case s: Json.Str => Lexer.double(trace, new FastStringReader(s.value))
@@ -491,7 +489,7 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority1 with 
         a
       }
 
-    override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): java.math.BigDecimal =
+    override def unsafeFromJsonAST(trace: List[JsonError], json: Json): java.math.BigDecimal =
       json match {
         case n: Json.Num => n.value
         case s: Json.Str => Lexer.bigDecimal(trace, new FastStringReader(s.value))
@@ -510,7 +508,7 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority1 with 
         a
       }
 
-    override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): BigDecimal =
+    override def unsafeFromJsonAST(trace: List[JsonError], json: Json): BigDecimal =
       json match {
         case n: Json.Num => new BigDecimal(n.value, BigDecimal.defaultMathContext)
         case s: Json.Str => Lexer.bigDecimal(trace, new FastStringReader(s.value))
@@ -527,19 +525,15 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority1 with 
       override def unsafeDecodeMissing(trace: List[JsonError]): Option[A] = None
 
       def unsafeDecode(trace: List[JsonError], in: RetractReader): Option[A] =
-        if (in.nextNonWhitespace() == 'n') {
-          if (in.readChar() != 'u' || in.readChar() != 'l' || in.readChar() != 'l') {
-            Lexer.error("expected 'null'", trace)
-          }
-          None
-        } else {
+        if (in.nextNonWhitespace() != 'n') {
           in.retract()
           new Some(A.unsafeDecode(trace, in))
-        }
+        } else if (in.readChar() == 'u' && in.readChar() == 'l' && in.readChar() == 'l') None
+        else Lexer.error("expected 'null'", trace)
 
-      override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): Option[A] =
-        if (json eq Json.Null) None
-        else new Some(A.unsafeFromJsonAST(trace, json))
+      override def unsafeFromJsonAST(trace: List[JsonError], json: Json): Option[A] =
+        if (json ne Json.Null) new Some(A.unsafeFromJsonAST(trace, json))
+        else None
     }
 
   // supports multiple representations for compatibility with other libraries,
@@ -585,14 +579,16 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority1 with 
     builder: mutable.Builder[A, T[A]]
   )(implicit A: JsonDecoder[A]): T[A] = {
     val c = in.nextNonWhitespace()
-    if (c != '[') Lexer.error("'['", c, trace)
-    var i: Int = 0
-    if (Lexer.firstArrayElement(in)) while ({
-      builder += A.unsafeDecode(new JsonError.ArrayAccess(i) :: trace, in)
-      i += 1
-      Lexer.nextArrayElement(trace, in)
-    }) ()
-    builder.result()
+    if (c == '[') {
+      var i = 0
+      if (Lexer.firstArrayElement(in)) while ({
+        builder += A.unsafeDecode(new JsonError.ArrayAccess(i) :: trace, in)
+        i += 1
+        Lexer.nextArrayElement(trace, in)
+      }) ()
+      return builder.result()
+    }
+    Lexer.error("'['", c, trace)
   }
 
   @inline private[json] def keyValueBuilder[K, V, T[X, Y] <: Iterable[(X, Y)]](
@@ -601,18 +597,20 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority1 with 
     builder: mutable.Builder[(K, V), T[K, V]]
   )(implicit K: JsonFieldDecoder[K], V: JsonDecoder[V]): T[K, V] = {
     var c = in.nextNonWhitespace()
-    if (c != '{') Lexer.error("'{'", c, trace)
-    if (Lexer.firstField(trace, in))
-      while ({
-        val field  = Lexer.string(trace, in).toString
-        val trace_ = new JsonError.ObjectAccess(field) :: trace
-        c = in.nextNonWhitespace()
-        if (c != ':') Lexer.error("':'", c, trace)
-        val value = V.unsafeDecode(trace_, in)
-        builder += ((K.unsafeDecodeField(trace_, field), value))
-        Lexer.nextField(trace, in)
-      }) ()
-    builder.result()
+    if (c == '{') {
+      if (Lexer.firstField(trace, in))
+        while ({
+          val field  = Lexer.string(trace, in).toString
+          val trace_ = new JsonError.ObjectAccess(field) :: trace
+          c = in.nextNonWhitespace()
+          if (c != ':') Lexer.error("':'", c, trace)
+          val value = V.unsafeDecode(trace_, in)
+          builder += ((K.unsafeDecodeField(trace_, field), value))
+          Lexer.nextField(trace, in)
+        }) ()
+      return builder.result()
+    }
+    Lexer.error("'{'", c, trace)
   }
 
   // FIXME: remove in the next major version
@@ -647,29 +645,29 @@ private[json] trait DecoderLowPriority1 extends DecoderLowPriority2 {
 
       def unsafeDecode(trace: List[JsonError], in: RetractReader): Array[A] = {
         val c = in.nextNonWhitespace()
-        if (c != '[') Lexer.error("'['", c, trace)
-        if (Lexer.firstArrayElement(in)) {
-          var l = 8
-          var x = new Array[A](l)
-          var i = 0
-          while ({
-            if (i == l) {
-              l <<= 1
-              val x1 = new Array[A](l)
-              System.arraycopy(x, 0, x1, 0, i)
-              x = x1
-            }
-            x(i) = A.unsafeDecode(new JsonError.ArrayAccess(i) :: trace, in)
-            i += 1
-            Lexer.nextArrayElement(trace, in)
-          }) ()
-          if (i != l) {
+        if (c == '[') {
+          if (Lexer.firstArrayElement(in)) {
+            var l = 8
+            var x = new Array[A](l)
+            var i = 0
+            while ({
+              if (i == l) {
+                l <<= 1
+                val x1 = new Array[A](l)
+                System.arraycopy(x, 0, x1, 0, i)
+                x = x1
+              }
+              x(i) = A.unsafeDecode(new JsonError.ArrayAccess(i) :: trace, in)
+              i += 1
+              Lexer.nextArrayElement(trace, in)
+            }) ()
+            if (i == l) return x
             val x1 = new Array[A](i)
-            _root_.java.lang.System.arraycopy(x, 0, x1, 0, i)
-            x = x1
-          }
-          x
-        } else Array.empty
+            System.arraycopy(x, 0, x1, 0, i)
+            return x1
+          } else return Array.empty
+        }
+        Lexer.error("'['", c, trace)
       }
     }
 
@@ -690,7 +688,7 @@ private[json] trait DecoderLowPriority1 extends DecoderLowPriority2 {
       def unsafeDecode(trace: List[JsonError], in: RetractReader): Chunk[A] =
         builder(trace, in, zio.ChunkBuilder.make[A]())
 
-      override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): Chunk[A] =
+      override def unsafeFromJsonAST(trace: List[JsonError], json: Json): Chunk[A] =
         json match {
           case a: Json.Arr =>
             a.elements.map {
@@ -882,7 +880,7 @@ private[json] trait DecoderLowPriority3 extends DecoderLowPriority4 {
     def unsafeDecode(trace: List[JsonError], in: RetractReader): A =
       parseJavaTime(trace, Lexer.string(trace, in).toString)
 
-    override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): A =
+    override def unsafeFromJsonAST(trace: List[JsonError], json: Json): A =
       json match {
         case s: Json.Str => parseJavaTime(trace, s.value)
         case _           => Lexer.error("expected string", trace)
@@ -912,7 +910,7 @@ private[json] trait DecoderLowPriority3 extends DecoderLowPriority4 {
   implicit val uuid: JsonDecoder[UUID] = new JsonDecoder[UUID] {
     def unsafeDecode(trace: List[JsonError], in: RetractReader): UUID = Lexer.uuid(trace, in)
 
-    override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): UUID =
+    override def unsafeFromJsonAST(trace: List[JsonError], json: Json): UUID =
       json match {
         case s: Json.Str =>
           try UUIDParser.unsafeParse(s.value)
@@ -927,7 +925,7 @@ private[json] trait DecoderLowPriority3 extends DecoderLowPriority4 {
     def unsafeDecode(trace: List[JsonError], in: RetractReader): java.util.Currency =
       parseCurrency(trace, Lexer.string(trace, in).toString)
 
-    override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): java.util.Currency =
+    override def unsafeFromJsonAST(trace: List[JsonError], json: Json): java.util.Currency =
       json match {
         case s: Json.Str => parseCurrency(trace, s.value)
         case _           => Lexer.error("expected string", trace)

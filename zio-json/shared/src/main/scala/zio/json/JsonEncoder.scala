@@ -136,7 +136,7 @@ object JsonEncoder extends GeneratedTupleEncoders with EncoderLowPriority1 with 
       write
     }
 
-    def release(): Unit = level -= 1 // decrease the level of recusrion
+    def release(): Unit = if (level > 0) level -= 1 // decrease the level of recusrion
   }
 
   private val writePools = new ThreadLocal[FastStringWritePool] {
@@ -162,7 +162,7 @@ object JsonEncoder extends GeneratedTupleEncoders with EncoderLowPriority1 with 
       out.write('"')
     }
 
-    override final def toJsonAST(a: String): Either[String, Json] = new Right(new Json.Str(a))
+    @inline override final def toJsonAST(a: String): Either[String, Json] = new Right(new Json.Str(a))
 
     private[this] def writeEncoded(a: String, out: Write): Unit = {
       val len = a.length

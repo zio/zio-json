@@ -8,7 +8,7 @@ import scala.reflect.*
 import zio.Chunk
 import zio.json.JsonDecoder.JsonError
 import zio.json.ast.Json
-import zio.json.internal.{ FastStringWrite, FieldEncoder, Lexer, RecordingReader, RetractReader, StringMatrix, Write }
+import zio.json.internal.{ FieldEncoder, Lexer, RecordingReader, RetractReader, StringMatrix, Write }
 
 import scala.annotation._
 import scala.collection.Factory
@@ -229,52 +229,40 @@ private class CaseObjectDecoder[Typeclass[*], A](val ctx: CaseClass[Typeclass, A
 
 sealed class JsonDecoderDerivation(config: JsonCodecConfiguration) extends Derivation[JsonDecoder] { self =>
   def join[A](ctx: CaseClass[Typeclass, A]): JsonDecoder[A] = {
-    val (transformNames, nameTransform): (Boolean, String => String) =
-      ctx.annotations.collectFirst { case jsonMemberNames(format) => format }
-        .orElse(Some(config.fieldNameMapping))
-        .filter(_ != IdentityFormat)
-        .map(true -> _)
-        .getOrElse(false -> identity)
-
+    val nameTransform: String => String =
+      ctx.annotations.collectFirst { case jsonMemberNames(format) => format }.getOrElse(config.fieldNameMapping)
     val no_extra = ctx.annotations.collectFirst {
       case _: jsonNoExtraFields => ()
     }.isDefined || !config.allowExtraFields
-
-    if (ctx.params.isEmpty) {
-      new CaseObjectDecoder(ctx, no_extra)
-    } else {
-      new CollectionJsonDecoder[A] {
-        private val (names, aliases): (Array[String], Array[(String, Int)]) = {
-          val names = new Array[String](ctx.params.size)
-          val aliasesBuilder = Array.newBuilder[(String, Int)]
-          ctx.params.foreach {
-            var idx = 0
-            p =>
-              names(idx) = p
-                .annotations
-                .collectFirst { case jsonField(name) => name }
-                .getOrElse(if (transformNames) nameTransform(p.label) else p.label)
-              aliasesBuilder ++= p
-                .annotations
-                .flatMap {
-                  case jsonAliases(alias, aliases*) => (alias +: aliases).map(_ -> idx)
-                  case _ => Seq.empty
-                }
-              idx += 1
-          }
-          val aliases = aliasesBuilder.result()
-          val allFieldNames = names ++ aliases.map(_._1)
-          if (allFieldNames.length != allFieldNames.distinct.length) {
-            val aliasNames = aliases.map(_._1)
-            val collisions = aliasNames
-              .filter(alias => names.contains(alias) || aliases.count { case (a, _) => a == alias } > 1)
-              .distinct
-            val msg = s"Field names and aliases in case class ${ctx.typeInfo.full} must be distinct, " +
-              s"alias(es) ${collisions.mkString(",")} collide with a field or another alias"
-            throw new AssertionError(msg)
-          }
-          (names, aliases)
+    if (ctx.params.isEmpty) new CaseObjectDecoder(ctx, no_extra)
+    else {
+      val (names, aliases): (Array[String], Array[(String, Int)]) = {
+        val names = new Array[String](ctx.params.size)
+        val aliasesBuilder = Array.newBuilder[(String, Int)]
+        ctx.params.foreach {
+          var idx = 0
+          p =>
+            names(idx) = p.annotations.collectFirst { case jsonField(name) => name }.getOrElse(nameTransform(p.label))
+            aliasesBuilder ++= p.annotations.flatMap {
+              case jsonAliases(alias, aliases*) => (alias +: aliases).map(_ -> idx)
+              case _ => Seq.empty
+            }
+            idx += 1
         }
+        val aliases = aliasesBuilder.result()
+        val allFieldNames = names ++ aliases.map(_._1)
+        if (allFieldNames.length != allFieldNames.distinct.length) {
+          val aliasNames = aliases.map(_._1)
+          val collisions = aliasNames
+            .filter(alias => names.contains(alias) || aliases.count { case (a, _) => a == alias } > 1)
+            .distinct
+          val msg = s"Field names and aliases in case class ${ctx.typeInfo.full} must be distinct, " +
+            s"alias(es) ${collisions.mkString(",")} collide with a field or another alias"
+          throw new AssertionError(msg)
+        }
+        (names, aliases)
+      }
+      new CollectionJsonDecoder[A] {
         private val len = names.length
         private val matrix = new StringMatrix(names, aliases)
         private val spans = names.map(JsonError.ObjectAccess(_))
@@ -282,12 +270,10 @@ sealed class JsonDecoderDerivation(config: JsonCodecConfiguration) extends Deriv
         private lazy val tcs =
           IArray.genericWrapArray(ctx.params.map(_.typeclass)).toArray.asInstanceOf[Array[JsonDecoder[Any]]]
         private lazy val namesMap = (names.zipWithIndex ++ aliases).toMap
-
         private val explicitEmptyCollections =
           ctx.annotations.collectFirst { case a: jsonExplicitEmptyCollections =>
             a.decoding
           }.getOrElse(config.explicitEmptyCollections.decoding)
-
         private val missingValueDecoder =
           if (explicitEmptyCollections) {
             lazy val missingValueDecoders = tcs.map { d =>
@@ -333,15 +319,16 @@ sealed class JsonDecoderDerivation(config: JsonCodecConfiguration) extends Deriv
           if (Lexer.firstField(trace, in))
             while({
               val idx = Lexer.field(trace, in, matrix)
-              if (idx != -1) {
-                if (ps(idx) != null) Lexer.error("duplicate", trace)
-                val default = defaults(idx)
-                ps(idx) = if ((default eq null) || in.nextNonWhitespace() != 'n' && {
-                  in.retract()
-                  true
-                }) tcs(idx).unsafeDecode(spans(idx) :: trace, in)
-                else if (in.readChar() == 'u' && in.readChar() == 'l' && in.readChar() == 'l') default()
-                else Lexer.error("expected 'null'", spans(idx) :: trace)
+              if (idx >= 0) {
+                if (ps(idx) == null) {
+                  val default = defaults(idx)
+                  ps(idx) = if ((default eq null) || in.nextNonWhitespace() != 'n' && {
+                    in.retract()
+                    true
+                  }) tcs(idx).unsafeDecode(spans(idx) :: trace, in)
+                  else if (in.readChar() == 'u' && in.readChar() == 'l' && in.readChar() == 'l') default()
+                  else Lexer.error("expected 'null'", spans(idx) :: trace)
+                } else Lexer.error("duplicate", trace)
               } else if (no_extra) Lexer.error("invalid extra field", trace)
               else Lexer.skipValue(trace, in)
               Lexer.nextField(trace, in)
@@ -366,11 +353,12 @@ sealed class JsonDecoderDerivation(config: JsonCodecConfiguration) extends Deriv
               o.fields.foreach { kv =>
                 namesMap.get(kv._1) match {
                   case Some(idx) =>
-                    if (ps(idx) != null) Lexer.error("duplicate", trace)
-                    val default = defaults(idx)
-                    ps(idx) =
-                      if ((default ne null) && (kv._2 eq Json.Null)) default()
-                      else tcs(idx).unsafeFromJsonAST(spans(idx) :: trace, kv._2)
+                    if (ps(idx) == null) {
+                      val default = defaults(idx)
+                      ps(idx) =
+                        if ((default ne null) && (kv._2 eq Json.Null)) default()
+                        else tcs(idx).unsafeFromJsonAST(spans(idx) :: trace, kv._2)
+                    } else Lexer.error("duplicate", trace)
                   case _ =>
                     if (no_extra) Lexer.error("invalid extra field", trace)
                 }
@@ -416,7 +404,7 @@ sealed class JsonDecoderDerivation(config: JsonCodecConfiguration) extends Deriv
       new JsonDecoder[A] {
         def unsafeDecode(trace: List[JsonError], in: RetractReader): A = {
           val idx = Lexer.enumeration(trace, in, matrix)
-          if (idx != -1) tcs(idx).asInstanceOf[CaseObjectDecoder[JsonDecoder, A]].ctx.rawConstruct(Nil)
+          if (idx >= 0) tcs(idx).asInstanceOf[CaseObjectDecoder[JsonDecoder, A]].ctx.rawConstruct(Nil)
           else Lexer.error("invalid enumeration value", trace)
         }
 
@@ -438,7 +426,7 @@ sealed class JsonDecoderDerivation(config: JsonCodecConfiguration) extends Deriv
           Lexer.char(trace, in, '{')
           if (Lexer.firstField(trace, in)) {
             val idx = Lexer.field(trace, in, matrix)
-            if (idx != -1) {
+            if (idx >= 0) {
               val a = tcs(idx).unsafeDecode(spans(idx) :: trace, in).asInstanceOf[A]
               Lexer.char(trace, in, '}')
               a
@@ -468,11 +456,12 @@ sealed class JsonDecoderDerivation(config: JsonCodecConfiguration) extends Deriv
           Lexer.char(trace, in_, '{')
           if (Lexer.firstField(trace, in_)) {
             while ({
-              if (Lexer.field(trace, in_, hintmatrix) != -1) {
+              if (Lexer.field(trace, in_, hintmatrix) >= 0) {
                 val idx = Lexer.enumeration(trace, in_, matrix)
-                if (idx == -1) Lexer.error("invalid disambiguator", trace)
-                in_.rewind()
-                return tcs(idx).unsafeDecode(spans(idx) :: trace, in_).asInstanceOf[A]
+                if (idx >= 0) {
+                  in_.rewind()
+                  return tcs(idx).unsafeDecode(spans(idx) :: trace, in_).asInstanceOf[A]
+                } else Lexer.error("invalid disambiguator", trace)
               } else Lexer.skipValue(trace, in_)
               Lexer.nextField(trace, in_)
             }) ()
@@ -531,34 +520,20 @@ object DeriveJsonDecoder extends JsonDecoderDerivation(JsonCodecConfiguration.de
 
 sealed class JsonEncoderDerivation(config: JsonCodecConfiguration) extends Derivation[JsonEncoder] { self =>
    def join[A](ctx: CaseClass[Typeclass, A]): JsonEncoder[A] =
-    if (ctx.params.isEmpty) {
-      caseObjectEncoder.narrow[A]
-    } else {
+    if (ctx.params.isEmpty) caseObjectEncoder.narrow[A]
+    else {
       new JsonEncoder[A] {
-        private val (transformNames, nameTransform): (Boolean, String => String) = ctx.annotations
-          .collectFirst { case jsonMemberNames(format) => format }
-          .orElse(Some(config.fieldNameMapping))
-          .filter(_ != IdentityFormat)
-          .map(true -> _)
-          .getOrElse(false -> identity)
+        private val nameTransform =
+          ctx.annotations.collectFirst { case jsonMemberNames(format) => format }.getOrElse(config.fieldNameMapping)
         private val params = IArray.genericWrapArray(ctx.params.filterNot { param =>
           param.annotations.collectFirst { case _: jsonExclude => () }.isDefined
         }).toArray
-        private val names = params.map { p =>
-          p.annotations.collectFirst {
-            case jsonField(name) => name
-          }.getOrElse(if (transformNames) nameTransform(p.label) else p.label)
-        }.toArray
-
         private val explicitNulls = config.explicitNulls || ctx.annotations.exists(_.isInstanceOf[jsonExplicitNull])
         private val explicitEmptyCollections = ctx.annotations.collectFirst { case a: jsonExplicitEmptyCollections =>
           a.encoding
         }.getOrElse(config.explicitEmptyCollections.encoding)
-
         private lazy val fields: Array[FieldEncoder[Any, CaseClass.Param[JsonEncoder, A]]] = params.map { p =>
-          val name = p.annotations.collectFirst { case jsonField(name) =>
-            name
-          }.getOrElse(if (transformNames) nameTransform(p.label) else p.label)
+          val name = p.annotations.collectFirst { case jsonField(name) => name }.getOrElse(nameTransform(p.label))
           val withExplicitNulls = explicitNulls || p.annotations.exists(_.isInstanceOf[jsonExplicitNull])
           val withExplicitEmptyCollections = p.annotations.collectFirst { case a: jsonExplicitEmptyCollections =>
             a.encoding
@@ -586,26 +561,27 @@ sealed class JsonEncoderDerivation(config: JsonCodecConfiguration) extends Deriv
           var prevFields = false
           while (idx < fields.length) {
             val field = fields(idx)
-            val p     = field.p.deref(a)
+            idx += 1
             val encoder = field.encoder
+            val p     = field.p.deref(a)
             if ({
               (field.flags: @switch) match {
-                case 0 => !encoder.isEmpty(p) && !encoder.isNothing(p)
-                case 1 => !encoder.isNothing(p)
-                case 2 => !encoder.isEmpty(p)
-                case _ => true
+                case 0 => encoder.isEmpty(p) || encoder.isNothing(p)
+                case 1 => encoder.isNothing(p)
+                case 2 => encoder.isEmpty(p)
+                case _ => false
               }
-            }) {
+            }) ()
+            else {
               if (prevFields) {
                 out.write(',')
                 JsonEncoder.pad(indent_, out)
               } else prevFields = true
-              JsonEncoder.string.unsafeEncode(field.name, indent_, out)
+              out.write(field.encodedName)
               if (indent.isEmpty) out.write(':')
               else out.write(" : ")
               encoder.unsafeEncode(p, indent_, out)
             }
-            idx += 1
           }
           JsonEncoder.pad(indent, out)
           out.write('}')
@@ -634,11 +610,7 @@ sealed class JsonEncoderDerivation(config: JsonCodecConfiguration) extends Deriv
     val names: Array[String] = IArray.genericWrapArray(ctx.subtypes.map { p =>
       p.annotations.collectFirst { case jsonHint(name) => name }.getOrElse(jsonHintFormat(p.typeInfo.short))
     }).toArray
-    val encodedNames: Array[String] = names.map { name =>
-      val out = new FastStringWrite(64)
-      JsonEncoder.string.unsafeEncode(name, None, out)
-      out.toString
-    }
+    val encodedNames: Array[String] = names.map(name => JsonEncoder.string.encodeJson(name, None).toString)
     lazy val tcs =
       IArray.genericWrapArray(ctx.subtypes.map(_.typeclass)).toArray.asInstanceOf[Array[JsonEncoder[Any]]]
     val discrim =
@@ -652,24 +624,14 @@ sealed class JsonEncoderDerivation(config: JsonCodecConfiguration) extends Deriv
 
         def unsafeEncode(a: A, indent: Option[Int], out: Write): Unit = {
           var idx = 0
-          while (idx < casts.length) {
-            if (casts(idx).isDefinedAt(a)) {
-              out.write(encodedNames(idx))
-              return
-            }
-            idx += 1
-          }
+          while (!casts(idx).isDefinedAt(a)) idx += 1
+          out.write(encodedNames(idx))
         }
 
         override final def toJsonAST(a: A): Either[String, Json] = {
           var idx = 0
-          while (idx < casts.length) {
-            if (casts(idx).isDefinedAt(a)) {
-              return new Right(new Json.Str(names(idx)))
-            }
-            idx += 1
-          }
-          throw new IllegalArgumentException // shodn't be reached
+          while (!casts(idx).isDefinedAt(a)) idx += 1
+          new Right(new Json.Str(names(idx)))
         }
       }
     } else if (discrim.isEmpty) {
@@ -678,84 +640,54 @@ sealed class JsonEncoderDerivation(config: JsonCodecConfiguration) extends Deriv
 
         def unsafeEncode(a: A, indent: Option[Int], out: Write): Unit = {
           var idx = 0
-          while (idx < casts.length) {
-            val cast = casts(idx)
-            if (cast.isDefinedAt(a)) {
-              out.write('{')
-              val indent_ = JsonEncoder.bump(indent)
-              JsonEncoder.pad(indent_, out)
-              out.write(encodedNames(idx))
-              if (indent.isEmpty) out.write(':')
-              else out.write(" : ")
-              tcs(idx).unsafeEncode(cast(a), indent_, out)
-              JsonEncoder.pad(indent, out)
-              out.write('}')
-              return
-            }
-            idx += 1
-          }
+          while (!casts(idx).isDefinedAt(a)) idx += 1
+          out.write('{')
+          val indent_ = JsonEncoder.bump(indent)
+          JsonEncoder.pad(indent_, out)
+          out.write(encodedNames(idx))
+          if (indent.isEmpty) out.write(':')
+          else out.write(" : ")
+          tcs(idx).unsafeEncode(casts(idx)(a), indent_, out)
+          JsonEncoder.pad(indent, out)
+          out.write('}')
         }
 
         override def toJsonAST(a: A): Either[String, Json] = {
           var idx = 0
-          while (idx < casts.length) {
-            val cast = casts(idx)
-            if (cast.isDefinedAt(a)) {
-              return tcs(idx).toJsonAST(cast(a)).map { inner =>
-                new Json.Obj(Chunk(names(idx) -> inner))
-              }
-            }
-            idx += 1
-          }
-          throw new IllegalArgumentException // shodn't be reached
+          while (!casts(idx).isDefinedAt(a)) idx += 1
+          tcs(idx).toJsonAST(casts(idx)(a)).map(inner => new Json.Obj(Chunk(names(idx) -> inner)))
         }
       }
     } else {
       new JsonEncoder[A] {
         private val casts = IArray.genericWrapArray(ctx.subtypes.map(_.cast)).toArray
         private val hintFieldName = discrim.get
-        private val encodedHintFieldName = {
-          val out = new FastStringWrite(64)
-          JsonEncoder.string.unsafeEncode(hintFieldName, None, out)
-          out.toString
-        }
+        private val encodedHintFieldName = JsonEncoder.string.encodeJson(hintFieldName, None).toString
 
         def unsafeEncode(a: A, indent: Option[Int], out: Write): Unit = {
           var idx = 0
-          while (idx < casts.length) {
-            val cast = casts(idx)
-            if (cast.isDefinedAt(a)) {
-              out.write('{')
-              val indent_ = JsonEncoder.bump(indent)
-              JsonEncoder.pad(indent_, out)
-              out.write(encodedHintFieldName)
-              if (indent.isEmpty) out.write(':')
-              else out.write(" : ")
-              out.write(encodedNames(idx))
-              // whitespace is always off by 2 spaces at the end, probably not worth fixing
-              tcs(idx).unsafeEncode(cast(a), indent, new DeriveJsonEncoder.NestedWriter(out, indent_))
-              return
-            }
-            idx += 1
-          }
+          while (!casts(idx).isDefinedAt(a)) idx += 1
+          out.write('{')
+          val indent_ = JsonEncoder.bump(indent)
+          JsonEncoder.pad(indent_, out)
+          out.write(encodedHintFieldName)
+          if (indent.isEmpty) out.write(':')
+          else out.write(" : ")
+          out.write(encodedNames(idx))
+          // whitespace is always off by 2 spaces at the end, probably not worth fixing
+          tcs(idx).unsafeEncode(casts(idx)(a), indent, new DeriveJsonEncoder.NestedWriter(out, indent_))
         }
 
         override final def toJsonAST(a: A): Either[String, Json] = {
           var idx = 0
-          while (idx < casts.length) {
-            val cast = casts(idx)
-            if (cast.isDefinedAt(a)) {
-              return tcs(idx).toJsonAST(cast(a)).flatMap {
-                case o: Json.Obj =>
-                  val hintField = hintFieldName -> new Json.Str(names(idx))
-                  new Right(new Json.Obj(hintField +: o.fields)) // hint field is always first
-                case _ =>
-                  new Left("expected object")
-              }
-            }
-            idx += 1
+          while (!casts(idx).isDefinedAt(a)) idx += 1
+          tcs(idx).toJsonAST(casts(idx)(a)).flatMap {
+            case o: Json.Obj =>
+              val hintField = hintFieldName -> new Json.Str(names(idx))
+              new Right(new Json.Obj(hintField +: o.fields)) // hint field is always first
+            case _ =>
+              new Left("expected object")
           }
-          throw new IllegalArgumentException // shodn't be reached
         }
       }
     }

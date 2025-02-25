@@ -19,12 +19,12 @@ import zio.json.ast.Json
 
 package object json extends JsonPackagePlatformSpecific {
   implicit final class EncoderOps[A](private val a: A) extends AnyVal {
-    def toJson(implicit encoder: JsonEncoder[A]): String = encoder.encodeJson(a, None).toString
+    @inline def toJson(implicit encoder: JsonEncoder[A]): String = encoder.encodeJson(a, None).toString
 
     // Jon Pretty's better looking brother, but a bit slower
-    def toJsonPretty(implicit encoder: JsonEncoder[A]): String = encoder.encodeJson(a, Some(0)).toString
+    @inline def toJsonPretty(implicit encoder: JsonEncoder[A]): String = encoder.encodeJson(a, Some(0)).toString
 
-    def toJsonAST(implicit encoder: JsonEncoder[A]): Either[String, Json] = encoder.toJsonAST(a)
+    @inline def toJsonAST(implicit encoder: JsonEncoder[A]): Either[String, Json] = encoder.toJsonAST(a)
   }
 
   implicit final class DecoderOps(private val json: CharSequence) extends AnyVal {
@@ -38,6 +38,6 @@ package object json extends JsonPackagePlatformSpecific {
      *
      * {{{jq '.rows[0].elements[0].distance' input.json}}}
      */
-    def fromJson[A](implicit decoder: JsonDecoder[A]): Either[String, A] = decoder.decodeJson(json)
+    @inline def fromJson[A](implicit decoder: JsonDecoder[A]): Either[String, A] = decoder.decodeJson(json)
   }
 }

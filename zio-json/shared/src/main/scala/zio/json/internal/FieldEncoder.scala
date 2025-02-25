@@ -11,19 +11,17 @@ private[json] class FieldEncoder[T, P](
   val encoder: JsonEncoder[T],
   val flags: Int
 ) {
+  val encodedName: String = JsonEncoder.string.encodeJson(name, None).toString
+
   def encodeOrDefault(t: T)(
     encode: () => Either[String, Chunk[(String, Json)]],
     default: Either[String, Chunk[(String, Json)]]
   ): Either[String, Chunk[(String, Json)]] =
     (flags: @switch) match {
-      case 0 =>
-        if (!encoder.isEmpty(t) && !encoder.isNothing(t)) encode() else default
-      case 1 =>
-        if (!encoder.isNothing(t)) encode() else default
-      case 2 =>
-        if (!encoder.isEmpty(t)) encode() else default
-      case _ =>
-        encode()
+      case 0 => if (encoder.isEmpty(t) || encoder.isNothing(t)) default else encode()
+      case 1 => if (encoder.isNothing(t)) default else encode()
+      case 2 => if (encoder.isEmpty(t)) default else encode()
+      case _ => encode()
     }
 }
 
@@ -41,8 +39,9 @@ private[json] object FieldEncoder {
       encoder, {
         if (withExplicitNulls) {
           if (withExplicitEmptyCollections) 3 else 2
-        } else if (withExplicitEmptyCollections) 1
-        else 0
+        } else {
+          if (withExplicitEmptyCollections) 1 else 0
+        }
       }
     )
 }
