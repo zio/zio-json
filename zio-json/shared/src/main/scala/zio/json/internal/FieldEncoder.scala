@@ -1,28 +1,22 @@
 package zio.json.internal
 
-import zio.Chunk
 import zio.json._
-import zio.json.ast.Json
 import scala.annotation.switch
 
 private[json] class FieldEncoder[T, P](
   val p: P,
-  val name: String,
   val encoder: JsonEncoder[T],
-  val flags: Int
+  val encodedName: String,
+  val prettyEncodedName: String,
+  val name: String,
+  private[this] val flags: Int
 ) {
-  val encodedName: String = JsonEncoder.string.encodeJson(name, None).toString
-
-  def encodeOrDefault(t: T)(
-    encode: () => Either[String, Chunk[(String, Json)]],
-    default: Either[String, Chunk[(String, Json)]]
-  ): Either[String, Chunk[(String, Json)]] =
-    (flags: @switch) match {
-      case 0 => if (encoder.isEmpty(t) || encoder.isNothing(t)) default else encode()
-      case 1 => if (encoder.isNothing(t)) default else encode()
-      case 2 => if (encoder.isEmpty(t)) default else encode()
-      case _ => encode()
-    }
+  def skip(t: T): Boolean = (flags: @switch) match {
+    case 0 => encoder.isEmpty(t) || encoder.isNothing(t)
+    case 1 => encoder.isNothing(t)
+    case 2 => encoder.isEmpty(t)
+    case _ => false
+  }
 }
 
 private[json] object FieldEncoder {
@@ -32,11 +26,14 @@ private[json] object FieldEncoder {
     encoder: JsonEncoder[T],
     withExplicitNulls: Boolean,
     withExplicitEmptyCollections: Boolean
-  ): FieldEncoder[T, P] =
+  ): FieldEncoder[T, P] = {
+    val encodedName = JsonEncoder.string.encodeJson(name, None).toString
     new FieldEncoder(
       p,
-      name,
-      encoder, {
+      encoder,
+      encodedName + ':',
+      encodedName + " : ",
+      name, {
         if (withExplicitNulls) {
           if (withExplicitEmptyCollections) 3 else 2
         } else {
@@ -44,4 +41,5 @@ private[json] object FieldEncoder {
         }
       }
     )
+  }
 }

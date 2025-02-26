@@ -1,8 +1,6 @@
 package zio.json
 package internal
 
-import zio.json.ast.Json
-import zio.Chunk
 import zio.test._
 
 object FieldEncoderSpec extends ZIOSpecDefault {
@@ -17,10 +15,7 @@ object FieldEncoderSpec extends ZIOSpecDefault {
             withExplicitNulls = false,
             withExplicitEmptyCollections = false
           )
-          val expected = Chunk(("a", Json.Bool.True))
-          assertTrue(
-            helper.encodeOrDefault(None)(() => Left(""), Right(expected)) == Right(expected)
-          )
+          assertTrue(helper.skip(None))
         },
         test("should encode None when withExplicitNulls is true") {
           val helper = FieldEncoder(
@@ -30,10 +25,7 @@ object FieldEncoderSpec extends ZIOSpecDefault {
             withExplicitNulls = true,
             withExplicitEmptyCollections = false
           )
-          val expected = Chunk(("a", Json.Bool.True))
-          assertTrue(
-            helper.encodeOrDefault(None)(() => Right(expected), Left("")) == Right(expected)
-          )
+          assertTrue(!helper.skip(None))
         }
       ),
       suite("CollectionEncoder")(
@@ -45,10 +37,7 @@ object FieldEncoderSpec extends ZIOSpecDefault {
             withExplicitNulls = false,
             withExplicitEmptyCollections = true
           )
-          val expected = Chunk(("a", Json.Bool.True))
-          assertTrue(
-            helper.encodeOrDefault(Nil)(() => Right(expected), Left("")) == Right(expected)
-          )
+          assertTrue(!helper.skip(Nil))
         },
         test("should not encode empty collections when withExplicitEmptyCollections is false") {
           val helper = FieldEncoder(
@@ -58,10 +47,7 @@ object FieldEncoderSpec extends ZIOSpecDefault {
             withExplicitNulls = false,
             withExplicitEmptyCollections = false
           )
-          val expected = Chunk(("a", Json.Bool.True))
-          assertTrue(
-            helper.encodeOrDefault(Nil)(() => Left(""), Right(expected)) == Right(expected)
-          )
+          assertTrue(helper.skip(Nil))
         }
       ),
       suite("for a case class")(
@@ -74,15 +60,9 @@ object FieldEncoderSpec extends ZIOSpecDefault {
             withExplicitNulls = false,
             withExplicitEmptyCollections = true
           )
-          val expected = Chunk(("a", Json.Bool.True))
-          assertTrue(
-            helper.encodeOrDefault(Test(Nil, None))(
-              () => Right(expected),
-              Left("")
-            ) == Right(expected)
-          )
+          assertTrue(!helper.skip(Test(Nil, None)))
         },
-        test("should not encode case classes with empty collections when withExplicitEmptyCollections is false") {
+        test("should encode case classes with empty collections when withExplicitEmptyCollections is false") {
           case class Test(list: List[Int], option: Option[Int])
           val helper = FieldEncoder(
             1,
@@ -91,13 +71,10 @@ object FieldEncoderSpec extends ZIOSpecDefault {
             withExplicitNulls = false,
             withExplicitEmptyCollections = false
           )
-          val expected = Chunk(("a", Json.Bool.True))
-          assertTrue(
-            helper.encodeOrDefault(Test(Nil, None))(() => Left(""), Right(expected)) == Right(expected)
-          )
+          assertTrue(!helper.skip(Test(Nil, None)))
         },
         test(
-          "should also not encode case classes with empty options when withExplicitEmptyCollections is false, even when withExplicitNulls is true"
+          "should encode case classes with empty options when withExplicitEmptyCollections is false, even when withExplicitNulls is true"
         ) {
           case class Test(list: List[Int], option: Option[Int])
           val helper = FieldEncoder(
@@ -107,13 +84,7 @@ object FieldEncoderSpec extends ZIOSpecDefault {
             withExplicitNulls = true,
             withExplicitEmptyCollections = false
           )
-          val expected = Chunk(("a", Json.Bool.True))
-          assertTrue(
-            helper.encodeOrDefault(Test(Nil, None))(
-              () => Left(""),
-              Right(expected)
-            ) == Right(expected)
-          )
+          assertTrue(!helper.skip(Test(Nil, None)))
         }
       )
     )
