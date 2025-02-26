@@ -258,7 +258,7 @@ object ConfigurableDeriveCodecSpec extends ZIOSpecDefault {
         case class EmptyObj(a: Empty)
         case class EmptySeq(b: Seq[Int])
 
-        val expectedStr      = """{}"""
+        val expectedStr      = """{"a":{}}"""
         val expectedEmptyObj = EmptyObj(Empty(None))
         val expectedEmptySeq = EmptySeq(Seq.empty)
 
@@ -271,7 +271,7 @@ object ConfigurableDeriveCodecSpec extends ZIOSpecDefault {
 
         assertTrue(
           expectedEmptyObj.toJson == expectedStr,
-          expectedEmptySeq.toJson == expectedStr,
+          expectedEmptySeq.toJson == "{}",
           expectedStr.fromJson[EmptyObj] == Right(expectedEmptyObj),
           expectedStr.fromJson[EmptySeq] == Right(expectedEmptySeq)
         )
@@ -357,7 +357,7 @@ object ConfigurableDeriveCodecSpec extends ZIOSpecDefault {
         case class EmptyObj(a: Empty)
         case class EmptySeq(b: Seq[Int])
 
-        val expectedJson     = Json.Obj()
+        val expectedJson     = Json.Obj(Chunk("a" -> Json.Obj.empty))
         val expectedEmptyObj = EmptyObj(Empty(None))
         val expectedEmptySeq = EmptySeq(Seq.empty)
 
@@ -370,7 +370,7 @@ object ConfigurableDeriveCodecSpec extends ZIOSpecDefault {
 
         assertTrue(
           expectedEmptyObj.toJsonAST == Right(expectedJson),
-          expectedEmptySeq.toJsonAST == Right(expectedJson),
+          expectedEmptySeq.toJsonAST == Right(Json.Obj()),
           expectedJson.as[EmptyObj] == Right(expectedEmptyObj),
           expectedJson.as[EmptySeq] == Right(expectedEmptySeq)
         )
