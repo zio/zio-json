@@ -551,9 +551,9 @@ object DeriveJsonEncoder {
         }
 
         override final def toJsonAST(a: A): Either[String, Json] = {
-          val buf    = Array.newBuilder[(String, Json)]
           val fields = this.fields
-          var idx    = 0
+          var buf = new Array[(String, Json)](fields.length)
+          var i, idx = 0
           while (idx < fields.length) {
             val field = fields(idx)
             idx += 1
@@ -561,12 +561,16 @@ object DeriveJsonEncoder {
             if (field.skip(p)) ()
             else {
               field.encoder.toJsonAST(p) match {
-                case Right(value) => buf += ((field.name, value))
-                case _            =>
+                case Right(value) =>
+                  buf(i) = (field.name, value)
+                  i += 1
+                case left =>
+                  return left
               }
             }
           }
-          new Right(Json.Obj(Chunk.fromArray(buf.result())))
+          if (i != buf.length) buf = java.util.Arrays.copyOf(buf, i)
+          new Right(Json.Obj(Chunk.fromArray(buf)))
         }
       }
     }
