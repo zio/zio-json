@@ -552,7 +552,7 @@ object DeriveJsonEncoder {
 
         override final def toJsonAST(a: A): Either[String, Json] = {
           val fields = this.fields
-          var buf = new Array[(String, Json)](fields.length)
+          var buf    = new Array[(String, Json)](fields.length)
           var i, idx = 0
           while (idx < fields.length) {
             val field = fields(idx)

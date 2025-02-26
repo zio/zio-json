@@ -38,7 +38,7 @@ trait JsonEncoder[A] extends JsonEncoderPlatformSpecific[A] {
 
     override def isEmpty(b: B): Boolean = self.isEmpty(f(b))
 
-    override final def toJsonAST(b: B): Either[String, Json] = self.toJsonAST(f(b))
+    override def toJsonAST(b: B): Either[String, Json] = self.toJsonAST(f(b))
   }
 
   /**
@@ -162,7 +162,7 @@ object JsonEncoder extends GeneratedTupleEncoders with EncoderLowPriority1 with 
       out.write('"')
     }
 
-    @inline override final def toJsonAST(a: String): Either[String, Json] = new Right(new Json.Str(a))
+    @inline override def toJsonAST(a: String): Either[String, Json] = new Right(new Json.Str(a))
 
     private[this] def writeEncoded(a: String, out: Write): Unit = {
       val len = a.length
@@ -208,14 +208,14 @@ object JsonEncoder extends GeneratedTupleEncoders with EncoderLowPriority1 with 
           }
       }
 
-    override final def toJsonAST(a: Char): Either[String, Json] = new Right(new Json.Str(a.toString))
+    override def toJsonAST(a: Char): Either[String, Json] = new Right(new Json.Str(a.toString))
   }
 
   // FIXME: remove in the next major version
   private[json] def explicit[A](f: A => String, g: A => Json): JsonEncoder[A] = new JsonEncoder[A] {
     def unsafeEncode(a: A, indent: Option[Int], out: Write): Unit = out.write(f(a))
 
-    override final def toJsonAST(a: A): Either[String, Json] = new Right(g(a))
+    override def toJsonAST(a: A): Either[String, Json] = new Right(g(a))
   }
 
   // FIXME: remove in the next major version
@@ -226,7 +226,7 @@ object JsonEncoder extends GeneratedTupleEncoders with EncoderLowPriority1 with 
       out.write('"')
     }
 
-    override final def toJsonAST(a: A): Either[String, Json] = new Right(new Json.Str(f(a)))
+    override def toJsonAST(a: A): Either[String, Json] = new Right(new Json.Str(f(a)))
   }
 
   // FIXME: add tests
@@ -248,7 +248,7 @@ object JsonEncoder extends GeneratedTupleEncoders with EncoderLowPriority1 with 
       if (a) out.write('t', 'r', 'u', 'e')
       else out.write('f', 'a', 'l', 's', 'e')
 
-    override final def toJsonAST(a: Boolean): Either[String, Json] = new Right(Json.Bool(a))
+    override def toJsonAST(a: Boolean): Either[String, Json] = new Right(Json.Bool(a))
   }
   implicit val symbol: JsonEncoder[Symbol] = string.contramap(_.name)
   implicit val byte: JsonEncoder[Byte] = new JsonEncoder[Byte] {
@@ -311,7 +311,7 @@ object JsonEncoder extends GeneratedTupleEncoders with EncoderLowPriority1 with 
 
     override def isNothing(oa: Option[A]): Boolean = (oa eq None) || A.isNothing(oa.get)
 
-    override final def toJsonAST(oa: Option[A]): Either[String, Json] =
+    override def toJsonAST(oa: Option[A]): Either[String, Json] =
       if (oa eq None) new Right(Json.Null)
       else A.toJsonAST(oa.get)
   }
@@ -368,7 +368,7 @@ object JsonEncoder extends GeneratedTupleEncoders with EncoderLowPriority1 with 
         pad(indent, out)
       }
 
-      override final def toJsonAST(eab: Either[A, B]): Either[String, Json] =
+      override def toJsonAST(eab: Either[A, B]): Either[String, Json] =
         eab match {
           case Left(a)  => A.toJsonAST(a).map(v => Json.Obj(Chunk.single("Left" -> v)))
           case Right(b) => B.toJsonAST(b).map(v => Json.Obj(Chunk.single("Right" -> v)))
@@ -428,12 +428,21 @@ private[json] trait EncoderLowPriority1 extends EncoderLowPriority2 {
         pad(indent, out)
       }
 
-      override final def toJsonAST(as: Array[A]): Either[String, Json] =
-        as.map(A.toJsonAST)
-          .foldLeft[Either[String, Chunk[Json]]](Right(Chunk.empty)) { (s, i) =>
-            s.flatMap(chunk => i.map(item => chunk :+ item))
+      override def toJsonAST(as: Array[A]): Either[String, Json] = {
+        val len = as.length
+        val buf = new Array[Json](len)
+        var i   = 0
+        while (i < len) {
+          A.toJsonAST(as(i)) match {
+            case Right(json) =>
+              buf(i) = json
+              i += 1
+            case left =>
+              return left
           }
-          .map(Json.Arr(_))
+        }
+        new Right(Json.Arr(Chunk.fromArray(buf)))
+      }
     }
 
   implicit def seq[A: JsonEncoder]: JsonEncoder[Seq[A]] = iterable[A, Seq]
@@ -491,12 +500,22 @@ private[json] trait EncoderLowPriority1 extends EncoderLowPriority2 {
         pad(indent, out)
       }
 
-      override final def toJsonAST(as: List[A]): Either[String, Json] =
-        as.map(A.toJsonAST)
-          .foldLeft[Either[String, Chunk[Json]]](Right(Chunk.empty)) { (s, i) =>
-            s.flatMap(chunk => i.map(item => chunk :+ item))
+      override def toJsonAST(as: List[A]): Either[String, Json] = {
+        var as_ = as
+        val buf = new Array[Json](as_.size)
+        var i   = 0
+        while (as_ ne Nil) {
+          A.toJsonAST(as_.head) match {
+            case Right(json) =>
+              as_ = as_.tail
+              buf(i) = json
+              i += 1
+            case left =>
+              return left
           }
-          .map(Json.Arr(_))
+        }
+        new Right(Json.Arr(Chunk.fromArray(buf)))
+      }
     }
 
   implicit def vector[A: JsonEncoder]: JsonEncoder[Vector[A]] = iterable[A, Vector]
@@ -564,12 +583,21 @@ private[json] trait EncoderLowPriority2 extends EncoderLowPriority3 {
         pad(indent, out)
       }
 
-      override final def toJsonAST(as: T[A]): Either[String, Json] =
-        as.map(A.toJsonAST)
-          .foldLeft[Either[String, Chunk[Json]]](Right(Chunk.empty)) { (s, i) =>
-            s.flatMap(chunk => i.map(item => chunk :+ item))
+      override def toJsonAST(as: T[A]): Either[String, Json] = {
+        val it  = as.iterator
+        val buf = new Array[Json](as.size)
+        var i   = 0
+        while (it.hasNext) {
+          A.toJsonAST(it.next()) match {
+            case Right(json) =>
+              buf(i) = json
+              i += 1
+            case left =>
+              return left
           }
-          .map(Json.Arr(_))
+        }
+        new Right(Json.Arr(Chunk.fromArray(buf)))
+      }
     }
 
   // not implicit because this overlaps with encoders for lists of tuples
@@ -621,16 +649,25 @@ private[json] trait EncoderLowPriority2 extends EncoderLowPriority3 {
       pad(indent, out)
     }
 
-    override final def toJsonAST(kvs: T[K, A]): Either[String, Json] =
-      kvs
-        .foldLeft[Either[String, Chunk[(String, Json)]]](Right(Chunk.empty)) { case (s, (k, v)) =>
-          for {
-            chunk <- s
-            key    = K.unsafeEncodeField(k)
-            value <- A.toJsonAST(v)
-          } yield if (value == Json.Null) chunk else chunk :+ (key -> value)
+    override def toJsonAST(kvs: T[K, A]): Either[String, Json] = {
+      val it  = kvs.iterator
+      var buf = new Array[(String, Json)](kvs.size)
+      var i   = 0
+      while (it.hasNext) {
+        val kv = it.next()
+        A.toJsonAST(kv._2) match {
+          case Right(json) =>
+            if (json ne Json.Null) {
+              buf(i) = (K.unsafeEncodeField(kv._1), json)
+              i += 1
+            }
+          case left =>
+            return left
         }
-        .map(Json.Obj(_))
+      }
+      if (i != buf.length) buf = java.util.Arrays.copyOf(buf, i)
+      new Right(Json.Obj(Chunk.fromArray(buf)))
+    }
   }
 
   // not implicit because this overlaps with encoders for lists of tuples
@@ -653,7 +690,7 @@ private[json] trait EncoderLowPriority3 extends EncoderLowPriority4 {
       out.write('"')
     }
 
-    override final def toJsonAST(a: DayOfWeek): Either[String, Json] =
+    override def toJsonAST(a: DayOfWeek): Either[String, Json] =
       new Right(new Json.Str(a.toString))
   }
 
@@ -664,7 +701,7 @@ private[json] trait EncoderLowPriority3 extends EncoderLowPriority4 {
       out.write('"')
     }
 
-    override final def toJsonAST(a: Duration): Either[String, Json] =
+    override def toJsonAST(a: Duration): Either[String, Json] =
       new Right(new Json.Str(serializers.toString(a)))
   }
 
@@ -675,7 +712,7 @@ private[json] trait EncoderLowPriority3 extends EncoderLowPriority4 {
       out.write('"')
     }
 
-    override final def toJsonAST(a: Instant): Either[String, Json] =
+    override def toJsonAST(a: Instant): Either[String, Json] =
       new Right(new Json.Str(serializers.toString(a)))
   }
 
@@ -686,7 +723,7 @@ private[json] trait EncoderLowPriority3 extends EncoderLowPriority4 {
       out.write('"')
     }
 
-    override final def toJsonAST(a: LocalDate): Either[String, Json] =
+    override def toJsonAST(a: LocalDate): Either[String, Json] =
       new Right(new Json.Str(serializers.toString(a)))
   }
 
@@ -697,7 +734,7 @@ private[json] trait EncoderLowPriority3 extends EncoderLowPriority4 {
       out.write('"')
     }
 
-    override final def toJsonAST(a: LocalDateTime): Either[String, Json] =
+    override def toJsonAST(a: LocalDateTime): Either[String, Json] =
       new Right(new Json.Str(serializers.toString(a)))
   }
 
@@ -708,7 +745,7 @@ private[json] trait EncoderLowPriority3 extends EncoderLowPriority4 {
       out.write('"')
     }
 
-    override final def toJsonAST(a: LocalTime): Either[String, Json] =
+    override def toJsonAST(a: LocalTime): Either[String, Json] =
       new Right(new Json.Str(serializers.toString(a)))
   }
 
@@ -719,7 +756,7 @@ private[json] trait EncoderLowPriority3 extends EncoderLowPriority4 {
       out.write('"')
     }
 
-    override final def toJsonAST(a: Month): Either[String, Json] =
+    override def toJsonAST(a: Month): Either[String, Json] =
       new Right(new Json.Str(a.toString))
   }
 
@@ -730,7 +767,7 @@ private[json] trait EncoderLowPriority3 extends EncoderLowPriority4 {
       out.write('"')
     }
 
-    override final def toJsonAST(a: MonthDay): Either[String, Json] =
+    override def toJsonAST(a: MonthDay): Either[String, Json] =
       new Right(new Json.Str(serializers.toString(a)))
   }
 
@@ -741,7 +778,7 @@ private[json] trait EncoderLowPriority3 extends EncoderLowPriority4 {
       out.write('"')
     }
 
-    override final def toJsonAST(a: OffsetDateTime): Either[String, Json] =
+    override def toJsonAST(a: OffsetDateTime): Either[String, Json] =
       new Right(new Json.Str(serializers.toString(a)))
   }
 
@@ -752,7 +789,7 @@ private[json] trait EncoderLowPriority3 extends EncoderLowPriority4 {
       out.write('"')
     }
 
-    override final def toJsonAST(a: OffsetTime): Either[String, Json] =
+    override def toJsonAST(a: OffsetTime): Either[String, Json] =
       new Right(new Json.Str(serializers.toString(a)))
   }
 
@@ -763,7 +800,7 @@ private[json] trait EncoderLowPriority3 extends EncoderLowPriority4 {
       out.write('"')
     }
 
-    override final def toJsonAST(a: Period): Either[String, Json] =
+    override def toJsonAST(a: Period): Either[String, Json] =
       new Right(new Json.Str(serializers.toString(a)))
   }
 
@@ -774,7 +811,7 @@ private[json] trait EncoderLowPriority3 extends EncoderLowPriority4 {
       out.write('"')
     }
 
-    override final def toJsonAST(a: Year): Either[String, Json] =
+    override def toJsonAST(a: Year): Either[String, Json] =
       new Right(new Json.Str(serializers.toString(a)))
   }
 
@@ -785,7 +822,7 @@ private[json] trait EncoderLowPriority3 extends EncoderLowPriority4 {
       out.write('"')
     }
 
-    override final def toJsonAST(a: YearMonth): Either[String, Json] =
+    override def toJsonAST(a: YearMonth): Either[String, Json] =
       new Right(new Json.Str(serializers.toString(a)))
   }
 
@@ -796,7 +833,7 @@ private[json] trait EncoderLowPriority3 extends EncoderLowPriority4 {
       out.write('"')
     }
 
-    override final def toJsonAST(a: ZonedDateTime): Either[String, Json] =
+    override def toJsonAST(a: ZonedDateTime): Either[String, Json] =
       new Right(new Json.Str(serializers.toString(a)))
   }
 
@@ -807,7 +844,7 @@ private[json] trait EncoderLowPriority3 extends EncoderLowPriority4 {
       out.write('"')
     }
 
-    override final def toJsonAST(a: ZoneId): Either[String, Json] =
+    override def toJsonAST(a: ZoneId): Either[String, Json] =
       new Right(new Json.Str(a.getId))
   }
 
@@ -818,7 +855,7 @@ private[json] trait EncoderLowPriority3 extends EncoderLowPriority4 {
       out.write('"')
     }
 
-    override final def toJsonAST(a: ZoneOffset): Either[String, Json] =
+    override def toJsonAST(a: ZoneOffset): Either[String, Json] =
       new Right(new Json.Str(serializers.toString(a)))
   }
 
@@ -829,7 +866,7 @@ private[json] trait EncoderLowPriority3 extends EncoderLowPriority4 {
       out.write('"')
     }
 
-    override final def toJsonAST(a: UUID): Either[String, Json] =
+    override def toJsonAST(a: UUID): Either[String, Json] =
       new Right(new Json.Str(SafeNumbers.toString(a)))
   }
 
@@ -840,7 +877,7 @@ private[json] trait EncoderLowPriority3 extends EncoderLowPriority4 {
       out.write('"')
     }
 
-    override final def toJsonAST(a: java.util.Currency): Either[String, Json] =
+    override def toJsonAST(a: java.util.Currency): Either[String, Json] =
       new Right(new Json.Str(a.toString))
   }
 }
