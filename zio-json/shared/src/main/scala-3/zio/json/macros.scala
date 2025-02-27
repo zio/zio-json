@@ -764,6 +764,80 @@ object DeriveJsonEncoder extends JsonEncoderDerivation(JsonCodecConfiguration.de
         i += 1
       }
     }
+
+    @inline override def write(c1: Char, c2: Char): Unit =
+      if (state == 0) out.write(c1, c2)
+      else {
+        nonZeroStateWrite(c1)
+        nonZeroStateWrite(c2)
+      }
+
+    @inline override def write(c1: Char, c2: Char, c3: Char): Unit =
+      if (state == 0) out.write(c1, c2, c3)
+      else {
+        nonZeroStateWrite(c1)
+        nonZeroStateWrite(c2)
+        nonZeroStateWrite(c3)
+      }
+
+    @inline override def write(c1: Char, c2: Char, c3: Char, c4: Char): Unit =
+      if (state == 0) out.write(c1, c2, c3, c4)
+      else {
+        nonZeroStateWrite(c1)
+        nonZeroStateWrite(c2)
+        nonZeroStateWrite(c3)
+        nonZeroStateWrite(c4)
+      }
+
+    @inline override def write(c1: Char, c2: Char, c3: Char, c4: Char, c5: Char): Unit =
+      if (state == 0) out.write(c1, c2, c3, c4, c5)
+      else {
+        nonZeroStateWrite(c1)
+        nonZeroStateWrite(c2)
+        nonZeroStateWrite(c3)
+        nonZeroStateWrite(c4)
+        nonZeroStateWrite(c5)
+      }
+
+    @inline override def write(s: Short): Unit =
+      if (state == 0) out.write(s)
+      else {
+        nonZeroStateWrite((s & 0xff).toChar)
+        nonZeroStateWrite((s >> 8).toChar)
+      }
+
+    @inline override def write(s1: Short, s2: Short): Unit =
+      if (state == 0) out.write(s1, s2)
+      else {
+        nonZeroStateWrite((s1 & 0xff).toChar)
+        nonZeroStateWrite((s1 >> 8).toChar)
+        nonZeroStateWrite((s2 & 0xff).toChar)
+        nonZeroStateWrite((s2 >> 8).toChar)
+      }
+
+    @inline override def write(s1: Short, s2: Short, s3: Short): Unit =
+      if (state == 0) out.write(s1, s2, s3)
+      else {
+        nonZeroStateWrite((s1 & 0xff).toChar)
+        nonZeroStateWrite((s1 >> 8).toChar)
+        nonZeroStateWrite((s2 & 0xff).toChar)
+        nonZeroStateWrite((s2 >> 8).toChar)
+        nonZeroStateWrite((s3 & 0xff).toChar)
+        nonZeroStateWrite((s3 >> 8).toChar)
+      }
+
+    @inline override def write(s1: Short, s2: Short, s3: Short, s4: Short): Unit =
+      if (state == 0) out.write(s1, s2, s3, s4)
+      else {
+        nonZeroStateWrite((s1 & 0xff).toChar)
+        nonZeroStateWrite((s1 >> 8).toChar)
+        nonZeroStateWrite((s2 & 0xff).toChar)
+        nonZeroStateWrite((s2 >> 8).toChar)
+        nonZeroStateWrite((s3 & 0xff).toChar)
+        nonZeroStateWrite((s3 >> 8).toChar)
+        nonZeroStateWrite((s4 & 0xff).toChar)
+        nonZeroStateWrite((s4 >> 8).toChar)
+      }
   }
 }
 
