@@ -541,8 +541,7 @@ object DeriveJsonEncoder {
                 out.write(',')
                 JsonEncoder.pad(indent_, out)
               } else prevFields = true
-              if (indent.isEmpty) out.write(field.encodedName)
-              else out.write(field.prettyEncodedName)
+              out.write(if (indent eq None) field.encodedName else field.prettyEncodedName)
               field.encoder.unsafeEncode(p, indent_, out)
             }
           }
@@ -614,9 +613,9 @@ object DeriveJsonEncoder {
           val indent_ = JsonEncoder.bump(indent)
           JsonEncoder.pad(indent_, out)
           out.write(encodedNames(idx))
-          if (indent.isEmpty) out.write(':')
+          if (indent eq None) out.write(':')
           else out.write(" : ")
-          tcs(idx).unsafeEncode(casts(idx)(a), indent_, out)
+          tcs(idx).unsafeEncode(a, indent_, out)
           JsonEncoder.pad(indent, out)
           out.write('}')
         }
@@ -624,7 +623,7 @@ object DeriveJsonEncoder {
         override def toJsonAST(a: A): Either[String, Json] = {
           var idx = 0
           while (!casts(idx).isDefinedAt(a)) idx += 1
-          tcs(idx).toJsonAST(casts(idx)(a)).map(inner => new Json.Obj(Chunk(names(idx) -> inner)))
+          tcs(idx).toJsonAST(a).map(inner => new Json.Obj(Chunk(names(idx) -> inner)))
         }
       }
     } else {
@@ -640,17 +639,17 @@ object DeriveJsonEncoder {
           val indent_ = JsonEncoder.bump(indent)
           JsonEncoder.pad(indent_, out)
           out.write(encodedHintFieldName)
-          if (indent.isEmpty) out.write(':')
+          if (indent eq None) out.write(':')
           else out.write(" : ")
           out.write(encodedNames(idx))
           // whitespace is always off by 2 spaces at the end, probably not worth fixing
-          tcs(idx).unsafeEncode(casts(idx)(a), indent, new NestedWriter(out, indent_))
+          tcs(idx).unsafeEncode(a, indent, new NestedWriter(out, indent_))
         }
 
         override final def toJsonAST(a: A): Either[String, Json] = {
           var idx = 0
           while (!casts(idx).isDefinedAt(a)) idx += 1
-          tcs(idx).toJsonAST(casts(idx)(a)).flatMap {
+          tcs(idx).toJsonAST(a).flatMap {
             case o: Json.Obj =>
               val hintField = hintFieldName -> new Json.Str(names(idx))
               new Right(new Json.Obj(hintField +: o.fields)) // hint field is always first
