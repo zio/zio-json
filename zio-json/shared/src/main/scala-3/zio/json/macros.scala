@@ -547,20 +547,18 @@ sealed class JsonEncoderDerivation(config: JsonCodecConfiguration) extends Deriv
         def unsafeEncode(a: A, indent: Option[Int], out: Write): Unit = {
           out.write('{')
           val indent_ = JsonEncoder.bump(indent)
-          JsonEncoder.pad(indent_, out)
           val fields = this.fields
           var idx = 0
-          var prevFields = false
+          var comma = false
           while (idx < fields.length) {
             val field = fields(idx)
             idx += 1
             val p = field.p.deref(a)
             if (field.skip(p)) ()
             else {
-              if (prevFields) {
-                out.write(',')
-                JsonEncoder.pad(indent_, out)
-              } else prevFields = true
+              if (comma) out.write(',')
+              else comma = true
+              JsonEncoder.pad(indent_, out)
               out.write(if (indent eq None) field.encodedName else field.prettyEncodedName)
               field.encoder.unsafeEncode(p, indent_, out)
             }
