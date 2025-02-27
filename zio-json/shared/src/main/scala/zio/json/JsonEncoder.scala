@@ -414,14 +414,11 @@ private[json] trait EncoderLowPriority1 extends EncoderLowPriority2 {
 
       private[this] def unsafeEncodePadded(as: Array[A], indent: Option[Int], out: Write): Unit = {
         val indent_ = bump(indent)
-        pad(indent_, out)
-        val len = as.length
-        var i   = 0
+        val len     = as.length
+        var i       = 0
         while (i < len) {
-          if (i != 0) {
-            out.write(',')
-            pad(indent_, out)
-          }
+          if (i != 0) out.write(',')
+          pad(indent_, out)
           A.unsafeEncode(as(i), indent_, out)
           i += 1
         }
@@ -473,11 +470,9 @@ private[json] trait EncoderLowPriority1 extends EncoderLowPriority2 {
         }
 
       private[this] def unsafeEncodeCompact(as: List[A], indent: Option[Int], out: Write): Unit = {
-        var as_   = as
-        var first = true
+        var as_ = as
         while (as_ ne Nil) {
-          if (first) first = false
-          else out.write(',')
+          if (as_ ne as) out.write(',')
           A.unsafeEncode(as_.head, indent, out)
           as_ = as_.tail
         }
@@ -485,15 +480,10 @@ private[json] trait EncoderLowPriority1 extends EncoderLowPriority2 {
 
       private[this] def unsafeEncodePadded(as: List[A], indent: Option[Int], out: Write): Unit = {
         val indent_ = bump(indent)
-        pad(indent_, out)
-        var as_   = as
-        var first = true
+        var as_     = as
         while (as_ ne Nil) {
-          if (first) first = false
-          else {
-            out.write(',')
-            pad(indent_, out)
-          }
+          if (as_ ne as) out.write(',')
+          pad(indent_, out)
           A.unsafeEncode(as_.head, indent_, out)
           as_ = as_.tail
         }
@@ -560,24 +550,21 @@ private[json] trait EncoderLowPriority2 extends EncoderLowPriority3 {
 
       private[this] def unsafeEncodeCompact(as: T[A], indent: Option[Int], out: Write): Unit =
         as.foreach {
-          var first = true
+          var comma = false
           a =>
-            if (first) first = false
-            else out.write(',')
+            if (comma) out.write(',')
+            else comma = true
             A.unsafeEncode(a, indent, out)
         }
 
       private[this] def unsafeEncodePadded(as: T[A], indent: Option[Int], out: Write): Unit = {
         val indent_ = bump(indent)
-        pad(indent_, out)
         as.foreach {
-          var first = true
+          var comma = false
           a =>
-            if (first) first = false
-            else {
-              out.write(',')
-              pad(indent_, out)
-            }
+            if (comma) out.write(',')
+            else comma = true
+            pad(indent_, out)
             A.unsafeEncode(a, indent_, out)
         }
         pad(indent, out)
@@ -618,11 +605,11 @@ private[json] trait EncoderLowPriority2 extends EncoderLowPriority3 {
 
     private[this] def unsafeEncodeCompact(kvs: T[K, A], indent: Option[Int], out: Write): Unit =
       kvs.foreach {
-        var first = true
+        var comma = false
         kv =>
           if (!A.isNothing(kv._2)) {
-            if (first) first = false
-            else out.write(',')
+            if (comma) out.write(',')
+            else comma = true
             string.unsafeEncode(K.unsafeEncodeField(kv._1), indent, out)
             out.write(':')
             A.unsafeEncode(kv._2, indent, out)
@@ -631,16 +618,13 @@ private[json] trait EncoderLowPriority2 extends EncoderLowPriority3 {
 
     private[this] def unsafeEncodePadded(kvs: T[K, A], indent: Option[Int], out: Write): Unit = {
       val indent_ = bump(indent)
-      pad(indent_, out)
       kvs.foreach {
-        var first = true
+        var comman = false
         kv =>
           if (!A.isNothing(kv._2)) {
-            if (first) first = false
-            else {
-              out.write(',')
-              pad(indent_, out)
-            }
+            if (comman) out.write(',')
+            else comman = true
+            pad(indent_, out)
             string.unsafeEncode(K.unsafeEncodeField(kv._1), indent_, out)
             out.write(" : ")
             A.unsafeEncode(kv._2, indent_, out)
