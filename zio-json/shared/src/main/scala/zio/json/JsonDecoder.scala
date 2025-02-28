@@ -16,6 +16,7 @@
 package zio.json
 
 import zio.json.ast.Json
+import zio.json.internal.Lexer.NumberMaxBits
 import zio.json.internal._
 import zio.json.javatime.parsers
 import zio.json.uuid.UUIDParser
@@ -310,16 +311,22 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority1 with 
         a
       }
 
-    override def unsafeFromJsonAST(trace: List[JsonError], json: Json): Byte =
+    override def unsafeFromJsonAST(trace: List[JsonError], json: Json): Byte = {
       json match {
         case n: Json.Num =>
-          try n.value.byteValueExact
+          try return n.value.byteValueExact
           catch {
-            case ex: ArithmeticException => Lexer.error(ex.getMessage, trace)
+            case _: ArithmeticException =>
           }
-        case s: Json.Str => Lexer.byte(trace, new FastStringReader(s.value))
-        case _           => Lexer.error("expected number", trace)
+        case s: Json.Str =>
+          try return Lexer.byte(trace, new FastStringReader(s.value))
+          catch {
+            case _: UnexpectedEnd =>
+          }
+        case _ =>
       }
+      Lexer.error("expected a Byte", trace)
+    }
   }
 
   implicit val short: JsonDecoder[Short] = new JsonDecoder[Short] {
@@ -334,16 +341,22 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority1 with 
         a
       }
 
-    override def unsafeFromJsonAST(trace: List[JsonError], json: Json): Short =
+    override def unsafeFromJsonAST(trace: List[JsonError], json: Json): Short = {
       json match {
         case n: Json.Num =>
-          try n.value.shortValueExact
+          try return n.value.shortValueExact
           catch {
-            case ex: ArithmeticException => Lexer.error(ex.getMessage, trace)
+            case _: ArithmeticException =>
           }
-        case s: Json.Str => Lexer.short(trace, new FastStringReader(s.value))
-        case _           => Lexer.error("expected number", trace)
+        case s: Json.Str =>
+          try return Lexer.short(trace, new FastStringReader(s.value))
+          catch {
+            case _: UnexpectedEnd =>
+          }
+        case _ =>
       }
+      Lexer.error("expected a Short", trace)
+    }
   }
 
   implicit val int: JsonDecoder[Int] = new JsonDecoder[Int] {
@@ -358,16 +371,22 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority1 with 
         a
       }
 
-    override def unsafeFromJsonAST(trace: List[JsonError], json: Json): Int =
+    override def unsafeFromJsonAST(trace: List[JsonError], json: Json): Int = {
       json match {
         case n: Json.Num =>
-          try n.value.intValueExact
+          try return n.value.intValueExact
           catch {
-            case ex: ArithmeticException => Lexer.error(ex.getMessage, trace)
+            case _: ArithmeticException =>
           }
-        case s: Json.Str => Lexer.int(trace, new FastStringReader(s.value))
-        case _           => Lexer.error("expected number", trace)
+        case s: Json.Str =>
+          try return Lexer.int(trace, new FastStringReader(s.value))
+          catch {
+            case _: UnexpectedEnd =>
+          }
+        case _ =>
       }
+      Lexer.error("expected a Int", trace)
+    }
   }
   implicit val long: JsonDecoder[Long] = new JsonDecoder[Long] {
     def unsafeDecode(trace: List[JsonError], in: RetractReader): Long =
@@ -381,16 +400,22 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority1 with 
         a
       }
 
-    override def unsafeFromJsonAST(trace: List[JsonError], json: Json): Long =
+    override def unsafeFromJsonAST(trace: List[JsonError], json: Json): Long = {
       json match {
         case n: Json.Num =>
-          try n.value.longValueExact
+          try return n.value.longValueExact
           catch {
-            case ex: ArithmeticException => Lexer.error(ex.getMessage, trace)
+            case _: ArithmeticException =>
           }
-        case s: Json.Str => Lexer.long(trace, new FastStringReader(s.value))
-        case _           => Lexer.error("expected number", trace)
+        case s: Json.Str =>
+          try return Lexer.long(trace, new FastStringReader(s.value))
+          catch {
+            case _: UnexpectedEnd =>
+          }
+        case _ =>
       }
+      Lexer.error("expected a Long", trace)
+    }
   }
 
   implicit val bigInteger: JsonDecoder[java.math.BigInteger] = new JsonDecoder[java.math.BigInteger] {
@@ -405,16 +430,22 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority1 with 
         a
       }
 
-    override def unsafeFromJsonAST(trace: List[JsonError], json: Json): java.math.BigInteger =
+    override def unsafeFromJsonAST(trace: List[JsonError], json: Json): java.math.BigInteger = {
       json match {
         case n: Json.Num =>
-          try n.value.toBigIntegerExact
+          try return n.value.toBigIntegerExact
           catch {
-            case ex: ArithmeticException => Lexer.error(ex.getMessage, trace)
+            case _: ArithmeticException =>
           }
-        case s: Json.Str => Lexer.bigInteger(trace, new FastStringReader(s.value))
-        case _           => Lexer.error("expected number", trace)
+        case s: Json.Str =>
+          try return Lexer.bigInteger(trace, new FastStringReader(s.value))
+          catch {
+            case _: UnexpectedEnd =>
+          }
+        case _ =>
       }
+      Lexer.error(s"expected a $NumberMaxBits-bit BigInteger", trace)
+    }
   }
   implicit val scalaBigInt: JsonDecoder[BigInt] = new JsonDecoder[BigInt] {
     def unsafeDecode(trace: List[JsonError], in: RetractReader): BigInt =
@@ -428,16 +459,22 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority1 with 
         a
       }
 
-    override def unsafeFromJsonAST(trace: List[JsonError], json: Json): BigInt =
+    override def unsafeFromJsonAST(trace: List[JsonError], json: Json): BigInt = {
       json match {
         case n: Json.Num =>
-          try BigInt(n.value.toBigIntegerExact)
+          try return BigInt(n.value.toBigIntegerExact)
           catch {
-            case ex: ArithmeticException => Lexer.error(ex.getMessage, trace)
+            case _: ArithmeticException =>
           }
-        case s: Json.Str => Lexer.bigInt(trace, new FastStringReader(s.value))
-        case _           => Lexer.error("expected number", trace)
+        case s: Json.Str =>
+          try return Lexer.bigInt(trace, new FastStringReader(s.value))
+          catch {
+            case _: UnexpectedEnd =>
+          }
+        case _ =>
       }
+      Lexer.error(s"expected a $NumberMaxBits-bit BigInt", trace)
+    }
   }
   implicit val float: JsonDecoder[Float] = new JsonDecoder[Float] {
     def unsafeDecode(trace: List[JsonError], in: RetractReader): Float =
@@ -451,12 +488,19 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority1 with 
         a
       }
 
-    override def unsafeFromJsonAST(trace: List[JsonError], json: Json): Float =
+    override def unsafeFromJsonAST(trace: List[JsonError], json: Json): Float = {
       json match {
-        case n: Json.Num => n.value.floatValue
-        case s: Json.Str => Lexer.float(trace, new FastStringReader(s.value))
-        case _           => Lexer.error("expected number", trace)
+        case n: Json.Num =>
+          return n.value.floatValue
+        case s: Json.Str =>
+          try return Lexer.float(trace, new FastStringReader(s.value))
+          catch {
+            case _: UnexpectedEnd =>
+          }
+        case _ =>
       }
+      Lexer.error("expected a Float", trace)
+    }
   }
   implicit val double: JsonDecoder[Double] = new JsonDecoder[Double] {
     def unsafeDecode(trace: List[JsonError], in: RetractReader): Double =
@@ -470,12 +514,19 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority1 with 
         a
       }
 
-    override def unsafeFromJsonAST(trace: List[JsonError], json: Json): Double =
+    override def unsafeFromJsonAST(trace: List[JsonError], json: Json): Double = {
       json match {
-        case n: Json.Num => n.value.doubleValue
-        case s: Json.Str => Lexer.double(trace, new FastStringReader(s.value))
-        case _           => Lexer.error("expected number", trace)
+        case n: Json.Num =>
+          return n.value.doubleValue
+        case s: Json.Str =>
+          try return Lexer.double(trace, new FastStringReader(s.value))
+          catch {
+            case _: UnexpectedEnd =>
+          }
+        case _ =>
       }
+      Lexer.error("expected a Double", trace)
+    }
   }
   implicit val bigDecimal: JsonDecoder[java.math.BigDecimal] = new JsonDecoder[java.math.BigDecimal] {
     def unsafeDecode(trace: List[JsonError], in: RetractReader): java.math.BigDecimal =
@@ -489,12 +540,19 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority1 with 
         a
       }
 
-    override def unsafeFromJsonAST(trace: List[JsonError], json: Json): java.math.BigDecimal =
+    override def unsafeFromJsonAST(trace: List[JsonError], json: Json): java.math.BigDecimal = {
       json match {
-        case n: Json.Num => n.value
-        case s: Json.Str => Lexer.bigDecimal(trace, new FastStringReader(s.value))
-        case _           => Lexer.error("expected number", trace)
+        case n: Json.Num =>
+          return n.value
+        case s: Json.Str =>
+          try return Lexer.bigDecimal(trace, new FastStringReader(s.value))
+          catch {
+            case _: UnexpectedEnd =>
+          }
+        case _ =>
       }
+      Lexer.error(s"expected a BigDecimal with $NumberMaxBits-bit mantissa", trace)
+    }
   }
   implicit val scalaBigDecimal: JsonDecoder[BigDecimal] = new JsonDecoder[BigDecimal] {
     def unsafeDecode(trace: List[JsonError], in: RetractReader): BigDecimal =
@@ -508,12 +566,19 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority1 with 
         a
       }
 
-    override def unsafeFromJsonAST(trace: List[JsonError], json: Json): BigDecimal =
+    override def unsafeFromJsonAST(trace: List[JsonError], json: Json): BigDecimal = {
       json match {
-        case n: Json.Num => new BigDecimal(n.value, BigDecimal.defaultMathContext)
-        case s: Json.Str => Lexer.bigDecimal(trace, new FastStringReader(s.value))
-        case _           => Lexer.error("expected number", trace)
+        case n: Json.Num =>
+          return new BigDecimal(n.value)
+        case s: Json.Str =>
+          try return new BigDecimal(Lexer.bigDecimal(trace, new FastStringReader(s.value)))
+          catch {
+            case _: UnexpectedEnd =>
+          }
+        case _ =>
       }
+      Lexer.error(s"expected a BigDecimal with $NumberMaxBits-bit mantissa", trace)
+    }
   }
   // Option treats empty and null values as Nothing and passes values to the decoder.
   //

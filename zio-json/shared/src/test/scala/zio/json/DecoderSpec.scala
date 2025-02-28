@@ -673,6 +673,22 @@ object DecoderSpec extends ZIOSpecDefault {
             isLeft(equalTo(".is[0].str(expected string)"))
           )
         },
+        test("errors are consistent with direct decoding") {
+          assert("""{}""".fromJson[Message])(isLeft(equalTo(".v1(missing)"))) &&
+          assert("""{}""".fromJson[Json].flatMap(_.as[Message]))(isLeft(equalTo(".v1(missing)"))) &&
+          assert("""{"v1":"","v2":""}""".fromJson[Message])(
+            isLeft(equalTo(".v1(expected a BigDecimal with 256-bit mantissa)"))
+          ) &&
+          assert("""{"v1":"","v2":""}""".fromJson[Json].flatMap(_.as[Message]))(
+            isLeft(equalTo(".v1(expected a BigDecimal with 256-bit mantissa)"))
+          ) &&
+          assert("""{"v1":1,"v2":1}""".fromJson[Message])(
+            isLeft(equalTo(".v2(expected string)"))
+          ) &&
+          assert("""{"v1":1,"v2":1}""".fromJson[Json].flatMap(_.as[Message]))(
+            isLeft(equalTo(".v2(expected string)"))
+          )
+        },
         test("default field value") {
           import exampleproducts._
 
@@ -1007,5 +1023,11 @@ object DecoderSpec extends ZIOSpecDefault {
 
     implicitly[JsonFieldEncoder[PersonId]]
     implicitly[JsonFieldDecoder[PersonId]]
+  }
+
+  case class Message(v1: math.BigDecimal, v2: String)
+
+  object Message {
+    implicit val decoder: JsonDecoder[Message] = DeriveJsonDecoder.gen[Message]
   }
 }
