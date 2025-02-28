@@ -188,88 +188,91 @@ object Lexer {
 
   def string(trace: List[JsonError], in: OneCharReader): CharSequence = {
     var c = in.nextNonWhitespace()
-    if (c != '"') error("'\"'", c, trace)
-    var cs = charArrays.get
-    var i  = 0
-    while ({
-      c = in.readChar()
-      c != '"'
-    }) {
-      if (c == '\\') c = nextEscaped(trace, in)
-      else if (c < ' ') error("invalid control in string", trace)
-      if (i == cs.length) cs = java.util.Arrays.copyOf(cs, i << 1)
-      cs(i) = c
-      i += 1
+    if (c == '"') {
+      var cs = charArrays.get
+      var i  = 0
+      while ({
+        c = in.readChar()
+        c != '"'
+      }) {
+        if (c == '\\') c = nextEscaped(trace, in)
+        else if (c < ' ') error("invalid control in string", trace)
+        if (i == cs.length) cs = java.util.Arrays.copyOf(cs, i << 1)
+        cs(i) = c
+        i += 1
+      }
+      return new String(cs, 0, i)
     }
-    new String(cs, 0, i)
+    error("expected string", trace)
   }
 
   def uuid(trace: List[JsonError], in: OneCharReader): UUID = {
     var c = in.nextNonWhitespace()
-    if (c != '"') error("'\"'", c, trace)
-    val cs = charArrays.get
-    var i  = 0
-    while ({
-      c = in.readChar()
-      c != '"'
-    }) {
-      if (c == '\\') c = nextEscaped(trace, in)
-      if (i == 36 || c > 0xff) uuidError(trace)
-      cs(i) = c
-      i += 1
-    }
-    if (
-      i == 36 && {
-        val c1 = cs(8)
-        val c2 = cs(13)
-        val c3 = cs(18)
-        val c4 = cs(23)
-        c1 == '-' && c2 == '-' && c3 == '-' && c4 == '-'
+    if (c == '"') {
+      val cs = charArrays.get
+      var i  = 0
+      while ({
+        c = in.readChar()
+        c != '"'
+      }) {
+        if (c == '\\') c = nextEscaped(trace, in)
+        if (i == 36 || c > 0xff) uuidError(trace)
+        cs(i) = c
+        i += 1
       }
-    ) {
-      val ds = hexDigits
-      val msb1 =
-        ds(cs(0).toInt).toLong << 28 |
-          (ds(cs(1).toInt) << 24 |
-            ds(cs(2).toInt) << 20 |
-            ds(cs(3).toInt) << 16 |
-            ds(cs(4).toInt) << 12 |
-            ds(cs(5).toInt) << 8 |
-            ds(cs(6).toInt) << 4 |
-            ds(cs(7).toInt))
-      val msb2 =
-        (ds(cs(9).toInt) << 12 |
-          ds(cs(10).toInt) << 8 |
-          ds(cs(11).toInt) << 4 |
-          ds(cs(12).toInt)).toLong
-      val msb3 =
-        (ds(cs(14).toInt) << 12 |
-          ds(cs(15).toInt) << 8 |
-          ds(cs(16).toInt) << 4 |
-          ds(cs(17).toInt)).toLong
-      val lsb1 =
-        (ds(cs(19).toInt) << 12 |
-          ds(cs(20).toInt) << 8 |
-          ds(cs(21).toInt) << 4 |
-          ds(cs(22).toInt)).toLong
-      val lsb2 =
-        (ds(cs(24).toInt) << 16 |
-          ds(cs(25).toInt) << 12 |
-          ds(cs(26).toInt) << 8 |
-          ds(cs(27).toInt) << 4 |
-          ds(cs(28).toInt)).toLong << 28 |
-          (ds(cs(29).toInt) << 24 |
-            ds(cs(30).toInt) << 20 |
-            ds(cs(31).toInt) << 16 |
-            ds(cs(32).toInt) << 12 |
-            ds(cs(33).toInt) << 8 |
-            ds(cs(34).toInt) << 4 |
-            ds(cs(35).toInt))
-      if ((msb1 | msb2 | msb3 | lsb1 | lsb2) >= 0L) {
-        return new UUID(msb1 << 32 | msb2 << 16 | msb3, lsb1 << 48 | lsb2)
+      if (
+        i == 36 && {
+          val c1 = cs(8)
+          val c2 = cs(13)
+          val c3 = cs(18)
+          val c4 = cs(23)
+          c1 == '-' && c2 == '-' && c3 == '-' && c4 == '-'
+        }
+      ) {
+        val ds = hexDigits
+        val msb1 =
+          ds(cs(0).toInt).toLong << 28 |
+            (ds(cs(1).toInt) << 24 |
+              ds(cs(2).toInt) << 20 |
+              ds(cs(3).toInt) << 16 |
+              ds(cs(4).toInt) << 12 |
+              ds(cs(5).toInt) << 8 |
+              ds(cs(6).toInt) << 4 |
+              ds(cs(7).toInt))
+        val msb2 =
+          (ds(cs(9).toInt) << 12 |
+            ds(cs(10).toInt) << 8 |
+            ds(cs(11).toInt) << 4 |
+            ds(cs(12).toInt)).toLong
+        val msb3 =
+          (ds(cs(14).toInt) << 12 |
+            ds(cs(15).toInt) << 8 |
+            ds(cs(16).toInt) << 4 |
+            ds(cs(17).toInt)).toLong
+        val lsb1 =
+          (ds(cs(19).toInt) << 12 |
+            ds(cs(20).toInt) << 8 |
+            ds(cs(21).toInt) << 4 |
+            ds(cs(22).toInt)).toLong
+        val lsb2 =
+          (ds(cs(24).toInt) << 16 |
+            ds(cs(25).toInt) << 12 |
+            ds(cs(26).toInt) << 8 |
+            ds(cs(27).toInt) << 4 |
+            ds(cs(28).toInt)).toLong << 28 |
+            (ds(cs(29).toInt) << 24 |
+              ds(cs(30).toInt) << 20 |
+              ds(cs(31).toInt) << 16 |
+              ds(cs(32).toInt) << 12 |
+              ds(cs(33).toInt) << 8 |
+              ds(cs(34).toInt) << 4 |
+              ds(cs(35).toInt))
+        if ((msb1 | msb2 | msb3 | lsb1 | lsb2) >= 0L) {
+          return new UUID(msb1 << 32 | msb2 << 16 | msb3, lsb1 << 48 | lsb2)
+        }
+      } else if (i <= 36) {
+        return uuidExtended(trace, cs, i)
       }
-    } else if (i <= 36) {
-      return uuidExtended(trace, cs, i)
     }
     uuidError(trace)
   }
