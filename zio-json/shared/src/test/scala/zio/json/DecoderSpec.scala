@@ -12,7 +12,6 @@ import java.util.UUID
 import scala.collection.{ SortedMap, immutable, mutable }
 
 object DecoderSpec extends ZIOSpecDefault {
-
   val spec: Spec[Environment, Any] =
     suite("Decoder")(
       suite("fromJson")(
@@ -36,8 +35,8 @@ object DecoderSpec extends ZIOSpecDefault {
           assert("\"\\u0000\"".replace('0', 'g').fromJson[Char])(isLeft(equalTo("""(invalid charcode in string)""")))
         },
         test("byte") {
-          assert("-123".fromJson[Byte])(isRight(equalTo(-123: Byte))) &&
-          assert("123".fromJson[Byte])(isRight(equalTo(123: Byte))) &&
+          assert("-128".fromJson[Byte])(isRight(equalTo(Byte.MinValue))) &&
+          assert("127".fromJson[Byte])(isRight(equalTo(Byte.MaxValue))) &&
           assert("\"-123\"".fromJson[Byte])(isRight(equalTo(-123: Byte))) &&
           assert("\"123\"".fromJson[Byte])(isRight(equalTo(123: Byte))) &&
           assertTrue("+123".fromJson[Byte].isLeft) &&
@@ -47,8 +46,8 @@ object DecoderSpec extends ZIOSpecDefault {
           assertTrue("\"NaN\"".fromJson[Byte].isLeft)
         },
         test("short") {
-          assert("-12345".fromJson[Short])(isRight(equalTo(-12345: Short))) &&
-          assert("12345".fromJson[Short])(isRight(equalTo(12345: Short))) &&
+          assert("-32768".fromJson[Short])(isRight(equalTo(Short.MinValue))) &&
+          assert("32767".fromJson[Short])(isRight(equalTo(Short.MaxValue))) &&
           assert("\"-12345\"".fromJson[Short])(isRight(equalTo(-12345: Short))) &&
           assert("\"12345\"".fromJson[Short])(isRight(equalTo(12345: Short))) &&
           assertTrue("+12345".fromJson[Short].isLeft) &&
@@ -58,8 +57,8 @@ object DecoderSpec extends ZIOSpecDefault {
           assertTrue("\"NaN\"".fromJson[Short].isLeft)
         },
         test("int") {
-          assert("-1234567890".fromJson[Int])(isRight(equalTo(-1234567890))) &&
-          assert("1234567890".fromJson[Int])(isRight(equalTo(1234567890))) &&
+          assert("-2147483648".fromJson[Int])(isRight(equalTo(Int.MinValue))) &&
+          assert("2147483647".fromJson[Int])(isRight(equalTo(Int.MaxValue))) &&
           assert("\"-1234567890\"".fromJson[Int])(isRight(equalTo(-1234567890))) &&
           assert("\"1234567890\"".fromJson[Int])(isRight(equalTo(1234567890))) &&
           assertTrue("+1234567890".fromJson[Int].isLeft) &&
@@ -69,8 +68,8 @@ object DecoderSpec extends ZIOSpecDefault {
           assertTrue("\"NaN\"".fromJson[Int].isLeft)
         },
         test("long") {
-          assert("-123456789012345678".fromJson[Long])(isRight(equalTo(-123456789012345678L))) &&
-          assert("123456789012345678".fromJson[Long])(isRight(equalTo(123456789012345678L))) &&
+          assert("-9223372036854775808".fromJson[Long])(isRight(equalTo(Long.MinValue))) &&
+          assert("9223372036854775807".fromJson[Long])(isRight(equalTo(Long.MaxValue))) &&
           assert("\"-123456789012345678\"".fromJson[Long])(isRight(equalTo(-123456789012345678L))) &&
           assert("\"123456789012345678\"".fromJson[Long])(isRight(equalTo(123456789012345678L))) &&
           assertTrue("+123456789012345678".fromJson[Long].isLeft) &&
@@ -133,21 +132,11 @@ object DecoderSpec extends ZIOSpecDefault {
           assertTrue("\"Infinity\"".fromJson[BigDecimal].isLeft) &&
           assertTrue("\"+Infinity\"".fromJson[BigDecimal].isLeft) &&
           assertTrue("\"-Infinity\"".fromJson[BigDecimal].isLeft) &&
-          assertTrue("\"NaN\"".fromJson[BigDecimal].isLeft)
-        },
-        test("BigDecimal from JSON AST") {
-          assert("13.38885989999999992505763657391071319580078125".fromJson[Json])(
-            isRight(equalTo(Json.Num(BigDecimal("13.38885989999999992505763657391071319580078125"))))
-          )
-        },
-        test("BigDecimal too large") {
-          // this big integer consumes more than 256 bits
+          assertTrue("\"NaN\"".fromJson[BigDecimal].isLeft) &&
           assert(
             "170141183460469231731687303715884105728489465165484668486513574864654818964653168465316546851"
               .fromJson[BigDecimal]
-          )(isLeft(equalTo("(expected a BigDecimal with 256-bit mantissa)")))
-        },
-        test("BigDecimal exponent too large") {
+          )(isLeft(equalTo("(expected a BigDecimal with 256-bit mantissa)"))) &&
           assert("1.23456789012345678901e-2147483648".fromJson[BigDecimal])(
             isLeft(equalTo("(expected a BigDecimal with 256-bit mantissa)"))
           ) &&
@@ -155,6 +144,29 @@ object DecoderSpec extends ZIOSpecDefault {
             isLeft(equalTo("(expected a BigDecimal with 256-bit mantissa)"))
           ) &&
           assert("123456789012345678901e+2147483647".fromJson[BigDecimal])(
+            isLeft(equalTo("(expected a BigDecimal with 256-bit mantissa)"))
+          )
+        },
+        test("java.math.BigDecimal") {
+          assert("-123.0e123".fromJson[java.math.BigDecimal])(
+            isRight(equalTo(new java.math.BigDecimal("-123.0e123")))
+          ) &&
+          assert("123.0e123".fromJson[java.math.BigDecimal])(isRight(equalTo(new java.math.BigDecimal("123.0e123")))) &&
+          assertTrue("\"Infinity\"".fromJson[java.math.BigDecimal].isLeft) &&
+          assertTrue("\"+Infinity\"".fromJson[java.math.BigDecimal].isLeft) &&
+          assertTrue("\"-Infinity\"".fromJson[java.math.BigDecimal].isLeft) &&
+          assertTrue("\"NaN\"".fromJson[java.math.BigDecimal].isLeft) &&
+          assert(
+            "170141183460469231731687303715884105728489465165484668486513574864654818964653168465316546851"
+              .fromJson[java.math.BigDecimal]
+          )(isLeft(equalTo("(expected a BigDecimal with 256-bit mantissa)"))) &&
+          assert("1.23456789012345678901e-2147483648".fromJson[java.math.BigDecimal])(
+            isLeft(equalTo("(expected a BigDecimal with 256-bit mantissa)"))
+          ) &&
+          assert("12345678901234567890.1e+2147483647".fromJson[java.math.BigDecimal])(
+            isLeft(equalTo("(expected a BigDecimal with 256-bit mantissa)"))
+          ) &&
+          assert("123456789012345678901e+2147483647".fromJson[java.math.BigDecimal])(
             isLeft(equalTo("(expected a BigDecimal with 256-bit mantissa)"))
           )
         },
@@ -168,9 +180,7 @@ object DecoderSpec extends ZIOSpecDefault {
           assertTrue("\"Infinity\"".fromJson[BigInteger].isLeft) &&
           assertTrue("\"+Infinity\"".fromJson[BigInteger].isLeft) &&
           assertTrue("\"-Infinity\"".fromJson[BigInteger].isLeft) &&
-          assertTrue("\"NaN\"".fromJson[BigInteger].isLeft)
-        },
-        test("BigInteger too large") {
+          assertTrue("\"NaN\"".fromJson[BigInteger].isLeft) &&
           assert(
             "170141183460469231731687303715884105728489465165484668486513574864654818964653168465316546851316546851"
               .fromJson[BigInteger]
@@ -189,9 +199,7 @@ object DecoderSpec extends ZIOSpecDefault {
           assertTrue("\"Infinity\"".fromJson[BigInt].isLeft) &&
           assertTrue("\"+Infinity\"".fromJson[BigInt].isLeft) &&
           assertTrue("\"-Infinity\"".fromJson[BigInt].isLeft) &&
-          assertTrue("\"NaN\"".fromJson[BigInt].isLeft)
-        },
-        test("BigInt too large") {
+          assertTrue("\"NaN\"".fromJson[BigInt].isLeft) &&
           assert(
             "170141183460469231731687303715884105728489465165484668486513574864654818964653168465316546851316546851"
               .fromJson[BigInt]
@@ -624,9 +632,6 @@ object DecoderSpec extends ZIOSpecDefault {
         }
       ),
       suite("fromJsonAST")(
-        test("BigDecimal") {
-          assert(Json.Num(123).as[BigDecimal])(isRight(equalTo(BigDecimal(123))))
-        },
         test("boolean") {
           assert(Json.Bool(true).as[Boolean])(isRight(equalTo(true))) &&
           assert(Json.Str("true").as[Boolean])(isLeft(equalTo("(expected boolean)")))
@@ -640,20 +645,239 @@ object DecoderSpec extends ZIOSpecDefault {
           assert(Json.Str("xxx").as[Char])(isLeft(equalTo("(expected single character string)"))) &&
           assert(Json.Bool(true).as[Char])(isLeft(equalTo("(expected single character string)")))
         },
+        test("byte") {
+          assert(Json.Num(Byte.MinValue).as[Byte])(isRight(equalTo(Byte.MinValue))) &&
+          assert(Json.Num(Byte.MaxValue).as[Byte])(isRight(equalTo(Byte.MaxValue))) &&
+          assert(Json.Str(Byte.MinValue.toString).as[Byte])(isRight(equalTo(Byte.MinValue))) &&
+          assert(Json.Str(Byte.MaxValue.toString).as[Byte])(isRight(equalTo(Byte.MaxValue))) &&
+          assertTrue(Json.Num(Byte.MinValue.toInt - 1).as[Byte].isLeft) &&
+          assertTrue(Json.Num(Byte.MaxValue.toInt + 1).as[Byte].isLeft) &&
+          assertTrue(Json.Str((Byte.MinValue.toInt - 1).toString).as[Byte].isLeft) &&
+          assertTrue(Json.Str((Byte.MaxValue.toInt + 1).toString).as[Byte].isLeft) &&
+          assertTrue(Json.Str("\"-123\"").as[Byte].isLeft) &&
+          assertTrue(Json.Str("\"123\"").as[Byte].isLeft) &&
+          assertTrue(Json.Str("123abc").as[Byte].isLeft) &&
+          assertTrue(Json.Str("+123").as[Byte].isLeft) &&
+          assertTrue(Json.Str("Infinity").as[Byte].isLeft) &&
+          assertTrue(Json.Str("+Infinity").as[Byte].isLeft) &&
+          assertTrue(Json.Str("-Infinity").as[Byte].isLeft) &&
+          assertTrue(Json.Str("NaN").as[Byte].isLeft)
+        },
+        test("short") {
+          assert(Json.Num(Short.MinValue).as[Short])(isRight(equalTo(Short.MinValue))) &&
+          assert(Json.Num(Short.MaxValue).as[Short])(isRight(equalTo(Short.MaxValue))) &&
+          assert(Json.Str(Short.MinValue.toString).as[Short])(isRight(equalTo(Short.MinValue))) &&
+          assert(Json.Str(Short.MaxValue.toString).as[Short])(isRight(equalTo(Short.MaxValue))) &&
+          assertTrue(Json.Num(Short.MinValue.toInt - 1).as[Short].isLeft) &&
+          assertTrue(Json.Num(Short.MaxValue.toInt + 1).as[Short].isLeft) &&
+          assertTrue(Json.Str((Short.MinValue.toInt - 1).toString).as[Short].isLeft) &&
+          assertTrue(Json.Str((Short.MaxValue.toInt + 1).toString).as[Short].isLeft) &&
+          assertTrue(Json.Str("\"-12345\"").as[Short].isLeft) &&
+          assertTrue(Json.Str("\"12345\"").as[Short].isLeft) &&
+          assertTrue(Json.Str("12345abc").as[Short].isLeft) &&
+          assertTrue(Json.Str("+12345").as[Short].isLeft) &&
+          assertTrue(Json.Str("Infinity").as[Short].isLeft) &&
+          assertTrue(Json.Str("+Infinity").as[Short].isLeft) &&
+          assertTrue(Json.Str("-Infinity").as[Short].isLeft) &&
+          assertTrue(Json.Str("NaN").as[Short].isLeft)
+        },
+        test("int") {
+          assert(Json.Num(Int.MinValue).as[Int])(isRight(equalTo(Int.MinValue))) &&
+          assert(Json.Num(Int.MaxValue).as[Int])(isRight(equalTo(Int.MaxValue))) &&
+          assert(Json.Str(Int.MinValue.toString).as[Int])(isRight(equalTo(Int.MinValue))) &&
+          assert(Json.Str(Int.MaxValue.toString).as[Int])(isRight(equalTo(Int.MaxValue))) &&
+          assertTrue(Json.Num(Int.MinValue.toLong - 1).as[Int].isLeft) &&
+          assertTrue(Json.Num(Int.MaxValue.toLong + 1).as[Int].isLeft) &&
+          assertTrue(Json.Str((Int.MinValue.toLong - 1).toString).as[Int].isLeft) &&
+          assertTrue(Json.Str((Int.MaxValue.toLong + 1).toString).as[Int].isLeft) &&
+          assertTrue(Json.Str("\"-1234567890\"").as[Int].isLeft) &&
+          assertTrue(Json.Str("\"1234567890\"").as[Int].isLeft) &&
+          assertTrue(Json.Str("1234567890abc").as[Int].isLeft) &&
+          assertTrue(Json.Str("+1234567890").as[Int].isLeft) &&
+          assertTrue(Json.Str("Infinity").as[Int].isLeft) &&
+          assertTrue(Json.Str("+Infinity").as[Int].isLeft) &&
+          assertTrue(Json.Str("-Infinity").as[Int].isLeft) &&
+          assertTrue(Json.Str("NaN").as[Int].isLeft)
+        },
+        test("long") {
+          assert(Json.Num(Long.MinValue).as[Long])(isRight(equalTo(Long.MinValue))) &&
+          assert(Json.Num(Long.MaxValue).as[Long])(isRight(equalTo(Long.MaxValue))) &&
+          assert(Json.Str(Long.MinValue.toString).as[Long])(isRight(equalTo(Long.MinValue))) &&
+          assert(Json.Str(Long.MaxValue.toString).as[Long])(isRight(equalTo(Long.MaxValue))) &&
+          assertTrue(Json.Num(BigDecimal(Long.MinValue) - 1).as[Long].isLeft) &&
+          assertTrue(Json.Num(BigDecimal(Long.MaxValue) + 1).as[Long].isLeft) &&
+          assertTrue(Json.Str((BigDecimal(Long.MinValue) - 1).toString).as[Long].isLeft) &&
+          assertTrue(Json.Str((BigDecimal(Long.MaxValue) + 1).toString).as[Long].isLeft) &&
+          assertTrue(Json.Str("\"-123456789012345678\"").as[Long].isLeft) &&
+          assertTrue(Json.Str("\"123456789012345678\"").as[Long].isLeft) &&
+          assertTrue(Json.Str("123456789012345678abc").as[Long].isLeft) &&
+          assertTrue(Json.Str("+123456789012345678").as[Long].isLeft) &&
+          assertTrue(Json.Str("Infinity").as[Long].isLeft) &&
+          assertTrue(Json.Str("+Infinity").as[Long].isLeft) &&
+          assertTrue(Json.Str("-Infinity").as[Long].isLeft) &&
+          assertTrue(Json.Str("NaN").as[Long].isLeft)
+        },
+        test("float") {
+          assert(Json.Num(Float.MinValue).as[Float])(isRight(equalTo(Float.MinValue))) &&
+          assert(Json.Num(Float.MaxValue).as[Float])(isRight(equalTo(Float.MaxValue))) &&
+          assert(Json.Str(Float.MinValue.toString).as[Float])(isRight(equalTo(Float.MinValue))) &&
+          assert(Json.Str(Float.MaxValue.toString).as[Float])(isRight(equalTo(Float.MaxValue))) &&
+          assert(Json.Str("Infinity").as[Float])(isRight(equalTo(Float.PositiveInfinity))) &&
+          assert(Json.Str("+Infinity").as[Float])(isRight(equalTo(Float.PositiveInfinity))) &&
+          assert(Json.Str("-Infinity").as[Float])(isRight(equalTo(Float.NegativeInfinity))) &&
+          assertTrue(Json.Str("NaN").as[Float].isRight) &&
+          assertTrue(Json.Str("\"-1.234567e9\"").as[Float].isLeft) &&
+          assertTrue(Json.Str("\"1.234567e9\"").as[Float].isLeft) &&
+          assertTrue(Json.Str("1.234567e9abc").as[Float].isLeft) &&
+          assertTrue(Json.Str("+1.234567e9").as[Float].isLeft)
+        },
+        test("double") {
+          assert(Json.Num(Double.MinValue).as[Double])(isRight(equalTo(Double.MinValue))) &&
+          assert(Json.Num(Double.MaxValue).as[Double])(isRight(equalTo(Double.MaxValue))) &&
+          assert(Json.Str(Double.MinValue.toString).as[Double])(isRight(equalTo(Double.MinValue))) &&
+          assert(Json.Str(Double.MaxValue.toString).as[Double])(isRight(equalTo(Double.MaxValue))) &&
+          assert(Json.Str("Infinity").as[Double])(isRight(equalTo(Double.PositiveInfinity))) &&
+          assert(Json.Str("+Infinity").as[Double])(isRight(equalTo(Double.PositiveInfinity))) &&
+          assert(Json.Str("-Infinity").as[Double])(isRight(equalTo(Double.NegativeInfinity))) &&
+          assertTrue(Json.Str("NaN").as[Double].isRight) &&
+          assertTrue(Json.Str("\"-1.23456789012345e9\"").as[Double].isLeft) &&
+          assertTrue(Json.Str("\"1.23456789012345e9\"").as[Double].isLeft) &&
+          assertTrue(Json.Str("1.23456789012345e9abc").as[Double].isLeft) &&
+          assertTrue(Json.Str("+1.23456789012345e9").as[Double].isLeft)
+        },
+        test("BigDecimal") {
+          assert(Json.Num(BigDecimal("-123.0e123")).as[BigDecimal])(isRight(equalTo(BigDecimal("-123.0e123")))) &&
+          assert(Json.Num(BigDecimal("123.0e123")).as[BigDecimal])(isRight(equalTo(BigDecimal("123.0e123")))) &&
+          assert(Json.Str("-123.0e123").as[BigDecimal])(isRight(equalTo(BigDecimal("-123.0e123")))) &&
+          assert(Json.Str("123.0e123").as[BigDecimal])(isRight(equalTo(BigDecimal("123.0e123")))) &&
+          assertTrue(Json.Str("123.0abc").as[BigDecimal].isLeft) &&
+          assertTrue(Json.Str("Infinity").as[BigDecimal].isLeft) &&
+          assertTrue(Json.Str("+Infinity").as[BigDecimal].isLeft) &&
+          assertTrue(Json.Str("-Infinity").as[BigDecimal].isLeft) &&
+          assertTrue(Json.Str("NaN").as[BigDecimal].isLeft) &&
+          assert(
+            Json
+              .Str(
+                "170141183460469231731687303715884105728489465165484668486513574864654818964653168465316546851"
+              )
+              .as[BigDecimal]
+          )(isLeft(equalTo("(expected a BigDecimal with 256-bit mantissa)"))) &&
+          assert(Json.Str("1.23456789012345678901e-2147483648").as[BigDecimal])(
+            isLeft(equalTo("(expected a BigDecimal with 256-bit mantissa)"))
+          ) &&
+          assert(Json.Str("12345678901234567890.1e+2147483647").as[BigDecimal])(
+            isLeft(equalTo("(expected a BigDecimal with 256-bit mantissa)"))
+          ) &&
+          assert(Json.Str("123456789012345678901e+2147483647").as[BigDecimal])(
+            isLeft(equalTo("(expected a BigDecimal with 256-bit mantissa)"))
+          )
+        },
+        test("java.math.BigDecimal") {
+          assert(Json.Num(BigDecimal("-123.0e123")).as[java.math.BigDecimal])(
+            isRight(equalTo(new java.math.BigDecimal("-123.0e123")))
+          ) &&
+          assert(Json.Num(BigDecimal("123.0e123")).as[java.math.BigDecimal])(
+            isRight(equalTo(new java.math.BigDecimal("123.0e123")))
+          ) &&
+          assert(Json.Str("-123.0e123").as[java.math.BigDecimal])(
+            isRight(equalTo(new java.math.BigDecimal("-123.0e123")))
+          ) &&
+          assert(Json.Str("123.0e123").as[java.math.BigDecimal])(
+            isRight(equalTo(new java.math.BigDecimal("123.0e123")))
+          ) &&
+          assertTrue(Json.Str("123.0abc").as[java.math.BigDecimal].isLeft) &&
+          assertTrue(Json.Str("Infinity").as[java.math.BigDecimal].isLeft) &&
+          assertTrue(Json.Str("+Infinity").as[java.math.BigDecimal].isLeft) &&
+          assertTrue(Json.Str("-Infinity").as[java.math.BigDecimal].isLeft) &&
+          assertTrue(Json.Str("NaN").as[java.math.BigDecimal].isLeft) &&
+          assert(
+            Json
+              .Str(
+                "170141183460469231731687303715884105728489465165484668486513574864654818964653168465316546851"
+              )
+              .as[java.math.BigDecimal]
+          )(isLeft(equalTo("(expected a BigDecimal with 256-bit mantissa)"))) &&
+          assert(Json.Str("1.23456789012345678901e-2147483648").as[java.math.BigDecimal])(
+            isLeft(equalTo("(expected a BigDecimal with 256-bit mantissa)"))
+          ) &&
+          assert(Json.Str("12345678901234567890.1e+2147483647").as[java.math.BigDecimal])(
+            isLeft(equalTo("(expected a BigDecimal with 256-bit mantissa)"))
+          ) &&
+          assert(Json.Str("123456789012345678901e+2147483647").as[java.math.BigDecimal])(
+            isLeft(equalTo("(expected a BigDecimal with 256-bit mantissa)"))
+          )
+        },
+        test("BigInteger") {
+          assert(Json.Num(BigInt("170141183460469231731687303715884105728")).as[BigInteger])(
+            isRight(equalTo(new BigInteger("170141183460469231731687303715884105728")))
+          ) &&
+          assert(Json.Num(BigInt("-170141183460469231731687303715884105728")).as[BigInteger])(
+            isRight(equalTo(new BigInteger("-170141183460469231731687303715884105728")))
+          ) &&
+          assert(Json.Str("170141183460469231731687303715884105728").as[BigInteger])(
+            isRight(equalTo(new BigInteger("170141183460469231731687303715884105728")))
+          ) &&
+          assert(Json.Str("-170141183460469231731687303715884105728").as[BigInteger])(
+            isRight(equalTo(new BigInteger("-170141183460469231731687303715884105728")))
+          ) &&
+          assertTrue(Json.Str("123abc").as[BigInteger].isLeft) &&
+          assertTrue(Json.Str("Infinity").as[BigInteger].isLeft) &&
+          assertTrue(Json.Str("+Infinity").as[BigInteger].isLeft) &&
+          assertTrue(Json.Str("-Infinity").as[BigInteger].isLeft) &&
+          assertTrue(Json.Str("NaN").as[BigInteger].isLeft) &&
+          assert(
+            Json
+              .Str(
+                "170141183460469231731687303715884105728489465165484668486513574864654818964653168465316546851316546851"
+              )
+              .as[BigInteger]
+          )(isLeft(equalTo("(expected a 256-bit BigInteger)"))) &&
+          assert(
+            Json
+              .Str("17014118346046923173168730371588410572848946516548466848651357486465481896465316846")
+              .as[BigInteger]
+          )(isLeft(equalTo("(expected a 256-bit BigInteger)")))
+        },
+        test("BigInt") {
+          assert(Json.Num(BigInt("170141183460469231731687303715884105728")).as[BigInt])(
+            isRight(equalTo(BigInt("170141183460469231731687303715884105728")))
+          ) &&
+          assert(Json.Num(BigInt("-170141183460469231731687303715884105728")).as[BigInt])(
+            isRight(equalTo(BigInt("-170141183460469231731687303715884105728")))
+          ) &&
+          assert(Json.Str("170141183460469231731687303715884105728").as[BigInt])(
+            isRight(equalTo(BigInt("170141183460469231731687303715884105728")))
+          ) &&
+          assert(Json.Str("-170141183460469231731687303715884105728").as[BigInt])(
+            isRight(equalTo(BigInt("-170141183460469231731687303715884105728")))
+          ) &&
+          assertTrue(Json.Str("123abc").as[BigInt].isLeft) &&
+          assertTrue(Json.Str("Infinity").as[BigInt].isLeft) &&
+          assertTrue(Json.Str("+Infinity").as[BigInt].isLeft) &&
+          assertTrue(Json.Str("-Infinity").as[BigInt].isLeft) &&
+          assertTrue(Json.Str("NaN").as[BigInt].isLeft) &&
+          assert(
+            Json
+              .Str(
+                "170141183460469231731687303715884105728489465165484668486513574864654818964653168465316546851316546851"
+              )
+              .as[BigInt]
+          )(isLeft(equalTo("(expected a 256-bit BigInt)"))) &&
+          assert(
+            Json.Str("17014118346046923173168730371588410572848946516548466848651357486465481896465316846").as[BigInt]
+          )(isLeft(equalTo("(expected a 256-bit BigInt)")))
+        },
         test("eithers") {
           val bernies =
             List(Json.Obj("a" -> Json.Num(1)), Json.Obj("left" -> Json.Num(1)), Json.Obj("Left" -> Json.Num(1)))
           val trumps =
             List(Json.Obj("b" -> Json.Num(2)), Json.Obj("right" -> Json.Num(2)), Json.Obj("Right" -> Json.Num(2)))
-
-          assert(bernies.map(_.as[Either[Int, Int]]))(
-            forall(isRight(isLeft(equalTo(1))))
-          ) && assert(trumps.map(_.as[Either[Int, Int]]))(
-            forall(isRight(isRight(equalTo(2))))
-          )
+          assert(bernies.map(_.as[Either[Int, Int]]))(forall(isRight(isLeft(equalTo(1))))) &&
+          assert(trumps.map(_.as[Either[Int, Int]]))(forall(isRight(isRight(equalTo(2)))))
         },
         test("parameterless products") {
           import exampleproducts._
+
           assert(Json.Obj().as[Parameterless])(isRight(equalTo(Parameterless()))) &&
           assert(Json.Null.as[Parameterless])(isRight(equalTo(Parameterless()))) &&
           assert(Json.Obj("field" -> Json.Str("value")).as[Parameterless])(isRight(equalTo(Parameterless())))

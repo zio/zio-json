@@ -319,9 +319,9 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority1 with 
             case _: ArithmeticException =>
           }
         case s: Json.Str =>
-          try return Lexer.byte(trace, new FastStringReader(s.value))
+          try return UnsafeNumbers.byte_(new FastStringReader(s.value), true)
           catch {
-            case _: UnexpectedEnd =>
+            case _: UnexpectedEnd | UnsafeNumbers.UnsafeNumber =>
           }
         case _ =>
       }
@@ -349,9 +349,9 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority1 with 
             case _: ArithmeticException =>
           }
         case s: Json.Str =>
-          try return Lexer.short(trace, new FastStringReader(s.value))
+          try return UnsafeNumbers.short_(new FastStringReader(s.value), true)
           catch {
-            case _: UnexpectedEnd =>
+            case _: UnexpectedEnd | UnsafeNumbers.UnsafeNumber =>
           }
         case _ =>
       }
@@ -379,9 +379,9 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority1 with 
             case _: ArithmeticException =>
           }
         case s: Json.Str =>
-          try return Lexer.int(trace, new FastStringReader(s.value))
+          try return UnsafeNumbers.int_(new FastStringReader(s.value), true)
           catch {
-            case _: UnexpectedEnd =>
+            case _: UnexpectedEnd | UnsafeNumbers.UnsafeNumber =>
           }
         case _ =>
       }
@@ -408,9 +408,9 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority1 with 
             case _: ArithmeticException =>
           }
         case s: Json.Str =>
-          try return Lexer.long(trace, new FastStringReader(s.value))
+          try return UnsafeNumbers.long_(new FastStringReader(s.value), true)
           catch {
-            case _: UnexpectedEnd =>
+            case _: UnexpectedEnd | UnsafeNumbers.UnsafeNumber =>
           }
         case _ =>
       }
@@ -438,9 +438,9 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority1 with 
             case _: ArithmeticException =>
           }
         case s: Json.Str =>
-          try return Lexer.bigInteger(trace, new FastStringReader(s.value))
+          try return UnsafeNumbers.bigInteger_(new FastStringReader(s.value), true, Lexer.NumberMaxBits)
           catch {
-            case _: UnexpectedEnd =>
+            case _: UnexpectedEnd | UnsafeNumbers.UnsafeNumber =>
           }
         case _ =>
       }
@@ -467,9 +467,9 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority1 with 
             case _: ArithmeticException =>
           }
         case s: Json.Str =>
-          try return Lexer.bigInt(trace, new FastStringReader(s.value))
+          try return UnsafeNumbers.bigInt_(new FastStringReader(s.value), true, Lexer.NumberMaxBits)
           catch {
-            case _: UnexpectedEnd =>
+            case _: UnexpectedEnd | UnsafeNumbers.UnsafeNumber =>
           }
         case _ =>
       }
@@ -493,9 +493,9 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority1 with 
         case n: Json.Num =>
           return n.value.floatValue
         case s: Json.Str =>
-          try return Lexer.float(trace, new FastStringReader(s.value))
+          try return UnsafeNumbers.float_(new FastStringReader(s.value), true, Lexer.NumberMaxBits)
           catch {
-            case _: UnexpectedEnd =>
+            case _: UnexpectedEnd | UnsafeNumbers.UnsafeNumber =>
           }
         case _ =>
       }
@@ -519,9 +519,9 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority1 with 
         case n: Json.Num =>
           return n.value.doubleValue
         case s: Json.Str =>
-          try return Lexer.double(trace, new FastStringReader(s.value))
+          try return UnsafeNumbers.double_(new FastStringReader(s.value), true, Lexer.NumberMaxBits)
           catch {
-            case _: UnexpectedEnd =>
+            case _: UnexpectedEnd | UnsafeNumbers.UnsafeNumber =>
           }
         case _ =>
       }
@@ -545,9 +545,9 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority1 with 
         case n: Json.Num =>
           return n.value
         case s: Json.Str =>
-          try return Lexer.bigDecimal(trace, new FastStringReader(s.value))
+          try return UnsafeNumbers.bigDecimal_(new FastStringReader(s.value), true, Lexer.NumberMaxBits)
           catch {
-            case _: UnexpectedEnd =>
+            case _: UnexpectedEnd | UnsafeNumbers.UnsafeNumber =>
           }
         case _ =>
       }
@@ -569,11 +569,13 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority1 with 
     override def unsafeFromJsonAST(trace: List[JsonError], json: Json): BigDecimal = {
       json match {
         case n: Json.Num =>
-          return new BigDecimal(n.value)
+          return new BigDecimal(n.value, BigDecimal.defaultMathContext)
         case s: Json.Str =>
-          try return new BigDecimal(Lexer.bigDecimal(trace, new FastStringReader(s.value)))
-          catch {
-            case _: UnexpectedEnd =>
+          try {
+            val bd = UnsafeNumbers.bigDecimal_(new FastStringReader(s.value), true, Lexer.NumberMaxBits)
+            return new BigDecimal(bd, BigDecimal.defaultMathContext)
+          } catch {
+            case _: UnexpectedEnd | UnsafeNumbers.UnsafeNumber =>
           }
         case _ =>
       }
