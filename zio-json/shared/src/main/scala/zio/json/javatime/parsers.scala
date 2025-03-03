@@ -15,25 +15,8 @@
  */
 package zio.json.javatime
 
-import java.time.{
-  DateTimeException,
-  Duration,
-  Instant,
-  LocalDate,
-  LocalDateTime,
-  LocalTime,
-  MonthDay,
-  OffsetDateTime,
-  OffsetTime,
-  Period,
-  Year,
-  YearMonth,
-  ZoneId,
-  ZoneOffset,
-  ZonedDateTime
-}
+import java.time._
 import java.util.concurrent.ConcurrentHashMap
-import scala.annotation.switch
 import scala.util.control.NoStackTrace
 
 private[json] object parsers {
@@ -45,40 +28,38 @@ private[json] object parsers {
     var pos          = 0
     var seconds      = 0L
     var nanos, state = 0
-    if (pos >= len) durationError(pos)
+    if (pos >= len) durationError()
     var ch = input.charAt(pos)
     pos += 1
     val isNeg = ch == '-'
     if (isNeg) {
-      if (pos >= len) durationError(pos)
+      if (pos >= len) durationError()
       ch = input.charAt(pos)
       pos += 1
     }
-    if (ch != 'P') durationOrPeriodStartError(isNeg, pos - 1)
-    if (pos >= len) durationError(pos)
+    if (ch != 'P' || pos >= len) durationError()
     ch = input.charAt(pos)
     pos += 1
     while ({
       if (state == 0) {
         if (ch == 'T') {
-          if (pos >= len) durationError(pos)
+          if (pos >= len) durationError()
           ch = input.charAt(pos)
           pos += 1
           state = 1
         }
       } else if (state == 1) {
-        if (ch != 'T') charsError('T', '"', pos - 1)
-        if (pos >= len) durationError(pos)
+        if (ch != 'T' || pos >= len) durationError()
         ch = input.charAt(pos)
         pos += 1
-      } else if (state == 4 && pos >= len) durationError(pos - 1)
+      } else if (state == 4 && pos >= len) durationError()
       val isNegX = ch == '-'
       if (isNegX) {
-        if (pos >= len) durationError(pos)
+        if (pos >= len) durationError()
         ch = input.charAt(pos)
         pos += 1
       }
-      if (ch < '0' || ch > '9') durationOrPeriodDigitError(isNegX, state <= 1, pos - 1)
+      if (ch < '0' || ch > '9') durationError()
       var x: Long = ('0' - ch).toLong
       while (
         (pos < len) && {
@@ -91,31 +72,28 @@ private[json] object parsers {
             x = x * 10 + ('0' - ch)
             x > 0
           }
-        ) durationError(pos)
+        ) durationError()
         pos += 1
       }
       if (!(isNeg ^ isNegX)) {
-        if (x == -9223372036854775808L) durationError(pos)
+        if (x == -9223372036854775808L) durationError()
         x = -x
       }
       if (ch == 'D' && state <= 0) {
-        if (x < -106751991167300L || x > 106751991167300L)
-          durationError(pos) // -106751991167300L == Long.MinValue / 86400
+        if (x < -106751991167300L || x > 106751991167300L) durationError()
         seconds = x * 86400
         state = 1
       } else if (ch == 'H' && state <= 1) {
-        if (x < -2562047788015215L || x > 2562047788015215L)
-          durationError(pos) // -2562047788015215L == Long.MinValue / 3600
-        seconds = sumSeconds(x * 3600, seconds, pos)
+        if (x < -2562047788015215L || x > 2562047788015215L) durationError()
+        seconds = sumSeconds(x * 3600, seconds)
         state = 2
       } else if (ch == 'M' && state <= 2) {
-        if (x < -153722867280912930L || x > 153722867280912930L)
-          durationError(pos) // -153722867280912930L == Long.MinValue / 60
-        seconds = sumSeconds(x * 60, seconds, pos)
+        if (x < -153722867280912930L || x > 153722867280912930L) durationError()
+        seconds = sumSeconds(x * 60, seconds)
         state = 3
       } else if (ch == '.') {
         pos += 1
-        seconds = sumSeconds(x, seconds, pos)
+        seconds = sumSeconds(x, seconds)
         var nanoDigitWeight = 100000000
         while (
           (pos < len) && {
@@ -127,13 +105,13 @@ private[json] object parsers {
           nanoDigitWeight = (nanoDigitWeight * 3435973837L >> 35).toInt // divide a positive int by 10
           pos += 1
         }
-        if (ch != 'S') nanoError(nanoDigitWeight, 'S', pos)
+        if (ch != 'S') durationError()
         if (isNeg ^ isNegX) nanos = -nanos
         state = 4
       } else if (ch == 'S') {
-        seconds = sumSeconds(x, seconds, pos)
+        seconds = sumSeconds(x, seconds)
         state = 4
-      } else durationError(state, pos)
+      } else durationError()
       pos += 1
       (pos < len) && {
         ch = input.charAt(pos)
@@ -145,126 +123,97 @@ private[json] object parsers {
   }
 
   def unsafeParseInstant(input: String): Instant = {
-    val len = input.length
-    var pos = 0
-    val year = {
-      if (pos + 4 >= len) instantError(pos)
-      val ch0 = input.charAt(pos)
-      val ch1 = input.charAt(pos + 1)
-      val ch2 = input.charAt(pos + 2)
-      val ch3 = input.charAt(pos + 3)
-      val ch4 = input.charAt(pos + 4)
-      if (ch0 >= '0' && ch0 <= '9') {
-        if (ch1 < '0' || ch1 > '9') digitError(pos + 1)
-        if (ch2 < '0' || ch2 > '9') digitError(pos + 2)
-        if (ch3 < '0' || ch3 > '9') digitError(pos + 3)
-        if (ch4 != '-') charError('-', pos + 4)
+    val len                   = input.length
+    var pos, year, month, day = 0
+    if (
+      pos + 4 >= len || {
+        val ch0 = input.charAt(pos)
+        val ch1 = input.charAt(pos + 1)
+        val ch2 = input.charAt(pos + 2)
+        val ch3 = input.charAt(pos + 3)
+        val ch4 = input.charAt(pos + 4)
         pos += 5
-        ch0 * 1000 + ch1 * 100 + ch2 * 10 + ch3 - 53328 // 53328 == '0' * 1111
-      } else {
-        val yearNeg = ch0 == '-' || (ch0 != '+' && charsOrDigitError('-', '+', pos))
-        if (ch1 < '0' || ch1 > '9') digitError(pos + 1)
-        if (ch2 < '0' || ch2 > '9') digitError(pos + 2)
-        if (ch3 < '0' || ch3 > '9') digitError(pos + 3)
-        if (ch4 < '0' || ch4 > '9') digitError(pos + 4)
-        pos += 5
-        var year       = ch1 * 1000 + ch2 * 100 + ch3 * 10 + ch4 - 53328 // 53328 == '0' * 1111
-        var yearDigits = 4
-        var ch: Char   = '0'
-        while ({
-          if (pos >= len) instantError(pos)
-          ch = input.charAt(pos)
-          pos += 1
-          ch >= '0' && ch <= '9' && yearDigits < 10
-        }) {
-          year =
-            if (year > 100000000) 2147483647
-            else year * 10 + (ch - '0')
-          yearDigits += 1
+        ch1 < '0' || ch1 > '9' || ch2 < '0' || ch2 > '9' || ch3 < '0' || ch3 > '9' || {
+          if (ch0 >= '0' && ch0 <= '9') {
+            year = ch0 * 1000 + ch1 * 100 + ch2 * 10 + ch3 - 53328 // 53328 == '0' * 1111
+            ch4 != '-'
+          } else {
+            year = ch1 * 1000 + ch2 * 100 + ch3 * 10 + ch4 - 53328 // 53328 == '0' * 1111
+            val yearNeg = ch0 == '-' || (ch0 != '+' && instantError())
+            ch4 < '0' || ch4 > '9' || {
+              var yearDigits = 4
+              var ch         = '0'
+              while (
+                pos < len && {
+                  ch = input.charAt(pos)
+                  pos += 1
+                  ch >= '0' && ch <= '9' && yearDigits < 10
+                }
+              ) {
+                year =
+                  if (year > 100000000) 2147483647
+                  else year * 10 + (ch - '0')
+                yearDigits += 1
+              }
+              yearDigits == 10 && year > 1000000000 || yearNeg && {
+                year = -year
+                year == 0
+              } || ch != '-'
+            }
+          }
         }
-        if (yearDigits == 10 && year > 1000000000) yearError(pos - 2)
-        if (yearNeg) {
-          if (year == 0) yearError(pos - 2)
-          year = -year
-        }
-        if (ch != '-') yearError(yearNeg, yearDigits, pos - 1)
-        year
+      } || pos + 5 >= len || {
+        val ch0 = input.charAt(pos)
+        val ch1 = input.charAt(pos + 1)
+        val ch2 = input.charAt(pos + 2)
+        val ch3 = input.charAt(pos + 3)
+        val ch4 = input.charAt(pos + 4)
+        val ch5 = input.charAt(pos + 5)
+        pos += 6
+        month = ch0 * 10 + ch1 - 528 // 528 == '0' * 11
+        day = ch3 * 10 + ch4 - 528   // 528 == '0' * 11
+        ch0 < '0' || ch0 > '9' || ch1 < '0' || ch1 > '9' || ch2 != '-' || ch3 < '0' || ch3 > '9' ||
+        ch4 < '0' || ch4 > '9' || ch5 != 'T' || month < 1 || month > 12 || day == 0 ||
+        (day > 28 && day > maxDayForYearMonth(year, month))
       }
-    }
-    val month = {
-      if (pos + 2 >= len) instantError(pos)
-      val ch0   = input.charAt(pos)
-      val ch1   = input.charAt(pos + 1)
-      val ch2   = input.charAt(pos + 2)
-      val month = ch0 * 10 + ch1 - 528 // 528 == '0' * 11
-      if (ch0 < '0' || ch0 > '9') digitError(pos)
-      if (ch1 < '0' || ch1 > '9') digitError(pos + 1)
-      if (month < 1 || month > 12) monthError(pos + 1)
-      if (ch2 != '-') charError('-', pos + 2)
-      pos += 3
-      month
-    }
-    val day = {
-      if (pos + 2 >= len) instantError(pos)
-      val ch0 = input.charAt(pos)
-      val ch1 = input.charAt(pos + 1)
-      val ch2 = input.charAt(pos + 2)
-      val day = ch0 * 10 + ch1 - 528 // 528 == '0' * 11
-      if (ch0 < '0' || ch0 > '9') digitError(pos)
-      if (ch1 < '0' || ch1 > '9') digitError(pos + 1)
-      if (day == 0 || (day > 28 && day > maxDayForYearMonth(year, month))) dayError(pos + 1)
-      if (ch2 != 'T') charError('T', pos + 2)
-      pos += 3
-      day
-    }
+    ) instantError()
     val epochDay =
       epochDayForYear(year) + (dayOfYearForYearMonth(year, month) + day - 719529) // 719528 == days 0000 to 1970
-    var epochSecond = {
-      if (pos + 2 >= len) instantError(pos)
-      val ch0  = input.charAt(pos)
-      val ch1  = input.charAt(pos + 1)
-      val ch2  = input.charAt(pos + 2)
-      val hour = ch0 * 10 + ch1 - 528 // 528 == '0' * 11
-      if (ch0 < '0' || ch0 > '9') digitError(pos)
-      if (ch1 < '0' || ch1 > '9') digitError(pos + 1)
-      if (hour > 23) hourError(pos + 1)
-      if (ch2 != ':') charError(':', pos + 2)
-      pos += 3
-      hour * 3600
-    }
-    epochSecond += {
-      if (pos + 1 >= len) instantError(pos)
-      val ch0 = input.charAt(pos)
-      val ch1 = input.charAt(pos + 1)
-      if (ch0 < '0' || ch0 > '9') digitError(pos)
-      if (ch1 < '0' || ch1 > '9') digitError(pos + 1)
-      if (ch0 > '5') minuteError(pos + 1)
-      pos += 2
-      (ch0 * 10 + ch1 - 528) * 60 // 528 == '0' * 11
-    }
-    var nanoDigitWeight = -1
-    var nano            = 0
-    var ch              = (0: Char)
+    var epochSecond = 0
+    if (
+      pos + 4 >= len || {
+        val ch0 = input.charAt(pos)
+        val ch1 = input.charAt(pos + 1)
+        val ch2 = input.charAt(pos + 2)
+        val ch3 = input.charAt(pos + 3)
+        val ch4 = input.charAt(pos + 4)
+        pos += 5
+        val hour = ch0 * 10 + ch1 - 528 // 528 == '0' * 11
+        epochSecond = hour * 3600 + (ch3 * 10 + ch4 - 528) * 60 // 528 == '0' * 11
+        ch0 < '0' || ch0 > '9' || ch1 < '0' || ch1 > '9' || ch2 != ':' ||
+        ch3 < '0' || ch3 > '9' || ch4 < '0' || ch4 > '9' || ch3 > '5' || hour > 23
+      }
+    ) instantError()
+    var nano = 0
+    var ch   = '0'
     if (pos < len) {
       ch = input.charAt(pos)
       pos += 1
       if (ch == ':') {
-        nanoDigitWeight = -2
-        epochSecond += {
-          if (pos + 1 >= len) instantError(pos)
-          val ch0 = input.charAt(pos)
-          val ch1 = input.charAt(pos + 1)
-          if (ch0 < '0' || ch0 > '9') digitError(pos)
-          if (ch1 < '0' || ch1 > '9') digitError(pos + 1)
-          if (ch0 > '5') secondError(pos + 1)
-          pos += 2
-          ch0 * 10 + ch1 - 528 // 528 == '0' * 11
-        }
+        if (
+          pos + 1 >= len || {
+            val ch0 = input.charAt(pos)
+            val ch1 = input.charAt(pos + 1)
+            pos += 2
+            epochSecond += ch0 * 10 + ch1 - 528 // 528 == '0' * 11
+            ch0 < '0' || ch0 > '9' || ch1 < '0' || ch1 > '9' || ch0 > '5'
+          }
+        ) instantError()
         if (pos < len) {
           ch = input.charAt(pos)
           pos += 1
           if (ch == '.') {
-            nanoDigitWeight = 100000000
+            var nanoDigitWeight = 100000000
             while (
               pos < len && {
                 ch = input.charAt(pos)
@@ -281,18 +230,16 @@ private[json] object parsers {
     }
     var offsetTotal = 0
     if (ch != 'Z') {
-      val offsetNeg = ch == '-' || (ch != '+' && timezoneSignError(nanoDigitWeight, pos - 1))
-      offsetTotal = {
-        if (pos + 1 >= len) instantError(pos)
-        val ch0        = input.charAt(pos)
-        val ch1        = input.charAt(pos + 1)
-        val offsetHour = ch0 * 10 + ch1 - 528 // 528 == '0' * 11
-        if (ch0 < '0' || ch0 > '9') digitError(pos)
-        if (ch1 < '0' || ch1 > '9') digitError(pos + 1)
-        if (offsetHour > 18) timezoneOffsetHourError(pos + 1)
-        pos += 2
-        offsetHour * 3600
-      }
+      val offsetNeg = ch == '-' || (ch != '+' && instantError())
+      if (
+        pos + 1 >= len || {
+          val ch0 = input.charAt(pos)
+          val ch1 = input.charAt(pos + 1)
+          pos += 2
+          offsetTotal = (ch0 * 10 + ch1 - 528) * 3600 // 528 == '0' * 11
+          ch0 < '0' || ch0 > '9' || ch1 < '0' || ch1 > '9'
+        }
+      ) instantError()
       if (
         pos < len && {
           ch = input.charAt(pos)
@@ -300,16 +247,15 @@ private[json] object parsers {
           ch == ':'
         }
       ) {
-        offsetTotal += {
-          if (pos + 1 >= len) instantError(pos)
-          val ch0 = input.charAt(pos)
-          val ch1 = input.charAt(pos + 1)
-          if (ch0 < '0' || ch0 > '9') digitError(pos)
-          if (ch1 < '0' || ch1 > '9') digitError(pos + 1)
-          if (ch0 > '5') timezoneOffsetMinuteError(pos + 1)
-          pos += 2
-          (ch0 * 10 + ch1 - 528) * 60 // 528 == '0' * 11
-        }
+        if (
+          pos + 1 >= len || {
+            val ch0 = input.charAt(pos)
+            val ch1 = input.charAt(pos + 1)
+            pos += 2
+            offsetTotal += (ch0 * 10 + ch1 - 528) * 60 // 528 == '0' * 11
+            ch0 < '0' || ch0 > '9' || ch1 < '0' || ch1 > '9' || ch0 > '5'
+          }
+        ) instantError()
         if (
           pos < len && {
             ch = input.charAt(pos)
@@ -317,429 +263,348 @@ private[json] object parsers {
             ch == ':'
           }
         ) {
-          offsetTotal += {
-            if (pos + 1 >= len) instantError(pos)
-            val ch0 = input.charAt(pos)
-            val ch1 = input.charAt(pos + 1)
-            if (ch0 < '0' || ch0 > '9') digitError(pos)
-            if (ch1 < '0' || ch1 > '9') digitError(pos + 1)
-            if (ch0 > '5') timezoneOffsetSecondError(pos + 1)
-            pos += 2
-            ch0 * 10 + ch1 - 528 // 528 == '0' * 11
-          }
+          if (
+            pos + 1 >= len || {
+              val ch0 = input.charAt(pos)
+              val ch1 = input.charAt(pos + 1)
+              pos += 2
+              offsetTotal += ch0 * 10 + ch1 - 528 // 528 == '0' * 11
+              ch0 < '0' || ch0 > '9' || ch1 < '0' || ch1 > '9' || ch0 > '5'
+            }
+          ) instantError()
         }
       }
-      if (offsetTotal > 64800) zoneOffsetError(pos) // 64800 == 18 * 60 * 60
+      if (offsetTotal > 64800) instantError() // 64800 == 18 * 60 * 60
       if (offsetNeg) offsetTotal = -offsetTotal
     }
-    if (pos != len) instantError(pos)
-    Instant.ofEpochSecond(
-      epochDay * 86400 + (epochSecond - offsetTotal),
-      nano.toLong
-    ) // 86400 == seconds per day
+    if (pos != len) instantError()
+    Instant.ofEpochSecond(epochDay * 86400 + (epochSecond - offsetTotal), nano.toLong)
   }
 
   def unsafeParseLocalDate(input: String): LocalDate = {
-    val len = input.length
-    var pos = 0
-    val year = {
-      if (pos + 4 >= len) localDateError(pos)
-      val ch0 = input.charAt(pos)
-      val ch1 = input.charAt(pos + 1)
-      val ch2 = input.charAt(pos + 2)
-      val ch3 = input.charAt(pos + 3)
-      val ch4 = input.charAt(pos + 4)
-      if (ch0 >= '0' && ch0 <= '9') {
-        if (ch1 < '0' || ch1 > '9') digitError(pos + 1)
-        if (ch2 < '0' || ch2 > '9') digitError(pos + 2)
-        if (ch3 < '0' || ch3 > '9') digitError(pos + 3)
-        if (ch4 != '-') charError('-', pos + 4)
+    val len                   = input.length
+    var pos, year, month, day = 0
+    if (
+      pos + 4 >= len || {
+        val ch0 = input.charAt(pos)
+        val ch1 = input.charAt(pos + 1)
+        val ch2 = input.charAt(pos + 2)
+        val ch3 = input.charAt(pos + 3)
+        val ch4 = input.charAt(pos + 4)
         pos += 5
-        ch0 * 1000 + ch1 * 100 + ch2 * 10 + ch3 - 53328 // 53328 == '0' * 1111
-      } else {
-        val yearNeg = ch0 == '-' || (ch0 != '+' && charsOrDigitError('-', '+', pos))
-        if (ch1 < '0' || ch1 > '9') digitError(pos + 1)
-        if (ch2 < '0' || ch2 > '9') digitError(pos + 2)
-        if (ch3 < '0' || ch3 > '9') digitError(pos + 3)
-        if (ch4 < '0' || ch4 > '9') digitError(pos + 4)
+        ch1 < '0' || ch1 > '9' || ch2 < '0' || ch2 > '9' || ch3 < '0' || ch3 > '9' || {
+          if (ch0 >= '0' && ch0 <= '9') {
+            year = ch0 * 1000 + ch1 * 100 + ch2 * 10 + ch3 - 53328 // 53328 == '0' * 1111
+            ch4 != '-'
+          } else {
+            year = ch1 * 1000 + ch2 * 100 + ch3 * 10 + ch4 - 53328 // 53328 == '0' * 1111
+            val yearNeg = ch0 == '-' || (ch0 != '+' && localDateError())
+            ch4 < '0' || ch4 > '9' || {
+              var yearDigits = 4
+              var ch         = '0'
+              while (
+                pos < len && {
+                  ch = input.charAt(pos)
+                  pos += 1
+                  ch >= '0' && ch <= '9' && yearDigits < 9
+                }
+              ) {
+                year = year * 10 + (ch - '0')
+                yearDigits += 1
+              }
+              yearNeg && {
+                year = -year
+                year == 0
+              } || ch != '-'
+            }
+          }
+        }
+      } || pos + 5 != len || {
+        val ch0 = input.charAt(pos)
+        val ch1 = input.charAt(pos + 1)
+        val ch2 = input.charAt(pos + 2)
+        val ch3 = input.charAt(pos + 3)
+        val ch4 = input.charAt(pos + 4)
         pos += 5
-        var year       = ch1 * 1000 + ch2 * 100 + ch3 * 10 + ch4 - 53328 // 53328 == '0' * 1111
-        var yearDigits = 4
-        var ch: Char   = '0'
-        while ({
-          if (pos >= len) localDateError(pos)
-          ch = input.charAt(pos)
-          pos += 1
-          ch >= '0' && ch <= '9' && yearDigits < 9
-        }) {
-          year = year * 10 + (ch - '0')
-          yearDigits += 1
-        }
-        if (yearNeg) {
-          if (year == 0) yearError(pos - 2)
-          year = -year
-        }
-        if (ch != '-') yearError(yearNeg, yearDigits, pos - 1)
-        year
+        month = ch0 * 10 + ch1 - 528 // 528 == '0' * 11
+        day = ch3 * 10 + ch4 - 528   // 528 == '0' * 11
+        ch0 < '0' || ch0 > '9' || ch1 < '0' || ch1 > '9' || ch2 != '-' || ch3 < '0' || ch3 > '9' ||
+        ch4 < '0' || ch4 > '9' || month < 1 || month > 12 || day == 0 ||
+        (day > 28 && day > maxDayForYearMonth(year, month))
       }
-    }
-    val month = {
-      if (pos + 2 >= len) localDateError(pos)
-      val ch0   = input.charAt(pos)
-      val ch1   = input.charAt(pos + 1)
-      val ch2   = input.charAt(pos + 2)
-      val month = ch0 * 10 + ch1 - 528 // 528 == '0' * 11
-      if (ch0 < '0' || ch0 > '9') digitError(pos)
-      if (ch1 < '0' || ch1 > '9') digitError(pos + 1)
-      if (month < 1 || month > 12) monthError(pos + 1)
-      if (ch2 != '-') charError('-', pos + 2)
-      pos += 3
-      month
-    }
-    val day = {
-      if (pos + 1 >= len) localDateError(pos)
-      val ch0 = input.charAt(pos)
-      val ch1 = input.charAt(pos + 1)
-      val day = ch0 * 10 + ch1 - 528 // 528 == '0' * 11
-      if (ch0 < '0' || ch0 > '9') digitError(pos)
-      if (ch1 < '0' || ch1 > '9') digitError(pos + 1)
-      if (day == 0 || (day > 28 && day > maxDayForYearMonth(year, month))) dayError(pos + 1)
-      pos += 2
-      day
-    }
-    if (pos != len) localDateError(pos)
+    ) localDateError()
     LocalDate.of(year, month, day)
   }
 
   def unsafeParseLocalDateTime(input: String): LocalDateTime = {
-    val len = input.length
-    var pos = 0
-    val year = {
-      if (pos + 4 >= len) localDateTimeError(pos)
-      val ch0 = input.charAt(pos)
-      val ch1 = input.charAt(pos + 1)
-      val ch2 = input.charAt(pos + 2)
-      val ch3 = input.charAt(pos + 3)
-      val ch4 = input.charAt(pos + 4)
-      if (ch0 >= '0' && ch0 <= '9') {
-        if (ch1 < '0' || ch1 > '9') digitError(pos + 1)
-        if (ch2 < '0' || ch2 > '9') digitError(pos + 2)
-        if (ch3 < '0' || ch3 > '9') digitError(pos + 3)
-        if (ch4 != '-') charError('-', pos + 4)
-        pos += 5
-        ch0 * 1000 + ch1 * 100 + ch2 * 10 + ch3 - 53328 // 53328 == '0' * 1111
-      } else {
-        val yearNeg = ch0 == '-' || (ch0 != '+' && charsOrDigitError('-', '+', pos))
-        if (ch1 < '0' || ch1 > '9') digitError(pos + 1)
-        if (ch2 < '0' || ch2 > '9') digitError(pos + 2)
-        if (ch3 < '0' || ch3 > '9') digitError(pos + 3)
-        if (ch4 < '0' || ch4 > '9') digitError(pos + 4)
-        pos += 5
-        var year       = ch1 * 1000 + ch2 * 100 + ch3 * 10 + ch4 - 53328 // 53328 == '0' * 1111
-        var yearDigits = 4
-        var ch: Char   = '0'
-        while ({
-          if (pos >= len) localDateTimeError(pos)
-          ch = input.charAt(pos)
-          pos += 1
-          ch >= '0' && ch <= '9' && yearDigits < 9
-        }) {
-          year = year * 10 + (ch - '0')
-          yearDigits += 1
-        }
-        if (yearNeg) {
-          if (year == 0) yearError(pos - 2)
-          year = -year
-        }
-        if (ch != '-') yearError(yearNeg, yearDigits, pos - 1)
-        year
-      }
-    }
-    val month = {
-      if (pos + 2 >= len) localDateTimeError(pos)
-      val ch0   = input.charAt(pos)
-      val ch1   = input.charAt(pos + 1)
-      val ch2   = input.charAt(pos + 2)
-      val month = ch0 * 10 + ch1 - 528 // 528 == '0' * 11
-      if (ch0 < '0' || ch0 > '9') digitError(pos)
-      if (ch1 < '0' || ch1 > '9') digitError(pos + 1)
-      if (month < 1 || month > 12) monthError(pos + 1)
-      if (ch2 != '-') charError('-', pos + 2)
-      pos += 3
-      month
-    }
-    val day = {
-      if (pos + 2 >= len) localDateTimeError(pos)
-      val ch0 = input.charAt(pos)
-      val ch1 = input.charAt(pos + 1)
-      val ch2 = input.charAt(pos + 2)
-      val day = ch0 * 10 + ch1 - 528 // 528 == '0' * 11
-      if (ch0 < '0' || ch0 > '9') digitError(pos)
-      if (ch1 < '0' || ch1 > '9') digitError(pos + 1)
-      if (day == 0 || (day > 28 && day > maxDayForYearMonth(year, month))) dayError(pos + 1)
-      if (ch2 != 'T') charError('T', pos + 2)
-      pos += 3
-      day
-    }
-    val hour = {
-      if (pos + 2 >= len) localDateTimeError(pos)
-      val ch0  = input.charAt(pos)
-      val ch1  = input.charAt(pos + 1)
-      val ch2  = input.charAt(pos + 2)
-      val hour = ch0 * 10 + ch1 - 528 // 528 == '0' * 11
-      if (ch0 < '0' || ch0 > '9') digitError(pos)
-      if (ch1 < '0' || ch1 > '9') digitError(pos + 1)
-      if (hour > 23) hourError(pos + 1)
-      if (ch2 != ':') charError(':', pos + 2)
-      pos += 3
-      hour
-    }
-    val minute = {
-      if (pos + 1 >= len) localDateTimeError(pos)
-      val ch0 = input.charAt(pos)
-      val ch1 = input.charAt(pos + 1)
-      if (ch0 < '0' || ch0 > '9') digitError(pos)
-      if (ch1 < '0' || ch1 > '9') digitError(pos + 1)
-      if (ch0 > '5') minuteError(pos + 1)
-      pos += 2
-      ch0 * 10 + ch1 - 528 // 528 == '0' * 11
-    }
-    var second, nano = 0
-    if (pos < len) {
-      if (input.charAt(pos) != ':') charError(':', pos)
-      pos += 1
-      second = {
-        if (pos + 1 >= len) localDateTimeError(pos)
+    val len                   = input.length
+    var pos, year, month, day = 0
+    if (
+      pos + 4 >= len || {
         val ch0 = input.charAt(pos)
         val ch1 = input.charAt(pos + 1)
-        if (ch0 < '0' || ch0 > '9') digitError(pos)
-        if (ch1 < '0' || ch1 > '9') digitError(pos + 1)
-        if (ch0 > '5') secondError(pos + 1)
-        pos += 2
-        ch0 * 10 + ch1 - 528 // 528 == '0' * 11
-      }
-      if (pos < len) {
-        if (input.charAt(pos) != '.') charError('.', pos)
-        pos += 1
-        var nanoDigitWeight = 100000000
-        var ch              = '0'
-        while (
-          pos < len && {
-            ch = input.charAt(pos)
-            pos += 1
-            ch >= '0' && ch <= '9' && nanoDigitWeight != 0
+        val ch2 = input.charAt(pos + 2)
+        val ch3 = input.charAt(pos + 3)
+        val ch4 = input.charAt(pos + 4)
+        pos += 5
+        ch1 < '0' || ch1 > '9' || ch2 < '0' || ch2 > '9' || ch3 < '0' || ch3 > '9' || {
+          if (ch0 >= '0' && ch0 <= '9') {
+            year = ch0 * 1000 + ch1 * 100 + ch2 * 10 + ch3 - 53328 // 53328 == '0' * 1111
+            ch4 != '-'
+          } else {
+            year = ch1 * 1000 + ch2 * 100 + ch3 * 10 + ch4 - 53328 // 53328 == '0' * 1111
+            val yearNeg = ch0 == '-' || (ch0 != '+' && localDateTimeError())
+            ch4 < '0' || ch4 > '9' || {
+              var yearDigits = 4
+              var ch         = '0'
+              while (
+                pos < len && {
+                  ch = input.charAt(pos)
+                  pos += 1
+                  ch >= '0' && ch <= '9' && yearDigits < 9
+                }
+              ) {
+                year = year * 10 + (ch - '0')
+                yearDigits += 1
+              }
+              yearNeg && {
+                year = -year
+                year == 0
+              } || ch != '-'
+            }
           }
-        ) {
-          nano += (ch - '0') * nanoDigitWeight
-          nanoDigitWeight = (nanoDigitWeight * 3435973837L >> 35).toInt // divide a positive int by 10
         }
-        if (pos != len || ch < '0' || ch > '9') localDateTimeError(pos - 1)
+      } || pos + 5 >= len || {
+        val ch0 = input.charAt(pos)
+        val ch1 = input.charAt(pos + 1)
+        val ch2 = input.charAt(pos + 2)
+        val ch3 = input.charAt(pos + 3)
+        val ch4 = input.charAt(pos + 4)
+        val ch5 = input.charAt(pos + 5)
+        pos += 6
+        month = ch0 * 10 + ch1 - 528 // 528 == '0' * 11
+        day = ch3 * 10 + ch4 - 528   // 528 == '0' * 11
+        ch0 < '0' || ch0 > '9' || ch1 < '0' || ch1 > '9' || ch2 != '-' || ch3 < '0' || ch3 > '9' ||
+        ch4 < '0' || ch4 > '9' || ch5 != 'T' || day == 0 || month < 1 || month > 12 ||
+        (day > 28 && day > maxDayForYearMonth(year, month))
+      }
+    ) localDateTimeError()
+    var hour, minute = 0
+    if (
+      pos + 4 >= len || {
+        val ch0 = input.charAt(pos)
+        val ch1 = input.charAt(pos + 1)
+        val ch2 = input.charAt(pos + 2)
+        val ch3 = input.charAt(pos + 3)
+        val ch4 = input.charAt(pos + 4)
+        pos += 5
+        hour = ch0 * 10 + ch1 - 528   // 528 == '0' * 11
+        minute = ch3 * 10 + ch4 - 528 // 528 == '0' * 11
+        ch0 < '0' || ch0 > '9' || ch1 < '0' || ch1 > '9' || ch2 != ':' ||
+        ch3 < '0' || ch3 > '9' || ch4 < '0' || ch4 > '9' || ch3 > '5' || hour > 23
+      }
+    ) localDateTimeError()
+    var second, nano = 0
+    if (pos < len) {
+      if (
+        input.charAt(pos) != ':' || {
+          pos += 1
+          pos + 1 >= len || {
+            val ch0 = input.charAt(pos)
+            val ch1 = input.charAt(pos + 1)
+            pos += 2
+            second = ch0 * 10 + ch1 - 528 // 528 == '0' * 11
+            ch0 < '0' || ch0 > '9' || ch1 < '0' || ch1 > '9' || ch0 > '5'
+          }
+        }
+      ) localTimeError()
+      if (pos < len) {
+        if (
+          input.charAt(pos) != '.' || {
+            pos += 1
+            var nanoDigitWeight = 100000000
+            var ch              = '0'
+            while (
+              pos < len && {
+                ch = input.charAt(pos)
+                ch >= '0' && ch <= '9' && nanoDigitWeight != 0
+              }
+            ) {
+              nano += (ch - '0') * nanoDigitWeight
+              nanoDigitWeight = (nanoDigitWeight * 3435973837L >> 35).toInt // divide a positive int by 10
+              pos += 1
+            }
+            pos != len
+          }
+        ) localDateTimeError()
       }
     }
     LocalDateTime.of(year, month, day, hour, minute, second, nano)
   }
 
   def unsafeParseLocalTime(input: String): LocalTime = {
-    val len = input.length
-    var pos = 0
-    val hour = {
-      if (pos + 2 >= len) localTimeError(pos)
-      val ch0  = input.charAt(pos)
-      val ch1  = input.charAt(pos + 1)
-      val ch2  = input.charAt(pos + 2)
-      val hour = ch0 * 10 + ch1 - 528 // 528 == '0' * 11
-      if (ch0 < '0' || ch0 > '9') digitError(pos)
-      if (ch1 < '0' || ch1 > '9') digitError(pos + 1)
-      if (hour > 23) hourError(pos + 1)
-      if (ch2 != ':') charError(':', pos + 2)
-      pos += 3
-      hour
-    }
-    val minute = {
-      if (pos + 1 >= len) localTimeError(pos)
-      val ch0 = input.charAt(pos)
-      val ch1 = input.charAt(pos + 1)
-      if (ch0 < '0' || ch0 > '9') digitError(pos)
-      if (ch1 < '0' || ch1 > '9') digitError(pos + 1)
-      if (ch0 > '5') minuteError(pos + 1)
-      pos += 2
-      ch0 * 10 + ch1 - 528 // 528 == '0' * 11
-    }
-    var second, nano = 0
-    if (pos < len) {
-      if (input.charAt(pos) != ':') charError(':', pos)
-      pos += 1
-      second = {
-        if (pos + 1 >= len) localTimeError(pos)
+    val len               = input.length
+    var pos, hour, minute = 0
+    if (
+      pos + 4 >= len || {
         val ch0 = input.charAt(pos)
         val ch1 = input.charAt(pos + 1)
-        if (ch0 < '0' || ch0 > '9') digitError(pos)
-        if (ch1 < '0' || ch1 > '9') digitError(pos + 1)
-        if (ch0 > '5') secondError(pos + 1)
-        pos += 2
-        ch0 * 10 + ch1 - 528 // 528 == '0' * 11
+        val ch2 = input.charAt(pos + 2)
+        val ch3 = input.charAt(pos + 3)
+        val ch4 = input.charAt(pos + 4)
+        pos += 5
+        hour = ch0 * 10 + ch1 - 528   // 528 == '0' * 11
+        minute = ch3 * 10 + ch4 - 528 // 528 == '0' * 11
+        ch0 < '0' || ch0 > '9' || ch1 < '0' || ch1 > '9' || ch2 != ':' ||
+        ch3 < '0' || ch3 > '9' || ch4 < '0' || ch4 > '9' || ch3 > '5' || hour > 23
       }
-      if (pos < len) {
-        if (input.charAt(pos) != '.') charError('.', pos)
-        pos += 1
-        var nanoDigitWeight = 100000000
-        var ch              = '0'
-        while (
-          pos < len && {
-            ch = input.charAt(pos)
-            pos += 1
-            ch >= '0' && ch <= '9' && nanoDigitWeight != 0
+    ) localTimeError()
+    var second, nano = 0
+    if (pos < len) {
+      if (
+        input.charAt(pos) != ':' || {
+          pos += 1
+          pos + 1 >= len || {
+            val ch0 = input.charAt(pos)
+            val ch1 = input.charAt(pos + 1)
+            pos += 2
+            second = ch0 * 10 + ch1 - 528 // 528 == '0' * 11
+            ch0 < '0' || ch0 > '9' || ch1 < '0' || ch1 > '9' || ch0 > '5'
           }
-        ) {
-          nano += (ch - '0') * nanoDigitWeight
-          nanoDigitWeight = (nanoDigitWeight * 3435973837L >> 35).toInt // divide a positive int by 10
         }
-        if (pos != len || ch < '0' || ch > '9') localTimeError(pos - 1)
+      ) localTimeError()
+      if (pos < len) {
+        if (
+          input.charAt(pos) != '.' || {
+            pos += 1
+            var nanoDigitWeight = 100000000
+            var ch              = '0'
+            while (
+              pos < len && {
+                ch = input.charAt(pos)
+                ch >= '0' && ch <= '9' && nanoDigitWeight != 0
+              }
+            ) {
+              nano += (ch - '0') * nanoDigitWeight
+              nanoDigitWeight = (nanoDigitWeight * 3435973837L >> 35).toInt // divide a positive int by 10
+              pos += 1
+            }
+            pos != len
+          }
+        ) localTimeError()
       }
     }
     LocalTime.of(hour, minute, second, nano)
   }
 
   def unsafeParseMonthDay(input: String): MonthDay = {
-    if (input.length != 7) error("illegal month day", 0)
-    val ch0   = input.charAt(0)
-    val ch1   = input.charAt(1)
-    val ch2   = input.charAt(2)
-    val ch3   = input.charAt(3)
-    val ch4   = input.charAt(4)
-    val ch5   = input.charAt(5)
-    val ch6   = input.charAt(6)
-    val month = ch2 * 10 + ch3 - 528 // 528 == '0' * 11
-    val day   = ch5 * 10 + ch6 - 528 // 528 == '0' * 11
-    if (ch0 != '-') charError('-', 0)
-    if (ch1 != '-') charError('-', 1)
-    if (ch2 < '0' || ch2 > '9') digitError(2)
-    if (ch3 < '0' || ch3 > '9') digitError(3)
-    if (month < 1 || month > 12) monthError(3)
-    if (ch4 != '-') charError('-', 4)
-    if (ch5 < '0' || ch5 > '9') digitError(5)
-    if (ch6 < '0' || ch6 > '9') digitError(6)
-    if (day == 0 || (day > 28 && day > maxDayForMonth(month))) dayError(6)
+    var month, day = 0
+    if (
+      input.length != 7 || {
+        val ch0 = input.charAt(0)
+        val ch1 = input.charAt(1)
+        val ch2 = input.charAt(2)
+        val ch3 = input.charAt(3)
+        val ch4 = input.charAt(4)
+        val ch5 = input.charAt(5)
+        val ch6 = input.charAt(6)
+        month = ch2 * 10 + ch3 - 528 // 528 == '0' * 11
+        day = ch5 * 10 + ch6 - 528   // 528 == '0' * 11
+        ch0 != '-' || ch1 != '-' || ch2 < '0' || ch2 > '9' || ch3 < '0' || ch3 > '9' || ch4 != '-' ||
+        ch5 < '0' || ch5 > '9' || ch6 < '0' || ch6 > '9' || month < 1 || month > 12 || day == 0 ||
+        (day > 28 && day > maxDayForMonth(month))
+      }
+    ) monthDayError()
     MonthDay.of(month, day)
   }
 
   def unsafeParseOffsetDateTime(input: String): OffsetDateTime = {
-    val len = input.length
-    var pos = 0
-    val year = {
-      if (pos + 4 >= len) offsetDateTimeError(pos)
-      val ch0 = input.charAt(pos)
-      val ch1 = input.charAt(pos + 1)
-      val ch2 = input.charAt(pos + 2)
-      val ch3 = input.charAt(pos + 3)
-      val ch4 = input.charAt(pos + 4)
-      if (ch0 >= '0' && ch0 <= '9') {
-        if (ch1 < '0' || ch1 > '9') digitError(pos + 1)
-        if (ch2 < '0' || ch2 > '9') digitError(pos + 2)
-        if (ch3 < '0' || ch3 > '9') digitError(pos + 3)
-        if (ch4 != '-') charError('-', pos + 4)
-        pos += 5
-        ch0 * 1000 + ch1 * 100 + ch2 * 10 + ch3 - 53328 // 53328 == '0' * 1111
-      } else {
-        val yearNeg = ch0 == '-' || (ch0 != '+' && charsOrDigitError('-', '+', pos))
-        if (ch1 < '0' || ch1 > '9') digitError(pos + 1)
-        if (ch2 < '0' || ch2 > '9') digitError(pos + 2)
-        if (ch3 < '0' || ch3 > '9') digitError(pos + 3)
-        if (ch4 < '0' || ch4 > '9') digitError(pos + 4)
-        pos += 5
-        var year       = ch1 * 1000 + ch2 * 100 + ch3 * 10 + ch4 - 53328 // 53328 == '0' * 1111
-        var yearDigits = 4
-        var ch: Char   = '0'
-        while ({
-          if (pos >= len) offsetDateTimeError(pos)
-          ch = input.charAt(pos)
-          pos += 1
-          ch >= '0' && ch <= '9' && yearDigits < 9
-        }) {
-          year = year * 10 + (ch - '0')
-          yearDigits += 1
-        }
-        if (yearNeg) {
-          if (year == 0) yearError(pos - 2)
-          year = -year
-        }
-        if (ch != '-') yearError(yearNeg, yearDigits, pos - 1)
-        year
-      }
-    }
-    val month = {
-      if (pos + 2 >= len) offsetDateTimeError(pos)
-      val ch0   = input.charAt(pos)
-      val ch1   = input.charAt(pos + 1)
-      val ch2   = input.charAt(pos + 2)
-      val month = ch0 * 10 + ch1 - 528 // 528 == '0' * 11
-      if (ch0 < '0' || ch0 > '9') digitError(pos)
-      if (ch1 < '0' || ch1 > '9') digitError(pos + 1)
-      if (month < 1 || month > 12) monthError(pos + 1)
-      if (ch2 != '-') charError('-', pos + 2)
-      pos += 3
-      month
-    }
-    val day = {
-      if (pos + 2 >= len) offsetDateTimeError(pos)
-      val ch0 = input.charAt(pos)
-      val ch1 = input.charAt(pos + 1)
-      val ch2 = input.charAt(pos + 2)
-      val day = ch0 * 10 + ch1 - 528 // 528 == '0' * 11
-      if (ch0 < '0' || ch0 > '9') digitError(pos)
-      if (ch1 < '0' || ch1 > '9') digitError(pos + 1)
-      if (day == 0 || (day > 28 && day > maxDayForYearMonth(year, month))) dayError(pos + 1)
-      if (ch2 != 'T') charError('T', pos + 2)
-      pos += 3
-      day
-    }
-    val hour = {
-      if (pos + 2 >= len) offsetDateTimeError(pos)
-      val ch0  = input.charAt(pos)
-      val ch1  = input.charAt(pos + 1)
-      val ch2  = input.charAt(pos + 2)
-      val hour = ch0 * 10 + ch1 - 528 // 528 == '0' * 11
-      if (ch0 < '0' || ch0 > '9') digitError(pos)
-      if (ch1 < '0' || ch1 > '9') digitError(pos + 1)
-      if (hour > 23) hourError(pos + 1)
-      if (ch2 != ':') charError(':', pos + 2)
-      pos += 3
-      hour
-    }
-    val minute = {
-      if (pos + 1 >= len) offsetDateTimeError(pos)
-      val ch0 = input.charAt(pos)
-      val ch1 = input.charAt(pos + 1)
-      if (ch0 < '0' || ch0 > '9') digitError(pos)
-      if (ch1 < '0' || ch1 > '9') digitError(pos + 1)
-      if (ch0 > '5') minuteError(pos + 1)
-      pos += 2
-      ch0 * 10 + ch1 - 528 // 528 == '0' * 11
-    }
-    var second, nano    = 0
-    var nanoDigitWeight = -1
-    if (pos >= len) timezoneSignError(nanoDigitWeight, pos)
-    var ch = input.charAt(pos)
-    pos += 1
-    if (ch == ':') {
-      nanoDigitWeight = -2
-      second = {
-        if (pos + 1 >= len) offsetDateTimeError(pos)
+    val len                   = input.length
+    var pos, year, month, day = 0
+    if (
+      pos + 4 >= len || {
         val ch0 = input.charAt(pos)
         val ch1 = input.charAt(pos + 1)
-        if (ch0 < '0' || ch0 > '9') digitError(pos)
-        if (ch1 < '0' || ch1 > '9') digitError(pos + 1)
-        if (ch0 > '5') secondError(pos + 1)
-        pos += 2
-        ch0 * 10 + ch1 - 528 // 528 == '0' * 11
+        val ch2 = input.charAt(pos + 2)
+        val ch3 = input.charAt(pos + 3)
+        val ch4 = input.charAt(pos + 4)
+        pos += 5
+        ch1 < '0' || ch1 > '9' || ch2 < '0' || ch2 > '9' || ch3 < '0' || ch3 > '9' || {
+          if (ch0 >= '0' && ch0 <= '9') {
+            year = ch0 * 1000 + ch1 * 100 + ch2 * 10 + ch3 - 53328 // 53328 == '0' * 1111
+            ch4 != '-'
+          } else {
+            year = ch1 * 1000 + ch2 * 100 + ch3 * 10 + ch4 - 53328 // 53328 == '0' * 1111
+            val yearNeg = ch0 == '-' || (ch0 != '+' && offsetDateTimeError())
+            ch4 < '0' || ch4 > '9' || {
+              var yearDigits = 4
+              var ch         = '0'
+              while (
+                pos < len && {
+                  ch = input.charAt(pos)
+                  pos += 1
+                  ch >= '0' && ch <= '9' && yearDigits < 9
+                }
+              ) {
+                year = year * 10 + (ch - '0')
+                yearDigits += 1
+              }
+              yearNeg && {
+                year = -year
+                year == 0
+              } || ch != '-'
+            }
+          }
+        }
+      } || pos + 5 >= len || {
+        val ch0 = input.charAt(pos)
+        val ch1 = input.charAt(pos + 1)
+        val ch2 = input.charAt(pos + 2)
+        val ch3 = input.charAt(pos + 3)
+        val ch4 = input.charAt(pos + 4)
+        val ch5 = input.charAt(pos + 5)
+        pos += 6
+        month = ch0 * 10 + ch1 - 528 // 528 == '0' * 11
+        day = ch3 * 10 + ch4 - 528   // 528 == '0' * 11
+        ch0 < '0' || ch0 > '9' || ch1 < '0' || ch1 > '9' || ch2 != '-' || ch3 < '0' || ch3 > '9' ||
+        ch4 < '0' || ch4 > '9' || ch5 != 'T' || month < 1 || month > 12 || day == 0 ||
+        (day > 28 && day > maxDayForYearMonth(year, month))
       }
-      if (pos >= len) timezoneSignError(nanoDigitWeight, pos)
+    ) offsetDateTimeError()
+    var hour, minute = 0
+    if (
+      pos + 4 >= len || {
+        val ch0 = input.charAt(pos)
+        val ch1 = input.charAt(pos + 1)
+        val ch2 = input.charAt(pos + 2)
+        val ch3 = input.charAt(pos + 3)
+        val ch4 = input.charAt(pos + 4)
+        pos += 5
+        hour = ch0 * 10 + ch1 - 528   // 528 == '0' * 11
+        minute = ch3 * 10 + ch4 - 528 // 528 == '0' * 11
+        ch0 < '0' || ch0 > '9' || ch1 < '0' || ch1 > '9' || ch2 != ':' ||
+        ch3 < '0' || ch3 > '9' || ch4 < '0' || ch4 > '9' || ch3 > '5' || hour > 23
+      } || pos >= len
+    ) offsetDateTimeError()
+    var second, nano = 0
+    var ch           = input.charAt(pos)
+    pos += 1
+    if (ch == ':') {
+      if (
+        pos + 1 >= len || {
+          val ch0 = input.charAt(pos)
+          val ch1 = input.charAt(pos + 1)
+          pos += 2
+          second = ch0 * 10 + ch1 - 528 // 528 == '0' * 11
+          ch0 < '0' || ch0 > '9' || ch1 < '0' || ch1 > '9' || ch0 > '5'
+        } || pos >= len
+      ) offsetDateTimeError()
       ch = input.charAt(pos)
       pos += 1
       if (ch == '.') {
-        nanoDigitWeight = 100000000
+        var nanoDigitWeight = 100000000
         while ({
-          if (pos >= len) timezoneSignError(nanoDigitWeight, pos)
+          if (pos >= len) offsetDateTimeError()
           ch = input.charAt(pos)
           pos += 1
           ch >= '0' && ch <= '9' && nanoDigitWeight != 0
@@ -752,111 +617,89 @@ private[json] object parsers {
     val zoneOffset =
       if (ch == 'Z') ZoneOffset.UTC
       else {
-        val offsetNeg = ch == '-' || (ch != '+' && timezoneSignError(nanoDigitWeight, pos - 1))
-        val offsetHour = {
-          if (pos + 1 >= len) offsetDateTimeError(pos)
-          val ch0        = input.charAt(pos)
-          val ch1        = input.charAt(pos + 1)
-          val offsetHour = ch0 * 10 + ch1 - 528 // 528 == '0' * 11
-          if (ch0 < '0' || ch0 > '9') digitError(pos)
-          if (ch1 < '0' || ch1 > '9') digitError(pos + 1)
-          if (offsetHour > 18) timezoneOffsetHourError(pos + 1)
-          pos += 2
-          offsetHour
-        }
-        var offsetMinute, offsetSecond = 0
+        val offsetNeg   = ch == '-' || (ch != '+' && offsetDateTimeError())
+        var offsetTotal = 0
         if (
-          pos < len && {
-            ch = input.charAt(pos)
-            pos += 1
-            ch == ':'
-          }
-        ) {
-          offsetMinute = {
-            if (pos + 1 >= len) offsetDateTimeError(pos)
+          pos + 1 >= len || {
             val ch0 = input.charAt(pos)
             val ch1 = input.charAt(pos + 1)
-            if (ch0 < '0' || ch0 > '9') digitError(pos)
-            if (ch1 < '0' || ch1 > '9') digitError(pos + 1)
-            if (ch0 > '5') timezoneOffsetMinuteError(pos + 1)
             pos += 2
-            ch0 * 10 + ch1 - 528 // 528 == '0' * 11
+            offsetTotal = (ch0 * 10 + ch1 - 528) * 3600 // 528 == '0' * 11
+            ch0 < '0' || ch0 > '9' || ch1 < '0' || ch1 > '9'
           }
+        ) offsetDateTimeError()
+        if (pos < len) {
           if (
-            pos < len && {
-              ch = input.charAt(pos)
+            input.charAt(pos) != ':' || {
               pos += 1
-              ch == ':'
-            }
-          ) {
-            offsetSecond = {
-              if (pos + 1 >= len) offsetDateTimeError(pos)
+              pos + 1 >= len
+            } || {
               val ch0 = input.charAt(pos)
               val ch1 = input.charAt(pos + 1)
-              if (ch0 < '0' || ch0 > '9') digitError(pos)
-              if (ch1 < '0' || ch1 > '9') digitError(pos + 1)
-              if (ch0 > '5') timezoneOffsetSecondError(pos + 1)
               pos += 2
-              ch0 * 10 + ch1 - 528 // 528 == '0' * 11
+              offsetTotal += (ch0 * 10 + ch1 - 528) * 60 // 528 == '0' * 11
+              ch0 < '0' || ch0 > '9' || ch1 < '0' || ch1 > '9' || ch0 > '5'
             }
+          ) offsetDateTimeError()
+          if (pos < len) {
+            if (
+              input.charAt(pos) != ':' || {
+                pos += 1
+                pos + 1 >= len
+              } || {
+                val ch0 = input.charAt(pos)
+                val ch1 = input.charAt(pos + 1)
+                pos += 2
+                offsetTotal += ch0 * 10 + ch1 - 528 // 528 == '0' * 11
+                ch0 < '0' || ch0 > '9' || ch1 < '0' || ch1 > '9' || ch0 > '5'
+              }
+            ) offsetDateTimeError()
           }
         }
-        toZoneOffset(offsetNeg, offsetHour, offsetMinute, offsetSecond, pos)
+        if (offsetTotal > 64800) offsetDateTimeError()
+        toZoneOffset(offsetNeg, offsetTotal)
       }
-    if (pos != len) offsetDateTimeError(pos)
+    if (pos != len) offsetDateTimeError()
     OffsetDateTime.of(year, month, day, hour, minute, second, nano, zoneOffset)
   }
 
   def unsafeParseOffsetTime(input: String): OffsetTime = {
-    val len = input.length
-    var pos = 0
-    val hour = {
-      if (pos + 2 >= len) offsetTimeError(pos)
-      val ch0  = input.charAt(pos)
-      val ch1  = input.charAt(pos + 1)
-      val ch2  = input.charAt(pos + 2)
-      val hour = ch0 * 10 + ch1 - 528 // 528 == '0' * 11
-      if (ch0 < '0' || ch0 > '9') digitError(pos)
-      if (ch1 < '0' || ch1 > '9') digitError(pos + 1)
-      if (hour > 23) hourError(pos + 1)
-      if (ch2 != ':') charError(':', pos + 2)
-      pos += 3
-      hour
-    }
-    val minute = {
-      if (pos + 1 >= len) offsetTimeError(pos)
-      val ch0 = input.charAt(pos)
-      val ch1 = input.charAt(pos + 1)
-      if (ch0 < '0' || ch0 > '9') digitError(pos)
-      if (ch1 < '0' || ch1 > '9') digitError(pos + 1)
-      if (ch0 > '5') minuteError(pos + 1)
-      pos += 2
-      ch0 * 10 + ch1 - 528 // 528 == '0' * 11
-    }
-    var second, nano    = 0
-    var nanoDigitWeight = -1
-    if (pos >= len) timezoneSignError(nanoDigitWeight, pos)
-    var ch = input.charAt(pos)
-    pos += 1
-    if (ch == ':') {
-      nanoDigitWeight = -2
-      second = {
-        if (pos + 1 >= len) offsetTimeError(pos)
+    val len          = input.length
+    var pos          = 0
+    var hour, minute = 0
+    if (
+      pos + 4 >= len || {
         val ch0 = input.charAt(pos)
         val ch1 = input.charAt(pos + 1)
-        if (ch0 < '0' || ch0 > '9') digitError(pos)
-        if (ch1 < '0' || ch1 > '9') digitError(pos + 1)
-        if (ch0 > '5') secondError(pos + 1)
-        pos += 2
-        ch0 * 10 + ch1 - 528 // 528 == '0' * 11
-      }
-      if (pos >= len) timezoneSignError(nanoDigitWeight, pos)
+        val ch2 = input.charAt(pos + 2)
+        val ch3 = input.charAt(pos + 3)
+        val ch4 = input.charAt(pos + 4)
+        pos += 5
+        hour = ch0 * 10 + ch1 - 528   // 528 == '0' * 11
+        minute = ch3 * 10 + ch4 - 528 // 528 == '0' * 11
+        ch0 < '0' || ch0 > '9' || ch1 < '0' || ch1 > '9' || ch2 != ':' ||
+        ch3 < '0' || ch3 > '9' || ch4 < '0' || ch4 > '9' || ch3 > '5' || hour > 23
+      } || pos >= len
+    ) offsetTimeError()
+    var second, nano = 0
+    var ch           = input.charAt(pos)
+    pos += 1
+    if (ch == ':') {
+      if (
+        pos + 1 >= len || {
+          val ch0 = input.charAt(pos)
+          val ch1 = input.charAt(pos + 1)
+          pos += 2
+          second = ch0 * 10 + ch1 - 528 // 528 == '0' * 11
+          ch0 < '0' || ch0 > '9' || ch1 < '0' || ch1 > '9' || ch0 > '5'
+        } || pos >= len
+      ) offsetTimeError()
       ch = input.charAt(pos)
       pos += 1
       if (ch == '.') {
-        nanoDigitWeight = 100000000
+        var nanoDigitWeight = 100000000
         while ({
-          if (pos >= len) timezoneSignError(nanoDigitWeight, pos)
+          if (pos >= len) offsetTimeError()
           ch = input.charAt(pos)
           pos += 1
           ch >= '0' && ch <= '9' && nanoDigitWeight != 0
@@ -869,88 +712,76 @@ private[json] object parsers {
     val zoneOffset =
       if (ch == 'Z') ZoneOffset.UTC
       else {
-        val offsetNeg = ch == '-' || (ch != '+' && timezoneSignError(nanoDigitWeight, pos - 1))
-        nanoDigitWeight = -3
-        val offsetHour = {
-          if (pos + 1 >= len) offsetTimeError(pos)
-          val ch0        = input.charAt(pos)
-          val ch1        = input.charAt(pos + 1)
-          val offsetHour = ch0 * 10 + ch1 - 528 // 528 == '0' * 11
-          if (ch0 < '0' || ch0 > '9') digitError(pos)
-          if (ch1 < '0' || ch1 > '9') digitError(pos + 1)
-          if (offsetHour > 18) timezoneOffsetHourError(pos + 1)
-          pos += 2
-          offsetHour
-        }
-        var offsetMinute, offsetSecond = 0
+        val offsetNeg   = ch == '-' || (ch != '+' && offsetTimeError())
+        var offsetTotal = 0
         if (
-          pos < len && {
-            ch = input.charAt(pos)
-            pos += 1
-            ch == ':'
-          }
-        ) {
-          offsetMinute = {
-            if (pos + 1 >= len) offsetTimeError(pos)
+          pos + 1 >= len || {
             val ch0 = input.charAt(pos)
             val ch1 = input.charAt(pos + 1)
-            if (ch0 < '0' || ch0 > '9') digitError(pos)
-            if (ch1 < '0' || ch1 > '9') digitError(pos + 1)
-            if (ch0 > '5') timezoneOffsetMinuteError(pos + 1)
             pos += 2
-            ch0 * 10 + ch1 - 528 // 528 == '0' * 11
+            offsetTotal = (ch0 * 10 + ch1 - 528) * 3600 // 528 == '0' * 11
+            ch0 < '0' || ch0 > '9' || ch1 < '0' || ch1 > '9'
           }
+        ) offsetTimeError()
+        if (pos < len) {
           if (
-            pos < len && {
-              ch = input.charAt(pos)
+            input.charAt(pos) != ':' || {
               pos += 1
-              ch == ':'
-            }
-          ) {
-            nanoDigitWeight = -4
-            offsetSecond = {
-              if (pos + 1 >= len) offsetTimeError(pos)
+              pos + 1 >= len
+            } || {
               val ch0 = input.charAt(pos)
               val ch1 = input.charAt(pos + 1)
-              if (ch0 < '0' || ch0 > '9') digitError(pos)
-              if (ch1 < '0' || ch1 > '9') digitError(pos + 1)
-              if (ch0 > '5') timezoneOffsetSecondError(pos + 1)
               pos += 2
-              ch0 * 10 + ch1 - 528 // 528 == '0' * 11
+              offsetTotal += (ch0 * 10 + ch1 - 528) * 60 // 528 == '0' * 11
+              ch0 < '0' || ch0 > '9' || ch1 < '0' || ch1 > '9' || ch0 > '5'
             }
+          ) offsetTimeError()
+          if (pos < len) {
+            if (
+              input.charAt(pos) != ':' || {
+                pos += 1
+                pos + 1 >= len
+              } || {
+                val ch0 = input.charAt(pos)
+                val ch1 = input.charAt(pos + 1)
+                pos += 2
+                offsetTotal += ch0 * 10 + ch1 - 528 // 528 == '0' * 11
+                ch0 < '0' || ch0 > '9' || ch1 < '0' || ch1 > '9' || ch0 > '5'
+              }
+            ) offsetTimeError()
           }
         }
-        toZoneOffset(offsetNeg, offsetHour, offsetMinute, offsetSecond, pos)
+        if (offsetTotal > 64800) offsetTimeError()
+        toZoneOffset(offsetNeg, offsetTotal)
       }
-    if (pos != len) offsetTimeError(pos)
+    if (pos != len) offsetTimeError()
     OffsetTime.of(hour, minute, second, nano, zoneOffset)
   }
 
   def unsafeParsePeriod(input: String): Period = {
     val len                             = input.length
     var pos, state, years, months, days = 0
-    if (pos >= len) periodError(pos)
+    if (pos >= len) periodError()
     var ch = input.charAt(pos)
     pos += 1
     val isNeg = ch == '-'
     if (isNeg) {
-      if (pos >= len) periodError(pos)
+      if (pos >= len) periodError()
       ch = input.charAt(pos)
       pos += 1
     }
-    if (ch != 'P') durationOrPeriodStartError(isNeg, pos - 1)
-    if (pos >= len) periodError(pos)
+    if (ch != 'P' || pos >= len) periodError()
     ch = input.charAt(pos)
     pos += 1
     while ({
-      if (state == 4 && pos >= len) periodError(pos - 1)
+      if (state == 4 && pos >= len) periodError()
       val isNegX = ch == '-'
       if (isNegX) {
-        if (pos >= len) periodError(pos)
+        if (pos >= len) periodError()
         ch = input.charAt(pos)
         pos += 1
       }
-      if (ch < '0' || ch > '9') durationOrPeriodDigitError(isNegX, state <= 1, pos - 1)
+      if (ch < '0' || ch > '9') periodError()
       var x: Int = '0' - ch
       while (
         (pos < len) && {
@@ -963,11 +794,11 @@ private[json] object parsers {
             x = x * 10 + ('0' - ch)
             x > 0
           }
-        ) periodError(pos)
+        ) periodError()
         pos += 1
       }
       if (!(isNeg ^ isNegX)) {
-        if (x == -2147483648) periodError(pos)
+        if (x == -2147483648) periodError()
         x = -x
       }
       if (ch == 'Y' && state <= 0) {
@@ -977,15 +808,15 @@ private[json] object parsers {
         months = x
         state = 2
       } else if (ch == 'W' && state <= 2) {
-        if (x < -306783378 || x > 306783378) periodError(pos)
+        if (x < -306783378 || x > 306783378) periodError()
         days = x * 7
         state = 3
       } else if (ch == 'D') {
         val ds = x.toLong + days
-        if (ds != ds.toInt) periodError(pos)
+        if (ds != ds.toInt) periodError()
         days = ds.toInt
         state = 4
-      } else periodError(state, pos)
+      } else periodError()
       pos += 1
       (pos < len) && {
         ch = input.charAt(pos)
@@ -997,230 +828,175 @@ private[json] object parsers {
   }
 
   def unsafeParseYear(input: String): Year = {
-    val len = input.length
-    var pos = 0
-    val year = {
-      if (pos + 3 >= len) yearError(pos)
-      val ch0 = input.charAt(pos)
-      val ch1 = input.charAt(pos + 1)
-      val ch2 = input.charAt(pos + 2)
-      val ch3 = input.charAt(pos + 3)
-      if (ch0 >= '0' && ch0 <= '9') {
-        if (ch1 < '0' || ch1 > '9') digitError(pos + 1)
-        if (ch2 < '0' || ch2 > '9') digitError(pos + 2)
-        if (ch3 < '0' || ch3 > '9') digitError(pos + 3)
-        if (len != 4) yearError(pos + 4)
+    val len       = input.length
+    var pos, year = 0
+    if (
+      pos + 3 >= len || {
+        val ch0 = input.charAt(pos)
+        val ch1 = input.charAt(pos + 1)
+        val ch2 = input.charAt(pos + 2)
+        val ch3 = input.charAt(pos + 3)
         pos += 4
-        ch0 * 1000 + ch1 * 100 + ch2 * 10 + ch3 - 53328 // 53328 == '0' * 1111
-      } else {
-        val yearNeg = ch0 == '-' || (ch0 != '+' && charsOrDigitError('-', '+', pos))
-        if (ch1 < '0' || ch1 > '9') digitError(pos + 1)
-        if (ch2 < '0' || ch2 > '9') digitError(pos + 2)
-        if (ch3 < '0' || ch3 > '9') digitError(pos + 3)
-        pos += 4
-        var year       = ch1 * 100 + ch2 * 10 + ch3 - 5328 // 53328 == '0' * 111
-        var yearDigits = 3
-        var ch: Char   = '0'
-        while (
-          pos < len && {
-            ch = input.charAt(pos)
-            ch >= '0' && ch <= '9' && yearDigits < 9
+        ch1 < '0' || ch1 > '9' || ch2 < '0' || ch2 > '9' || ch3 < '0' || ch3 > '9' || {
+          if (ch0 >= '0' && ch0 <= '9') {
+            year = ch0 * 1000 + ch1 * 100 + ch2 * 10 + ch3 - 53328 // 53328 == '0' * 1111
+            pos != len
+          } else {
+            val yearNeg = ch0 == '-' || (ch0 != '+' && yearError())
+            year = ch1 * 100 + ch2 * 10 + ch3 - 5328 // 53328 == '0' * 111
+            var yearDigits = 3
+            var ch         = '0'
+            while (
+              pos < len && {
+                ch = input.charAt(pos)
+                ch >= '0' && ch <= '9' && yearDigits < 9
+              }
+            ) {
+              year = year * 10 + (ch - '0')
+              yearDigits += 1
+              pos += 1
+            }
+            yearNeg && {
+              year = -year
+              year == 0
+            } || pos != len
           }
-        ) {
-          year = year * 10 + (ch - '0')
-          yearDigits += 1
-          pos += 1
         }
-        if (yearNeg) {
-          if (year == 0) yearError(pos - 1)
-          year = -year
-        }
-        if (pos != len || ch < '0' || ch > '9') {
-          if (yearDigits == 9) yearError(pos)
-          digitError(pos)
-        }
-        year
       }
-    }
+    ) yearError()
     Year.of(year)
   }
 
   def unsafeParseYearMonth(input: String): YearMonth = {
-    val len = input.length
-    var pos = 0
-    val year = {
-      if (pos + 4 >= len) yearMonthError(pos)
-      val ch0 = input.charAt(pos)
-      val ch1 = input.charAt(pos + 1)
-      val ch2 = input.charAt(pos + 2)
-      val ch3 = input.charAt(pos + 3)
-      val ch4 = input.charAt(pos + 4)
-      if (ch0 >= '0' && ch0 <= '9') {
-        if (ch1 < '0' || ch1 > '9') digitError(pos + 1)
-        if (ch2 < '0' || ch2 > '9') digitError(pos + 2)
-        if (ch3 < '0' || ch3 > '9') digitError(pos + 3)
-        if (ch4 != '-') charError('-', pos + 4)
+    val len              = input.length
+    var pos, year, month = 0
+    if (
+      pos + 4 >= len || {
+        val ch0 = input.charAt(pos)
+        val ch1 = input.charAt(pos + 1)
+        val ch2 = input.charAt(pos + 2)
+        val ch3 = input.charAt(pos + 3)
+        val ch4 = input.charAt(pos + 4)
         pos += 5
-        ch0 * 1000 + ch1 * 100 + ch2 * 10 + ch3 - 53328 // 53328 == '0' * 1111
-      } else {
-        val yearNeg = ch0 == '-' || (ch0 != '+' && charsOrDigitError('-', '+', pos))
-        if (ch1 < '0' || ch1 > '9') digitError(pos + 1)
-        if (ch2 < '0' || ch2 > '9') digitError(pos + 2)
-        if (ch3 < '0' || ch3 > '9') digitError(pos + 3)
-        if (ch4 < '0' || ch4 > '9') digitError(pos + 4)
-        pos += 5
-        var year       = ch1 * 1000 + ch2 * 100 + ch3 * 10 + ch4 - 53328 // 53328 == '0' * 1111
-        var yearDigits = 4
-        var ch: Char   = '0'
-        while ({
-          if (pos >= len) yearMonthError(pos)
-          ch = input.charAt(pos)
-          pos += 1
-          ch >= '0' && ch <= '9' && yearDigits < 9
-        }) {
-          year = year * 10 + (ch - '0')
-          yearDigits += 1
+        ch1 < '0' || ch1 > '9' || ch2 < '0' || ch2 > '9' || ch3 < '0' || ch3 > '9' || {
+          if (ch0 >= '0' && ch0 <= '9') {
+            year = ch0 * 1000 + ch1 * 100 + ch2 * 10 + ch3 - 53328 // 53328 == '0' * 1111
+            ch4 != '-'
+          } else {
+            val yearNeg = ch0 == '-' || (ch0 != '+' && yearMonthError())
+            year = ch1 * 1000 + ch2 * 100 + ch3 * 10 + ch4 - 53328 // 53328 == '0' * 1111
+            ch4 < '0' || ch4 > '9' || {
+              var yearDigits = 4
+              var ch         = '0'
+              while ({
+                if (pos >= len) yearMonthError()
+                ch = input.charAt(pos)
+                pos += 1
+                ch >= '0' && ch <= '9' && yearDigits < 9
+              }) {
+                year = year * 10 + (ch - '0')
+                yearDigits += 1
+              }
+              yearNeg && {
+                year = -year
+                year == 0
+              } || ch != '-'
+            }
+          }
         }
-        if (yearNeg) {
-          if (year == 0) yearError(pos - 2)
-          year = -year
-        }
-        if (ch != '-') yearError(yearNeg, yearDigits, pos - 1)
-        year
+      } || pos + 2 != len || {
+        val ch0 = input.charAt(pos)
+        val ch1 = input.charAt(pos + 1)
+        pos += 2
+        month = ch0 * 10 + ch1 - 528 // 528 == '0' * 11
+        ch0 < '0' || ch0 > '9' || ch1 < '0' || ch1 > '9' || month < 1 || month > 12
       }
-    }
-    val month = {
-      if (pos + 1 >= len) yearMonthError(pos)
-      val ch0   = input.charAt(pos)
-      val ch1   = input.charAt(pos + 1)
-      val month = ch0 * 10 + ch1 - 528 // 528 == '0' * 11
-      if (ch0 < '0' || ch0 > '9') digitError(pos)
-      if (ch1 < '0' || ch1 > '9') digitError(pos + 1)
-      if (month < 1 || month > 12) monthError(pos + 1)
-      pos += 2
-      month
-    }
-    if (pos != len) yearMonthError(pos)
+    ) yearMonthError()
     YearMonth.of(year, month)
   }
 
   def unsafeParseZonedDateTime(input: String): ZonedDateTime = {
-    val len = input.length
-    var pos = 0
-    val year = {
-      if (pos + 4 >= len) zonedDateTimeError(pos)
-      val ch0 = input.charAt(pos)
-      val ch1 = input.charAt(pos + 1)
-      val ch2 = input.charAt(pos + 2)
-      val ch3 = input.charAt(pos + 3)
-      val ch4 = input.charAt(pos + 4)
-      if (ch0 >= '0' && ch0 <= '9') {
-        if (ch1 < '0' || ch1 > '9') digitError(pos + 1)
-        if (ch2 < '0' || ch2 > '9') digitError(pos + 2)
-        if (ch3 < '0' || ch3 > '9') digitError(pos + 3)
-        if (ch4 != '-') charError('-', pos + 4)
-        pos += 5
-        ch0 * 1000 + ch1 * 100 + ch2 * 10 + ch3 - 53328 // 53328 == '0' * 1111
-      } else {
-        val yearNeg = ch0 == '-' || (ch0 != '+' && charsOrDigitError('-', '+', pos))
-        if (ch1 < '0' || ch1 > '9') digitError(pos + 1)
-        if (ch2 < '0' || ch2 > '9') digitError(pos + 2)
-        if (ch3 < '0' || ch3 > '9') digitError(pos + 3)
-        if (ch4 < '0' || ch4 > '9') digitError(pos + 4)
-        pos += 5
-        var year       = ch1 * 1000 + ch2 * 100 + ch3 * 10 + ch4 - 53328 // 53328 == '0' * 1111
-        var yearDigits = 4
-        var ch: Char   = '0'
-        while ({
-          if (pos >= len) zonedDateTimeError(pos)
-          ch = input.charAt(pos)
-          pos += 1
-          ch >= '0' && ch <= '9' && yearDigits < 9
-        }) {
-          year = year * 10 + (ch - '0')
-          yearDigits += 1
-        }
-        if (yearNeg) {
-          if (year == 0) yearError(pos - 2)
-          year = -year
-        }
-        if (ch != '-') yearError(yearNeg, yearDigits, pos - 1)
-        year
-      }
-    }
-    val month = {
-      if (pos + 2 >= len) zonedDateTimeError(pos)
-      val ch0   = input.charAt(pos)
-      val ch1   = input.charAt(pos + 1)
-      val ch2   = input.charAt(pos + 2)
-      val month = ch0 * 10 + ch1 - 528 // 528 == '0' * 11
-      if (ch0 < '0' || ch0 > '9') digitError(pos)
-      if (ch1 < '0' || ch1 > '9') digitError(pos + 1)
-      if (month < 1 || month > 12) monthError(pos + 1)
-      if (ch2 != '-') charError('-', pos + 2)
-      pos += 3
-      month
-    }
-    val day = {
-      if (pos + 2 >= len) zonedDateTimeError(pos)
-      val ch0 = input.charAt(pos)
-      val ch1 = input.charAt(pos + 1)
-      val ch2 = input.charAt(pos + 2)
-      val day = ch0 * 10 + ch1 - 528 // 528 == '0' * 11
-      if (ch0 < '0' || ch0 > '9') digitError(pos)
-      if (ch1 < '0' || ch1 > '9') digitError(pos + 1)
-      if (day == 0 || (day > 28 && day > maxDayForYearMonth(year, month))) dayError(pos + 1)
-      if (ch2 != 'T') charError('T', pos + 2)
-      pos += 3
-      day
-    }
-    val hour = {
-      if (pos + 2 >= len) zonedDateTimeError(pos)
-      val ch0  = input.charAt(pos)
-      val ch1  = input.charAt(pos + 1)
-      val ch2  = input.charAt(pos + 2)
-      val hour = ch0 * 10 + ch1 - 528 // 528 == '0' * 11
-      if (ch0 < '0' || ch0 > '9') digitError(pos)
-      if (ch1 < '0' || ch1 > '9') digitError(pos + 1)
-      if (hour > 23) hourError(pos + 1)
-      if (ch2 != ':') charError(':', pos + 2)
-      pos += 3
-      hour
-    }
-    val minute = {
-      if (pos + 1 >= len) zonedDateTimeError(pos)
-      val ch0 = input.charAt(pos)
-      val ch1 = input.charAt(pos + 1)
-      if (ch0 < '0' || ch0 > '9') digitError(pos)
-      if (ch1 < '0' || ch1 > '9') digitError(pos + 1)
-      if (ch0 > '5') minuteError(pos + 1)
-      pos += 2
-      ch0 * 10 + ch1 - 528 // 528 == '0' * 11
-    }
-    var second, nano    = 0
-    var nanoDigitWeight = -1
-    if (pos >= len) timezoneSignError(nanoDigitWeight, pos)
-    var ch = input.charAt(pos)
-    pos += 1
-    if (ch == ':') {
-      nanoDigitWeight = -2
-      second = {
-        if (pos + 1 >= len) zonedDateTimeError(pos)
+    val len                                 = input.length
+    var pos, year, month, day, hour, minute = 0
+    if (
+      pos + 4 >= len || {
         val ch0 = input.charAt(pos)
         val ch1 = input.charAt(pos + 1)
-        if (ch0 < '0' || ch0 > '9') digitError(pos)
-        if (ch1 < '0' || ch1 > '9') digitError(pos + 1)
-        if (ch0 > '5') secondError(pos + 1)
-        pos += 2
-        ch0 * 10 + ch1 - 528 // 528 == '0' * 11
-      }
-      if (pos >= len) timezoneSignError(nanoDigitWeight, pos)
+        val ch2 = input.charAt(pos + 2)
+        val ch3 = input.charAt(pos + 3)
+        val ch4 = input.charAt(pos + 4)
+        pos += 5
+        ch1 < '0' || ch1 > '9' || ch2 < '0' || ch2 > '9' || ch3 < '0' || ch3 > '9' || {
+          if (ch0 >= '0' && ch0 <= '9') {
+            year = ch0 * 1000 + ch1 * 100 + ch2 * 10 + ch3 - 53328 // 53328 == '0' * 1111
+            ch4 != '-'
+          } else {
+            val yearNeg = ch0 == '-' || (ch0 != '+' && zonedDateTimeError())
+            year = ch1 * 1000 + ch2 * 100 + ch3 * 10 + ch4 - 53328 // 53328 == '0' * 1111
+            ch4 < '0' || ch4 > '9' || {
+              var yearDigits = 4
+              var ch         = '0'
+              while ({
+                if (pos >= len) zonedDateTimeError()
+                ch = input.charAt(pos)
+                pos += 1
+                ch >= '0' && ch <= '9' && yearDigits < 9
+              }) {
+                year = year * 10 + (ch - '0')
+                yearDigits += 1
+              }
+              yearNeg && {
+                year = -year
+                year == 0
+              } || ch != '-'
+            }
+          }
+        }
+      } || pos + 5 >= len || {
+        val ch0 = input.charAt(pos)
+        val ch1 = input.charAt(pos + 1)
+        val ch2 = input.charAt(pos + 2)
+        val ch3 = input.charAt(pos + 3)
+        val ch4 = input.charAt(pos + 4)
+        val ch5 = input.charAt(pos + 5)
+        pos += 6
+        month = ch0 * 10 + ch1 - 528 // 528 == '0' * 11
+        day = ch3 * 10 + ch4 - 528   // 528 == '0' * 11
+        ch0 < '0' || ch0 > '9' || ch1 < '0' || ch1 > '9' || ch2 != '-' || ch3 < '0' || ch3 > '9' ||
+        ch4 < '0' || ch4 > '9' || ch5 != 'T' || month < 1 || month > 12 || day == 0 ||
+        (day > 28 && day > maxDayForYearMonth(year, month))
+      } || pos + 4 >= len || {
+        val ch0 = input.charAt(pos)
+        val ch1 = input.charAt(pos + 1)
+        val ch2 = input.charAt(pos + 2)
+        val ch3 = input.charAt(pos + 3)
+        val ch4 = input.charAt(pos + 4)
+        pos += 5
+        hour = ch0 * 10 + ch1 - 528   // 528 == '0' * 11
+        minute = ch3 * 10 + ch4 - 528 // 528 == '0' * 11
+        ch0 < '0' || ch0 > '9' || ch1 < '0' || ch1 > '9' || ch2 != ':' ||
+        ch3 < '0' || ch3 > '9' || ch4 < '0' || ch4 > '9' || ch3 > '5' || hour > 23
+      } || pos >= len
+    ) zonedDateTimeError()
+    var second, nano = 0
+    var ch           = input.charAt(pos)
+    pos += 1
+    if (ch == ':') {
+      if (
+        pos + 1 >= len || {
+          val ch0 = input.charAt(pos)
+          val ch1 = input.charAt(pos + 1)
+          pos += 2
+          second = ch0 * 10 + ch1 - 528 // 528 == '0' * 11
+          ch0 < '0' || ch0 > '9' || ch1 < '0' || ch1 > '9' || ch0 > '5'
+        } || pos >= len
+      ) zonedDateTimeError()
       ch = input.charAt(pos)
       pos += 1
       if (ch == '.') {
-        nanoDigitWeight = 100000000
+        var nanoDigitWeight = 100000000
         while ({
-          if (pos >= len) timezoneSignError(nanoDigitWeight, pos)
+          if (pos >= len) zonedDateTimeError()
           ch = input.charAt(pos)
           pos += 1
           ch >= '0' && ch <= '9' && nanoDigitWeight != 0
@@ -1235,94 +1011,89 @@ private[json] object parsers {
       if (ch == 'Z') {
         if (pos < len) {
           ch = input.charAt(pos)
-          if (ch != '[') charError('[', pos)
+          if (ch != '[') zonedDateTimeError()
           pos += 1
         }
         ZoneOffset.UTC
       } else {
-        val offsetNeg = ch == '-' || (ch != '+' && timezoneSignError(nanoDigitWeight, pos - 1))
-        nanoDigitWeight = -3
-        val offsetHour = {
-          if (pos + 1 >= len) zonedDateTimeError(pos)
-          val ch0        = input.charAt(pos)
-          val ch1        = input.charAt(pos + 1)
-          val offsetHour = ch0 * 10 + ch1 - 528 // 528 == '0' * 11
-          if (ch0 < '0' || ch0 > '9') digitError(pos)
-          if (ch1 < '0' || ch1 > '9') digitError(pos + 1)
-          if (offsetHour > 18) timezoneOffsetHourError(pos + 1)
-          pos += 2
-          offsetHour
-        }
-        var offsetMinute, offsetSecond = 0
+        val offsetNeg   = ch == '-' || (ch != '+' && zonedDateTimeError())
+        var offsetTotal = 0
+        if (
+          pos + 1 >= len || {
+            val ch0 = input.charAt(pos)
+            val ch1 = input.charAt(pos + 1)
+            pos += 2
+            offsetTotal = (ch0 * 10 + ch1 - 528) * 3600 // 528 == '0' * 11
+            ch0 < '0' || ch0 > '9' || ch1 < '0' || ch1 > '9'
+          }
+        ) zonedDateTimeError()
         if (
           pos < len && {
             ch = input.charAt(pos)
             pos += 1
-            ch == ':' || ch != '[' && charError('[', pos - 1)
+            ch == ':' || ch != '[' && zonedDateTimeError()
           }
         ) {
-          offsetMinute = {
-            if (pos + 1 >= len) zonedDateTimeError(pos)
-            val ch0 = input.charAt(pos)
-            val ch1 = input.charAt(pos + 1)
-            if (ch0 < '0' || ch0 > '9') digitError(pos)
-            if (ch1 < '0' || ch1 > '9') digitError(pos + 1)
-            if (ch0 > '5') timezoneOffsetMinuteError(pos + 1)
-            pos += 2
-            ch0 * 10 + ch1 - 528 // 528 == '0' * 11
-          }
+          if (
+            pos + 1 >= len || {
+              val ch0 = input.charAt(pos)
+              val ch1 = input.charAt(pos + 1)
+              pos += 2
+              offsetTotal += (ch0 * 10 + ch1 - 528) * 60 // 528 == '0' * 11
+              ch0 < '0' || ch0 > '9' || ch1 < '0' || ch1 > '9' || ch0 > '5'
+            }
+          ) zonedDateTimeError()
           if (
             pos < len && {
               ch = input.charAt(pos)
               pos += 1
-              ch == ':' || ch != '[' && charError('[', pos - 1)
+              ch == ':' || ch != '[' && zonedDateTimeError()
             }
           ) {
-            nanoDigitWeight = -4
-            offsetSecond = {
-              if (pos + 1 >= len) zonedDateTimeError(pos)
-              val ch0 = input.charAt(pos)
-              val ch1 = input.charAt(pos + 1)
-              if (ch0 < '0' || ch0 > '9') digitError(pos)
-              if (ch1 < '0' || ch1 > '9') digitError(pos + 1)
-              if (ch0 > '5') timezoneOffsetSecondError(pos + 1)
-              pos += 2
-              ch0 * 10 + ch1 - 528 // 528 == '0' * 11
-            }
+            if (
+              pos + 1 >= len || {
+                val ch0 = input.charAt(pos)
+                val ch1 = input.charAt(pos + 1)
+                pos += 2
+                offsetTotal += ch0 * 10 + ch1 - 528 // 528 == '0' * 11
+                ch0 < '0' || ch0 > '9' || ch1 < '0' || ch1 > '9' || ch0 > '5'
+              }
+            ) zonedDateTimeError()
             if (pos < len) {
               ch = input.charAt(pos)
-              if (ch != '[') charError('[', pos)
+              if (ch != '[') zonedDateTimeError()
               pos += 1
             }
           }
         }
-        toZoneOffset(offsetNeg, offsetHour, offsetMinute, offsetSecond, pos)
+        if (offsetTotal > 64800) zonedDateTimeError()
+        toZoneOffset(offsetNeg, offsetTotal)
       }
     if (ch == '[') {
-      val zone =
-        try {
-          val from = pos
-          while ({
-            if (pos >= len) zonedDateTimeError(pos)
-            ch = input.charAt(pos)
-            ch != ']'
-          }) pos += 1
-          val key    = input.substring(from, pos)
-          var zoneId = zoneIds.get(key)
-          if (
-            (zoneId eq null) && {
-              zoneId = ZoneId.of(key)
-              !zoneId.isInstanceOf[ZoneOffset] || zoneId.asInstanceOf[ZoneOffset].getTotalSeconds % 900 == 0
-            }
-          ) zoneIds.put(key, zoneId)
-          zoneId
-        } catch {
-          case _: DateTimeException => zonedDateTimeError(pos - 1)
+      var zoneId: ZoneId = null
+      val from           = pos
+      while ({
+        if (pos >= len) zonedDateTimeError()
+        ch = input.charAt(pos)
+        ch != ']'
+      }) pos += 1
+      val key = input.substring(from, pos)
+      zoneId = zoneIds.get(key)
+      if (
+        (zoneId eq null) && {
+          try zoneId = ZoneId.of(key)
+          catch {
+            case _: DateTimeException => zonedDateTimeError()
+          }
+          !zoneId.isInstanceOf[ZoneOffset] || zoneId.asInstanceOf[ZoneOffset].getTotalSeconds % 900 == 0
         }
-      pos += 1
-      if (pos != len) zonedDateTimeError(pos)
-      ZonedDateTime.ofInstant(localDateTime, zoneOffset, zone)
-    } else ZonedDateTime.ofLocal(localDateTime, zoneOffset, null)
+      ) zoneIds.put(key, zoneId)
+      if (pos + 1 != len) zonedDateTimeError()
+      ZonedDateTime.ofInstant(localDateTime, zoneOffset, zoneId)
+    } else {
+      if (pos != len) zonedDateTimeError()
+      ZonedDateTime.ofLocal(localDateTime, zoneOffset, null)
+    }
   }
 
   def unsafeParseZoneId(input: String): ZoneId =
@@ -1336,103 +1107,82 @@ private[json] object parsers {
       ) zoneIds.put(input, zoneId)
       zoneId
     } catch {
-      case _: DateTimeException => error("illegal zone id", 0)
+      case _: DateTimeException => zoneIdError()
     }
 
   def unsafeParseZoneOffset(input: String): ZoneOffset = {
     val len                  = input.length
     var pos, nanoDigitWeight = 0
-    if (pos >= len) zoneOffsetError(pos)
-    var ch = input.charAt(pos)
+    if (pos >= len) zoneOffsetError()
+    val ch = input.charAt(pos)
     pos += 1
-    if (ch == 'Z') ZoneOffset.UTC
-    else {
-      val offsetNeg = ch == '-' || (ch != '+' && timezoneSignError(nanoDigitWeight, pos - 1))
+    if (ch == 'Z') {
+      if (pos != len) zoneOffsetError()
+      ZoneOffset.UTC
+    } else {
+      val offsetNeg = ch == '-' || (ch != '+' && zoneOffsetError())
       nanoDigitWeight = -3
-      val offsetHour = {
-        if (pos + 1 >= len) zoneOffsetError(pos)
-        val ch0        = input.charAt(pos)
-        val ch1        = input.charAt(pos + 1)
-        val offsetHour = ch0 * 10 + ch1 - 528 // 528 == '0' * 11
-        if (ch0 < '0' || ch0 > '9') digitError(pos)
-        if (ch1 < '0' || ch1 > '9') digitError(pos + 1)
-        if (offsetHour > 18) timezoneOffsetHourError(pos + 1)
-        pos += 2
-        offsetHour
-      }
-      var offsetMinute, offsetSecond = 0
+      var offsetTotal = 0
       if (
-        pos < len && {
-          ch = input.charAt(pos)
-          pos += 1
-          ch == ':'
-        }
-      ) {
-        offsetMinute = {
-          if (pos + 1 >= len) zoneOffsetError(pos)
+        pos + 1 >= len || {
           val ch0 = input.charAt(pos)
           val ch1 = input.charAt(pos + 1)
-          if (ch0 < '0' || ch0 > '9') digitError(pos)
-          if (ch1 < '0' || ch1 > '9') digitError(pos + 1)
-          if (ch0 > '5') timezoneOffsetMinuteError(pos + 1)
+          offsetTotal = (ch0 * 10 + ch1 - 528) * 3600 // 528 == '0' * 11
           pos += 2
-          ch0 * 10 + ch1 - 528 // 528 == '0' * 11
+          ch0 < '0' || ch0 > '9' || ch1 < '0' || ch1 > '9'
         }
+      ) zoneOffsetError()
+      if (pos < len) {
         if (
-          pos < len && {
-            ch = input.charAt(pos)
+          input.charAt(pos) != ':' || {
             pos += 1
-            ch == ':'
-          }
-        ) {
-          nanoDigitWeight = -4
-          offsetSecond = {
-            if (pos + 1 >= len) zoneOffsetError(pos)
+            pos + 1 >= len
+          } || {
             val ch0 = input.charAt(pos)
             val ch1 = input.charAt(pos + 1)
-            if (ch0 < '0' || ch0 > '9') digitError(pos)
-            if (ch1 < '0' || ch1 > '9') digitError(pos + 1)
-            if (ch0 > '5') timezoneOffsetSecondError(pos + 1)
             pos += 2
-            ch0 * 10 + ch1 - 528 // 528 == '0' * 11
+            offsetTotal += (ch0 * 10 + ch1 - 528) * 60 // 528 == '0' * 11
+            ch0 < '0' || ch0 > '9' || ch1 < '0' || ch1 > '9' || ch0 > '5'
           }
+        ) zoneOffsetError()
+        if (pos < len) {
+          if (
+            input.charAt(pos) != ':' || {
+              pos += 1
+              pos + 1 >= len
+            } || {
+              val ch0 = input.charAt(pos)
+              val ch1 = input.charAt(pos + 1)
+              pos += 2
+              offsetTotal += ch0 * 10 + ch1 - 528 // 528 == '0' * 11
+              ch0 < '0' || ch0 > '9' || ch1 < '0' || ch1 > '9' || ch0 > '5'
+            }
+          ) zoneOffsetError()
         }
       }
-      if (pos != len) zoneOffsetError(pos)
-      toZoneOffset(offsetNeg, offsetHour, offsetMinute, offsetSecond, pos)
+      if (offsetTotal > 64800 || pos != len) zoneOffsetError() // 64800 == 18 * 60 * 60
+      toZoneOffset(offsetNeg, offsetTotal)
     }
   }
 
-  private[this] def toZoneOffset(
-    offsetNeg: Boolean,
-    offsetHour: Int,
-    offsetMinute: Int,
-    offsetSecond: Int,
-    pos: Int
-  ): ZoneOffset = {
-    var offsetTotal = offsetHour * 3600 + offsetMinute * 60 + offsetSecond
-    var qp          = offsetTotal * 37283
-    if (offsetTotal > 64800) zoneOffsetError(pos) // 64800 == 18 * 60 * 60
-    if ((qp & 0x1ff8000) == 0) {                  // check if offsetTotal divisible by 900
-      qp >>>= 25                                  // divide offsetTotal by 900
+  private[this] def toZoneOffset(offsetNeg: Boolean, offsetTotal: Int): ZoneOffset = {
+    var qp = offsetTotal * 37283
+    if ((qp & 0x1ff8000) == 0) { // check if offsetTotal divisible by 900
+      qp >>>= 25                 // divide offsetTotal by 900
       if (offsetNeg) qp = -qp
       var zoneOffset = zoneOffsets(qp + 72)
       if (zoneOffset ne null) zoneOffset
       else {
-        if (offsetNeg) offsetTotal = -offsetTotal
-        zoneOffset = ZoneOffset.ofTotalSeconds(offsetTotal)
+        zoneOffset = ZoneOffset.ofTotalSeconds(if (offsetNeg) -offsetTotal else offsetTotal)
         zoneOffsets(qp + 72) = zoneOffset
         zoneOffset
       }
-    } else {
-      if (offsetNeg) offsetTotal = -offsetTotal
-      ZoneOffset.ofTotalSeconds(offsetTotal)
-    }
+    } else ZoneOffset.ofTotalSeconds(if (offsetNeg) -offsetTotal else offsetTotal)
   }
 
-  private[this] def sumSeconds(s1: Long, s2: Long, pos: Int): Long = {
+  private[this] def sumSeconds(s1: Long, s2: Long): Long = {
     val s = s1 + s2
-    if (((s1 ^ s) & (s2 ^ s)) < 0) durationError(pos)
+    if (((s1 ^ s) & (s2 ^ s)) < 0) durationError()
     s
   }
 
@@ -1464,115 +1214,33 @@ private[json] object parsers {
     ((cp ^ cc) & 0x1fc0000000L) != 0 || (((cp >> 37).toInt - cc) & 0x3) == 0
   }
 
-  private[this] def nanoError(nanoDigitWeight: Int, ch: Char, pos: Int): Nothing = {
-    if (nanoDigitWeight == 0) charError(ch, pos)
-    charOrDigitError(ch, pos)
-  }
+  @noinline private[this] def durationError() = error("expected a Duration")
 
-  private[this] def durationOrPeriodStartError(isNeg: Boolean, pos: Int) =
-    error(
-      if (isNeg) "expected 'P'"
-      else "expected 'P' or '-'",
-      pos
-    )
+  @noinline private[this] def instantError() = error("expected an Instant")
 
-  private[this] def durationOrPeriodDigitError(isNegX: Boolean, isNumReq: Boolean, pos: Int): Nothing =
-    error(
-      if (isNegX) "expected digit"
-      else if (isNumReq) "expected '-' or digit"
-      else "expected '\"' or '-' or digit",
-      pos
-    )
+  @noinline private[this] def localDateError() = error("expected a LocalDate")
 
-  private[this] def durationError(state: Int, pos: Int): Nothing =
-    error(
-      (state: @switch) match {
-        case 0 => "expected 'D' or digit"
-        case 1 => "expected 'H' or 'M' or 'S or '.' or digit"
-        case 2 => "expected 'M' or 'S or '.' or digit"
-        case 3 => "expected 'S or '.' or digit"
-      },
-      pos
-    )
+  @noinline private[this] def localDateTimeError() = error("expected a LocalDateTime")
 
-  private[this] def durationError(pos: Int) = error("illegal duration", pos)
+  @noinline private[this] def localTimeError() = error("expected a LocalTime")
 
-  private[this] def timezoneSignError(nanoDigitWeight: Int, pos: Int) =
-    error(
-      if (nanoDigitWeight == -2) "expected '.' or '+' or '-' or 'Z'"
-      else if (nanoDigitWeight == -1) "expected ':' or '+' or '-' or 'Z'"
-      else if (nanoDigitWeight == 0) "expected '+' or '-' or 'Z'"
-      else "expected digit or '+' or '-' or 'Z'",
-      pos
-    )
+  @noinline private[this] def offsetDateTimeError() = error("expected an OffsetDateTime")
 
-  private[this] def instantError(pos: Int) = error("illegal instant", pos)
+  @noinline private[this] def offsetTimeError() = error("expected an OffsetTime")
 
-  private[this] def localDateError(pos: Int) = error("illegal local date", pos)
+  @noinline private[this] def periodError() = error("expected a Period")
 
-  private[this] def localDateTimeError(pos: Int) = error("illegal local date time", pos)
+  @noinline private[this] def monthDayError() = error("expected a MonthDay")
 
-  private[this] def localTimeError(pos: Int) = error("illegal local time", pos)
+  @noinline private[this] def yearMonthError() = error("expected a YearMonth")
 
-  private[this] def offsetDateTimeError(pos: Int) = error("illegal offset date time", pos)
+  @noinline private[this] def zonedDateTimeError() = error("expected a ZonedDateTime")
 
-  private[this] def offsetTimeError(pos: Int) = error("illegal offset time", pos)
+  @noinline private[this] def zoneOffsetError() = error("expected a ZoneOffset")
 
-  private[this] def periodError(state: Int, pos: Int): Nothing =
-    error(
-      (state: @switch) match {
-        case 0 => "expected 'Y' or 'M' or 'W' or 'D' or digit"
-        case 1 => "expected 'M' or 'W' or 'D' or digit"
-        case 2 => "expected 'W' or 'D' or digit"
-        case 3 => "expected 'D' or digit"
-      },
-      pos
-    )
+  @noinline private[this] def zoneIdError() = error("expected a ZoneId")
 
-  private[this] def periodError(pos: Int) = error("illegal period", pos)
+  @noinline private[this] def yearError() = error("expected a Year")
 
-  private[this] def yearMonthError(pos: Int) = error("illegal year month", pos)
-
-  private[this] def zonedDateTimeError(pos: Int) = error("illegal zoned date time", pos)
-
-  private[this] def zoneOffsetError(pos: Int) = error("illegal zone offset", pos)
-
-  private[this] def yearError(yearNeg: Boolean, yearDigits: Int, pos: Int) = {
-    if (!yearNeg && yearDigits == 4) digitError(pos)
-    if (yearDigits == 9) charError('-', pos)
-    charOrDigitError('-', pos)
-  }
-
-  private[this] def yearError(pos: Int) = error("illegal year", pos)
-
-  private[this] def monthError(pos: Int) = error("illegal month", pos)
-
-  private[this] def dayError(pos: Int) = error("illegal day", pos)
-
-  private[this] def hourError(pos: Int) = error("illegal hour", pos)
-
-  private[this] def minuteError(pos: Int) = error("illegal minute", pos)
-
-  private[this] def secondError(pos: Int) = error("illegal second", pos)
-
-  private[this] def timezoneOffsetHourError(pos: Int) = error("illegal timezone offset hour", pos)
-
-  private[this] def timezoneOffsetMinuteError(pos: Int) = error("illegal timezone offset minute", pos)
-
-  private[this] def timezoneOffsetSecondError(pos: Int) = error("illegal timezone offset second", pos)
-
-  private[this] def digitError(pos: Int) = error("expected digit", pos)
-
-  private[this] def charsOrDigitError(ch1: Char, ch2: Char, pos: Int) =
-    error(s"expected '$ch1' or '$ch2' or digit", pos)
-
-  private[this] def charsError(ch1: Char, ch2: Char, pos: Int) = error(s"expected '$ch1' or '$ch2'", pos)
-
-  private[this] def charOrDigitError(ch1: Char, pos: Int) = error(s"expected '$ch1' or digit", pos)
-
-  private[this] def charError(ch: Char, pos: Int) = error(s"expected '$ch'", pos)
-
-  @noinline
-  private[this] def error(msg: String, pos: Int): Nothing =
-    throw new DateTimeException(msg + " at index " + pos) with NoStackTrace
+  private[this] def error(msg: String): Nothing = throw new DateTimeException(msg) with NoStackTrace
 }

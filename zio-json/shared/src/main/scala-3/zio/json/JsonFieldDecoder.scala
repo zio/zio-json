@@ -69,7 +69,7 @@ object JsonFieldDecoder extends LowPriorityJsonFieldDecoder {
     def unsafeDecodeField(trace: List[JsonError], in: String): java.util.UUID =
       try UUIDParser.unsafeParse(in)
       catch {
-        case _: IllegalArgumentException => Lexer.error("expected UUID string", trace)
+        case _: IllegalArgumentException => Lexer.error("expected a UUID", trace)
       }
   }
 
