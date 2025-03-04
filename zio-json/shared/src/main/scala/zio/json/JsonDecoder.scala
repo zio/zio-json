@@ -942,11 +942,7 @@ private[json] trait DecoderLowPriority3 extends DecoderLowPriority4 {
     }
   }
   implicit val duration: JsonDecoder[Duration] = new JsonDecoder[Duration] {
-    def unsafeDecode(trace: List[JsonError], in: RetractReader): Duration =
-      try parsers.unsafeParseDuration(Lexer.string(trace, in).toString)
-      catch {
-        case _: DateTimeException => Lexer.error("expected a Duration", trace)
-      }
+    def unsafeDecode(trace: List[JsonError], in: RetractReader): Duration = Lexer.duration(trace, in)
 
     override def unsafeFromJsonAST(trace: List[JsonError], json: Json): Duration = {
       json match {
@@ -961,11 +957,7 @@ private[json] trait DecoderLowPriority3 extends DecoderLowPriority4 {
     }
   }
   implicit val instant: JsonDecoder[Instant] = new JsonDecoder[Instant] {
-    def unsafeDecode(trace: List[JsonError], in: RetractReader): Instant =
-      try parsers.unsafeParseInstant(Lexer.string(trace, in).toString)
-      catch {
-        case _: DateTimeException => Lexer.error("expected an Instant", trace)
-      }
+    def unsafeDecode(trace: List[JsonError], in: RetractReader): Instant = Lexer.instant(trace, in)
 
     override def unsafeFromJsonAST(trace: List[JsonError], json: Json): Instant = {
       json match {
@@ -980,11 +972,7 @@ private[json] trait DecoderLowPriority3 extends DecoderLowPriority4 {
     }
   }
   implicit val localDate: JsonDecoder[LocalDate] = new JsonDecoder[LocalDate] {
-    def unsafeDecode(trace: List[JsonError], in: RetractReader): LocalDate =
-      try parsers.unsafeParseLocalDate(Lexer.string(trace, in).toString)
-      catch {
-        case _: DateTimeException => Lexer.error("expected a LocalDate", trace)
-      }
+    def unsafeDecode(trace: List[JsonError], in: RetractReader): LocalDate = Lexer.localDate(trace, in)
 
     override def unsafeFromJsonAST(trace: List[JsonError], json: Json): LocalDate = {
       json match {
@@ -999,11 +987,7 @@ private[json] trait DecoderLowPriority3 extends DecoderLowPriority4 {
     }
   }
   implicit val localDateTime: JsonDecoder[LocalDateTime] = new JsonDecoder[LocalDateTime] {
-    def unsafeDecode(trace: List[JsonError], in: RetractReader): LocalDateTime =
-      try parsers.unsafeParseLocalDateTime(Lexer.string(trace, in).toString)
-      catch {
-        case _: DateTimeException => Lexer.error("expected a LocalDateTime", trace)
-      }
+    def unsafeDecode(trace: List[JsonError], in: RetractReader): LocalDateTime = Lexer.localDateTime(trace, in)
 
     override def unsafeFromJsonAST(trace: List[JsonError], json: Json): LocalDateTime = {
       json match {
@@ -1018,11 +1002,7 @@ private[json] trait DecoderLowPriority3 extends DecoderLowPriority4 {
     }
   }
   implicit val localTime: JsonDecoder[LocalTime] = new JsonDecoder[LocalTime] {
-    def unsafeDecode(trace: List[JsonError], in: RetractReader): LocalTime =
-      try parsers.unsafeParseLocalTime(Lexer.string(trace, in).toString)
-      catch {
-        case _: DateTimeException => Lexer.error("expected a LocalTime", trace)
-      }
+    def unsafeDecode(trace: List[JsonError], in: RetractReader): LocalTime = Lexer.localTime(trace, in)
 
     override def unsafeFromJsonAST(trace: List[JsonError], json: Json): LocalTime = {
       json match {
@@ -1052,11 +1032,7 @@ private[json] trait DecoderLowPriority3 extends DecoderLowPriority4 {
     }
   }
   implicit val monthDay: JsonDecoder[MonthDay] = new JsonDecoder[MonthDay] {
-    def unsafeDecode(trace: List[JsonError], in: RetractReader): MonthDay =
-      try parsers.unsafeParseMonthDay(Lexer.string(trace, in).toString)
-      catch {
-        case _: DateTimeException => Lexer.error("expected a MonthDay", trace)
-      }
+    def unsafeDecode(trace: List[JsonError], in: RetractReader): MonthDay = Lexer.monthDay(trace, in)
 
     override def unsafeFromJsonAST(trace: List[JsonError], json: Json): MonthDay = {
       json match {
@@ -1071,11 +1047,7 @@ private[json] trait DecoderLowPriority3 extends DecoderLowPriority4 {
     }
   }
   implicit val offsetDateTime: JsonDecoder[OffsetDateTime] = new JsonDecoder[OffsetDateTime] {
-    def unsafeDecode(trace: List[JsonError], in: RetractReader): OffsetDateTime =
-      try parsers.unsafeParseOffsetDateTime(Lexer.string(trace, in).toString)
-      catch {
-        case _: DateTimeException => Lexer.error("expected an OffsetDateTime", trace)
-      }
+    def unsafeDecode(trace: List[JsonError], in: RetractReader): OffsetDateTime = Lexer.offsetDateTime(trace, in)
 
     override def unsafeFromJsonAST(trace: List[JsonError], json: Json): OffsetDateTime = {
       json match {
@@ -1090,11 +1062,7 @@ private[json] trait DecoderLowPriority3 extends DecoderLowPriority4 {
     }
   }
   implicit val offsetTime: JsonDecoder[OffsetTime] = new JsonDecoder[OffsetTime] {
-    def unsafeDecode(trace: List[JsonError], in: RetractReader): OffsetTime =
-      try parsers.unsafeParseOffsetTime(Lexer.string(trace, in).toString)
-      catch {
-        case _: DateTimeException => Lexer.error("expected an OffsetTime", trace)
-      }
+    def unsafeDecode(trace: List[JsonError], in: RetractReader): OffsetTime = Lexer.offsetTime(trace, in)
 
     override def unsafeFromJsonAST(trace: List[JsonError], json: Json): OffsetTime = {
       json match {
@@ -1109,11 +1077,7 @@ private[json] trait DecoderLowPriority3 extends DecoderLowPriority4 {
     }
   }
   implicit val period: JsonDecoder[Period] = new JsonDecoder[Period] {
-    def unsafeDecode(trace: List[JsonError], in: RetractReader): Period =
-      try parsers.unsafeParsePeriod(Lexer.string(trace, in).toString)
-      catch {
-        case _: DateTimeException => Lexer.error("expected a Period", trace)
-      }
+    def unsafeDecode(trace: List[JsonError], in: RetractReader): Period = Lexer.period(trace, in)
 
     override def unsafeFromJsonAST(trace: List[JsonError], json: Json): Period = {
       json match {
@@ -1128,11 +1092,7 @@ private[json] trait DecoderLowPriority3 extends DecoderLowPriority4 {
     }
   }
   implicit val year: JsonDecoder[Year] = new JsonDecoder[Year] {
-    def unsafeDecode(trace: List[JsonError], in: RetractReader): Year =
-      try parsers.unsafeParseYear(Lexer.string(trace, in).toString)
-      catch {
-        case _: DateTimeException => Lexer.error("expected a Year", trace)
-      }
+    def unsafeDecode(trace: List[JsonError], in: RetractReader): Year = Lexer.year(trace, in)
 
     override def unsafeFromJsonAST(trace: List[JsonError], json: Json): Year = {
       json match {
@@ -1147,11 +1107,7 @@ private[json] trait DecoderLowPriority3 extends DecoderLowPriority4 {
     }
   }
   implicit val yearMonth: JsonDecoder[YearMonth] = new JsonDecoder[YearMonth] {
-    def unsafeDecode(trace: List[JsonError], in: RetractReader): YearMonth =
-      try parsers.unsafeParseYearMonth(Lexer.string(trace, in).toString)
-      catch {
-        case _: DateTimeException => Lexer.error("expected a YearMonth", trace)
-      }
+    def unsafeDecode(trace: List[JsonError], in: RetractReader): YearMonth = Lexer.yearMonth(trace, in)
 
     override def unsafeFromJsonAST(trace: List[JsonError], json: Json): YearMonth = {
       json match {
@@ -1166,11 +1122,7 @@ private[json] trait DecoderLowPriority3 extends DecoderLowPriority4 {
     }
   }
   implicit val zonedDateTime: JsonDecoder[ZonedDateTime] = new JsonDecoder[ZonedDateTime] {
-    def unsafeDecode(trace: List[JsonError], in: RetractReader): ZonedDateTime =
-      try parsers.unsafeParseZonedDateTime(Lexer.string(trace, in).toString)
-      catch {
-        case _: DateTimeException => Lexer.error("expected a ZonedDateTime", trace)
-      }
+    def unsafeDecode(trace: List[JsonError], in: RetractReader): ZonedDateTime = Lexer.zonedDateTime(trace, in)
 
     override def unsafeFromJsonAST(trace: List[JsonError], json: Json): ZonedDateTime = {
       json match {
@@ -1204,11 +1156,7 @@ private[json] trait DecoderLowPriority3 extends DecoderLowPriority4 {
     }
   }
   implicit val zoneOffset: JsonDecoder[ZoneOffset] = new JsonDecoder[ZoneOffset] {
-    def unsafeDecode(trace: List[JsonError], in: RetractReader): ZoneOffset =
-      try parsers.unsafeParseZoneOffset(Lexer.string(trace, in).toString)
-      catch {
-        case _: DateTimeException => Lexer.error("expected a ZoneOffset", trace)
-      }
+    def unsafeDecode(trace: List[JsonError], in: RetractReader): ZoneOffset = Lexer.zoneOffset(trace, in)
 
     override def unsafeFromJsonAST(trace: List[JsonError], json: Json): ZoneOffset = {
       json match {

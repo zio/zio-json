@@ -417,7 +417,7 @@ private[json] object parsers {
             ch0 < '0' || ch0 > '9' || ch1 < '0' || ch1 > '9' || ch0 > '5'
           }
         }
-      ) localTimeError()
+      ) localDateTimeError()
       if (pos < len) {
         if (
           input.charAt(pos) != '.' || {
@@ -664,9 +664,8 @@ private[json] object parsers {
   }
 
   def unsafeParseOffsetTime(input: String): OffsetTime = {
-    val len          = input.length
-    var pos          = 0
-    var hour, minute = 0
+    val len               = input.length
+    var pos, hour, minute = 0
     if (
       pos + 4 >= len || {
         val ch0 = input.charAt(pos)
@@ -1111,8 +1110,8 @@ private[json] object parsers {
     }
 
   def unsafeParseZoneOffset(input: String): ZoneOffset = {
-    val len                  = input.length
-    var pos, nanoDigitWeight = 0
+    val len = input.length
+    var pos = 0
     if (pos >= len) zoneOffsetError()
     val ch = input.charAt(pos)
     pos += 1
@@ -1120,8 +1119,7 @@ private[json] object parsers {
       if (pos != len) zoneOffsetError()
       ZoneOffset.UTC
     } else {
-      val offsetNeg = ch == '-' || (ch != '+' && zoneOffsetError())
-      nanoDigitWeight = -3
+      val offsetNeg   = ch == '-' || (ch != '+' && zoneOffsetError())
       var offsetTotal = 0
       if (
         pos + 1 >= len || {
