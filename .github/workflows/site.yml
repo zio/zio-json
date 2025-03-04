@@ -14,38 +14,36 @@ name: Website
 jobs:
   build:
     name: Build and Test
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     if: ${{ github.event_name == 'pull_request' }}
     steps:
     - name: Git Checkout
       uses: actions/checkout@v3.3.0
       with:
         fetch-depth: '0'
-    - name: Setup Scala
-      uses: actions/setup-java@v3.9.0
+    - name: Setup Action
+      uses: coursier/setup-action@v1
       with:
-        distribution: temurin
-        java-version: 17
-        check-latest: true
+        jvm: temurin:17
+        apps: sbt
     - name: Check artifacts build process
       run: sbt  +publishLocal
     - name: Check website build process
       run: sbt docs/clean; sbt  docs/buildWebsite
   publish-docs:
     name: Publish Docs
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     if: ${{ ((github.event_name == 'release') && (github.event.action == 'published')) || (github.event_name == 'workflow_dispatch') }}
     steps:
     - name: Git Checkout
       uses: actions/checkout@v3.3.0
       with:
         fetch-depth: '0'
-    - name: Setup Scala
-      uses: actions/setup-java@v3.9.0
+    - name: Setup Action
+      uses: coursier/setup-action@v1
       with:
-        distribution: temurin
-        java-version: 17
-        check-latest: true
+        jvm: temurin:17
+        apps: sbt
     - name: Setup NodeJs
       uses: actions/setup-node@v3
       with:
@@ -57,7 +55,7 @@ jobs:
         NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
   generate-readme:
     name: Generate README
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     if: ${{ (github.event_name == 'push') || ((github.event_name == 'release') && (github.event.action == 'published')) }}
     steps:
     - name: Git Checkout
@@ -65,12 +63,11 @@ jobs:
       with:
         ref: ${{ github.head_ref }}
         fetch-depth: '0'
-    - name: Setup Scala
-      uses: actions/setup-java@v3.9.0
+    - name: Setup Action
+      uses: coursier/setup-action@v1
       with:
-        distribution: temurin
-        java-version: 17
-        check-latest: true
+        jvm: temurin:17
+        apps: sbt
     - name: Commit Changes
       run: |
         git config --local user.email "github-actions[bot]@users.noreply.github.com"
