@@ -16,9 +16,9 @@
 package zio.json.internal
 
 import zio.json.JsonDecoder.{ JsonError, UnsafeJson }
-
-import java.time.{ DayOfWeek, Month }
+import java.time._
 import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
 import scala.annotation._
 
 // tries to stick to the spec, but maybe a bit loose in places (e.g. numbers)
@@ -147,6 +147,95 @@ object Lexer {
     else if (b != ']') skipArray(in, level)
     else if (level != 0) skipArray(in, level - 1)
   }
+
+  def boolean(trace: List[JsonError], in: OneCharReader): Boolean = {
+    val c = in.nextNonWhitespace()
+    if (c == 't' && in.readChar() == 'r' && in.readChar() == 'u' && in.readChar() == 'e') true
+    else if (c == 'f' && in.readChar() == 'a' && in.readChar() == 'l' && in.readChar() == 's' && in.readChar() == 'e')
+      false
+    else error("expected a Boolean", c, trace)
+  }
+
+  def byte(trace: List[JsonError], in: RetractReader): Byte =
+    try {
+      val i = UnsafeNumbers.byte_(in, false)
+      in.retract()
+      i
+    } catch {
+      case UnsafeNumbers.UnsafeNumber => error("expected a Byte", trace)
+    }
+
+  def short(trace: List[JsonError], in: RetractReader): Short =
+    try {
+      val i = UnsafeNumbers.short_(in, false)
+      in.retract()
+      i
+    } catch {
+      case UnsafeNumbers.UnsafeNumber => error("expected a Short", trace)
+    }
+
+  def int(trace: List[JsonError], in: RetractReader): Int =
+    try {
+      val i = UnsafeNumbers.int_(in, false)
+      in.retract()
+      i
+    } catch {
+      case UnsafeNumbers.UnsafeNumber => error("expected an Int", trace)
+    }
+
+  def long(trace: List[JsonError], in: RetractReader): Long =
+    try {
+      val i = UnsafeNumbers.long_(in, false)
+      in.retract()
+      i
+    } catch {
+      case UnsafeNumbers.UnsafeNumber => error("expected a Long", trace)
+    }
+
+  def bigInteger(trace: List[JsonError], in: RetractReader): java.math.BigInteger =
+    try {
+      val i = UnsafeNumbers.bigInteger_(in, false, NumberMaxBits)
+      in.retract()
+      i
+    } catch {
+      case UnsafeNumbers.UnsafeNumber => error(s"expected a $NumberMaxBits-bit BigInteger", trace)
+    }
+
+  def bigInt(trace: List[JsonError], in: RetractReader): BigInt =
+    try {
+      val i = UnsafeNumbers.bigInt_(in, false, NumberMaxBits)
+      in.retract()
+      i
+    } catch {
+      case UnsafeNumbers.UnsafeNumber => error(s"expected a $NumberMaxBits-bit BigInt", trace)
+    }
+
+  def float(trace: List[JsonError], in: RetractReader): Float =
+    try {
+      val i = UnsafeNumbers.float_(in, false, NumberMaxBits)
+      in.retract()
+      i
+    } catch {
+      case UnsafeNumbers.UnsafeNumber => error("expected a Float", trace)
+    }
+
+  def double(trace: List[JsonError], in: RetractReader): Double =
+    try {
+      val i = UnsafeNumbers.double_(in, false, NumberMaxBits)
+      in.retract()
+      i
+    } catch {
+      case UnsafeNumbers.UnsafeNumber => error("expected a Double", trace)
+    }
+
+  def bigDecimal(trace: List[JsonError], in: RetractReader): java.math.BigDecimal =
+    try {
+      val i = UnsafeNumbers.bigDecimal_(in, false, NumberMaxBits)
+      in.retract()
+      i
+    } catch {
+      case UnsafeNumbers.UnsafeNumber => error(s"expected a BigDecimal with $NumberMaxBits-bit mantissa", trace)
+    }
 
   // FIXME: remove in the next major version
   def streamingString(trace: List[JsonError], in: OneCharReader): java.io.Reader = {
@@ -324,7 +413,1376 @@ object Lexer {
     uuidError(trace)
   }
 
+  def duration(trace: List[JsonError], in: OneCharReader): Duration = {
+    var c = in.nextNonWhitespace()
+    if (c == '"') {
+      val cs = charArrays.get
+      var i  = 0
+      while ({
+        c = in.readChar()
+        c != '"'
+      }) {
+        if (c == '\\') c = nextEscaped(trace, in)
+        cs(i) = c
+        i += 1
+      }
+      var pos          = 0
+      var seconds      = 0L
+      var nanos, state = 0
+      if (pos >= i) durationError(trace)
+      var ch = cs(pos)
+      pos += 1
+      val isNeg = ch == '-'
+      if (isNeg) {
+        if (pos >= i) durationError(trace)
+        ch = cs(pos)
+        pos += 1
+      }
+      if (ch != 'P' || pos >= i) durationError(trace)
+      ch = cs(pos)
+      pos += 1
+      while ({
+        if (state == 0) {
+          if (ch == 'T') {
+            if (pos >= i) durationError(trace)
+            ch = cs(pos)
+            pos += 1
+            state = 1
+          }
+        } else if (state == 1) {
+          if (ch != 'T' || pos >= i) durationError(trace)
+          ch = cs(pos)
+          pos += 1
+        } else if (state == 4 && pos >= i) durationError(trace)
+        val isNegX = ch == '-'
+        if (isNegX) {
+          if (pos >= i) durationError(trace)
+          ch = cs(pos)
+          pos += 1
+        }
+        if (ch < '0' || ch > '9') durationError(trace)
+        var x: Long = ('0' - ch).toLong
+        while (
+          (pos < i) && {
+            ch = cs(pos)
+            ch >= '0' && ch <= '9'
+          }
+        ) {
+          if (
+            x < -922337203685477580L || {
+              x = x * 10 + ('0' - ch)
+              x > 0
+            }
+          ) durationError(trace)
+          pos += 1
+        }
+        if (!(isNeg ^ isNegX)) {
+          if (x == -9223372036854775808L) durationError(trace)
+          x = -x
+        }
+        if (ch == 'D' && state <= 0) {
+          if (x < -106751991167300L || x > 106751991167300L) durationError(trace)
+          seconds = x * 86400
+          state = 1
+        } else if (ch == 'H' && state <= 1) {
+          if (x < -2562047788015215L || x > 2562047788015215L) durationError(trace)
+          seconds = sumSeconds(x * 3600, seconds, trace)
+          state = 2
+        } else if (ch == 'M' && state <= 2) {
+          if (x < -153722867280912930L || x > 153722867280912930L) durationError(trace)
+          seconds = sumSeconds(x * 60, seconds, trace)
+          state = 3
+        } else if (ch == '.') {
+          pos += 1
+          seconds = sumSeconds(x, seconds, trace)
+          var nanoDigitWeight = 100000000
+          while (
+            (pos < i) && {
+              ch = cs(pos)
+              ch >= '0' && ch <= '9' && nanoDigitWeight != 0
+            }
+          ) {
+            nanos += (ch - '0') * nanoDigitWeight
+            nanoDigitWeight = (nanoDigitWeight * 3435973837L >> 35).toInt // divide a positive int by 10
+            pos += 1
+          }
+          if (ch != 'S') durationError(trace)
+          if (isNeg ^ isNegX) nanos = -nanos
+          state = 4
+        } else if (ch == 'S') {
+          seconds = sumSeconds(x, seconds, trace)
+          state = 4
+        } else durationError(trace)
+        pos += 1
+        (pos < i) && {
+          ch = cs(pos)
+          pos += 1
+          true
+        }
+      }) ()
+      return Duration.ofSeconds(seconds, nanos.toLong)
+    }
+    durationError(trace)
+  }
+
+  def instant(trace: List[JsonError], in: OneCharReader): Instant = {
+    var c = in.nextNonWhitespace()
+    if (c == '"') {
+      val cs = charArrays.get
+      var i  = 0
+      while ({
+        c = in.readChar()
+        c != '"'
+      }) {
+        if (c == '\\') c = nextEscaped(trace, in)
+        cs(i) = c
+        i += 1
+      }
+      var pos, year, month, day = 0
+      if (
+        pos + 4 >= i || {
+          val ch0 = cs(pos)
+          val ch1 = cs(pos + 1)
+          val ch2 = cs(pos + 2)
+          val ch3 = cs(pos + 3)
+          val ch4 = cs(pos + 4)
+          pos += 5
+          ch1 < '0' || ch1 > '9' || ch2 < '0' || ch2 > '9' || ch3 < '0' || ch3 > '9' || {
+            if (ch0 >= '0' && ch0 <= '9') {
+              year = ch0 * 1000 + ch1 * 100 + ch2 * 10 + ch3 - 53328 // 53328 == '0' * 1111
+              ch4 != '-'
+            } else {
+              year = ch1 * 1000 + ch2 * 100 + ch3 * 10 + ch4 - 53328 // 53328 == '0' * 1111
+              val yearNeg = ch0 == '-' || (ch0 != '+' && instantError(trace))
+              ch4 < '0' || ch4 > '9' || {
+                var yearDigits = 4
+                var ch         = '0'
+                while (
+                  pos < i && {
+                    ch = cs(pos)
+                    pos += 1
+                    ch >= '0' && ch <= '9' && yearDigits < 10
+                  }
+                ) {
+                  year =
+                    if (year > 100000000) 2147483647
+                    else year * 10 + (ch - '0')
+                  yearDigits += 1
+                }
+                yearDigits == 10 && year > 1000000000 || yearNeg && {
+                  year = -year
+                  year == 0
+                } || ch != '-'
+              }
+            }
+          }
+        } || pos + 5 >= i || {
+          val ch0 = cs(pos)
+          val ch1 = cs(pos + 1)
+          val ch2 = cs(pos + 2)
+          val ch3 = cs(pos + 3)
+          val ch4 = cs(pos + 4)
+          val ch5 = cs(pos + 5)
+          pos += 6
+          month = ch0 * 10 + ch1 - 528 // 528 == '0' * 11
+          day = ch3 * 10 + ch4 - 528   // 528 == '0' * 11
+          ch0 < '0' || ch0 > '9' || ch1 < '0' || ch1 > '9' || ch2 != '-' || ch3 < '0' || ch3 > '9' ||
+          ch4 < '0' || ch4 > '9' || ch5 != 'T' || month < 1 || month > 12 || day == 0 ||
+          (day > 28 && day > maxDayForYearMonth(year, month))
+        }
+      ) instantError(trace)
+      val epochDay =
+        epochDayForYear(year) + (dayOfYearForYearMonth(year, month) + day - 719529) // 719528 == days 0000 to 1970
+      var epochSecond = 0
+      if (
+        pos + 4 >= i || {
+          val ch0 = cs(pos)
+          val ch1 = cs(pos + 1)
+          val ch2 = cs(pos + 2)
+          val ch3 = cs(pos + 3)
+          val ch4 = cs(pos + 4)
+          pos += 5
+          val hour = ch0 * 10 + ch1 - 528 // 528 == '0' * 11
+          epochSecond = hour * 3600 + (ch3 * 10 + ch4 - 528) * 60 // 528 == '0' * 11
+          ch0 < '0' || ch0 > '9' || ch1 < '0' || ch1 > '9' || ch2 != ':' ||
+          ch3 < '0' || ch3 > '9' || ch4 < '0' || ch4 > '9' || ch3 > '5' || hour > 23
+        }
+      ) instantError(trace)
+      var nano = 0
+      var ch   = '0'
+      if (pos < i) {
+        ch = cs(pos)
+        pos += 1
+        if (ch == ':') {
+          if (
+            pos + 1 >= i || {
+              val ch0 = cs(pos)
+              val ch1 = cs(pos + 1)
+              pos += 2
+              epochSecond += ch0 * 10 + ch1 - 528 // 528 == '0' * 11
+              ch0 < '0' || ch0 > '9' || ch1 < '0' || ch1 > '9' || ch0 > '5'
+            }
+          ) instantError(trace)
+          if (pos < i) {
+            ch = cs(pos)
+            pos += 1
+            if (ch == '.') {
+              var nanoDigitWeight = 100000000
+              while (
+                pos < i && {
+                  ch = cs(pos)
+                  pos += 1
+                  ch >= '0' && ch <= '9' && nanoDigitWeight != 0
+                }
+              ) {
+                nano += (ch - '0') * nanoDigitWeight
+                nanoDigitWeight = (nanoDigitWeight * 3435973837L >> 35).toInt // divide a positive int by 10
+              }
+            }
+          }
+        }
+      }
+      var offsetTotal = 0
+      if (ch != 'Z') {
+        val offsetNeg = ch == '-' || (ch != '+' && instantError(trace))
+        if (
+          pos + 1 >= i || {
+            val ch0 = cs(pos)
+            val ch1 = cs(pos + 1)
+            pos += 2
+            offsetTotal = (ch0 * 10 + ch1 - 528) * 3600 // 528 == '0' * 11
+            ch0 < '0' || ch0 > '9' || ch1 < '0' || ch1 > '9'
+          }
+        ) instantError(trace)
+        if (
+          pos < i && {
+            ch = cs(pos)
+            pos += 1
+            ch == ':'
+          }
+        ) {
+          if (
+            pos + 1 >= i || {
+              val ch0 = cs(pos)
+              val ch1 = cs(pos + 1)
+              pos += 2
+              offsetTotal += (ch0 * 10 + ch1 - 528) * 60 // 528 == '0' * 11
+              ch0 < '0' || ch0 > '9' || ch1 < '0' || ch1 > '9' || ch0 > '5'
+            }
+          ) instantError(trace)
+          if (
+            pos < i && {
+              ch = cs(pos)
+              pos += 1
+              ch == ':'
+            }
+          ) {
+            if (
+              pos + 1 >= i || {
+                val ch0 = cs(pos)
+                val ch1 = cs(pos + 1)
+                pos += 2
+                offsetTotal += ch0 * 10 + ch1 - 528 // 528 == '0' * 11
+                ch0 < '0' || ch0 > '9' || ch1 < '0' || ch1 > '9' || ch0 > '5'
+              }
+            ) instantError(trace)
+          }
+        }
+        if (offsetTotal > 64800) instantError(trace) // 64800 == 18 * 60 * 60
+        if (offsetNeg) offsetTotal = -offsetTotal
+      }
+      if (pos == i) return Instant.ofEpochSecond(epochDay * 86400 + (epochSecond - offsetTotal), nano.toLong)
+    }
+    instantError(trace)
+  }
+
+  def localDate(trace: List[JsonError], in: OneCharReader): LocalDate = {
+    var c = in.nextNonWhitespace()
+    if (c == '"') {
+      val cs = charArrays.get
+      var i  = 0
+      while ({
+        c = in.readChar()
+        c != '"'
+      }) {
+        if (c == '\\') c = nextEscaped(trace, in)
+        cs(i) = c
+        i += 1
+      }
+      var pos, year, month, day = 0
+      if (
+        pos + 4 >= i || {
+          val ch0 = cs(pos)
+          val ch1 = cs(pos + 1)
+          val ch2 = cs(pos + 2)
+          val ch3 = cs(pos + 3)
+          val ch4 = cs(pos + 4)
+          pos += 5
+          ch1 < '0' || ch1 > '9' || ch2 < '0' || ch2 > '9' || ch3 < '0' || ch3 > '9' || {
+            if (ch0 >= '0' && ch0 <= '9') {
+              year = ch0 * 1000 + ch1 * 100 + ch2 * 10 + ch3 - 53328 // 53328 == '0' * 1111
+              ch4 != '-'
+            } else {
+              year = ch1 * 1000 + ch2 * 100 + ch3 * 10 + ch4 - 53328 // 53328 == '0' * 1111
+              val yearNeg = ch0 == '-' || (ch0 != '+' && localDateError(trace))
+              ch4 < '0' || ch4 > '9' || {
+                var yearDigits = 4
+                var ch         = '0'
+                while (
+                  pos < i && {
+                    ch = cs(pos)
+                    pos += 1
+                    ch >= '0' && ch <= '9' && yearDigits < 9
+                  }
+                ) {
+                  year = year * 10 + (ch - '0')
+                  yearDigits += 1
+                }
+                yearNeg && {
+                  year = -year
+                  year == 0
+                } || ch != '-'
+              }
+            }
+          }
+        } || pos + 5 != i || {
+          val ch0 = cs(pos)
+          val ch1 = cs(pos + 1)
+          val ch2 = cs(pos + 2)
+          val ch3 = cs(pos + 3)
+          val ch4 = cs(pos + 4)
+          pos += 5
+          month = ch0 * 10 + ch1 - 528 // 528 == '0' * 11
+          day = ch3 * 10 + ch4 - 528   // 528 == '0' * 11
+          ch0 < '0' || ch0 > '9' || ch1 < '0' || ch1 > '9' || ch2 != '-' || ch3 < '0' || ch3 > '9' ||
+          ch4 < '0' || ch4 > '9' || month < 1 || month > 12 || day == 0 ||
+          (day > 28 && day > maxDayForYearMonth(year, month))
+        }
+      ) localDateError(trace)
+      return LocalDate.of(year, month, day)
+    }
+    localDateError(trace)
+  }
+
+  def localDateTime(trace: List[JsonError], in: OneCharReader): LocalDateTime = {
+    var c = in.nextNonWhitespace()
+    if (c == '"') {
+      val cs = charArrays.get
+      var i  = 0
+      while ({
+        c = in.readChar()
+        c != '"'
+      }) {
+        if (c == '\\') c = nextEscaped(trace, in)
+        cs(i) = c
+        i += 1
+      }
+      var pos, year, month, day = 0
+      if (
+        pos + 4 >= i || {
+          val ch0 = cs(pos)
+          val ch1 = cs(pos + 1)
+          val ch2 = cs(pos + 2)
+          val ch3 = cs(pos + 3)
+          val ch4 = cs(pos + 4)
+          pos += 5
+          ch1 < '0' || ch1 > '9' || ch2 < '0' || ch2 > '9' || ch3 < '0' || ch3 > '9' || {
+            if (ch0 >= '0' && ch0 <= '9') {
+              year = ch0 * 1000 + ch1 * 100 + ch2 * 10 + ch3 - 53328 // 53328 == '0' * 1111
+              ch4 != '-'
+            } else {
+              year = ch1 * 1000 + ch2 * 100 + ch3 * 10 + ch4 - 53328 // 53328 == '0' * 1111
+              val yearNeg = ch0 == '-' || (ch0 != '+' && localDateTimeError(trace))
+              ch4 < '0' || ch4 > '9' || {
+                var yearDigits = 4
+                var ch         = '0'
+                while (
+                  pos < i && {
+                    ch = cs(pos)
+                    pos += 1
+                    ch >= '0' && ch <= '9' && yearDigits < 9
+                  }
+                ) {
+                  year = year * 10 + (ch - '0')
+                  yearDigits += 1
+                }
+                yearNeg && {
+                  year = -year
+                  year == 0
+                } || ch != '-'
+              }
+            }
+          }
+        } || pos + 5 >= i || {
+          val ch0 = cs(pos)
+          val ch1 = cs(pos + 1)
+          val ch2 = cs(pos + 2)
+          val ch3 = cs(pos + 3)
+          val ch4 = cs(pos + 4)
+          val ch5 = cs(pos + 5)
+          pos += 6
+          month = ch0 * 10 + ch1 - 528 // 528 == '0' * 11
+          day = ch3 * 10 + ch4 - 528   // 528 == '0' * 11
+          ch0 < '0' || ch0 > '9' || ch1 < '0' || ch1 > '9' || ch2 != '-' || ch3 < '0' || ch3 > '9' ||
+          ch4 < '0' || ch4 > '9' || ch5 != 'T' || day == 0 || month < 1 || month > 12 ||
+          (day > 28 && day > maxDayForYearMonth(year, month))
+        }
+      ) localDateTimeError(trace)
+      var hour, minute = 0
+      if (
+        pos + 4 >= i || {
+          val ch0 = cs(pos)
+          val ch1 = cs(pos + 1)
+          val ch2 = cs(pos + 2)
+          val ch3 = cs(pos + 3)
+          val ch4 = cs(pos + 4)
+          pos += 5
+          hour = ch0 * 10 + ch1 - 528   // 528 == '0' * 11
+          minute = ch3 * 10 + ch4 - 528 // 528 == '0' * 11
+          ch0 < '0' || ch0 > '9' || ch1 < '0' || ch1 > '9' || ch2 != ':' ||
+          ch3 < '0' || ch3 > '9' || ch4 < '0' || ch4 > '9' || ch3 > '5' || hour > 23
+        }
+      ) localDateTimeError(trace)
+      var second, nano = 0
+      if (pos < i) {
+        if (
+          cs(pos) != ':' || {
+            pos += 1
+            pos + 1 >= i || {
+              val ch0 = cs(pos)
+              val ch1 = cs(pos + 1)
+              pos += 2
+              second = ch0 * 10 + ch1 - 528 // 528 == '0' * 11
+              ch0 < '0' || ch0 > '9' || ch1 < '0' || ch1 > '9' || ch0 > '5'
+            }
+          }
+        ) localDateTimeError(trace)
+        if (pos < i) {
+          if (
+            cs(pos) != '.' || {
+              pos += 1
+              var nanoDigitWeight = 100000000
+              var ch              = '0'
+              while (
+                pos < i && {
+                  ch = cs(pos)
+                  ch >= '0' && ch <= '9' && nanoDigitWeight != 0
+                }
+              ) {
+                nano += (ch - '0') * nanoDigitWeight
+                nanoDigitWeight = (nanoDigitWeight * 3435973837L >> 35).toInt // divide a positive int by 10
+                pos += 1
+              }
+              pos != i
+            }
+          ) localDateTimeError(trace)
+        }
+      }
+      return LocalDateTime.of(year, month, day, hour, minute, second, nano)
+    }
+    localDateTimeError(trace)
+  }
+
+  def localTime(trace: List[JsonError], in: OneCharReader): LocalTime = {
+    var c = in.nextNonWhitespace()
+    if (c == '"') {
+      val cs = charArrays.get
+      var i  = 0
+      while ({
+        c = in.readChar()
+        c != '"'
+      }) {
+        if (c == '\\') c = nextEscaped(trace, in)
+        cs(i) = c
+        i += 1
+      }
+      var pos, hour, minute = 0
+      if (
+        pos + 4 >= i || {
+          val ch0 = cs(pos)
+          val ch1 = cs(pos + 1)
+          val ch2 = cs(pos + 2)
+          val ch3 = cs(pos + 3)
+          val ch4 = cs(pos + 4)
+          pos += 5
+          hour = ch0 * 10 + ch1 - 528   // 528 == '0' * 11
+          minute = ch3 * 10 + ch4 - 528 // 528 == '0' * 11
+          ch0 < '0' || ch0 > '9' || ch1 < '0' || ch1 > '9' || ch2 != ':' ||
+          ch3 < '0' || ch3 > '9' || ch4 < '0' || ch4 > '9' || ch3 > '5' || hour > 23
+        }
+      ) localTimeError(trace)
+      var second, nano = 0
+      if (pos < i) {
+        if (
+          cs(pos) != ':' || {
+            pos += 1
+            pos + 1 >= i || {
+              val ch0 = cs(pos)
+              val ch1 = cs(pos + 1)
+              pos += 2
+              second = ch0 * 10 + ch1 - 528 // 528 == '0' * 11
+              ch0 < '0' || ch0 > '9' || ch1 < '0' || ch1 > '9' || ch0 > '5'
+            }
+          }
+        ) localTimeError(trace)
+        if (pos < i) {
+          if (
+            cs(pos) != '.' || {
+              pos += 1
+              var nanoDigitWeight = 100000000
+              var ch              = '0'
+              while (
+                pos < i && {
+                  ch = cs(pos)
+                  ch >= '0' && ch <= '9' && nanoDigitWeight != 0
+                }
+              ) {
+                nano += (ch - '0') * nanoDigitWeight
+                nanoDigitWeight = (nanoDigitWeight * 3435973837L >> 35).toInt // divide a positive int by 10
+                pos += 1
+              }
+              pos != i
+            }
+          ) localTimeError(trace)
+        }
+      }
+      return LocalTime.of(hour, minute, second, nano)
+    }
+    localTimeError(trace)
+  }
+
+  def monthDay(trace: List[JsonError], in: OneCharReader): MonthDay = {
+    var c = in.nextNonWhitespace()
+    if (c == '"') {
+      val cs = charArrays.get
+      var i  = 0
+      while ({
+        c = in.readChar()
+        c != '"'
+      }) {
+        if (c == '\\') c = nextEscaped(trace, in)
+        cs(i) = c
+        i += 1
+      }
+      var month, day = 0
+      if (
+        i != 7 || {
+          val ch0 = cs(0)
+          val ch1 = cs(1)
+          val ch2 = cs(2)
+          val ch3 = cs(3)
+          val ch4 = cs(4)
+          val ch5 = cs(5)
+          val ch6 = cs(6)
+          month = ch2 * 10 + ch3 - 528 // 528 == '0' * 11
+          day = ch5 * 10 + ch6 - 528   // 528 == '0' * 11
+          ch0 != '-' || ch1 != '-' || ch2 < '0' || ch2 > '9' || ch3 < '0' || ch3 > '9' || ch4 != '-' ||
+          ch5 < '0' || ch5 > '9' || ch6 < '0' || ch6 > '9' || month < 1 || month > 12 || day == 0 ||
+          (day > 28 && day > maxDayForMonth(month))
+        }
+      ) monthDayError(trace)
+      return MonthDay.of(month, day)
+    }
+    monthDayError(trace)
+  }
+
+  def offsetDateTime(trace: List[JsonError], in: OneCharReader): OffsetDateTime = {
+    var c = in.nextNonWhitespace()
+    if (c == '"') {
+      val cs = charArrays.get
+      var i  = 0
+      while ({
+        c = in.readChar()
+        c != '"'
+      }) {
+        if (c == '\\') c = nextEscaped(trace, in)
+        cs(i) = c
+        i += 1
+      }
+      var pos, year, month, day = 0
+      if (
+        pos + 4 >= i || {
+          val ch0 = cs(pos)
+          val ch1 = cs(pos + 1)
+          val ch2 = cs(pos + 2)
+          val ch3 = cs(pos + 3)
+          val ch4 = cs(pos + 4)
+          pos += 5
+          ch1 < '0' || ch1 > '9' || ch2 < '0' || ch2 > '9' || ch3 < '0' || ch3 > '9' || {
+            if (ch0 >= '0' && ch0 <= '9') {
+              year = ch0 * 1000 + ch1 * 100 + ch2 * 10 + ch3 - 53328 // 53328 == '0' * 1111
+              ch4 != '-'
+            } else {
+              year = ch1 * 1000 + ch2 * 100 + ch3 * 10 + ch4 - 53328 // 53328 == '0' * 1111
+              val yearNeg = ch0 == '-' || (ch0 != '+' && offsetDateTimeError(trace))
+              ch4 < '0' || ch4 > '9' || {
+                var yearDigits = 4
+                var ch         = '0'
+                while (
+                  pos < i && {
+                    ch = cs(pos)
+                    pos += 1
+                    ch >= '0' && ch <= '9' && yearDigits < 9
+                  }
+                ) {
+                  year = year * 10 + (ch - '0')
+                  yearDigits += 1
+                }
+                yearNeg && {
+                  year = -year
+                  year == 0
+                } || ch != '-'
+              }
+            }
+          }
+        } || pos + 5 >= i || {
+          val ch0 = cs(pos)
+          val ch1 = cs(pos + 1)
+          val ch2 = cs(pos + 2)
+          val ch3 = cs(pos + 3)
+          val ch4 = cs(pos + 4)
+          val ch5 = cs(pos + 5)
+          pos += 6
+          month = ch0 * 10 + ch1 - 528 // 528 == '0' * 11
+          day = ch3 * 10 + ch4 - 528   // 528 == '0' * 11
+          ch0 < '0' || ch0 > '9' || ch1 < '0' || ch1 > '9' || ch2 != '-' || ch3 < '0' || ch3 > '9' ||
+          ch4 < '0' || ch4 > '9' || ch5 != 'T' || month < 1 || month > 12 || day == 0 ||
+          (day > 28 && day > maxDayForYearMonth(year, month))
+        }
+      ) offsetDateTimeError(trace)
+      var hour, minute = 0
+      if (
+        pos + 4 >= i || {
+          val ch0 = cs(pos)
+          val ch1 = cs(pos + 1)
+          val ch2 = cs(pos + 2)
+          val ch3 = cs(pos + 3)
+          val ch4 = cs(pos + 4)
+          pos += 5
+          hour = ch0 * 10 + ch1 - 528   // 528 == '0' * 11
+          minute = ch3 * 10 + ch4 - 528 // 528 == '0' * 11
+          ch0 < '0' || ch0 > '9' || ch1 < '0' || ch1 > '9' || ch2 != ':' ||
+          ch3 < '0' || ch3 > '9' || ch4 < '0' || ch4 > '9' || ch3 > '5' || hour > 23
+        } || pos >= i
+      ) offsetDateTimeError(trace)
+      var second, nano = 0
+      var ch           = cs(pos)
+      pos += 1
+      if (ch == ':') {
+        if (
+          pos + 1 >= i || {
+            val ch0 = cs(pos)
+            val ch1 = cs(pos + 1)
+            pos += 2
+            second = ch0 * 10 + ch1 - 528 // 528 == '0' * 11
+            ch0 < '0' || ch0 > '9' || ch1 < '0' || ch1 > '9' || ch0 > '5'
+          } || pos >= i
+        ) offsetDateTimeError(trace)
+        ch = cs(pos)
+        pos += 1
+        if (ch == '.') {
+          var nanoDigitWeight = 100000000
+          while ({
+            if (pos >= i) offsetDateTimeError(trace)
+            ch = cs(pos)
+            pos += 1
+            ch >= '0' && ch <= '9' && nanoDigitWeight != 0
+          }) {
+            nano += (ch - '0') * nanoDigitWeight
+            nanoDigitWeight = (nanoDigitWeight * 3435973837L >> 35).toInt // divide a positive int by 10
+          }
+        }
+      }
+      val zoneOffset =
+        if (ch == 'Z') ZoneOffset.UTC
+        else {
+          val offsetNeg   = ch == '-' || (ch != '+' && offsetDateTimeError(trace))
+          var offsetTotal = 0
+          if (
+            pos + 1 >= i || {
+              val ch0 = cs(pos)
+              val ch1 = cs(pos + 1)
+              pos += 2
+              offsetTotal = (ch0 * 10 + ch1 - 528) * 3600 // 528 == '0' * 11
+              ch0 < '0' || ch0 > '9' || ch1 < '0' || ch1 > '9'
+            }
+          ) offsetDateTimeError(trace)
+          if (pos < i) {
+            if (
+              cs(pos) != ':' || {
+                pos += 1
+                pos + 1 >= i
+              } || {
+                val ch0 = cs(pos)
+                val ch1 = cs(pos + 1)
+                pos += 2
+                offsetTotal += (ch0 * 10 + ch1 - 528) * 60 // 528 == '0' * 11
+                ch0 < '0' || ch0 > '9' || ch1 < '0' || ch1 > '9' || ch0 > '5'
+              }
+            ) offsetDateTimeError(trace)
+            if (pos < i) {
+              if (
+                cs(pos) != ':' || {
+                  pos += 1
+                  pos + 1 >= i
+                } || {
+                  val ch0 = cs(pos)
+                  val ch1 = cs(pos + 1)
+                  pos += 2
+                  offsetTotal += ch0 * 10 + ch1 - 528 // 528 == '0' * 11
+                  ch0 < '0' || ch0 > '9' || ch1 < '0' || ch1 > '9' || ch0 > '5'
+                }
+              ) offsetDateTimeError(trace)
+            }
+          }
+          if (offsetTotal > 64800) offsetDateTimeError(trace)
+          toZoneOffset(offsetNeg, offsetTotal)
+        }
+      if (pos == i) return OffsetDateTime.of(year, month, day, hour, minute, second, nano, zoneOffset)
+    }
+    offsetDateTimeError(trace)
+  }
+
+  def offsetTime(trace: List[JsonError], in: OneCharReader): OffsetTime = {
+    var c = in.nextNonWhitespace()
+    if (c == '"') {
+      val cs = charArrays.get
+      var i  = 0
+      while ({
+        c = in.readChar()
+        c != '"'
+      }) {
+        if (c == '\\') c = nextEscaped(trace, in)
+        cs(i) = c
+        i += 1
+      }
+      var pos, hour, minute = 0
+      if (
+        pos + 4 >= i || {
+          val ch0 = cs(pos)
+          val ch1 = cs(pos + 1)
+          val ch2 = cs(pos + 2)
+          val ch3 = cs(pos + 3)
+          val ch4 = cs(pos + 4)
+          pos += 5
+          hour = ch0 * 10 + ch1 - 528   // 528 == '0' * 11
+          minute = ch3 * 10 + ch4 - 528 // 528 == '0' * 11
+          ch0 < '0' || ch0 > '9' || ch1 < '0' || ch1 > '9' || ch2 != ':' ||
+          ch3 < '0' || ch3 > '9' || ch4 < '0' || ch4 > '9' || ch3 > '5' || hour > 23
+        } || pos >= i
+      ) offsetTimeError(trace)
+      var second, nano = 0
+      var ch           = cs(pos)
+      pos += 1
+      if (ch == ':') {
+        if (
+          pos + 1 >= i || {
+            val ch0 = cs(pos)
+            val ch1 = cs(pos + 1)
+            pos += 2
+            second = ch0 * 10 + ch1 - 528 // 528 == '0' * 11
+            ch0 < '0' || ch0 > '9' || ch1 < '0' || ch1 > '9' || ch0 > '5'
+          } || pos >= i
+        ) offsetTimeError(trace)
+        ch = cs(pos)
+        pos += 1
+        if (ch == '.') {
+          var nanoDigitWeight = 100000000
+          while ({
+            if (pos >= i) offsetTimeError(trace)
+            ch = cs(pos)
+            pos += 1
+            ch >= '0' && ch <= '9' && nanoDigitWeight != 0
+          }) {
+            nano += (ch - '0') * nanoDigitWeight
+            nanoDigitWeight = (nanoDigitWeight * 3435973837L >> 35).toInt // divide a positive int by 10
+          }
+        }
+      }
+      val zoneOffset =
+        if (ch == 'Z') ZoneOffset.UTC
+        else {
+          val offsetNeg   = ch == '-' || (ch != '+' && offsetTimeError(trace))
+          var offsetTotal = 0
+          if (
+            pos + 1 >= i || {
+              val ch0 = cs(pos)
+              val ch1 = cs(pos + 1)
+              pos += 2
+              offsetTotal = (ch0 * 10 + ch1 - 528) * 3600 // 528 == '0' * 11
+              ch0 < '0' || ch0 > '9' || ch1 < '0' || ch1 > '9'
+            }
+          ) offsetTimeError(trace)
+          if (pos < i) {
+            if (
+              cs(pos) != ':' || {
+                pos += 1
+                pos + 1 >= i
+              } || {
+                val ch0 = cs(pos)
+                val ch1 = cs(pos + 1)
+                pos += 2
+                offsetTotal += (ch0 * 10 + ch1 - 528) * 60 // 528 == '0' * 11
+                ch0 < '0' || ch0 > '9' || ch1 < '0' || ch1 > '9' || ch0 > '5'
+              }
+            ) offsetTimeError(trace)
+            if (pos < i) {
+              if (
+                cs(pos) != ':' || {
+                  pos += 1
+                  pos + 1 >= i
+                } || {
+                  val ch0 = cs(pos)
+                  val ch1 = cs(pos + 1)
+                  pos += 2
+                  offsetTotal += ch0 * 10 + ch1 - 528 // 528 == '0' * 11
+                  ch0 < '0' || ch0 > '9' || ch1 < '0' || ch1 > '9' || ch0 > '5'
+                }
+              ) offsetTimeError(trace)
+            }
+          }
+          if (offsetTotal > 64800) offsetTimeError(trace)
+          toZoneOffset(offsetNeg, offsetTotal)
+        }
+      if (pos == i) return OffsetTime.of(hour, minute, second, nano, zoneOffset)
+    }
+    offsetTimeError(trace)
+  }
+
+  def period(trace: List[JsonError], in: OneCharReader): Period = {
+    var c = in.nextNonWhitespace()
+    if (c == '"') {
+      val cs = charArrays.get
+      var i  = 0
+      while ({
+        c = in.readChar()
+        c != '"'
+      }) {
+        if (c == '\\') c = nextEscaped(trace, in)
+        cs(i) = c
+        i += 1
+      }
+      var pos, state, years, months, days = 0
+      if (pos >= i) periodError(trace)
+      var ch = cs(pos)
+      pos += 1
+      val isNeg = ch == '-'
+      if (isNeg) {
+        if (pos >= i) periodError(trace)
+        ch = cs(pos)
+        pos += 1
+      }
+      if (ch != 'P' || pos >= i) periodError(trace)
+      ch = cs(pos)
+      pos += 1
+      while ({
+        if (state == 4 && pos >= i) periodError(trace)
+        val isNegX = ch == '-'
+        if (isNegX) {
+          if (pos >= i) periodError(trace)
+          ch = cs(pos)
+          pos += 1
+        }
+        if (ch < '0' || ch > '9') periodError(trace)
+        var x: Int = '0' - ch
+        while (
+          (pos < i) && {
+            ch = cs(pos)
+            ch >= '0' && ch <= '9'
+          }
+        ) {
+          if (
+            x < -214748364 || {
+              x = x * 10 + ('0' - ch)
+              x > 0
+            }
+          ) periodError(trace)
+          pos += 1
+        }
+        if (!(isNeg ^ isNegX)) {
+          if (x == -2147483648) periodError(trace)
+          x = -x
+        }
+        if (ch == 'Y' && state <= 0) {
+          years = x
+          state = 1
+        } else if (ch == 'M' && state <= 1) {
+          months = x
+          state = 2
+        } else if (ch == 'W' && state <= 2) {
+          if (x < -306783378 || x > 306783378) periodError(trace)
+          days = x * 7
+          state = 3
+        } else if (ch == 'D') {
+          val ds = x.toLong + days
+          if (ds != ds.toInt) periodError(trace)
+          days = ds.toInt
+          state = 4
+        } else periodError(trace)
+        pos += 1
+        (pos < i) && {
+          ch = cs(pos)
+          pos += 1
+          true
+        }
+      }) ()
+      return Period.of(years, months, days)
+    }
+    periodError(trace)
+  }
+
+  def year(trace: List[JsonError], in: OneCharReader): Year = {
+    var c = in.nextNonWhitespace()
+    if (c == '"') {
+      val cs = charArrays.get
+      var i  = 0
+      while ({
+        c = in.readChar()
+        c != '"'
+      }) {
+        if (c == '\\') c = nextEscaped(trace, in)
+        cs(i) = c
+        i += 1
+      }
+      var pos, year = 0
+      if (
+        pos + 3 >= i || {
+          val ch0 = cs(pos)
+          val ch1 = cs(pos + 1)
+          val ch2 = cs(pos + 2)
+          val ch3 = cs(pos + 3)
+          pos += 4
+          ch1 < '0' || ch1 > '9' || ch2 < '0' || ch2 > '9' || ch3 < '0' || ch3 > '9' || {
+            if (ch0 >= '0' && ch0 <= '9') {
+              year = ch0 * 1000 + ch1 * 100 + ch2 * 10 + ch3 - 53328 // 53328 == '0' * 1111
+              pos != i
+            } else {
+              val yearNeg = ch0 == '-' || (ch0 != '+' && yearError(trace))
+              year = ch1 * 100 + ch2 * 10 + ch3 - 5328 // 53328 == '0' * 111
+              var yearDigits = 3
+              var ch         = '0'
+              while (
+                pos < i && {
+                  ch = cs(pos)
+                  ch >= '0' && ch <= '9' && yearDigits < 9
+                }
+              ) {
+                year = year * 10 + (ch - '0')
+                yearDigits += 1
+                pos += 1
+              }
+              yearNeg && {
+                year = -year
+                year == 0
+              } || pos != i
+            }
+          }
+        }
+      ) yearError(trace)
+      return Year.of(year)
+    }
+    yearError(trace)
+  }
+
+  def yearMonth(trace: List[JsonError], in: OneCharReader): YearMonth = {
+    var c = in.nextNonWhitespace()
+    if (c == '"') {
+      val cs = charArrays.get
+      var i  = 0
+      while ({
+        c = in.readChar()
+        c != '"'
+      }) {
+        if (c == '\\') c = nextEscaped(trace, in)
+        cs(i) = c
+        i += 1
+      }
+      var pos, year, month = 0
+      if (
+        pos + 4 >= i || {
+          val ch0 = cs(pos)
+          val ch1 = cs(pos + 1)
+          val ch2 = cs(pos + 2)
+          val ch3 = cs(pos + 3)
+          val ch4 = cs(pos + 4)
+          pos += 5
+          ch1 < '0' || ch1 > '9' || ch2 < '0' || ch2 > '9' || ch3 < '0' || ch3 > '9' || {
+            if (ch0 >= '0' && ch0 <= '9') {
+              year = ch0 * 1000 + ch1 * 100 + ch2 * 10 + ch3 - 53328 // 53328 == '0' * 1111
+              ch4 != '-'
+            } else {
+              val yearNeg = ch0 == '-' || (ch0 != '+' && yearMonthError(trace))
+              year = ch1 * 1000 + ch2 * 100 + ch3 * 10 + ch4 - 53328 // 53328 == '0' * 1111
+              ch4 < '0' || ch4 > '9' || {
+                var yearDigits = 4
+                var ch         = '0'
+                while ({
+                  if (pos >= i) yearMonthError(trace)
+                  ch = cs(pos)
+                  pos += 1
+                  ch >= '0' && ch <= '9' && yearDigits < 9
+                }) {
+                  year = year * 10 + (ch - '0')
+                  yearDigits += 1
+                }
+                yearNeg && {
+                  year = -year
+                  year == 0
+                } || ch != '-'
+              }
+            }
+          }
+        } || pos + 2 != i || {
+          val ch0 = cs(pos)
+          val ch1 = cs(pos + 1)
+          pos += 2
+          month = ch0 * 10 + ch1 - 528 // 528 == '0' * 11
+          ch0 < '0' || ch0 > '9' || ch1 < '0' || ch1 > '9' || month < 1 || month > 12
+        }
+      ) yearMonthError(trace)
+      return YearMonth.of(year, month)
+    }
+    yearMonthError(trace)
+  }
+
+  def zonedDateTime(trace: List[JsonError], in: OneCharReader): ZonedDateTime = {
+    var c = in.nextNonWhitespace()
+    if (c == '"') {
+      val cs = charArrays.get
+      var i  = 0
+      while ({
+        c = in.readChar()
+        c != '"'
+      }) {
+        if (c == '\\') c = nextEscaped(trace, in)
+        cs(i) = c
+        i += 1
+      }
+      var pos, year, month, day, hour, minute = 0
+      if (
+        pos + 4 >= i || {
+          val ch0 = cs(pos)
+          val ch1 = cs(pos + 1)
+          val ch2 = cs(pos + 2)
+          val ch3 = cs(pos + 3)
+          val ch4 = cs(pos + 4)
+          pos += 5
+          ch1 < '0' || ch1 > '9' || ch2 < '0' || ch2 > '9' || ch3 < '0' || ch3 > '9' || {
+            if (ch0 >= '0' && ch0 <= '9') {
+              year = ch0 * 1000 + ch1 * 100 + ch2 * 10 + ch3 - 53328 // 53328 == '0' * 1111
+              ch4 != '-'
+            } else {
+              val yearNeg = ch0 == '-' || (ch0 != '+' && zonedDateTimeError(trace))
+              year = ch1 * 1000 + ch2 * 100 + ch3 * 10 + ch4 - 53328 // 53328 == '0' * 1111
+              ch4 < '0' || ch4 > '9' || {
+                var yearDigits = 4
+                var ch         = '0'
+                while ({
+                  if (pos >= i) zonedDateTimeError(trace)
+                  ch = cs(pos)
+                  pos += 1
+                  ch >= '0' && ch <= '9' && yearDigits < 9
+                }) {
+                  year = year * 10 + (ch - '0')
+                  yearDigits += 1
+                }
+                yearNeg && {
+                  year = -year
+                  year == 0
+                } || ch != '-'
+              }
+            }
+          }
+        } || pos + 5 >= i || {
+          val ch0 = cs(pos)
+          val ch1 = cs(pos + 1)
+          val ch2 = cs(pos + 2)
+          val ch3 = cs(pos + 3)
+          val ch4 = cs(pos + 4)
+          val ch5 = cs(pos + 5)
+          pos += 6
+          month = ch0 * 10 + ch1 - 528 // 528 == '0' * 11
+          day = ch3 * 10 + ch4 - 528   // 528 == '0' * 11
+          ch0 < '0' || ch0 > '9' || ch1 < '0' || ch1 > '9' || ch2 != '-' || ch3 < '0' || ch3 > '9' ||
+          ch4 < '0' || ch4 > '9' || ch5 != 'T' || month < 1 || month > 12 || day == 0 ||
+          (day > 28 && day > maxDayForYearMonth(year, month))
+        } || pos + 4 >= i || {
+          val ch0 = cs(pos)
+          val ch1 = cs(pos + 1)
+          val ch2 = cs(pos + 2)
+          val ch3 = cs(pos + 3)
+          val ch4 = cs(pos + 4)
+          pos += 5
+          hour = ch0 * 10 + ch1 - 528   // 528 == '0' * 11
+          minute = ch3 * 10 + ch4 - 528 // 528 == '0' * 11
+          ch0 < '0' || ch0 > '9' || ch1 < '0' || ch1 > '9' || ch2 != ':' ||
+          ch3 < '0' || ch3 > '9' || ch4 < '0' || ch4 > '9' || ch3 > '5' || hour > 23
+        } || pos >= i
+      ) zonedDateTimeError(trace)
+      var second, nano = 0
+      var ch           = cs(pos)
+      pos += 1
+      if (ch == ':') {
+        if (
+          pos + 1 >= i || {
+            val ch0 = cs(pos)
+            val ch1 = cs(pos + 1)
+            pos += 2
+            second = ch0 * 10 + ch1 - 528 // 528 == '0' * 11
+            ch0 < '0' || ch0 > '9' || ch1 < '0' || ch1 > '9' || ch0 > '5'
+          } || pos >= i
+        ) zonedDateTimeError(trace)
+        ch = cs(pos)
+        pos += 1
+        if (ch == '.') {
+          var nanoDigitWeight = 100000000
+          while ({
+            if (pos >= i) zonedDateTimeError(trace)
+            ch = cs(pos)
+            pos += 1
+            ch >= '0' && ch <= '9' && nanoDigitWeight != 0
+          }) {
+            nano += (ch - '0') * nanoDigitWeight
+            nanoDigitWeight = (nanoDigitWeight * 3435973837L >> 35).toInt // divide a positive int by 10
+          }
+        }
+      }
+      val localDateTime = LocalDateTime.of(year, month, day, hour, minute, second, nano)
+      val zoneOffset =
+        if (ch == 'Z') {
+          if (pos < i) {
+            ch = cs(pos)
+            if (ch != '[') zonedDateTimeError(trace)
+            pos += 1
+          }
+          ZoneOffset.UTC
+        } else {
+          val offsetNeg   = ch == '-' || (ch != '+' && zonedDateTimeError(trace))
+          var offsetTotal = 0
+          if (
+            pos + 1 >= i || {
+              val ch0 = cs(pos)
+              val ch1 = cs(pos + 1)
+              pos += 2
+              offsetTotal = (ch0 * 10 + ch1 - 528) * 3600 // 528 == '0' * 11
+              ch0 < '0' || ch0 > '9' || ch1 < '0' || ch1 > '9'
+            }
+          ) zonedDateTimeError(trace)
+          if (
+            pos < i && {
+              ch = cs(pos)
+              pos += 1
+              ch == ':' || ch != '[' && zonedDateTimeError(trace)
+            }
+          ) {
+            if (
+              pos + 1 >= i || {
+                val ch0 = cs(pos)
+                val ch1 = cs(pos + 1)
+                pos += 2
+                offsetTotal += (ch0 * 10 + ch1 - 528) * 60 // 528 == '0' * 11
+                ch0 < '0' || ch0 > '9' || ch1 < '0' || ch1 > '9' || ch0 > '5'
+              }
+            ) zonedDateTimeError(trace)
+            if (
+              pos < i && {
+                ch = cs(pos)
+                pos += 1
+                ch == ':' || ch != '[' && zonedDateTimeError(trace)
+              }
+            ) {
+              if (
+                pos + 1 >= i || {
+                  val ch0 = cs(pos)
+                  val ch1 = cs(pos + 1)
+                  pos += 2
+                  offsetTotal += ch0 * 10 + ch1 - 528 // 528 == '0' * 11
+                  ch0 < '0' || ch0 > '9' || ch1 < '0' || ch1 > '9' || ch0 > '5'
+                }
+              ) zonedDateTimeError(trace)
+              if (pos < i) {
+                ch = cs(pos)
+                if (ch != '[') zonedDateTimeError(trace)
+                pos += 1
+              }
+            }
+          }
+          if (offsetTotal > 64800) zonedDateTimeError(trace)
+          toZoneOffset(offsetNeg, offsetTotal)
+        }
+      if (ch == '[') {
+        var zoneId: ZoneId = null
+        val from           = pos
+        while ({
+          if (pos >= i) zonedDateTimeError(trace)
+          ch = cs(pos)
+          ch != ']'
+        }) pos += 1
+        val key = new String(cs, from, pos - from)
+        zoneId = zoneIds.get(key)
+        if (
+          (zoneId eq null) && {
+            try zoneId = ZoneId.of(key)
+            catch {
+              case _: DateTimeException => zonedDateTimeError(trace)
+            }
+            !zoneId.isInstanceOf[ZoneOffset] || zoneId.asInstanceOf[ZoneOffset].getTotalSeconds % 900 == 0
+          }
+        ) zoneIds.put(key, zoneId)
+        if (pos + 1 == i) return ZonedDateTime.ofInstant(localDateTime, zoneOffset, zoneId)
+      } else {
+        if (pos == i) return ZonedDateTime.ofLocal(localDateTime, zoneOffset, null)
+      }
+    }
+    zonedDateTimeError(trace)
+  }
+
+  def zoneOffset(trace: List[JsonError], in: OneCharReader): ZoneOffset = {
+    var c = in.nextNonWhitespace()
+    if (c == '"') {
+      val cs = charArrays.get
+      var i  = 0
+      while ({
+        c = in.readChar()
+        c != '"'
+      }) {
+        if (c == '\\') c = nextEscaped(trace, in)
+        cs(i) = c
+        i += 1
+      }
+      var pos = 0
+      if (pos >= i) zoneOffsetError(trace)
+      val ch = cs(pos)
+      pos += 1
+      if (ch == 'Z') {
+        if (pos == i) return ZoneOffset.UTC
+      } else {
+        val offsetNeg   = ch == '-' || (ch != '+' && zoneOffsetError(trace))
+        var offsetTotal = 0
+        if (
+          pos + 1 >= i || {
+            val ch0 = cs(pos)
+            val ch1 = cs(pos + 1)
+            offsetTotal = (ch0 * 10 + ch1 - 528) * 3600 // 528 == '0' * 11
+            pos += 2
+            ch0 < '0' || ch0 > '9' || ch1 < '0' || ch1 > '9'
+          }
+        ) zoneOffsetError(trace)
+        if (pos < i) {
+          if (
+            cs(pos) != ':' || {
+              pos += 1
+              pos + 1 >= i
+            } || {
+              val ch0 = cs(pos)
+              val ch1 = cs(pos + 1)
+              pos += 2
+              offsetTotal += (ch0 * 10 + ch1 - 528) * 60 // 528 == '0' * 11
+              ch0 < '0' || ch0 > '9' || ch1 < '0' || ch1 > '9' || ch0 > '5'
+            }
+          ) zoneOffsetError(trace)
+          if (pos < i) {
+            if (
+              cs(pos) != ':' || {
+                pos += 1
+                pos + 1 >= i
+              } || {
+                val ch0 = cs(pos)
+                val ch1 = cs(pos + 1)
+                pos += 2
+                offsetTotal += ch0 * 10 + ch1 - 528 // 528 == '0' * 11
+                ch0 < '0' || ch0 > '9' || ch1 < '0' || ch1 > '9' || ch0 > '5'
+              }
+            ) zoneOffsetError(trace)
+          }
+        }
+        if (offsetTotal <= 64800 && pos == i) return toZoneOffset(offsetNeg, offsetTotal)
+      }
+    }
+    zoneOffsetError(trace)
+  }
+
+  private[this] def toZoneOffset(offsetNeg: Boolean, offsetTotal: Int): ZoneOffset = {
+    var qp = offsetTotal * 37283
+    if ((qp & 0x1ff8000) == 0) { // check if offsetTotal divisible by 900
+      qp >>>= 25                 // divide offsetTotal by 900
+      if (offsetNeg) qp = -qp
+      var zoneOffset = zoneOffsets(qp + 72)
+      if (zoneOffset ne null) zoneOffset
+      else {
+        zoneOffset = ZoneOffset.ofTotalSeconds(if (offsetNeg) -offsetTotal else offsetTotal)
+        zoneOffsets(qp + 72) = zoneOffset
+        zoneOffset
+      }
+    } else ZoneOffset.ofTotalSeconds(if (offsetNeg) -offsetTotal else offsetTotal)
+  }
+
+  private[this] def sumSeconds(s1: Long, s2: Long, trace: List[JsonError]): Long = {
+    val s = s1 + s2
+    if (((s1 ^ s) & (s2 ^ s)) < 0) durationError(trace)
+    s
+  }
+
+  private[this] def epochDayForYear(year: Int): Long =
+    year * 365L + ((year + 3 >> 2) - {
+      val cp = year * 1374389535L
+      if (year < 0) (cp >> 37) - (cp >> 39)                        // year / 100 - year / 400
+      else (cp + 136064563965L >> 37) - (cp + 548381424465L >> 39) // (year + 99) / 100 - (year + 399) / 400
+    }.toInt)
+
+  private[this] def dayOfYearForYearMonth(year: Int, month: Int): Int =
+    (month * 1002277 - 988622 >> 15) - // (month * 367 - 362) / 12
+      (if (month <= 2) 0
+       else if (isLeap(year)) 1
+       else 2)
+
+  private[this] def maxDayForMonth(month: Int): Int =
+    if (month != 2) ((month >> 3) ^ (month & 0x1)) + 30
+    else 29
+
+  private[this] def maxDayForYearMonth(year: Int, month: Int): Int =
+    if (month != 2) ((month >> 3) ^ (month & 0x1)) + 30
+    else if (isLeap(year)) 29
+    else 28
+
+  private[this] def isLeap(year: Int): Boolean = (year & 0x3) == 0 && { // (year % 100 != 0 || year % 400 == 0)
+    val cp = year * 1374389535L
+    val cc = year >> 31
+    ((cp ^ cc) & 0x1fc0000000L) != 0 || (((cp >> 37).toInt - cc) & 0x3) == 0
+  }
+
   @noinline private[this] def uuidError(trace: List[JsonError]): Nothing = error("expected a UUID", trace)
+
+  @noinline private[this] def durationError(trace: List[JsonError]): Nothing = error("expected a Duration", trace)
+
+  @noinline private[this] def instantError(trace: List[JsonError]): Nothing = error("expected an Instant", trace)
+
+  @noinline private[this] def localDateError(trace: List[JsonError]): Nothing = error("expected a LocalDate", trace)
+
+  @noinline private[this] def localDateTimeError(trace: List[JsonError]): Nothing =
+    error("expected a LocalDateTime", trace)
+
+  @noinline private[this] def localTimeError(trace: List[JsonError]): Nothing = error("expected a LocalTime", trace)
+
+  @noinline private[this] def monthDayError(trace: List[JsonError]): Nothing = error("expected a MonthDay", trace)
+
+  @noinline private[this] def offsetDateTimeError(trace: List[JsonError]): Nothing =
+    error("expected an OffsetDateTime", trace)
+
+  @noinline private[this] def offsetTimeError(trace: List[JsonError]): Nothing = error("expected an OffsetTime", trace)
+
+  @noinline private[this] def periodError(trace: List[JsonError]): Nothing = error("expected a Period", trace)
+
+  @noinline private[this] def yearError(trace: List[JsonError]): Nothing = error("expected a Year", trace)
+
+  @noinline private[this] def yearMonthError(trace: List[JsonError]): Nothing = error("expected a YearMonth", trace)
+
+  @noinline private[this] def zonedDateTimeError(trace: List[JsonError]): Nothing =
+    error("expected a ZonedDateTime", trace)
+
+  @noinline private[this] def zoneIdError(trace: List[JsonError]): Nothing = error("expected a ZoneId", trace)
+
+  @noinline private[this] def zoneOffsetError(trace: List[JsonError]): Nothing = error("expected a ZoneOffset", trace)
 
   private[this] val charArrays = new ThreadLocal[Array[Char]] {
     override def initialValue(): Array[Char] = new Array[Char](1024) // should be longer than 256
@@ -357,6 +1815,10 @@ object Lexer {
     ns('f') = 15
     ns
   }
+
+  private[this] final val zoneOffsets: Array[ZoneOffset] = new Array(145)
+
+  private[this] final val zoneIds: ConcurrentHashMap[String, ZoneId] = new ConcurrentHashMap(256)
 
   def char(trace: List[JsonError], in: OneCharReader): Char = {
     var c = in.nextNonWhitespace()
@@ -398,95 +1860,6 @@ object Lexer {
     }
     accum.toChar
   }
-
-  def boolean(trace: List[JsonError], in: OneCharReader): Boolean = {
-    val c = in.nextNonWhitespace()
-    if (c == 't' && in.readChar() == 'r' && in.readChar() == 'u' && in.readChar() == 'e') true
-    else if (c == 'f' && in.readChar() == 'a' && in.readChar() == 'l' && in.readChar() == 's' && in.readChar() == 'e')
-      false
-    else error("expected a Boolean", c, trace)
-  }
-
-  def byte(trace: List[JsonError], in: RetractReader): Byte =
-    try {
-      val i = UnsafeNumbers.byte_(in, false)
-      in.retract()
-      i
-    } catch {
-      case UnsafeNumbers.UnsafeNumber => error("expected a Byte", trace)
-    }
-
-  def short(trace: List[JsonError], in: RetractReader): Short =
-    try {
-      val i = UnsafeNumbers.short_(in, false)
-      in.retract()
-      i
-    } catch {
-      case UnsafeNumbers.UnsafeNumber => error("expected a Short", trace)
-    }
-
-  def int(trace: List[JsonError], in: RetractReader): Int =
-    try {
-      val i = UnsafeNumbers.int_(in, false)
-      in.retract()
-      i
-    } catch {
-      case UnsafeNumbers.UnsafeNumber => error("expected an Int", trace)
-    }
-
-  def long(trace: List[JsonError], in: RetractReader): Long =
-    try {
-      val i = UnsafeNumbers.long_(in, false)
-      in.retract()
-      i
-    } catch {
-      case UnsafeNumbers.UnsafeNumber => error("expected a Long", trace)
-    }
-
-  def bigInteger(trace: List[JsonError], in: RetractReader): java.math.BigInteger =
-    try {
-      val i = UnsafeNumbers.bigInteger_(in, false, NumberMaxBits)
-      in.retract()
-      i
-    } catch {
-      case UnsafeNumbers.UnsafeNumber => error(s"expected a $NumberMaxBits-bit BigInteger", trace)
-    }
-
-  def bigInt(trace: List[JsonError], in: RetractReader): BigInt =
-    try {
-      val i = UnsafeNumbers.bigInt_(in, false, NumberMaxBits)
-      in.retract()
-      i
-    } catch {
-      case UnsafeNumbers.UnsafeNumber => error(s"expected a $NumberMaxBits-bit BigInt", trace)
-    }
-
-  def float(trace: List[JsonError], in: RetractReader): Float =
-    try {
-      val i = UnsafeNumbers.float_(in, false, NumberMaxBits)
-      in.retract()
-      i
-    } catch {
-      case UnsafeNumbers.UnsafeNumber => error("expected a Float", trace)
-    }
-
-  def double(trace: List[JsonError], in: RetractReader): Double =
-    try {
-      val i = UnsafeNumbers.double_(in, false, NumberMaxBits)
-      in.retract()
-      i
-    } catch {
-      case UnsafeNumbers.UnsafeNumber => error("expected a Double", trace)
-    }
-
-  def bigDecimal(trace: List[JsonError], in: RetractReader): java.math.BigDecimal =
-    try {
-      val i = UnsafeNumbers.bigDecimal_(in, false, NumberMaxBits)
-      in.retract()
-      i
-    } catch {
-      case UnsafeNumbers.UnsafeNumber => error(s"expected a BigDecimal with $NumberMaxBits-bit mantissa", trace)
-    }
 
   def dayOfWeek(trace: List[JsonError], in: OneCharReader): DayOfWeek = {
     var c = in.nextNonWhitespace()
