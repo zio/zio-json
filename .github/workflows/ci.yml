@@ -14,26 +14,25 @@ on:
 
 jobs:
   lint:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     timeout-minutes: 30
     steps:
       - name: Checkout current branch
         uses: actions/checkout@v4.1.2
         with:
           fetch-depth: 0
-      - name: Setup Java
-        uses: actions/setup-java@v4.2.1
+      - name: Setup Action
+        uses: coursier/setup-action@v1
         with:
-          distribution: temurin
-          java-version: 11
-          check-latest: true
+          jvm: temurin:11
+          apps: sbt
       - name: Cache scala dependencies
         uses: coursier/cache-action@v6
       - name: Lint code
         run: sbt "++2.12; check; ++2.13; check; ++3.3; check"
 
   benchmarks:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
       matrix:
@@ -44,36 +43,34 @@ jobs:
         uses: actions/checkout@v4.1.2
         with:
           fetch-depth: 0
-      - name: Setup Java
-        uses: actions/setup-java@v4.2.1
+      - name: Setup Action
+        uses: coursier/setup-action@v1
         with:
-          distribution: temurin
-          java-version: ${{ matrix.java }}
-          check-latest: true
+          jvm: temurin:${{ matrix.java }}
+          apps: sbt
       - name: Cache scala dependencies
         uses: coursier/cache-action@v6
       - name: Compile benchmarks
         run: sbt ++${{ matrix.scala }}! jmh:compile
 
   mdoc:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     timeout-minutes: 60
     steps:
       - name: Checkout current branch
         uses: actions/checkout@v4.1.2
-      - name: Setup Java
-        uses: actions/setup-java@v4.2.1
+      - name: Setup Action
+        uses: coursier/setup-action@v1
         with:
-          distribution: temurin
-          java-version: 11
-          check-latest: true
+          jvm: temurin:11
+          apps: sbt
       - name: Cache scala dependencies
         uses: coursier/cache-action@v6
       - name: Check Document Generation
         run: sbt compileDocs
 
   test:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     timeout-minutes: 30
     strategy:
       fail-fast: false
@@ -89,12 +86,11 @@ jobs:
       - name: Install Boehm GC
         if: ${{ startsWith(matrix.platform, 'Native') }}
         run: sudo apt-get update && sudo apt-get install -y libgc-dev
-      - name: Setup Java
-        uses: actions/setup-java@v4.2.1
+      - name: Setup Action
+        uses: coursier/setup-action@v1
         with:
-          distribution: temurin
-          java-version: ${{ matrix.java }}
-          check-latest: true
+          jvm: temurin:${{ matrix.java }}
+          apps: sbt
       - name: Cache scala dependencies
         uses: coursier/cache-action@v6
       - name: Install libuv
@@ -107,7 +103,7 @@ jobs:
         run: sbt ++${{ matrix.scala }}! test${{ matrix.platform }}
 
   mima_check:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     timeout-minutes: 30
     steps:
       - name: Checkout current branch
@@ -116,23 +112,22 @@ jobs:
           fetch-depth: 300
       - name: Fetch tags
         run: git fetch --depth=300 origin +refs/tags/*:refs/tags/*
-      - name: Setup Java (temurin@21)
-        uses: actions/setup-java@v4
+      - name: Setup Action
+        uses: coursier/setup-action@v1
         with:
-          distribution: temurin
-          java-version: 11
-          cache: sbt
+          jvm: temurin:11
+          apps: sbt
       - run: sbt +mimaReportBinaryIssues
 
   ci:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     needs: [lint, mdoc, benchmarks, test, mima_check]
     steps:
       - name: Aggregate of lint, and all tests
         run: echo "ci passed"
 
   publish:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     timeout-minutes: 60
     needs: [ci]
     if: github.event_name != 'pull_request'
@@ -141,12 +136,11 @@ jobs:
         uses: actions/checkout@v4.1.2
         with:
           fetch-depth: 0
-      - name: Setup Java
-        uses: actions/setup-java@v4.2.1
+      - name: Setup Action
+        uses: coursier/setup-action@v1
         with:
-          distribution: temurin
-          java-version: 11
-          check-latest: true
+          jvm: temurin:11
+          apps: sbt
       - name: Release
         run: sbt ci-release
         env:
