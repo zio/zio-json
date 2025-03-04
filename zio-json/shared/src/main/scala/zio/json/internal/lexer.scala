@@ -17,6 +17,7 @@ package zio.json.internal
 
 import zio.json.JsonDecoder.{ JsonError, UnsafeJson }
 
+import java.time.{ DayOfWeek, Month }
 import java.util.UUID
 import scala.annotation._
 
@@ -323,7 +324,7 @@ object Lexer {
     uuidError(trace)
   }
 
-  @noinline private[this] def uuidError(trace: List[JsonError]): Nothing = error("expected UUID string", trace)
+  @noinline private[this] def uuidError(trace: List[JsonError]): Nothing = error("expected a UUID", trace)
 
   private[this] val charArrays = new ThreadLocal[Array[Char]] {
     override def initialValue(): Array[Char] = new Array[Char](1024) // should be longer than 256
@@ -486,6 +487,48 @@ object Lexer {
     } catch {
       case UnsafeNumbers.UnsafeNumber => error(s"expected a BigDecimal with $NumberMaxBits-bit mantissa", trace)
     }
+
+  def dayOfWeek(trace: List[JsonError], in: OneCharReader): DayOfWeek = {
+    var c = in.nextNonWhitespace()
+    if (c == '"') {
+      var bs = dayOfWeekMatrix.initial
+      var i  = 0
+      while ({
+        c = in.readChar()
+        c != '"'
+      }) {
+        if (c == '\\') c = nextEscaped(trace, in)
+        bs = dayOfWeekMatrix.update(bs, i, (c & 0xffdf).toChar)
+        i += 1
+      }
+      val dayOfWeek = dayOfWeekMatrix.first(dayOfWeekMatrix.exact(bs, i)) + 1
+      if (dayOfWeek > 0) return DayOfWeek.of(dayOfWeek)
+    }
+    error("expected a DayOfWeek", trace)
+  }
+
+  private[this] val dayOfWeekMatrix = new StringMatrix(DayOfWeek.values.map(_.toString))
+
+  def month(trace: List[JsonError], in: OneCharReader): Month = {
+    var c = in.nextNonWhitespace()
+    if (c == '"') {
+      var bs = monthMatrix.initial
+      var i  = 0
+      while ({
+        c = in.readChar()
+        c != '"'
+      }) {
+        if (c == '\\') c = nextEscaped(trace, in)
+        bs = monthMatrix.update(bs, i, (c & 0xffdf).toChar)
+        i += 1
+      }
+      val month = monthMatrix.first(monthMatrix.exact(bs, i)) + 1
+      if (month > 0) return Month.of(month)
+    }
+    error("expected a Month", trace)
+  }
+
+  private[this] val monthMatrix = new StringMatrix(Month.values.map(_.toString))
 
   @inline def char(trace: List[JsonError], in: OneCharReader, c: Char): Unit = {
     val got = in.nextNonWhitespace()

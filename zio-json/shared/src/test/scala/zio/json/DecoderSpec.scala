@@ -513,15 +513,15 @@ object DecoderSpec extends ZIOSpecDefault {
           assert(ok3.fromJson[Map[UUID, String]])(
             isRight(equalTo(expectedMap("00000000-0000-0000-0000-000000000000")))
           ) &&
-          assert(bad1.fromJson[Map[UUID, String]])(isLeft(containsString("(expected UUID string)"))) &&
-          assert(bad2.fromJson[Map[UUID, String]])(isLeft(containsString("(expected UUID string)"))) &&
-          assert(bad3.fromJson[Map[UUID, String]])(isLeft(containsString("(expected UUID string)"))) &&
-          assert(bad4.fromJson[Map[UUID, String]])(isLeft(containsString("(expected UUID string)"))) &&
-          assert(bad5.fromJson[Map[UUID, String]])(isLeft(containsString("(expected UUID string)"))) &&
-          assert(bad6.fromJson[Map[UUID, String]])(isLeft(containsString("(expected UUID string)"))) &&
-          assert(bad7.fromJson[Map[UUID, String]])(isLeft(containsString("(expected UUID string)"))) &&
-          assert(bad8.fromJson[Map[UUID, String]])(isLeft(containsString("(expected UUID string)"))) &&
-          assert(bad9.fromJson[Map[UUID, String]])(isLeft(containsString("(expected UUID string)")))
+          assert(bad1.fromJson[Map[UUID, String]])(isLeft(containsString("(expected a UUID)"))) &&
+          assert(bad2.fromJson[Map[UUID, String]])(isLeft(containsString("(expected a UUID)"))) &&
+          assert(bad3.fromJson[Map[UUID, String]])(isLeft(containsString("(expected a UUID)"))) &&
+          assert(bad4.fromJson[Map[UUID, String]])(isLeft(containsString("(expected a UUID)"))) &&
+          assert(bad5.fromJson[Map[UUID, String]])(isLeft(containsString("(expected a UUID)"))) &&
+          assert(bad6.fromJson[Map[UUID, String]])(isLeft(containsString("(expected a UUID)"))) &&
+          assert(bad7.fromJson[Map[UUID, String]])(isLeft(containsString("(expected a UUID)"))) &&
+          assert(bad8.fromJson[Map[UUID, String]])(isLeft(containsString("(expected a UUID)"))) &&
+          assert(bad9.fromJson[Map[UUID, String]])(isLeft(containsString("(expected a UUID)")))
         },
         test("zio.Chunk") {
           val jsonStr  = """["5XL","2XL","XL"]"""
@@ -557,15 +557,15 @@ object DecoderSpec extends ZIOSpecDefault {
           assert(ok1.fromJson[UUID])(isRight(equalTo(UUID.fromString("64d7c38d-2afd-4514-9832-4e70afe4b0f8")))) &&
           assert(ok2.fromJson[UUID])(isRight(equalTo(UUID.fromString("64D7C38D-00FD-0014-0032-0070AfE4B0f8")))) &&
           assert(ok3.fromJson[UUID])(isRight(equalTo(UUID.fromString("00000000-0000-0000-0000-000000000000")))) &&
-          assert(bad1.fromJson[UUID])(isLeft(containsString("(expected UUID string)"))) &&
-          assert(bad2.fromJson[UUID])(isLeft(containsString("(expected UUID string)"))) &&
-          assert(bad3.fromJson[UUID])(isLeft(containsString("(expected UUID string)"))) &&
-          assert(bad4.fromJson[UUID])(isLeft(containsString("(expected UUID string)"))) &&
-          assert(bad5.fromJson[UUID])(isLeft(containsString("(expected UUID string)"))) &&
-          assert(bad6.fromJson[UUID])(isLeft(containsString("(expected UUID string)"))) &&
-          assert(bad7.fromJson[UUID])(isLeft(containsString("(expected UUID string)"))) &&
-          assert(bad8.fromJson[UUID])(isLeft(containsString("(expected UUID string)"))) &&
-          assert(bad9.fromJson[UUID])(isLeft(containsString("(expected UUID string)")))
+          assert(bad1.fromJson[UUID])(isLeft(containsString("(expected a UUID)"))) &&
+          assert(bad2.fromJson[UUID])(isLeft(containsString("(expected a UUID)"))) &&
+          assert(bad3.fromJson[UUID])(isLeft(containsString("(expected a UUID)"))) &&
+          assert(bad4.fromJson[UUID])(isLeft(containsString("(expected a UUID)"))) &&
+          assert(bad5.fromJson[UUID])(isLeft(containsString("(expected a UUID)"))) &&
+          assert(bad6.fromJson[UUID])(isLeft(containsString("(expected a UUID)"))) &&
+          assert(bad7.fromJson[UUID])(isLeft(containsString("(expected a UUID)"))) &&
+          assert(bad8.fromJson[UUID])(isLeft(containsString("(expected a UUID)"))) &&
+          assert(bad9.fromJson[UUID])(isLeft(containsString("(expected a UUID)")))
         },
         test("java.util.Currency") {
           assert(""""USD"""".fromJson[java.util.Currency])(isRight(equalTo(java.util.Currency.getInstance("USD")))) &&
@@ -579,7 +579,7 @@ object DecoderSpec extends ZIOSpecDefault {
           assert(ok1.fromJson[Duration])(isRight(equalTo(Duration.parse("PT1H2M3S")))) &&
           assert(ok2.fromJson[Duration])(isRight(equalTo(Duration.ofNanos(-500000000)))) &&
           assert(bad1.fromJson[Duration])(
-            isLeft(containsString("PT-H is not a valid ISO-8601 format, expected digit at index 3"))
+            isLeft(containsString("expected a Duration"))
           )
         },
         test("java.time.ZonedDateTime") {
@@ -594,13 +594,7 @@ object DecoderSpec extends ZIOSpecDefault {
           assert(ok2.fromJson[ZonedDateTime].map(_.toOffsetDateTime))(
             isRight(equalTo(OffsetDateTime.parse("2018-10-28T03:30+01:00")))
           ) &&
-          assert(bad1.fromJson[ZonedDateTime])(
-            isLeft(
-              equalTo(
-                "(2018-10-28T02:30 is not a valid ISO-8601 format, expected ':' or '+' or '-' or 'Z' at index 16)"
-              )
-            )
-          )
+          assert(bad1.fromJson[ZonedDateTime])(isLeft(equalTo("(expected a ZonedDateTime)")))
         },
         test("bothWith") {
           final case class Foo(a: Int)
@@ -1074,15 +1068,15 @@ object DecoderSpec extends ZIOSpecDefault {
           assert(ok1.as[UUID])(isRight(equalTo(UUID.fromString("64d7c38d-2afd-4514-9832-4e70afe4b0f8")))) &&
           assert(ok2.as[UUID])(isRight(equalTo(UUID.fromString("64D7C38D-00FD-0014-0032-0070AFE4B0f8")))) &&
           assert(ok3.as[UUID])(isRight(equalTo(UUID.fromString("00000000-0000-0000-0000-000000000000")))) &&
-          assert(bad1.as[UUID])(isLeft(containsString("(expected UUID string)"))) &&
-          assert(bad2.as[UUID])(isLeft(containsString("(expected UUID string)"))) &&
-          assert(bad3.as[UUID])(isLeft(containsString("(expected UUID string)"))) &&
-          assert(bad4.as[UUID])(isLeft(containsString("(expected UUID string)"))) &&
-          assert(bad5.as[UUID])(isLeft(containsString("(expected UUID string)"))) &&
-          assert(bad6.as[UUID])(isLeft(containsString("(expected UUID string)"))) &&
-          assert(bad7.as[UUID])(isLeft(containsString("(expected UUID string)"))) &&
-          assert(bad8.as[UUID])(isLeft(containsString("(expected UUID string)"))) &&
-          assert(bad9.as[UUID])(isLeft(containsString("(expected UUID string)")))
+          assert(bad1.as[UUID])(isLeft(containsString("(expected a UUID)"))) &&
+          assert(bad2.as[UUID])(isLeft(containsString("(expected a UUID)"))) &&
+          assert(bad3.as[UUID])(isLeft(containsString("(expected a UUID)"))) &&
+          assert(bad4.as[UUID])(isLeft(containsString("(expected a UUID)"))) &&
+          assert(bad5.as[UUID])(isLeft(containsString("(expected a UUID)"))) &&
+          assert(bad6.as[UUID])(isLeft(containsString("(expected a UUID)"))) &&
+          assert(bad7.as[UUID])(isLeft(containsString("(expected a UUID)"))) &&
+          assert(bad8.as[UUID])(isLeft(containsString("(expected a UUID)"))) &&
+          assert(bad9.as[UUID])(isLeft(containsString("(expected a UUID)")))
         }
       )
     )
