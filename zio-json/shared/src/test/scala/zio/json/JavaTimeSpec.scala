@@ -277,6 +277,7 @@ object JavaTimeSpec extends ZIOSpecDefault {
           assert(stringify("-PT24H").fromJson[Duration])(isRight(equalTo(Duration.ofHours(-24)))) &&
           assert(stringify("P1D").fromJson[Duration])(isRight(equalTo(Duration.ofHours(24)))) &&
           assert(stringify("P1DT0H").fromJson[Duration])(isRight(equalTo(Duration.ofHours(24)))) &&
+          assert(stringify("P1DT0\\u0048").fromJson[Duration])(isRight(equalTo(Duration.ofHours(24)))) &&
           assert(stringify("PT2562047788015215H30M7.999999999S").fromJson[Duration])(
             isRight(equalTo(Duration.ofSeconds(Long.MaxValue, 999999999L)))
           )
@@ -286,6 +287,7 @@ object JavaTimeSpec extends ZIOSpecDefault {
           val p = n.toInstant
           assert(stringify("1970-01-01T00:00:00Z").fromJson[Instant])(isRight(equalTo(Instant.EPOCH))) &&
           assert(stringify("1970-01-01T00:00:00.Z").fromJson[Instant])(isRight(equalTo(Instant.EPOCH))) &&
+          assert(stringify("1970-01-01T00:00:00.\\u005a").fromJson[Instant])(isRight(equalTo(Instant.EPOCH))) &&
           assert(stringify(p).fromJson[Instant])(isRight(equalTo(p))) &&
           assert(stringify(n).fromJson[Instant])(isRight(equalTo(p)))
         },
@@ -301,7 +303,8 @@ object JavaTimeSpec extends ZIOSpecDefault {
           assert(stringify(n).fromJson[LocalDateTime])(isRight(equalTo(n))) &&
           assert(stringify("2020-01-01T12:36").fromJson[LocalDateTime])(isRight(equalTo(p))) &&
           assert(stringify("2020-01-01T12:36:00").fromJson[LocalDateTime])(isRight(equalTo(p))) &&
-          assert(stringify("2020-01-01T12:36:00.").fromJson[LocalDateTime])(isRight(equalTo(p)))
+          assert(stringify("2020-01-01T12:36:00.").fromJson[LocalDateTime])(isRight(equalTo(p))) &&
+          assert(stringify("2020-01-01T12:36:00\\u002e").fromJson[LocalDateTime])(isRight(equalTo(p)))
         },
         test("LocalTime") {
           val n = LocalTime.now()
@@ -309,7 +312,8 @@ object JavaTimeSpec extends ZIOSpecDefault {
           assert(stringify(n).fromJson[LocalTime])(isRight(equalTo(n))) &&
           assert(stringify("12:36").fromJson[LocalTime])(isRight(equalTo(p))) &&
           assert(stringify("12:36:00").fromJson[LocalTime])(isRight(equalTo(p))) &&
-          assert(stringify("12:36:00.").fromJson[LocalTime])(isRight(equalTo(p)))
+          assert(stringify("12:36:00.").fromJson[LocalTime])(isRight(equalTo(p))) &&
+          assert(stringify("12:36:00\\u002e").fromJson[LocalTime])(isRight(equalTo(p)))
         },
         test("Month fromJson") {
           assert(stringify("JANUARY").fromJson[Month])(isRight(equalTo(Month.JANUARY))) &&
@@ -351,21 +355,24 @@ object JavaTimeSpec extends ZIOSpecDefault {
           val n = MonthDay.now()
           val p = MonthDay.of(1, 1)
           assert(stringify(n).fromJson[MonthDay])(isRight(equalTo(n))) &&
-          assert(stringify("--01-01").fromJson[MonthDay])(isRight(equalTo(p)))
+          assert(stringify("--01-01").fromJson[MonthDay])(isRight(equalTo(p))) &&
+          assert(stringify("\\u002d-01-01").fromJson[MonthDay])(isRight(equalTo(p)))
         },
         test("OffsetDateTime") {
           val n = OffsetDateTime.now()
           val p = OffsetDateTime.of(2020, 1, 1, 12, 36, 12, 0, ZoneOffset.UTC)
           assert(stringify(n).fromJson[OffsetDateTime])(isRight(equalTo(n))) &&
           assert(stringify("2020-01-01T12:36:12Z").fromJson[OffsetDateTime])(isRight(equalTo(p))) &&
-          assert(stringify("2020-01-01T12:36:12.Z").fromJson[OffsetDateTime])(isRight(equalTo(p)))
+          assert(stringify("2020-01-01T12:36:12.Z").fromJson[OffsetDateTime])(isRight(equalTo(p))) &&
+          assert(stringify("2020-01-01T12:36:12.\\u005a").fromJson[OffsetDateTime])(isRight(equalTo(p)))
         },
         test("OffsetTime") {
           val n = OffsetTime.now()
           val p = OffsetTime.of(12, 36, 12, 0, ZoneOffset.ofHours(-4))
           assert(stringify(n).fromJson[OffsetTime])(isRight(equalTo(n))) &&
           assert(stringify("12:36:12-04:00").fromJson[OffsetTime])(isRight(equalTo(p))) &&
-          assert(stringify("12:36:12.-04:00").fromJson[OffsetTime])(isRight(equalTo(p)))
+          assert(stringify("12:36:12.-04:00").fromJson[OffsetTime])(isRight(equalTo(p))) &&
+          assert(stringify("12:36:12\\u002e-04:00").fromJson[OffsetTime])(isRight(equalTo(p)))
         },
         test("Period") {
           assert(stringify("P0D").fromJson[Period])(isRight(equalTo(Period.ZERO))) &&
@@ -374,7 +381,8 @@ object JavaTimeSpec extends ZIOSpecDefault {
           assert(stringify("-P1D").fromJson[Period])(isRight(equalTo(Period.ofDays(-1)))) &&
           assert(stringify("P2M").fromJson[Period])(isRight(equalTo(Period.ofMonths(2)))) &&
           assert(stringify("P364D").fromJson[Period])(isRight(equalTo(Period.ofWeeks(52)))) &&
-          assert(stringify("P10Y").fromJson[Period])(isRight(equalTo(Period.ofYears(10))))
+          assert(stringify("P10Y").fromJson[Period])(isRight(equalTo(Period.ofYears(10)))) &&
+          assert(stringify("P10\\u0059").fromJson[Period])(isRight(equalTo(Period.ofYears(10))))
         },
         test("Year") {
           val n = Year.now()
@@ -386,7 +394,8 @@ object JavaTimeSpec extends ZIOSpecDefault {
           val n = YearMonth.now()
           assert(stringify(n).fromJson[YearMonth])(isRight(equalTo(n))) &&
           assert(stringify("1999-12").fromJson[YearMonth])(isRight(equalTo(YearMonth.of(1999, 12)))) &&
-          assert(stringify("1999-01").fromJson[YearMonth])(isRight(equalTo(YearMonth.of(1999, 1))))
+          assert(stringify("1999-01").fromJson[YearMonth])(isRight(equalTo(YearMonth.of(1999, 1)))) &&
+          assert(stringify("1999\\u002d01").fromJson[YearMonth])(isRight(equalTo(YearMonth.of(1999, 1))))
         },
         test("ZonedDateTime") {
           def zdtAssert(actual: String, expected: ZonedDateTime): TestResult =
@@ -398,14 +407,9 @@ object JavaTimeSpec extends ZIOSpecDefault {
           val utc = ZonedDateTime.of(ld, ZoneId.of("Etc/UTC"))
           val gmt = ZonedDateTime.of(ld, ZoneId.of("+00:00"))
 
-          zdtAssert(
-            "+164433183-11-15T12:32:00.076988677Z[Atlantic/Madeira]",
-            OffsetDateTime
-              .parse("+164433183-11-15T12:32:00.076988677Z")
-              .atZoneSameInstant(ZoneId.of("Atlantic/Madeira"))
-          ) &&
           zdtAssert(n.toString, n) &&
           zdtAssert("2020-01-01T12:36:00-05:00[America/New_York]", est) &&
+          zdtAssert("2020-01-01T12:36:00-05:00[America\\u002fNew_York]", est) &&
           zdtAssert("2020-01-01T12:36:00Z[Etc/UTC]", utc) &&
           zdtAssert("2020-01-01T12:36:00+00:00[+00:00]", gmt) &&
           zdtAssert(
@@ -468,28 +472,18 @@ object JavaTimeSpec extends ZIOSpecDefault {
           )
         },
         test("ZoneId") {
-          assert(stringify("America/New_York").fromJson[ZoneId])(
-            isRight(
-              equalTo(
-                ZoneId.of("America/New_York")
-              )
-            )
+          assert(stringify("America/New_York").fromJson[ZoneId])(isRight(equalTo(ZoneId.of("America/New_York")))) &&
+          assert(stringify("America\\u002fNew_York").fromJson[ZoneId])(
+            isRight(equalTo(ZoneId.of("America/New_York")))
           ) &&
           assert(stringify("Etc/UTC").fromJson[ZoneId])(isRight(equalTo(ZoneId.of("Etc/UTC")))) &&
-          assert(stringify("Pacific/Auckland").fromJson[ZoneId])(
-            isRight(
-              equalTo(
-                ZoneId.of("Pacific/Auckland")
-              )
-            )
-          ) &&
-          assert(stringify("Asia/Shanghai").fromJson[ZoneId])(
-            isRight(equalTo(ZoneId.of("Asia/Shanghai")))
-          ) &&
+          assert(stringify("Pacific/Auckland").fromJson[ZoneId])(isRight(equalTo(ZoneId.of("Pacific/Auckland")))) &&
+          assert(stringify("Asia/Shanghai").fromJson[ZoneId])(isRight(equalTo(ZoneId.of("Asia/Shanghai")))) &&
           assert(stringify("Africa/Cairo").fromJson[ZoneId])(isRight(equalTo(ZoneId.of("Africa/Cairo"))))
         },
         test("ZoneOffset") {
           assert(stringify("Z").fromJson[ZoneOffset])(isRight(equalTo(ZoneOffset.UTC))) &&
+          assert(stringify("\\u005a").fromJson[ZoneOffset])(isRight(equalTo(ZoneOffset.UTC))) &&
           assert(stringify("+05:00").fromJson[ZoneOffset])(isRight(equalTo(ZoneOffset.ofHours(5)))) &&
           assert(stringify("-05:00").fromJson[ZoneOffset])(isRight(equalTo(ZoneOffset.ofHours(-5)))) &&
           assert(stringify("+05:10:10").fromJson[ZoneOffset])(
@@ -499,53 +493,79 @@ object JavaTimeSpec extends ZIOSpecDefault {
       ),
       suite("Decoder Sad Path")(
         test("Duration") {
-          assert("""""""".fromJson[Duration])(isLeft(containsString("expected a Duration"))) &&
-          assert(""""X"""".fromJson[Duration])(isLeft(containsString("expected a Duration"))) &&
-          assert(""""P"""".fromJson[Duration])(isLeft(containsString("expected a Duration"))) &&
-          assert(""""-"""".fromJson[Duration])(isLeft(containsString("expected a Duration"))) &&
-          assert(""""-X"""".fromJson[Duration])(isLeft(containsString("expected a Duration"))) &&
-          assert(""""PXD"""".fromJson[Duration])(isLeft(containsString("expected a Duration"))) &&
-          assert(""""P-"""".fromJson[Duration])(isLeft(containsString("expected a Duration"))) &&
-          assert(""""P-XD"""".fromJson[Duration])(isLeft(containsString("expected a Duration"))) &&
-          assert(""""P1XD"""".fromJson[Duration])(isLeft(containsString("expected a Duration"))) &&
-          assert(""""PT"""".fromJson[Duration])(isLeft(containsString("expected a Duration"))) &&
-          assert(""""PT0SX"""".fromJson[Duration])(isLeft(containsString("expected a Duration"))) &&
-          assert(""""P1DT"""".fromJson[Duration])(isLeft(containsString("expected a Duration"))) &&
-          assert(""""P106751991167301D"""".fromJson[Duration])(isLeft(containsString("expected a Duration"))) &&
-          assert(""""P1067519911673000D"""".fromJson[Duration])(isLeft(containsString("expected a Duration"))) &&
-          assert(""""P-106751991167301D"""".fromJson[Duration])(isLeft(containsString("expected a Duration"))) &&
-          assert(""""P1DX1H"""".fromJson[Duration])(isLeft(containsString("expected a Duration"))) &&
-          assert(""""P1DTXH"""".fromJson[Duration])(isLeft(containsString("expected a Duration"))) &&
-          assert(""""P1DT-XH"""".fromJson[Duration])(isLeft(containsString("expected a Duration"))) &&
-          assert(""""P1DT1XH"""".fromJson[Duration])(isLeft(containsString("expected a Duration"))) &&
-          assert(""""P1DT1H1XM"""".fromJson[Duration])(isLeft(containsString("expected a Duration"))) &&
-          assert(""""P0DT2562047788015216H"""".fromJson[Duration])(isLeft(containsString("expected a Duration"))) &&
-          assert(""""P0DT-2562047788015216H"""".fromJson[Duration])(isLeft(containsString("expected a Duration"))) &&
-          assert(""""P0DT153722867280912931M"""".fromJson[Duration])(isLeft(containsString("expected a Duration"))) &&
-          assert(""""P0DT-153722867280912931M"""".fromJson[Duration])(isLeft(containsString("expected a Duration"))) &&
-          assert(""""P0DT9223372036854775808S"""".fromJson[Duration])(isLeft(containsString("expected a Duration"))) &&
-          assert(""""P0DT92233720368547758000S"""".fromJson[Duration])(isLeft(containsString("expected a Duration"))) &&
-          assert(""""P0DT-9223372036854775809S"""".fromJson[Duration])(isLeft(containsString("expected a Duration"))) &&
-          assert(""""P1DT1H1MXS"""".fromJson[Duration])(isLeft(containsString("expected a Duration"))) &&
-          assert(""""P1DT1H1M-XS"""".fromJson[Duration])(isLeft(containsString("expected a Duration"))) &&
-          assert(""""P1DT1H1M0XS"""".fromJson[Duration])(isLeft(containsString("expected a Duration"))) &&
-          assert(""""P1DT1H1M0.XS"""".fromJson[Duration])(isLeft(containsString("expected a Duration"))) &&
-          assert(""""P1DT1H1M0.012345678XS"""".fromJson[Duration])(isLeft(containsString("expected a Duration"))) &&
-          assert(""""P1DT1H1M0.0123456789S"""".fromJson[Duration])(isLeft(containsString("expected a Duration"))) &&
-          assert(""""P0DT0H0M9223372036854775808S"""".fromJson[Duration])(
+          assert(stringify(" " * 10000).fromJson[Duration])(isLeft(containsString("expected a Duration"))) &&
+          assert(stringify("").fromJson[Duration])(isLeft(containsString("expected a Duration"))) &&
+          assert(stringify("X").fromJson[Duration])(isLeft(containsString("expected a Duration"))) &&
+          assert(stringify("P").fromJson[Duration])(isLeft(containsString("expected a Duration"))) &&
+          assert(stringify("-").fromJson[Duration])(isLeft(containsString("expected a Duration"))) &&
+          assert(stringify("-X").fromJson[Duration])(isLeft(containsString("expected a Duration"))) &&
+          assert(stringify("PXD").fromJson[Duration])(isLeft(containsString("expected a Duration"))) &&
+          assert(stringify("P-").fromJson[Duration])(isLeft(containsString("expected a Duration"))) &&
+          assert(stringify("P-XD").fromJson[Duration])(isLeft(containsString("expected a Duration"))) &&
+          assert(stringify("P1XD").fromJson[Duration])(isLeft(containsString("expected a Duration"))) &&
+          assert(stringify("PT").fromJson[Duration])(isLeft(containsString("expected a Duration"))) &&
+          assert(stringify("PT0SX").fromJson[Duration])(isLeft(containsString("expected a Duration"))) &&
+          assert(stringify("P1DT").fromJson[Duration])(isLeft(containsString("expected a Duration"))) &&
+          assert(stringify("P106751991167301D").fromJson[Duration])(isLeft(containsString("expected a Duration"))) &&
+          assert(stringify("P1067519911673000D").fromJson[Duration])(isLeft(containsString("expected a Duration"))) &&
+          assert(stringify("P-106751991167301D").fromJson[Duration])(isLeft(containsString("expected a Duration"))) &&
+          assert(stringify("P1DX1H").fromJson[Duration])(isLeft(containsString("expected a Duration"))) &&
+          assert(stringify("P1DTXH").fromJson[Duration])(isLeft(containsString("expected a Duration"))) &&
+          assert(stringify("P1DT-XH").fromJson[Duration])(isLeft(containsString("expected a Duration"))) &&
+          assert(stringify("P1DT1XH").fromJson[Duration])(isLeft(containsString("expected a Duration"))) &&
+          assert(stringify("P1DT1H1XM").fromJson[Duration])(isLeft(containsString("expected a Duration"))) &&
+          assert(stringify("P0DT2562047788015216H").fromJson[Duration])(
             isLeft(containsString("expected a Duration"))
           ) &&
-          assert(""""P0DT0H0M92233720368547758080S"""".fromJson[Duration])(
+          assert(stringify("P0DT-2562047788015216H").fromJson[Duration])(
             isLeft(containsString("expected a Duration"))
           ) &&
-          assert(""""P0DT0H0M-9223372036854775809S"""".fromJson[Duration])(
+          assert(stringify("P0DT153722867280912931M").fromJson[Duration])(
             isLeft(containsString("expected a Duration"))
           ) &&
-          assert(""""P106751991167300DT24H"""".fromJson[Duration])(isLeft(containsString("expected a Duration"))) &&
-          assert(""""P0DT2562047788015215H60M"""".fromJson[Duration])(isLeft(containsString("expected a Duration"))) &&
-          assert(""""P0DT0H153722867280912930M60S"""".fromJson[Duration])(isLeft(containsString("expected a Duration")))
+          assert(stringify("P0DT-153722867280912931M").fromJson[Duration])(
+            isLeft(containsString("expected a Duration"))
+          ) &&
+          assert(stringify("P0DT9223372036854775808S").fromJson[Duration])(
+            isLeft(containsString("expected a Duration"))
+          ) &&
+          assert(stringify("P0DT92233720368547758000S").fromJson[Duration])(
+            isLeft(containsString("expected a Duration"))
+          ) &&
+          assert(stringify("P0DT-9223372036854775809S").fromJson[Duration])(
+            isLeft(containsString("expected a Duration"))
+          ) &&
+          assert(stringify("P1DT1H1MXS").fromJson[Duration])(isLeft(containsString("expected a Duration"))) &&
+          assert(stringify("P1DT1H1M-XS").fromJson[Duration])(isLeft(containsString("expected a Duration"))) &&
+          assert(stringify("P1DT1H1M0XS").fromJson[Duration])(isLeft(containsString("expected a Duration"))) &&
+          assert(stringify("P1DT1H1M0.XS").fromJson[Duration])(isLeft(containsString("expected a Duration"))) &&
+          assert(stringify("P1DT1H1M0.012345678XS").fromJson[Duration])(
+            isLeft(containsString("expected a Duration"))
+          ) &&
+          assert(stringify("P1DT1H1M0.0123456789S").fromJson[Duration])(
+            isLeft(containsString("expected a Duration"))
+          ) &&
+          assert(stringify("P0DT0H0M9223372036854775808S").fromJson[Duration])(
+            isLeft(containsString("expected a Duration"))
+          ) &&
+          assert(stringify("P0DT0H0M92233720368547758080S").fromJson[Duration])(
+            isLeft(containsString("expected a Duration"))
+          ) &&
+          assert(stringify("P0DT0H0M-9223372036854775809S").fromJson[Duration])(
+            isLeft(containsString("expected a Duration"))
+          ) &&
+          assert(stringify("P106751991167300DT24H").fromJson[Duration])(
+            isLeft(containsString("expected a Duration"))
+          ) &&
+          assert(stringify("P0DT2562047788015215H60M").fromJson[Duration])(
+            isLeft(containsString("expected a Duration"))
+          ) &&
+          assert(stringify("P0DT0H153722867280912930M60S").fromJson[Duration])(
+            isLeft(containsString("expected a Duration"))
+          )
         },
         test("Instant") {
+          assert(stringify(" " * 10000).fromJson[Instant])(isLeft(containsString("expected an Instant"))) &&
           assert(stringify("").fromJson[Instant])(isLeft(containsString("expected an Instant"))) &&
           assert(stringify("2020").fromJson[Instant])(isLeft(containsString("expected an Instant"))) &&
           assert(stringify("2020-0").fromJson[Instant])(isLeft(containsString("expected an Instant"))) &&
@@ -659,6 +679,7 @@ object JavaTimeSpec extends ZIOSpecDefault {
           assert(stringify("2020-12-32T01:01Z").fromJson[Instant])(isLeft(containsString("expected an Instant")))
         },
         test("LocalDate") {
+          assert(stringify(" " * 10000).fromJson[LocalDate])(isLeft(containsString("expected a LocalDate"))) &&
           assert(stringify("").fromJson[LocalDate])(isLeft(containsString("expected a LocalDate"))) &&
           assert(stringify("2020").fromJson[LocalDate])(isLeft(containsString("expected a LocalDate"))) &&
           assert(stringify("2020-0").fromJson[LocalDate])(isLeft(containsString("expected a LocalDate"))) &&
@@ -703,6 +724,7 @@ object JavaTimeSpec extends ZIOSpecDefault {
           assert(stringify("2020-12-32").fromJson[LocalDate])(isLeft(containsString("expected a LocalDate")))
         },
         test("LocalDateTime") {
+          assert(stringify(" " * 10000).fromJson[LocalDateTime])(isLeft(containsString("expected a LocalDateTime"))) &&
           assert(stringify("").fromJson[LocalDateTime])(isLeft(containsString("expected a LocalDateTime"))) &&
           assert(stringify("2020").fromJson[LocalDateTime])(isLeft(containsString("expected a LocalDateTime"))) &&
           assert(stringify("2020-0").fromJson[LocalDateTime])(isLeft(containsString("expected a LocalDateTime"))) &&
@@ -869,6 +891,7 @@ object JavaTimeSpec extends ZIOSpecDefault {
           )
         },
         test("LocalTime") {
+          assert(stringify(" " * 10000).fromJson[LocalTime])(isLeft(containsString("expected a LocalTime"))) &&
           assert(stringify("").fromJson[LocalTime])(isLeft(containsString("expected a LocalTime"))) &&
           assert(stringify("0").fromJson[LocalTime])(isLeft(containsString("expected a LocalTime"))) &&
           assert(stringify("01:0").fromJson[LocalTime])(isLeft(containsString("expected a LocalTime"))) &&
@@ -888,6 +911,7 @@ object JavaTimeSpec extends ZIOSpecDefault {
           assert(stringify("01:01:01.X").fromJson[LocalTime])(isLeft(containsString("expected a LocalTime")))
         },
         test("MonthDay") {
+          assert(stringify(" " * 10000).fromJson[MonthDay])(isLeft(containsString("expected a MonthDay"))) &&
           assert(stringify("").fromJson[MonthDay])(isLeft(containsString("expected a MonthDay"))) &&
           assert(stringify("X-01-01").fromJson[MonthDay])(isLeft(containsString("expected a MonthDay"))) &&
           assert(stringify("-X01-01").fromJson[MonthDay])(isLeft(containsString("expected a MonthDay"))) &&
@@ -913,6 +937,9 @@ object JavaTimeSpec extends ZIOSpecDefault {
           assert(stringify("--12-32").fromJson[MonthDay])(isLeft(containsString("expected a MonthDay")))
         },
         test("OffsetDateTime") {
+          assert(stringify(" " * 10000).fromJson[OffsetDateTime])(
+            isLeft(containsString("expected an OffsetDateTime"))
+          ) &&
           assert(stringify("").fromJson[OffsetDateTime])(isLeft(containsString("expected an OffsetDateTime"))) &&
           assert(stringify("2020").fromJson[OffsetDateTime])(isLeft(containsString("expected an OffsetDateTime"))) &&
           assert(stringify("2020-0").fromJson[OffsetDateTime])(isLeft(containsString("expected an OffsetDateTime"))) &&
@@ -1141,6 +1168,7 @@ object JavaTimeSpec extends ZIOSpecDefault {
           )
         },
         test("OffsetTime") {
+          assert(stringify(" " * 10000).fromJson[OffsetTime])(isLeft(containsString("expected an OffsetTime"))) &&
           assert(stringify("").fromJson[OffsetTime])(isLeft(containsString("expected an OffsetTime"))) &&
           assert(stringify("0").fromJson[OffsetTime])(isLeft(containsString("expected an OffsetTime"))) &&
           assert(stringify("01:0").fromJson[OffsetTime])(isLeft(containsString("expected an OffsetTime"))) &&
@@ -1205,6 +1233,7 @@ object JavaTimeSpec extends ZIOSpecDefault {
           assert(stringify("01:01:01+01:01:60").fromJson[OffsetTime])(isLeft(containsString("expected an OffsetTime")))
         },
         test("Period") {
+          assert(stringify(" " * 10000).fromJson[Period])(isLeft(containsString("expected a Period"))) &&
           assert(stringify("").fromJson[Period])(isLeft(containsString("expected a Period"))) &&
           assert(stringify("X").fromJson[Period])(isLeft(containsString("expected a Period"))) &&
           assert(stringify("P").fromJson[Period])(isLeft(containsString("expected a Period"))) &&
@@ -1259,6 +1288,7 @@ object JavaTimeSpec extends ZIOSpecDefault {
           assert(stringify("P1Y1M1W1DX").fromJson[Period])(isLeft(containsString("expected a Period")))
         },
         test("Year") {
+          assert(stringify(" " * 10000).fromJson[Year])(isLeft(containsString("expected a Year"))) &&
           assert(stringify("").fromJson[Year])(isLeft(containsString("expected a Year"))) &&
           assert(stringify("2").fromJson[Year])(isLeft(containsString("expected a Year"))) &&
           assert(stringify("22").fromJson[Year])(isLeft(containsString("expected a Year"))) &&
@@ -1281,6 +1311,7 @@ object JavaTimeSpec extends ZIOSpecDefault {
           assert(stringify("10000").fromJson[Year])(isLeft(containsString("expected a Year")))
         },
         test("YearMonth") {
+          assert(stringify(" " * 10000).fromJson[YearMonth])(isLeft(containsString("expected a YearMonth"))) &&
           assert(stringify("").fromJson[YearMonth])(isLeft(containsString("expected a YearMonth"))) &&
           assert(stringify("2020").fromJson[YearMonth])(isLeft(containsString("expected a YearMonth"))) &&
           assert(stringify("2020-0").fromJson[YearMonth])(isLeft(containsString("expected a YearMonth"))) &&
@@ -1308,6 +1339,7 @@ object JavaTimeSpec extends ZIOSpecDefault {
           assert(stringify("2020-13").fromJson[YearMonth])(isLeft(containsString("expected a YearMonth")))
         },
         test("ZonedDateTime") {
+          assert(stringify(" " * 10000).fromJson[ZonedDateTime])(isLeft(containsString("expected a ZonedDateTime"))) &&
           assert(stringify("").fromJson[ZonedDateTime])(isLeft(containsString("expected a ZonedDateTime"))) &&
           assert(stringify("2020").fromJson[ZonedDateTime])(isLeft(containsString("expected a ZonedDateTime"))) &&
           assert(stringify("2020-0").fromJson[ZonedDateTime])(isLeft(containsString("expected a ZonedDateTime"))) &&
@@ -1543,10 +1575,12 @@ object JavaTimeSpec extends ZIOSpecDefault {
           )
         },
         test("ZoneId") {
+          assert(stringify(" " * 10000).fromJson[ZoneId])(isLeft(containsString("expected a ZoneId"))) &&
           assert(stringify("America/New York").fromJson[ZoneId])(isLeft(containsString("expected a ZoneId"))) &&
           assert(stringify("Solar_System/Mars").fromJson[ZoneId])(isLeft(containsString("expected a ZoneId")))
         },
         test("ZoneOffset") {
+          assert(stringify(" " * 10000).fromJson[ZoneOffset])(isLeft(containsString("expected a ZoneOffset"))) &&
           assert(stringify("").fromJson[ZoneOffset])(isLeft(containsString("expected a ZoneOffset"))) &&
           assert(stringify("X").fromJson[ZoneOffset])(isLeft(containsString("expected a ZoneOffset"))) &&
           assert(stringify("+X1:01:01").fromJson[ZoneOffset])(isLeft(containsString("expected a ZoneOffset"))) &&

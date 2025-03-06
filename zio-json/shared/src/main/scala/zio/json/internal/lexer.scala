@@ -299,69 +299,71 @@ object Lexer {
   def uuid(trace: List[JsonError], in: OneCharReader): UUID = {
     var c = in.nextNonWhitespace()
     if (c == '"') {
-      val cs = charArrays.get
-      var i  = 0
+      val cs   = charArrays.get
+      var i, m = 0
       while ({
         c = in.readChar()
-        c != '"'
+        i < 1024 && c != '"'
       }) {
         if (c == '\\') c = nextEscaped(trace, in)
-        if (i == 36 || c > 0xff) uuidError(trace)
         cs(i) = c
+        m |= c
         i += 1
       }
-      if (
-        i == 36 && {
-          val c1 = cs(8)
-          val c2 = cs(13)
-          val c3 = cs(18)
-          val c4 = cs(23)
-          c1 == '-' && c2 == '-' && c3 == '-' && c4 == '-'
+      if (m <= 0xff) {
+        if (
+          i == 36 && {
+            val c1 = cs(8)
+            val c2 = cs(13)
+            val c3 = cs(18)
+            val c4 = cs(23)
+            c1 == '-' && c2 == '-' && c3 == '-' && c4 == '-'
+          }
+        ) {
+          val ds = hexDigits
+          val msb1 =
+            ds(cs(0)).toLong << 28 |
+              (ds(cs(1)) << 24 |
+                ds(cs(2)) << 20 |
+                ds(cs(3)) << 16 |
+                ds(cs(4)) << 12 |
+                ds(cs(5)) << 8 |
+                ds(cs(6)) << 4 |
+                ds(cs(7)))
+          val msb2 =
+            (ds(cs(9)) << 12 |
+              ds(cs(10)) << 8 |
+              ds(cs(11)) << 4 |
+              ds(cs(12))).toLong
+          val msb3 =
+            (ds(cs(14)) << 12 |
+              ds(cs(15)) << 8 |
+              ds(cs(16)) << 4 |
+              ds(cs(17))).toLong
+          val lsb1 =
+            (ds(cs(19)) << 12 |
+              ds(cs(20)) << 8 |
+              ds(cs(21)) << 4 |
+              ds(cs(22))).toLong
+          val lsb2 =
+            (ds(cs(24)) << 16 |
+              ds(cs(25)) << 12 |
+              ds(cs(26)) << 8 |
+              ds(cs(27)) << 4 |
+              ds(cs(28))).toLong << 28 |
+              (ds(cs(29)) << 24 |
+                ds(cs(30)) << 20 |
+                ds(cs(31)) << 16 |
+                ds(cs(32)) << 12 |
+                ds(cs(33)) << 8 |
+                ds(cs(34)) << 4 |
+                ds(cs(35)))
+          if ((msb1 | msb2 | msb3 | lsb1 | lsb2) >= 0L) {
+            return new UUID(msb1 << 32 | msb2 << 16 | msb3, lsb1 << 48 | lsb2)
+          }
+        } else if (i <= 36) {
+          return uuidExtended(trace, cs, i)
         }
-      ) {
-        val ds = hexDigits
-        val msb1 =
-          ds(cs(0).toInt).toLong << 28 |
-            (ds(cs(1).toInt) << 24 |
-              ds(cs(2).toInt) << 20 |
-              ds(cs(3).toInt) << 16 |
-              ds(cs(4).toInt) << 12 |
-              ds(cs(5).toInt) << 8 |
-              ds(cs(6).toInt) << 4 |
-              ds(cs(7).toInt))
-        val msb2 =
-          (ds(cs(9).toInt) << 12 |
-            ds(cs(10).toInt) << 8 |
-            ds(cs(11).toInt) << 4 |
-            ds(cs(12).toInt)).toLong
-        val msb3 =
-          (ds(cs(14).toInt) << 12 |
-            ds(cs(15).toInt) << 8 |
-            ds(cs(16).toInt) << 4 |
-            ds(cs(17).toInt)).toLong
-        val lsb1 =
-          (ds(cs(19).toInt) << 12 |
-            ds(cs(20).toInt) << 8 |
-            ds(cs(21).toInt) << 4 |
-            ds(cs(22).toInt)).toLong
-        val lsb2 =
-          (ds(cs(24).toInt) << 16 |
-            ds(cs(25).toInt) << 12 |
-            ds(cs(26).toInt) << 8 |
-            ds(cs(27).toInt) << 4 |
-            ds(cs(28).toInt)).toLong << 28 |
-            (ds(cs(29).toInt) << 24 |
-              ds(cs(30).toInt) << 20 |
-              ds(cs(31).toInt) << 16 |
-              ds(cs(32).toInt) << 12 |
-              ds(cs(33).toInt) << 8 |
-              ds(cs(34).toInt) << 4 |
-              ds(cs(35).toInt))
-        if ((msb1 | msb2 | msb3 | lsb1 | lsb2) >= 0L) {
-          return new UUID(msb1 << 32 | msb2 << 16 | msb3, lsb1 << 48 | lsb2)
-        }
-      } else if (i <= 36) {
-        return uuidExtended(trace, cs, i)
       }
     }
     uuidError(trace)
@@ -405,7 +407,7 @@ object Lexer {
       var result = 0L
       var i      = from
       while (i < to) {
-        result = (result << 4) | ds(cs(i).toInt)
+        result = (result << 4) | ds(cs(i))
         i += 1
       }
       if ((result & mask) == 0L) return result
@@ -414,21 +416,11 @@ object Lexer {
   }
 
   def duration(trace: List[JsonError], in: OneCharReader): Duration = {
-    var c = in.nextNonWhitespace()
-    if (c == '"') {
-      val cs = charArrays.get
-      var i  = 0
-      while ({
-        c = in.readChar()
-        c != '"'
-      }) {
-        if (c == '\\') c = nextEscaped(trace, in)
-        cs(i) = c
-        i += 1
-      }
-      var pos          = 0
-      var seconds      = 0L
-      var nanos, state = 0
+    if (in.nextNonWhitespace() == '"') {
+      val cs                = charArrays.get
+      val i                 = readChars(trace, in, cs)
+      var seconds           = 0L
+      var nanos, pos, state = 0
       if (pos >= i) durationError(trace)
       var ch = cs(pos)
       pos += 1
@@ -526,18 +518,9 @@ object Lexer {
   }
 
   def instant(trace: List[JsonError], in: OneCharReader): Instant = {
-    var c = in.nextNonWhitespace()
-    if (c == '"') {
-      val cs = charArrays.get
-      var i  = 0
-      while ({
-        c = in.readChar()
-        c != '"'
-      }) {
-        if (c == '\\') c = nextEscaped(trace, in)
-        cs(i) = c
-        i += 1
-      }
+    if (in.nextNonWhitespace() == '"') {
+      val cs                    = charArrays.get
+      val i                     = readChars(trace, in, cs)
       var pos, year, month, day = 0
       if (
         pos + 4 >= i || {
@@ -697,20 +680,12 @@ object Lexer {
   }
 
   def localDate(trace: List[JsonError], in: OneCharReader): LocalDate = {
-    var c = in.nextNonWhitespace()
-    if (c == '"') {
-      val cs = charArrays.get
-      var i  = 0
-      while ({
-        c = in.readChar()
-        c != '"'
-      }) {
-        if (c == '\\') c = nextEscaped(trace, in)
-        cs(i) = c
-        i += 1
-      }
-      var pos, year, month, day = 0
-      if (
+    var year, month, day = 0
+    if (
+      in.nextNonWhitespace() != '"' || {
+        val cs  = charArrays.get
+        val i   = readChars(trace, in, cs)
+        var pos = 0
         pos + 4 >= i || {
           val ch0 = cs(pos)
           val ch1 = cs(pos + 1)
@@ -758,25 +733,15 @@ object Lexer {
           ch4 < '0' || ch4 > '9' || month < 1 || month > 12 || day == 0 ||
           (day > 28 && day > maxDayForYearMonth(year, month))
         }
-      ) localDateError(trace)
-      return LocalDate.of(year, month, day)
-    }
-    localDateError(trace)
+      }
+    ) localDateError(trace)
+    LocalDate.of(year, month, day)
   }
 
   def localDateTime(trace: List[JsonError], in: OneCharReader): LocalDateTime = {
-    var c = in.nextNonWhitespace()
-    if (c == '"') {
-      val cs = charArrays.get
-      var i  = 0
-      while ({
-        c = in.readChar()
-        c != '"'
-      }) {
-        if (c == '\\') c = nextEscaped(trace, in)
-        cs(i) = c
-        i += 1
-      }
+    if (in.nextNonWhitespace() == '"') {
+      val cs                    = charArrays.get
+      val i                     = readChars(trace, in, cs)
       var pos, year, month, day = 0
       if (
         pos + 4 >= i || {
@@ -884,18 +849,9 @@ object Lexer {
   }
 
   def localTime(trace: List[JsonError], in: OneCharReader): LocalTime = {
-    var c = in.nextNonWhitespace()
-    if (c == '"') {
-      val cs = charArrays.get
-      var i  = 0
-      while ({
-        c = in.readChar()
-        c != '"'
-      }) {
-        if (c == '\\') c = nextEscaped(trace, in)
-        cs(i) = c
-        i += 1
-      }
+    if (in.nextNonWhitespace() == '"') {
+      val cs                = charArrays.get
+      val i                 = readChars(trace, in, cs)
       var pos, hour, minute = 0
       if (
         pos + 4 >= i || {
@@ -952,20 +908,11 @@ object Lexer {
   }
 
   def monthDay(trace: List[JsonError], in: OneCharReader): MonthDay = {
-    var c = in.nextNonWhitespace()
-    if (c == '"') {
-      val cs = charArrays.get
-      var i  = 0
-      while ({
-        c = in.readChar()
-        c != '"'
-      }) {
-        if (c == '\\') c = nextEscaped(trace, in)
-        cs(i) = c
-        i += 1
-      }
-      var month, day = 0
-      if (
+    var month, day = 0
+    if (
+      in.nextNonWhitespace() != '"' || {
+        val cs = charArrays.get
+        val i  = readChars(trace, in, cs)
         i != 7 || {
           val ch0 = cs(0)
           val ch1 = cs(1)
@@ -980,25 +927,15 @@ object Lexer {
           ch5 < '0' || ch5 > '9' || ch6 < '0' || ch6 > '9' || month < 1 || month > 12 || day == 0 ||
           (day > 28 && day > maxDayForMonth(month))
         }
-      ) monthDayError(trace)
-      return MonthDay.of(month, day)
-    }
-    monthDayError(trace)
+      }
+    ) monthDayError(trace)
+    MonthDay.of(month, day)
   }
 
   def offsetDateTime(trace: List[JsonError], in: OneCharReader): OffsetDateTime = {
-    var c = in.nextNonWhitespace()
-    if (c == '"') {
-      val cs = charArrays.get
-      var i  = 0
-      while ({
-        c = in.readChar()
-        c != '"'
-      }) {
-        if (c == '\\') c = nextEscaped(trace, in)
-        cs(i) = c
-        i += 1
-      }
+    if (in.nextNonWhitespace() == '"') {
+      val cs                    = charArrays.get
+      val i                     = readChars(trace, in, cs)
       var pos, year, month, day = 0
       if (
         pos + 4 >= i || {
@@ -1144,18 +1081,9 @@ object Lexer {
   }
 
   def offsetTime(trace: List[JsonError], in: OneCharReader): OffsetTime = {
-    var c = in.nextNonWhitespace()
-    if (c == '"') {
-      val cs = charArrays.get
-      var i  = 0
-      while ({
-        c = in.readChar()
-        c != '"'
-      }) {
-        if (c == '\\') c = nextEscaped(trace, in)
-        cs(i) = c
-        i += 1
-      }
+    if (in.nextNonWhitespace() == '"') {
+      val cs                = charArrays.get
+      val i                 = readChars(trace, in, cs)
       var pos, hour, minute = 0
       if (
         pos + 4 >= i || {
@@ -1250,18 +1178,9 @@ object Lexer {
   }
 
   def period(trace: List[JsonError], in: OneCharReader): Period = {
-    var c = in.nextNonWhitespace()
-    if (c == '"') {
-      val cs = charArrays.get
-      var i  = 0
-      while ({
-        c = in.readChar()
-        c != '"'
-      }) {
-        if (c == '\\') c = nextEscaped(trace, in)
-        cs(i) = c
-        i += 1
-      }
+    if (in.nextNonWhitespace() == '"') {
+      val cs                              = charArrays.get
+      val i                               = readChars(trace, in, cs)
       var pos, state, years, months, days = 0
       if (pos >= i) periodError(trace)
       var ch = cs(pos)
@@ -1332,18 +1251,9 @@ object Lexer {
   }
 
   def year(trace: List[JsonError], in: OneCharReader): Year = {
-    var c = in.nextNonWhitespace()
-    if (c == '"') {
-      val cs = charArrays.get
-      var i  = 0
-      while ({
-        c = in.readChar()
-        c != '"'
-      }) {
-        if (c == '\\') c = nextEscaped(trace, in)
-        cs(i) = c
-        i += 1
-      }
+    if (in.nextNonWhitespace() == '"') {
+      val cs        = charArrays.get
+      val i         = readChars(trace, in, cs)
       var pos, year = 0
       if (
         pos + 3 >= i || {
@@ -1385,18 +1295,9 @@ object Lexer {
   }
 
   def yearMonth(trace: List[JsonError], in: OneCharReader): YearMonth = {
-    var c = in.nextNonWhitespace()
-    if (c == '"') {
-      val cs = charArrays.get
-      var i  = 0
-      while ({
-        c = in.readChar()
-        c != '"'
-      }) {
-        if (c == '\\') c = nextEscaped(trace, in)
-        cs(i) = c
-        i += 1
-      }
+    if (in.nextNonWhitespace() == '"') {
+      val cs               = charArrays.get
+      val i                = readChars(trace, in, cs)
       var pos, year, month = 0
       if (
         pos + 4 >= i || {
@@ -1446,18 +1347,9 @@ object Lexer {
   }
 
   def zonedDateTime(trace: List[JsonError], in: OneCharReader): ZonedDateTime = {
-    var c = in.nextNonWhitespace()
-    if (c == '"') {
-      val cs = charArrays.get
-      var i  = 0
-      while ({
-        c = in.readChar()
-        c != '"'
-      }) {
-        if (c == '\\') c = nextEscaped(trace, in)
-        cs(i) = c
-        i += 1
-      }
+    if (in.nextNonWhitespace() == '"') {
+      val cs                                  = charArrays.get
+      val i                                   = readChars(trace, in, cs)
       var pos, year, month, day, hour, minute = 0
       if (
         pos + 4 >= i || {
@@ -1638,18 +1530,9 @@ object Lexer {
   }
 
   def zoneOffset(trace: List[JsonError], in: OneCharReader): ZoneOffset = {
-    var c = in.nextNonWhitespace()
-    if (c == '"') {
-      val cs = charArrays.get
-      var i  = 0
-      while ({
-        c = in.readChar()
-        c != '"'
-      }) {
-        if (c == '\\') c = nextEscaped(trace, in)
-        cs(i) = c
-        i += 1
-      }
+    if (in.nextNonWhitespace() == '"') {
+      val cs  = charArrays.get
+      val i   = readChars(trace, in, cs)
       var pos = 0
       if (pos >= i) zoneOffsetError(trace)
       val ch = cs(pos)
@@ -1700,6 +1583,21 @@ object Lexer {
       }
     }
     zoneOffsetError(trace)
+  }
+
+  private[this] def readChars(trace: List[JsonError], in: OneCharReader, cs: Array[Char]): Int = {
+    val len = cs.length
+    var c   = '0'
+    var i   = 0
+    while ({
+      c = in.readChar()
+      i < len && c != '"'
+    }) {
+      if (c == '\\') c = nextEscaped(trace, in)
+      cs(i) = c
+      i += 1
+    }
+    i
   }
 
   private[this] def toZoneOffset(offsetNeg: Boolean, offsetTotal: Int): ZoneOffset = {
@@ -1785,7 +1683,7 @@ object Lexer {
   @noinline private[this] def zoneOffsetError(trace: List[JsonError]): Nothing = error("expected a ZoneOffset", trace)
 
   private[this] val charArrays = new ThreadLocal[Array[Char]] {
-    override def initialValue(): Array[Char] = new Array[Char](1024) // should be longer than 256
+    override def initialValue(): Array[Char] = new Array[Char](1024)
   }
 
   private[this] val hexDigits: Array[Byte] = {
