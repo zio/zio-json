@@ -153,7 +153,7 @@ object Lexer {
     if (c == 't' && in.readChar() == 'r' && in.readChar() == 'u' && in.readChar() == 'e') true
     else if (c == 'f' && in.readChar() == 'a' && in.readChar() == 'l' && in.readChar() == 's' && in.readChar() == 'e')
       false
-    else error("expected a Boolean", c, trace)
+    else error("expected a Boolean", trace)
   }
 
   def byte(trace: List[JsonError], in: RetractReader): Byte =

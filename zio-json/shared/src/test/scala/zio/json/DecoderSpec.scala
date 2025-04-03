@@ -34,6 +34,11 @@ object DecoderSpec extends ZIOSpecDefault {
           assert("\"\u0000\"".fromJson[Char])(isLeft(equalTo("""(invalid control in string)"""))) &&
           assert("\"\\u0000\"".replace('0', 'g').fromJson[Char])(isLeft(equalTo("""(invalid charcode in string)""")))
         },
+        test("boolean") {
+          assert("true".fromJson[Boolean])(isRight(equalTo(true))) &&
+          assert("false".fromJson[Boolean])(isRight(equalTo(false))) &&
+          assert("x".fromJson[Boolean])(isLeft(equalTo("(expected a Boolean)")))
+        },
         test("byte") {
           assert("-128".fromJson[Byte])(isRight(equalTo(Byte.MinValue))) &&
           assert("127".fromJson[Byte])(isRight(equalTo(Byte.MaxValue))) &&
