@@ -102,7 +102,7 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform, NativePlatform)
     scalacOptions -= "-opt-inline-from:zio.internal.**",
     Test / scalacOptions ++= {
       if (scalaVersion.value == ScalaDotty)
-        Vector("-Yretain-trees", "-Xmax-inlines:100")
+        Vector("-Yretain-trees", "-Xmax-inlines:128")
       else
         Vector.empty
     },

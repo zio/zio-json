@@ -93,6 +93,32 @@ object Lexer {
     matrix.first(matrix.exact(bs, i))
   }
 
+  def enumeration128(trace: List[JsonError], in: OneCharReader, matrix1: StringMatrix, matrix2: StringMatrix): Int = {
+    var c = in.nextNonWhitespace()
+    if (c != '"') error("'\"'", c, trace)
+    var bs1 = matrix1.initial
+    var bs2 = matrix2.initial
+    var i   = 0
+    while ({
+      c = in.readChar()
+      c != '"'
+    }) {
+      if (c == '\\') c = nextEscaped(trace, in)
+      else if (c < ' ') error("invalid control in string", trace)
+      bs1 = matrix1.update(bs1, i, c)
+      bs2 = matrix2.update(bs2, i, c)
+      i += 1
+    }
+    matrix1.first(matrix1.exact(bs1, i)) & (matrix2.first(matrix2.exact(bs2, i)) | 64)
+  }
+
+  @inline def field128(trace: List[JsonError], in: OneCharReader, matrix1: StringMatrix, matrix2: StringMatrix): Int = {
+    val f = enumeration128(trace, in, matrix1, matrix2)
+    val c = in.nextNonWhitespace()
+    if (c == ':') return f
+    error("':'", c, trace)
+  }
+
   @noinline def skipValue(trace: List[JsonError], in: RetractReader): Unit =
     (in.nextNonWhitespace(): @switch) match {
       case 'n' | 't' => skipFixedChars(in, 3)

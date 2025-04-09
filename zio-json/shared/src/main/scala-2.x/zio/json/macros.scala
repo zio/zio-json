@@ -392,7 +392,11 @@ object DeriveJsonDecoder {
           s"name(s) ${collisions.mkString(",")} are duplicated"
       )
     }
-    val matrix        = new StringMatrix(names)
+    val (names1, names2) = names.splitAt(64)
+    val matrix1          = new StringMatrix(names1)
+    val matrix2 =
+      if (names2.isEmpty) null
+      else new StringMatrix(names2)
     lazy val tcs      = ctx.subtypes.map(_.typeclass).toArray.asInstanceOf[Array[JsonDecoder[Any]]]
     lazy val namesMap = names.zipWithIndex.toMap
     val discrim =
@@ -400,90 +404,181 @@ object DeriveJsonDecoder {
     lazy val isEnumeration = config.enumValuesAsStrings &&
       ctx.subtypes.forall(_.typeclass.isInstanceOf[CaseObjectDecoder[JsonDecoder, _]])
     if (discrim.isEmpty && isEnumeration) {
-      new JsonDecoder[A] {
-        def unsafeDecode(trace: List[JsonError], in: RetractReader): A = {
-          val idx = Lexer.enumeration(trace, in, matrix)
-          if (idx >= 0) tcs(idx).asInstanceOf[CaseObjectDecoder[JsonDecoder, A]].ctx.rawConstruct(Nil)
-          else Lexer.error("invalid enumeration value", trace)
-        }
-
-        override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): A =
-          json match {
-            case s: Json.Str =>
-              namesMap.get(s.value) match {
-                case Some(idx) => tcs(idx).asInstanceOf[CaseObjectDecoder[JsonDecoder, A]].ctx.rawConstruct(Nil)
-                case _         => Lexer.error("invalid enumeration value", trace)
-              }
-            case _ => Lexer.error("expected string", trace)
+      if (names.length <= 64) {
+        new JsonDecoder[A] {
+          def unsafeDecode(trace: List[JsonError], in: RetractReader): A = {
+            val idx = Lexer.enumeration(trace, in, matrix1)
+            if (idx >= 0) tcs(idx).asInstanceOf[CaseObjectDecoder[JsonDecoder, A]].ctx.rawConstruct(Nil)
+            else Lexer.error("invalid enumeration value", trace)
           }
+
+          override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): A =
+            json match {
+              case s: Json.Str =>
+                namesMap.get(s.value) match {
+                  case Some(idx) => tcs(idx).asInstanceOf[CaseObjectDecoder[JsonDecoder, A]].ctx.rawConstruct(Nil)
+                  case _         => Lexer.error("invalid enumeration value", trace)
+                }
+              case _ => Lexer.error("expected string", trace)
+            }
+        }
+      } else {
+        new JsonDecoder[A] {
+          def unsafeDecode(trace: List[JsonError], in: RetractReader): A = {
+            val idx = Lexer.enumeration128(trace, in, matrix1, matrix2)
+            if (idx >= 0) tcs(idx).asInstanceOf[CaseObjectDecoder[JsonDecoder, A]].ctx.rawConstruct(Nil)
+            else Lexer.error("invalid enumeration value", trace)
+          }
+
+          override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): A =
+            json match {
+              case s: Json.Str =>
+                namesMap.get(s.value) match {
+                  case Some(idx) => tcs(idx).asInstanceOf[CaseObjectDecoder[JsonDecoder, A]].ctx.rawConstruct(Nil)
+                  case _         => Lexer.error("invalid enumeration value", trace)
+                }
+              case _ => Lexer.error("expected string", trace)
+            }
+        }
       }
     } else if (discrim.isEmpty) {
       // We're not allowing extra fields in this encoding
-      new JsonDecoder[A] {
-        private[this] val spans = names.map(JsonError.ObjectAccess)
+      if (names.length <= 64) {
+        new JsonDecoder[A] {
+          private[this] val spans = names.map(JsonError.ObjectAccess)
 
-        def unsafeDecode(trace: List[JsonError], in: RetractReader): A = {
-          Lexer.char(trace, in, '{')
-          if (Lexer.firstField(trace, in)) {
-            val idx = Lexer.field(trace, in, matrix)
-            if (idx >= 0) {
-              val a = tcs(idx).unsafeDecode(spans(idx) :: trace, in).asInstanceOf[A]
-              Lexer.char(trace, in, '}')
-              a
-            } else Lexer.error("invalid disambiguator", trace)
-          } else Lexer.error("expected non-empty object", trace)
-        }
-
-        override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): A =
-          json match {
-            case o: Json.Obj if o.fields.length == 1 =>
-              val kv = o.fields(0)
-              namesMap.get(kv._1) match {
-                case Some(idx) => tcs(idx).unsafeFromJsonAST(spans(idx) :: trace, kv._2).asInstanceOf[A]
-                case _         => Lexer.error("invalid disambiguator", trace)
-              }
-            case _ => Lexer.error("expected single field object", trace)
+          def unsafeDecode(trace: List[JsonError], in: RetractReader): A = {
+            Lexer.char(trace, in, '{')
+            if (Lexer.firstField(trace, in)) {
+              val idx = Lexer.field(trace, in, matrix1)
+              if (idx >= 0) {
+                val a = tcs(idx).unsafeDecode(spans(idx) :: trace, in).asInstanceOf[A]
+                Lexer.char(trace, in, '}')
+                a
+              } else Lexer.error("invalid disambiguator", trace)
+            } else Lexer.error("expected non-empty object", trace)
           }
+
+          override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): A =
+            json match {
+              case o: Json.Obj if o.fields.length == 1 =>
+                val kv = o.fields(0)
+                namesMap.get(kv._1) match {
+                  case Some(idx) => tcs(idx).unsafeFromJsonAST(spans(idx) :: trace, kv._2).asInstanceOf[A]
+                  case _         => Lexer.error("invalid disambiguator", trace)
+                }
+              case _ => Lexer.error("expected single field object", trace)
+            }
+        }
+      } else {
+        new JsonDecoder[A] {
+          private[this] val spans = names.map(JsonError.ObjectAccess)
+
+          def unsafeDecode(trace: List[JsonError], in: RetractReader): A = {
+            Lexer.char(trace, in, '{')
+            if (Lexer.firstField(trace, in)) {
+              val idx = Lexer.field128(trace, in, matrix1, matrix2)
+              if (idx >= 0) {
+                val a = tcs(idx).unsafeDecode(spans(idx) :: trace, in).asInstanceOf[A]
+                Lexer.char(trace, in, '}')
+                a
+              } else Lexer.error("invalid disambiguator", trace)
+            } else Lexer.error("expected non-empty object", trace)
+          }
+
+          override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): A =
+            json match {
+              case o: Json.Obj if o.fields.length == 1 =>
+                val kv = o.fields(0)
+                namesMap.get(kv._1) match {
+                  case Some(idx) => tcs(idx).unsafeFromJsonAST(spans(idx) :: trace, kv._2).asInstanceOf[A]
+                  case _         => Lexer.error("invalid disambiguator", trace)
+                }
+              case _ => Lexer.error("expected single field object", trace)
+            }
+        }
       }
     } else {
-      new JsonDecoder[A] {
-        private[this] val hintfield  = discrim.get
-        private[this] val hintmatrix = new StringMatrix(Array(hintfield))
-        private[this] val spans      = names.map(JsonError.Message)
+      if (names.length <= 64) {
+        new JsonDecoder[A] {
+          private[this] val hintfield  = discrim.get
+          private[this] val hintmatrix = new StringMatrix(Array(hintfield))
+          private[this] val spans      = names.map(JsonError.Message)
 
-        def unsafeDecode(trace: List[JsonError], in: RetractReader): A = {
-          val in_ = RecordingReader(in)
-          Lexer.char(trace, in_, '{')
-          if (Lexer.firstField(trace, in_)) {
-            do {
-              if (Lexer.field(trace, in_, hintmatrix) >= 0) {
-                val idx = Lexer.enumeration(trace, in_, matrix)
-                if (idx >= 0) {
-                  in_.rewind()
-                  return tcs(idx).unsafeDecode(spans(idx) :: trace, in_).asInstanceOf[A]
-                } else Lexer.error("invalid disambiguator", trace)
-              } else Lexer.skipValue(trace, in_)
-            } while (Lexer.nextField(trace, in_))
+          def unsafeDecode(trace: List[JsonError], in: RetractReader): A = {
+            val in_ = RecordingReader(in)
+            Lexer.char(trace, in_, '{')
+            if (Lexer.firstField(trace, in_)) {
+              do {
+                if (Lexer.field(trace, in_, hintmatrix) >= 0) {
+                  val idx = Lexer.enumeration(trace, in_, matrix1)
+                  if (idx >= 0) {
+                    in_.rewind()
+                    return tcs(idx).unsafeDecode(spans(idx) :: trace, in_).asInstanceOf[A]
+                  } else Lexer.error("invalid disambiguator", trace)
+                } else Lexer.skipValue(trace, in_)
+              } while (Lexer.nextField(trace, in_))
+            }
+            Lexer.error(s"missing hint '$hintfield'", trace)
           }
-          Lexer.error(s"missing hint '$hintfield'", trace)
+
+          override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): A =
+            json match {
+              case o: Json.Obj =>
+                o.fields.collectFirst {
+                  case kv if kv._1 == hintfield && kv._2.isInstanceOf[Json.Str] =>
+                    kv._2.asInstanceOf[Json.Str].value
+                } match {
+                  case Some(name) =>
+                    namesMap.get(name) match {
+                      case Some(idx) => tcs(idx).unsafeFromJsonAST(spans(idx) :: trace, json).asInstanceOf[A]
+                      case _         => Lexer.error("invalid disambiguator", trace)
+                    }
+                  case _ => Lexer.error(s"missing hint '$hintfield'", trace)
+                }
+              case _ => Lexer.error("expected object", trace)
+            }
         }
+      } else {
+        new JsonDecoder[A] {
+          private[this] val hintfield  = discrim.get
+          private[this] val hintmatrix = new StringMatrix(Array(hintfield))
+          private[this] val spans      = names.map(JsonError.Message)
 
-        override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): A =
-          json match {
-            case o: Json.Obj =>
-              o.fields.collectFirst {
-                case kv if kv._1 == hintfield && kv._2.isInstanceOf[Json.Str] =>
-                  kv._2.asInstanceOf[Json.Str].value
-              } match {
-                case Some(name) =>
-                  namesMap.get(name) match {
-                    case Some(idx) => tcs(idx).unsafeFromJsonAST(spans(idx) :: trace, json).asInstanceOf[A]
-                    case _         => Lexer.error("invalid disambiguator", trace)
-                  }
-                case _ => Lexer.error(s"missing hint '$hintfield'", trace)
-              }
-            case _ => Lexer.error("expected object", trace)
+          def unsafeDecode(trace: List[JsonError], in: RetractReader): A = {
+            val in_ = RecordingReader(in)
+            Lexer.char(trace, in_, '{')
+            if (Lexer.firstField(trace, in_)) {
+              do {
+                if (Lexer.field(trace, in_, hintmatrix) >= 0) {
+                  val idx = Lexer.enumeration128(trace, in_, matrix1, matrix2)
+                  if (idx >= 0) {
+                    in_.rewind()
+                    return tcs(idx).unsafeDecode(spans(idx) :: trace, in_).asInstanceOf[A]
+                  } else Lexer.error("invalid disambiguator", trace)
+                } else Lexer.skipValue(trace, in_)
+              } while (Lexer.nextField(trace, in_))
+            }
+            Lexer.error(s"missing hint '$hintfield'", trace)
           }
+
+          override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): A =
+            json match {
+              case o: Json.Obj =>
+                o.fields.collectFirst {
+                  case kv if kv._1 == hintfield && kv._2.isInstanceOf[Json.Str] =>
+                    kv._2.asInstanceOf[Json.Str].value
+                } match {
+                  case Some(name) =>
+                    namesMap.get(name) match {
+                      case Some(idx) => tcs(idx).unsafeFromJsonAST(spans(idx) :: trace, json).asInstanceOf[A]
+                      case _         => Lexer.error("invalid disambiguator", trace)
+                    }
+                  case _ => Lexer.error(s"missing hint '$hintfield'", trace)
+                }
+              case _ => Lexer.error("expected object", trace)
+            }
+        }
       }
     }
   }

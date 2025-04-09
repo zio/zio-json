@@ -399,6 +399,11 @@ object DecoderSpec extends ZIOSpecDefault {
           assert("""{"hint":"Child2"}""".fromJson[Parent])(isLeft(equalTo("(invalid disambiguator)"))) &&
           assert("""{"child1":{}}""".fromJson[Parent])(isLeft(equalTo("(missing hint 'hint')")))
         },
+        test("sum more than 64 cases") {
+          import example100cases._
+
+          assert(""""B100"""".fromJson[A])(isRight(equalTo(A.B100)))
+        },
         test("sum with duplicated case names") {
           for {
             error <- ZIO.attempt {
@@ -1252,5 +1257,117 @@ object DecoderSpec extends ZIOSpecDefault {
 
   object Message {
     implicit val decoder: JsonDecoder[Message] = DeriveJsonDecoder.gen[Message]
+  }
+
+  object example100cases {
+    implicit val config: JsonCodecConfiguration =
+      JsonCodecConfiguration(enumValuesAsStrings = true)
+
+    sealed trait A extends Product with Serializable
+
+    object A {
+      case object B1   extends A
+      case object B2   extends A
+      case object B3   extends A
+      case object B4   extends A
+      case object B5   extends A
+      case object B6   extends A
+      case object B7   extends A
+      case object B8   extends A
+      case object B9   extends A
+      case object B10  extends A
+      case object B11  extends A
+      case object B12  extends A
+      case object B13  extends A
+      case object B14  extends A
+      case object B15  extends A
+      case object B16  extends A
+      case object B17  extends A
+      case object B18  extends A
+      case object B19  extends A
+      case object B20  extends A
+      case object B21  extends A
+      case object B22  extends A
+      case object B23  extends A
+      case object B24  extends A
+      case object B25  extends A
+      case object B26  extends A
+      case object B27  extends A
+      case object B28  extends A
+      case object B29  extends A
+      case object B30  extends A
+      case object B31  extends A
+      case object B32  extends A
+      case object B33  extends A
+      case object B34  extends A
+      case object B35  extends A
+      case object B36  extends A
+      case object B37  extends A
+      case object B38  extends A
+      case object B39  extends A
+      case object B40  extends A
+      case object B41  extends A
+      case object B42  extends A
+      case object B43  extends A
+      case object B44  extends A
+      case object B45  extends A
+      case object B46  extends A
+      case object B47  extends A
+      case object B48  extends A
+      case object B49  extends A
+      case object B50  extends A
+      case object B51  extends A
+      case object B52  extends A
+      case object B53  extends A
+      case object B54  extends A
+      case object B55  extends A
+      case object B56  extends A
+      case object B57  extends A
+      case object B58  extends A
+      case object B59  extends A
+      case object B60  extends A
+      case object B61  extends A
+      case object B62  extends A
+      case object B63  extends A
+      case object B64  extends A
+      case object B65  extends A
+      case object B66  extends A
+      case object B67  extends A
+      case object B68  extends A
+      case object B69  extends A
+      case object B70  extends A
+      case object B71  extends A
+      case object B72  extends A
+      case object B73  extends A
+      case object B74  extends A
+      case object B75  extends A
+      case object B76  extends A
+      case object B77  extends A
+      case object B78  extends A
+      case object B79  extends A
+      case object B80  extends A
+      case object B81  extends A
+      case object B82  extends A
+      case object B83  extends A
+      case object B84  extends A
+      case object B85  extends A
+      case object B86  extends A
+      case object B87  extends A
+      case object B88  extends A
+      case object B89  extends A
+      case object B90  extends A
+      case object B91  extends A
+      case object B92  extends A
+      case object B93  extends A
+      case object B94  extends A
+      case object B95  extends A
+      case object B96  extends A
+      case object B97  extends A
+      case object B98  extends A
+      case object B99  extends A
+      case object B100 extends A
+
+      implicit val codec: JsonCodec[A] = DeriveJsonCodec.gen[A]
+    }
   }
 }
