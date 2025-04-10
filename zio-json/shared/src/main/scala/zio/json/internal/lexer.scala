@@ -109,7 +109,9 @@ object Lexer {
       bs2 = matrix2.update(bs2, i, c)
       i += 1
     }
-    matrix1.first(matrix1.exact(bs1, i)) & (matrix2.first(matrix2.exact(bs2, i)) | 64)
+    var idx = matrix1.first(matrix1.exact(bs1, i))
+    if (idx < 0) idx = matrix2.first(matrix2.exact(bs2, i)) + matrix1.namesLen
+    idx
   }
 
   @inline def field128(trace: List[JsonError], in: OneCharReader, matrix1: StringMatrix, matrix2: StringMatrix): Int = {
@@ -1856,27 +1858,22 @@ object Lexer {
 // A data structure encoding a simple algorithm for Trie pruning: Given a list
 // of strings, and a sequence of incoming characters, find the strings that
 // match, by manually maintaining a bitset. Empty strings are not allowed.
-final class StringMatrix(xs: Array[String], aliases: Array[(String, Int)] = Array.empty) {
-  require(xs.nonEmpty)
-
-  private[this] val width: Int = xs.length + aliases.length
-
-  require(width <= 64)
-
-  val initial: Long = -1L >>> (64 - width)
-
+final class StringMatrix(names: Array[String], aliases: Array[(String, Int)] = Array.empty) {
+  val namesLen: Int            = names.length
+  private[this] val width: Int = namesLen + aliases.length
+  val initial: Long            = -1L >>> (64 - width)
   private[this] val lengths: Array[Int] = {
+    require(namesLen > 0 && width <= 64)
     val ls     = new Array[Int](width)
-    val xsLen  = xs.length
     var string = 0
-    while (string < xsLen) {
-      val l = xs(string).length
+    while (string < namesLen) {
+      val l = names(string).length
       if (l == 0) require(false)
       ls(string) = l
       string += 1
     }
     while (string < ls.length) {
-      val l = aliases(string - xsLen)._1.length
+      val l = aliases(string - namesLen)._1.length
       if (l == 0) require(false)
       ls(string) = l
       string += 1
@@ -1887,12 +1884,11 @@ final class StringMatrix(xs: Array[String], aliases: Array[(String, Int)] = Arra
   private[this] val matrix: Array[Char] = {
     val w      = width
     val m      = new Array[Char](height * w)
-    val xsLen  = xs.length
     var string = 0
     while (string < w) {
       val s =
-        if (string < xsLen) xs(string)
-        else aliases(string - xsLen)._1
+        if (string < namesLen) names(string)
+        else aliases(string - namesLen)._1
       val len        = s.length
       var char, base = 0
       while (char < len) {
@@ -1906,15 +1902,14 @@ final class StringMatrix(xs: Array[String], aliases: Array[(String, Int)] = Arra
   }
   private[this] val resolvers: Array[Byte] = {
     val rs     = new Array[Byte](width)
-    val xsLen  = xs.length
     var string = 0
-    while (string < xsLen) {
+    while (string < namesLen) {
       rs(string) = string.toByte
       string += 1
     }
     while (string < rs.length) {
-      val x = aliases(string - xsLen)._2
-      if (x < 0 || x > xsLen) require(false)
+      val x = aliases(string - namesLen)._2
+      if (x < 0 || x > namesLen) require(false)
       rs(string) = x.toByte
       string += 1
     }
