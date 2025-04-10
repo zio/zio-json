@@ -399,7 +399,7 @@ object DecoderSpec extends ZIOSpecDefault {
           assert("""{"hint":"Child2"}""".fromJson[Parent])(isLeft(equalTo("(invalid disambiguator)"))) &&
           assert("""{"child1":{}}""".fromJson[Parent])(isLeft(equalTo("(missing hint 'hint')")))
         },
-        test("sum more than 64 cases") {
+        test("sum with more than 64 cases") {
           import example100cases._
 
           assert(""""B100"""".fromJson[A])(isRight(equalTo(A.B100)))
@@ -923,6 +923,13 @@ object DecoderSpec extends ZIOSpecDefault {
           assert(Json.Obj().as[DefaultString])(isRight(equalTo(DefaultString("")))) &&
           assert(Json.Obj("s" -> Json.Null).as[DefaultString])(isRight(equalTo(DefaultString(""))))
         },
+        test("product with more than 64 fields") {
+          import example100fields._
+
+          assert("""{"f01":1,"F60":60,"f70":70,"f109":100}""".fromJson[A])(
+            isRight(equalTo(A(f01 = Some(1), f60 = Some(60), f70 = Some(70), f100 = Some(100))))
+          )
+        },
         test("dynamic default value") {
           case class DefaultDynamic(
             randomNumber: Double = scala.math.random(),
@@ -1369,5 +1376,112 @@ object DecoderSpec extends ZIOSpecDefault {
 
       implicit val codec: JsonCodec[A] = DeriveJsonCodec.gen[A]
     }
+  }
+
+  object example100fields {
+    case class A(
+      f01: Option[Int] = None,
+      f02: Option[Int] = None,
+      f03: Option[Int] = None,
+      f04: Option[Int] = None,
+      f05: Option[Int] = None,
+      f06: Option[Int] = None,
+      f07: Option[Int] = None,
+      f08: Option[Int] = None,
+      f09: Option[Int] = None,
+      f10: Option[Int] = None,
+      f11: Option[Int] = None,
+      f12: Option[Int] = None,
+      f13: Option[Int] = None,
+      f14: Option[Int] = None,
+      f15: Option[Int] = None,
+      f16: Option[Int] = None,
+      f17: Option[Int] = None,
+      f18: Option[Int] = None,
+      f19: Option[Int] = None,
+      f20: Option[Int] = None,
+      f21: Option[Int] = None,
+      f22: Option[Int] = None,
+      f23: Option[Int] = None,
+      f24: Option[Int] = None,
+      f25: Option[Int] = None,
+      f26: Option[Int] = None,
+      f27: Option[Int] = None,
+      f28: Option[Int] = None,
+      f29: Option[Int] = None,
+      f30: Option[Int] = None,
+      f31: Option[Int] = None,
+      f32: Option[Int] = None,
+      f33: Option[Int] = None,
+      f34: Option[Int] = None,
+      f35: Option[Int] = None,
+      f36: Option[Int] = None,
+      f37: Option[Int] = None,
+      f38: Option[Int] = None,
+      f39: Option[Int] = None,
+      f40: Option[Int] = None,
+      f41: Option[Int] = None,
+      f42: Option[Int] = None,
+      f43: Option[Int] = None,
+      f44: Option[Int] = None,
+      f45: Option[Int] = None,
+      f46: Option[Int] = None,
+      f47: Option[Int] = None,
+      f48: Option[Int] = None,
+      f49: Option[Int] = None,
+      f50: Option[Int] = None,
+      f51: Option[Int] = None,
+      f52: Option[Int] = None,
+      f53: Option[Int] = None,
+      f54: Option[Int] = None,
+      f55: Option[Int] = None,
+      f56: Option[Int] = None,
+      f57: Option[Int] = None,
+      f58: Option[Int] = None,
+      f59: Option[Int] = None,
+      @jsonAliases("f_60", "f-60", "F60", "_f60") f60: Option[Int] = None,
+      f61: Option[Int] = None,
+      f62: Option[Int] = None,
+      f63: Option[Int] = None,
+      f64: Option[Int] = None,
+      f65: Option[Int] = None,
+      f66: Option[Int] = None,
+      f67: Option[Int] = None,
+      f68: Option[Int] = None,
+      f69: Option[Int] = None,
+      f70: Option[Int] = None,
+      f71: Option[Int] = None,
+      f72: Option[Int] = None,
+      f73: Option[Int] = None,
+      f74: Option[Int] = None,
+      f75: Option[Int] = None,
+      f76: Option[Int] = None,
+      f77: Option[Int] = None,
+      f78: Option[Int] = None,
+      f79: Option[Int] = None,
+      f80: Option[Int] = None,
+      f81: Option[Int] = None,
+      f82: Option[Int] = None,
+      f83: Option[Int] = None,
+      f84: Option[Int] = None,
+      f85: Option[Int] = None,
+      f86: Option[Int] = None,
+      f87: Option[Int] = None,
+      f88: Option[Int] = None,
+      f89: Option[Int] = None,
+      f90: Option[Int] = None,
+      f91: Option[Int] = None,
+      f92: Option[Int] = None,
+      f93: Option[Int] = None,
+      f94: Option[Int] = None,
+      f95: Option[Int] = None,
+      f96: Option[Int] = None,
+      f97: Option[Int] = None,
+      f98: Option[Int] = None,
+      f99: Option[Int] = None,
+      @jsonAliases("f101", "f102", "f103", "f104", "f105", "f106", "f107", "f108", "f109") f100: Option[Int] = None
+    )
+
+    implicit val codec: JsonCodec[A] = DeriveJsonCodec.gen[A]
   }
 }

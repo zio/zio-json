@@ -5,8 +5,8 @@ import zio.Chunk
 import zio.json.JsonDecoder.JsonError
 import zio.json.ast.Json
 import zio.json.internal.{ FieldEncoder, Lexer, RecordingReader, RetractReader, StringMatrix, Write }
-
 import scala.annotation._
+import scala.collection.mutable.ArrayBuffer
 import scala.language.experimental.macros
 
 /**
@@ -226,9 +226,10 @@ object DeriveJsonDecoder {
     }.isDefined || !config.allowExtraFields
     if (ctx.parameters.isEmpty) new CaseObjectDecoder(ctx, no_extra)
     else {
+      var splitIndex = -1
       val (names, aliases): (Array[String], Array[(String, Int)]) = {
         val names          = new Array[String](ctx.parameters.size)
-        val aliasesBuilder = Array.newBuilder[(String, Int)]
+        val aliasesBuilder = new ArrayBuffer[(String, Int)]
         ctx.parameters.foreach {
           var idx = 0
           p =>
@@ -238,8 +239,9 @@ object DeriveJsonDecoder {
               case _                                => Seq.empty
             }
             idx += 1
+            if (splitIndex < 0 && idx + aliasesBuilder.length > 64) splitIndex = idx - 1
         }
-        val aliases       = aliasesBuilder.result()
+        val aliases       = aliasesBuilder.toArray
         val allFieldNames = names ++ aliases.map(_._1)
         if (allFieldNames.length != allFieldNames.distinct.length) {
           val aliasNames = aliases.map(_._1)
@@ -252,129 +254,263 @@ object DeriveJsonDecoder {
         }
         (names, aliases)
       }
-      new CollectionJsonDecoder[A] {
-        private[this] val len           = names.length
-        private[this] val matrix        = new StringMatrix(names, aliases)
-        private[this] val spans         = names.map(JsonError.ObjectAccess)
-        private[this] val defaults      = ctx.parameters.map(_.evaluateDefault.orNull).toArray
-        private[this] lazy val tcs      = ctx.parameters.map(_.typeclass).toArray.asInstanceOf[Array[JsonDecoder[Any]]]
-        private[this] lazy val namesMap = (names.zipWithIndex ++ aliases).toMap
-        private[this] val explicitEmptyCollections =
-          ctx.annotations.collectFirst { case a: jsonExplicitEmptyCollections =>
-            a.decoding
-          }.getOrElse(config.explicitEmptyCollections.decoding)
-        private[this] val missingValueDecoder =
-          if (explicitEmptyCollections) {
-            lazy val missingValueDecoders = tcs.map { d =>
-              if (allowMissingValueDecoder(d)) d
-              else null
+      if (splitIndex < 0) {
+        new CollectionJsonDecoder[A] {
+          private[this] val len           = names.length
+          private[this] val matrix        = new StringMatrix(names, aliases)
+          private[this] val spans         = names.map(JsonError.ObjectAccess)
+          private[this] val defaults      = ctx.parameters.map(_.evaluateDefault.orNull).toArray
+          private[this] lazy val tcs      = ctx.parameters.map(_.typeclass).toArray.asInstanceOf[Array[JsonDecoder[Any]]]
+          private[this] lazy val namesMap = (names.zipWithIndex ++ aliases).toMap
+          private[this] val explicitEmptyCollections =
+            ctx.annotations.collectFirst { case a: jsonExplicitEmptyCollections =>
+              a.decoding
+            }.getOrElse(config.explicitEmptyCollections.decoding)
+          private[this] val missingValueDecoder =
+            if (explicitEmptyCollections) {
+              lazy val missingValueDecoders = tcs.map { d =>
+                if (allowMissingValueDecoder(d)) d
+                else null
+              }
+              (idx: Int, trace: List[JsonError]) => {
+                val trace_  = spans(idx) :: trace
+                val decoder = missingValueDecoders(idx)
+                if (decoder eq null) Lexer.error("missing", trace_)
+                decoder.unsafeDecodeMissing(trace_)
+              }
+            } else { (idx: Int, trace: List[JsonError]) =>
+              tcs(idx).unsafeDecodeMissing(spans(idx) :: trace)
             }
-            (idx: Int, trace: List[JsonError]) => {
-              val trace_  = spans(idx) :: trace
-              val decoder = missingValueDecoders(idx)
-              if (decoder eq null) Lexer.error("missing", trace_)
-              decoder.unsafeDecodeMissing(trace_)
-            }
-          } else { (idx: Int, trace: List[JsonError]) =>
-            tcs(idx).unsafeDecodeMissing(spans(idx) :: trace)
+
+          @tailrec
+          private[this] def allowMissingValueDecoder(d: JsonDecoder[_]): Boolean = d match {
+            case _: OptionJsonDecoder[_]     => true
+            case _: CollectionJsonDecoder[_] => !explicitEmptyCollections
+            case d: MappedJsonDecoder[_]     => allowMissingValueDecoder(d.underlying)
+            case _                           => true
           }
 
-        @tailrec
-        private[this] def allowMissingValueDecoder(d: JsonDecoder[_]): Boolean = d match {
-          case _: OptionJsonDecoder[_]     => true
-          case _: CollectionJsonDecoder[_] => !explicitEmptyCollections
-          case d: MappedJsonDecoder[_]     => allowMissingValueDecoder(d.underlying)
-          case _                           => true
-        }
-
-        override def unsafeDecodeMissing(trace: List[JsonError]): A = {
-          val ps  = new Array[Any](len)
-          var idx = 0
-          while (idx < len) {
-            if (ps(idx) == null) {
-              val default = defaults(idx)
-              ps(idx) =
-                if (default ne null) default()
-                else missingValueDecoder(idx, trace)
+          override def unsafeDecodeMissing(trace: List[JsonError]): A = {
+            val ps  = new Array[Any](len)
+            var idx = 0
+            while (idx < len) {
+              if (ps(idx) == null) {
+                val default = defaults(idx)
+                ps(idx) =
+                  if (default ne null) default()
+                  else missingValueDecoder(idx, trace)
+              }
+              idx += 1
             }
-            idx += 1
+            ctx.rawConstruct(new ArraySeq(ps))
           }
-          ctx.rawConstruct(new ArraySeq(ps))
-        }
 
-        override def unsafeDecode(trace: List[JsonError], in: RetractReader): A = {
-          Lexer.char(trace, in, '{')
+          override def unsafeDecode(trace: List[JsonError], in: RetractReader): A = {
+            Lexer.char(trace, in, '{')
 
-          // TODO it would be more efficient to have a solution that didn't box
-          // primitives, but Magnolia does not ealiasesxpose an API for that. Adding
-          // such a feature to Magnolia is the only way to avoid this, e.g. a
-          // ctx.createMutableCons that specialises on the types (with some way
-          // of noting that things have been initialised), which can be called
-          // to instantiate the case class. Would also require JsonDecoder to be
-          // specialised.
-          val ps = new Array[Any](len)
-          if (Lexer.firstField(trace, in)) {
-            do {
-              val idx = Lexer.field(trace, in, matrix)
-              if (idx >= 0) {
-                if (ps(idx) == null) {
-                  val default = defaults(idx)
-                  ps(idx) =
-                    if (
-                      (default eq null) || in.nextNonWhitespace() != 'n' && {
-                        in.retract()
-                        true
-                      }
-                    ) tcs(idx).unsafeDecode(spans(idx) :: trace, in)
-                    else if (in.readChar() == 'u' && in.readChar() == 'l' && in.readChar() == 'l') default()
-                    else Lexer.error("expected 'null'", spans(idx) :: trace)
-                } else Lexer.error("duplicate", trace)
-              } else if (no_extra) Lexer.error("invalid extra field", trace)
-              else Lexer.skipValue(trace, in)
-            } while (Lexer.nextField(trace, in))
-          }
-          var idx = 0
-          while (idx < len) {
-            if (ps(idx) == null) {
-              val default = defaults(idx)
-              ps(idx) =
-                if (default ne null) default()
-                else missingValueDecoder(idx, trace)
-            }
-            idx += 1
-          }
-          ctx.rawConstruct(new ArraySeq(ps))
-        }
-
-        override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): A =
-          json match {
-            case o: Json.Obj =>
-              val ps = new Array[Any](len)
-              o.fields.foreach { kv =>
-                namesMap.get(kv._1) match {
-                  case Some(idx) =>
-                    if (ps(idx) != null) Lexer.error("duplicate", trace)
+            // TODO it would be more efficient to have a solution that didn't box
+            // primitives, but Magnolia does not ealiasesxpose an API for that. Adding
+            // such a feature to Magnolia is the only way to avoid this, e.g. a
+            // ctx.createMutableCons that specialises on the types (with some way
+            // of noting that things have been initialised), which can be called
+            // to instantiate the case class. Would also require JsonDecoder to be
+            // specialised.
+            val ps = new Array[Any](len)
+            if (Lexer.firstField(trace, in)) {
+              do {
+                val idx = Lexer.field(trace, in, matrix)
+                if (idx >= 0) {
+                  if (ps(idx) == null) {
                     val default = defaults(idx)
                     ps(idx) =
-                      if ((default ne null) && (kv._2 eq Json.Null)) default()
-                      else tcs(idx).unsafeFromJsonAST(spans(idx) :: trace, kv._2)
-                  case _ =>
-                    if (no_extra) Lexer.error("invalid extra field", trace)
-                }
+                      if (
+                        (default eq null) || in.nextNonWhitespace() != 'n' && {
+                          in.retract()
+                          true
+                        }
+                      ) tcs(idx).unsafeDecode(spans(idx) :: trace, in)
+                      else if (in.readChar() == 'u' && in.readChar() == 'l' && in.readChar() == 'l') default()
+                      else Lexer.error("expected 'null'", spans(idx) :: trace)
+                  } else Lexer.error("duplicate", trace)
+                } else if (no_extra) Lexer.error("invalid extra field", trace)
+                else Lexer.skipValue(trace, in)
+              } while (Lexer.nextField(trace, in))
+            }
+            var idx = 0
+            while (idx < len) {
+              if (ps(idx) == null) {
+                val default = defaults(idx)
+                ps(idx) =
+                  if (default ne null) default()
+                  else missingValueDecoder(idx, trace)
               }
-              var idx = 0
-              while (idx < len) {
-                if (ps(idx) == null) {
-                  val default = defaults(idx)
-                  ps(idx) =
-                    if (default ne null) default()
-                    else missingValueDecoder(idx, trace)
-                }
-                idx += 1
-              }
-              ctx.rawConstruct(new ArraySeq(ps))
-            case _ => Lexer.error("expected object", trace)
+              idx += 1
+            }
+            ctx.rawConstruct(new ArraySeq(ps))
           }
+
+          override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): A =
+            json match {
+              case o: Json.Obj =>
+                val ps = new Array[Any](len)
+                o.fields.foreach { kv =>
+                  namesMap.get(kv._1) match {
+                    case Some(idx) =>
+                      if (ps(idx) != null) Lexer.error("duplicate", trace)
+                      val default = defaults(idx)
+                      ps(idx) =
+                        if ((default ne null) && (kv._2 eq Json.Null)) default()
+                        else tcs(idx).unsafeFromJsonAST(spans(idx) :: trace, kv._2)
+                    case _ =>
+                      if (no_extra) Lexer.error("invalid extra field", trace)
+                  }
+                }
+                var idx = 0
+                while (idx < len) {
+                  if (ps(idx) == null) {
+                    val default = defaults(idx)
+                    ps(idx) =
+                      if (default ne null) default()
+                      else missingValueDecoder(idx, trace)
+                  }
+                  idx += 1
+                }
+                ctx.rawConstruct(new ArraySeq(ps))
+              case _ => Lexer.error("expected object", trace)
+            }
+        }
+      } else {
+        val (names1, names2) = names.splitAt(splitIndex)
+        val aliases1         = aliases.filter(kv => kv._2 <= splitIndex)
+        val aliases2 = aliases.collect {
+          case (k, v) if v > splitIndex =>
+            (k, v - splitIndex)
+        }
+        new CollectionJsonDecoder[A] {
+          private[this] val len           = names.length
+          private[this] val matrix1       = new StringMatrix(names1, aliases1)
+          private[this] val matrix2       = new StringMatrix(names2, aliases2)
+          private[this] val spans         = names.map(JsonError.ObjectAccess)
+          private[this] val defaults      = ctx.parameters.map(_.evaluateDefault.orNull).toArray
+          private[this] lazy val tcs      = ctx.parameters.map(_.typeclass).toArray.asInstanceOf[Array[JsonDecoder[Any]]]
+          private[this] lazy val namesMap = (names.zipWithIndex ++ aliases).toMap
+          private[this] val explicitEmptyCollections =
+            ctx.annotations.collectFirst { case a: jsonExplicitEmptyCollections =>
+              a.decoding
+            }.getOrElse(config.explicitEmptyCollections.decoding)
+          private[this] val missingValueDecoder =
+            if (explicitEmptyCollections) {
+              lazy val missingValueDecoders = tcs.map { d =>
+                if (allowMissingValueDecoder(d)) d
+                else null
+              }
+              (idx: Int, trace: List[JsonError]) => {
+                val trace_  = spans(idx) :: trace
+                val decoder = missingValueDecoders(idx)
+                if (decoder eq null) Lexer.error("missing", trace_)
+                decoder.unsafeDecodeMissing(trace_)
+              }
+            } else { (idx: Int, trace: List[JsonError]) =>
+              tcs(idx).unsafeDecodeMissing(spans(idx) :: trace)
+            }
+
+          @tailrec
+          private[this] def allowMissingValueDecoder(d: JsonDecoder[_]): Boolean = d match {
+            case _: OptionJsonDecoder[_]     => true
+            case _: CollectionJsonDecoder[_] => !explicitEmptyCollections
+            case d: MappedJsonDecoder[_]     => allowMissingValueDecoder(d.underlying)
+            case _                           => true
+          }
+
+          override def unsafeDecodeMissing(trace: List[JsonError]): A = {
+            val ps  = new Array[Any](len)
+            var idx = 0
+            while (idx < len) {
+              if (ps(idx) == null) {
+                val default = defaults(idx)
+                ps(idx) =
+                  if (default ne null) default()
+                  else missingValueDecoder(idx, trace)
+              }
+              idx += 1
+            }
+            ctx.rawConstruct(new ArraySeq(ps))
+          }
+
+          override def unsafeDecode(trace: List[JsonError], in: RetractReader): A = {
+            Lexer.char(trace, in, '{')
+
+            // TODO it would be more efficient to have a solution that didn't box
+            // primitives, but Magnolia does not ealiasesxpose an API for that. Adding
+            // such a feature to Magnolia is the only way to avoid this, e.g. a
+            // ctx.createMutableCons that specialises on the types (with some way
+            // of noting that things have been initialised), which can be called
+            // to instantiate the case class. Would also require JsonDecoder to be
+            // specialised.
+            val ps = new Array[Any](len)
+            if (Lexer.firstField(trace, in)) {
+              do {
+                val idx = Lexer.field128(trace, in, matrix1, matrix2)
+                if (idx >= 0) {
+                  if (ps(idx) == null) {
+                    val default = defaults(idx)
+                    ps(idx) =
+                      if (
+                        (default eq null) || in.nextNonWhitespace() != 'n' && {
+                          in.retract()
+                          true
+                        }
+                      ) tcs(idx).unsafeDecode(spans(idx) :: trace, in)
+                      else if (in.readChar() == 'u' && in.readChar() == 'l' && in.readChar() == 'l') default()
+                      else Lexer.error("expected 'null'", spans(idx) :: trace)
+                  } else Lexer.error("duplicate", trace)
+                } else if (no_extra) Lexer.error("invalid extra field", trace)
+                else Lexer.skipValue(trace, in)
+              } while (Lexer.nextField(trace, in))
+            }
+            var idx = 0
+            while (idx < len) {
+              if (ps(idx) == null) {
+                val default = defaults(idx)
+                ps(idx) =
+                  if (default ne null) default()
+                  else missingValueDecoder(idx, trace)
+              }
+              idx += 1
+            }
+            ctx.rawConstruct(new ArraySeq(ps))
+          }
+
+          override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): A =
+            json match {
+              case o: Json.Obj =>
+                val ps = new Array[Any](len)
+                o.fields.foreach { kv =>
+                  namesMap.get(kv._1) match {
+                    case Some(idx) =>
+                      if (ps(idx) != null) Lexer.error("duplicate", trace)
+                      val default = defaults(idx)
+                      ps(idx) =
+                        if ((default ne null) && (kv._2 eq Json.Null)) default()
+                        else tcs(idx).unsafeFromJsonAST(spans(idx) :: trace, kv._2)
+                    case _ =>
+                      if (no_extra) Lexer.error("invalid extra field", trace)
+                  }
+                }
+                var idx = 0
+                while (idx < len) {
+                  if (ps(idx) == null) {
+                    val default = defaults(idx)
+                    ps(idx) =
+                      if (default ne null) default()
+                      else missingValueDecoder(idx, trace)
+                  }
+                  idx += 1
+                }
+                ctx.rawConstruct(new ArraySeq(ps))
+              case _ => Lexer.error("expected object", trace)
+            }
+        }
       }
     }
   }
