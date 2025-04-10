@@ -110,7 +110,10 @@ object Lexer {
       i += 1
     }
     var idx = matrix1.first(matrix1.exact(bs1, i))
-    if (idx < 0) idx = matrix2.first(matrix2.exact(bs2, i)) + matrix1.namesLen
+    if (idx < 0) {
+      idx = matrix2.first(matrix2.exact(bs2, i))
+      if (idx >= 0) idx += matrix1.namesLen
+    }
     idx
   }
 

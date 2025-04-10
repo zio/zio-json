@@ -926,7 +926,7 @@ object DecoderSpec extends ZIOSpecDefault {
         test("product with more than 64 fields") {
           import example100fields._
 
-          assert("""{"f01":1,"F60":60,"f70":70,"f109":100}""".fromJson[A])(
+          assert("""{"f01":1,"F60":60,"f70":70,"f109":100,"f129":129}""".fromJson[A])(
             isRight(equalTo(A(f01 = Some(1), f60 = Some(60), f70 = Some(70), f100 = Some(100))))
           )
         },
