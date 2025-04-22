@@ -15,7 +15,7 @@ The goal of this project is to create the best all-round JSON library for Scala:
 - **Performance** to handle more requests per second than the incumbents, i.e. reduced operational costs.
 - **Security** to mitigate against adversarial JSON payloads that threaten the capacity of the server.
 - **Fast Compilation** no shapeless, no type astronautics.
-- **Future-Proof**, prepared for Scala 3 and next-generation Java.
+- **Future-Proof**, prepared for Scala 3 and runs on JDK 11+ JVMs.
 - **Simple** small codebase, concise documentation that covers everything.
 - **Helpful errors** are readable by humans and machines.
 - **ZIO Integration** so nothing more is required.
@@ -25,7 +25,7 @@ The goal of this project is to create the best all-round JSON library for Scala:
 In order to use this library, we need to add the following line in our `build.sbt` file:
 
 ```scala
-libraryDependencies += "dev.zio" %% "zio-json" % "0.6.2"
+libraryDependencies += "dev.zio" %% "zio-json" % "0.7.42"
 ```
 
 ## Example
@@ -58,8 +58,6 @@ object Banana {
 }
 ```
 
-_Note: If you’re using Scala 3 and your case class is defining default parameters, `-Yretain-trees` needs to be added to `scalacOptions`._
-
 Now we can parse JSON into our object
 
 ```
@@ -88,7 +86,7 @@ val res: String =
 And bad JSON will produce an error in `jq` syntax with an additional piece of contextual information (in parentheses)
 
 ```
-scala> """{"curvature": womp}""".fromJson[Banana]
+scala> """{"curvature": true}""".fromJson[Banana]
 val res: Either[String, Banana] = Left(.curvature(expected a Double))
 ```
 
@@ -121,35 +119,9 @@ val res: Either[String, Fruit] = Right(Apple(false))
 
 Almost all of the standard library data types are supported as fields on the case class, and it is easy to add support if one is missing.
 
-```scala
-import zio.json._
-
-sealed trait Fruit                   extends Product with Serializable
-case class Banana(curvature: Double) extends Fruit
-case class Apple(poison: Boolean)    extends Fruit
-
-object Fruit {
-  implicit val decoder: JsonDecoder[Fruit] =
-    DeriveJsonDecoder.gen[Fruit]
-
-  implicit val encoder: JsonEncoder[Fruit] =
-    DeriveJsonEncoder.gen[Fruit]
-}
-
-val json1         = """{ "Banana":{ "curvature":0.5 }}"""
-val json2         = """{ "Apple": { "poison": false }}"""
-val malformedJson = """{ "Banana":{ "curvature": true }}"""
-
-json1.fromJson[Fruit]
-json2.fromJson[Fruit]
-malformedJson.fromJson[Fruit]
-
-List(Apple(false), Banana(0.4)).toJsonPretty
-```
-
 # How
 
-Extreme **performance** is achieved by decoding JSON directly from the input source into business objects (inspired by [plokhotnyuk](https://github.com/plokhotnyuk/jsoniter-scala)). Although not a requirement, the latest advances in [Java Loom](https://wiki.openjdk.java.net/display/loom/Main) can be used to support arbitrarily large payloads with near-zero overhead.
+High **performance** is achieved by decoding JSON directly from the input source into business objects. See benchmark results of throughput and allocation rate for synthetic and real-world message samples in comparison with other JSON parsers [here](https://plokhotnyuk.github.io/jsoniter-scala/).
 
 Best in class **security** is achieved with an aggressive *early exit* strategy that avoids costly stack traces, even when parsing malformed numbers. Malicious (and badly formed) payloads are rejected before finishing reading.
 
