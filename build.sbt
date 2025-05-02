@@ -86,7 +86,7 @@ lazy val zioJsonRoot = project
     zioJsonGolden
   )
 
-val circeVersion = "0.14.12"
+val circeVersion = "0.14.13"
 
 lazy val zioJson = crossProject(JSPlatform, JVMPlatform, NativePlatform)
   .in(file("zio-json"))
