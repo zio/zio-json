@@ -254,13 +254,15 @@ sealed class JsonDecoderDerivation(config: JsonCodecConfiguration) extends Deriv
         val aliases = aliasesBuilder.result()
         val allFieldNames = names ++ aliases.map(_._1)
         if (allFieldNames.length != allFieldNames.distinct.length) {
-          val aliasNames = aliases.map(_._1)
-          val collisions = aliasNames
-            .filter(alias => names.contains(alias) || aliases.count { case (a, _) => a == alias } > 1)
+          val typeName = ctx.typeInfo.full
+          val collisions = aliases
+            .map(_._1)
             .distinct
-          val msg = s"Field names and aliases in case class ${ctx.typeInfo.full} must be distinct, " +
-            s"alias(es) ${collisions.mkString(",")} collide with a field or another alias"
-          throw new AssertionError(msg)
+            .filter(alias => names.contains(alias) || aliases.count(_._1 == alias) > 1)
+            .mkString(",")
+          throw new AssertionError(
+            s"Field names and aliases in case class $typeName must be distinct, alias(es) $collisions collide with a field or another alias"
+          )
         }
         (names, aliases)
       }
@@ -513,9 +515,9 @@ sealed class JsonDecoderDerivation(config: JsonCodecConfiguration) extends Deriv
       p.annotations.collectFirst { case jsonHint(name) => name }.getOrElse(jsonHintFormat(p.typeInfo.short))
     }).toArray
     if (names.distinct.length != names.length) {
-      val collisions = names.groupBy(identity).collect { case (n, ns) if ns.lengthCompare(1) > 0 => n }
-      throw new AssertionError(s"Case names in ADT ${ctx.typeInfo.full} must be distinct, " +
-        s"name(s) ${collisions.mkString(",")} are duplicated")
+      val typeName = ctx.typeInfo.full
+      val collisions = names.groupBy(identity).collect { case (n, ns) if ns.lengthCompare(1) > 0 => n }.mkString(",")
+      throw new AssertionError(s"Case names in ADT $typeName must be distinct, name(s) $collisions are duplicated")
     }
     val (names1, names2) = names.splitAt(64)
     val matrix1 = new StringMatrix(names1)

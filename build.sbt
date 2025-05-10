@@ -146,7 +146,6 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform, NativePlatform)
           .map(p => s"val a$p = A$p.unsafeFromJsonAST(traces(${p - 1}) :: trace, arr($p - 1))")
           .mkString("\n            ")
         val returns = (1 to i).map(p => s"a$p").mkString(", ")
-
         s"""implicit def tuple$i[$tparams](implicit $implicits): JsonDecoder[Tuple$i[$tparams]] =
            |    new JsonDecoder[Tuple$i[$tparams]] {
            |      private[this] val traces: Array[JsonError] = (0 to ${i - 1}).map(JsonError.ArrayAccess(_)).toArray
@@ -158,14 +157,10 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform, NativePlatform)
            |      }
            |      override def unsafeFromJsonAST(trace: List[JsonError], json: Json): Tuple$i[$tparams] = {
            |        json match {
-           |          case a: Json.Arr =>
-           |            val arr = a.elements
-           |            if (arr.length != $i) {
-           |              Lexer.error("Expected array of size $i", trace)
-           |            }
+           |          case Json.Arr(arr) if arr.length == $i =>
            |            $work2
            |            new Tuple$i($returns)
-           |          case _ => Lexer.error("Not an array", trace)
+           |          case _ => Lexer.error("Expected array of size $i", trace)
            |        }
            |      }
            |    }""".stripMargin
@@ -192,7 +187,6 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform, NativePlatform)
         val work = (1 to i)
           .map(p => s"A$p.unsafeEncode(t._$p, indent, out)")
           .mkString("\n        if (indent.isEmpty) out.write(',') else out.write(\", \")\n        ")
-
         s"""implicit def tuple$i[$tparams](implicit $implicits): JsonEncoder[Tuple$i[$tparams]] =
            |    new JsonEncoder[Tuple$i[$tparams]] {
            |      def unsafeEncode(t: Tuple$i[$tparams], indent: Option[Int], out: internal.Write): Unit = {
@@ -218,7 +212,6 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform, NativePlatform)
       val codecs = (1 to 22).map { i =>
         val tparamDecls = (1 to i).map(p => s"A$p: JsonEncoder: JsonDecoder").mkString(", ")
         val tparams     = (1 to i).map(p => s"A$p").mkString(", ")
-
         s"""implicit def tuple$i[$tparamDecls]: JsonCodec[Tuple$i[$tparams]] =
            |    JsonCodec(JsonEncoder.tuple$i, JsonDecoder.tuple$i)""".stripMargin
       }
