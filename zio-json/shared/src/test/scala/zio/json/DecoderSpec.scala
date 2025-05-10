@@ -235,10 +235,27 @@ object DecoderSpec extends ZIOSpecDefault {
           )
         },
         test("tuples") {
-          assert("""["a",3]""".fromJson[(String, Int)])(isRight(equalTo(("a", 3))))
-          assert("""["a","b"]""".fromJson[(String, Int)])(isLeft(equalTo("[1](expected an Int)")))
+          assert("""["a",3]""".fromJson[(String, Int)])(isRight(equalTo(("a", 3)))) &&
+          assert("""["a","b"]""".fromJson[(String, Int)])(isLeft(equalTo("[1](expected an Int)"))) &&
           assert("""[[0.1,0.2],[0.3,0.4],[-0.3,-]]""".fromJson[Seq[(Double, Double)]])(
             isLeft(equalTo("[2][1](expected a Double)"))
+          )
+        },
+        test("tuples - ast") {
+          val a = Json.Arr(Json.Str("a"), Json.Num(3))
+          val b = Json.Arr(Json.Str("a"), Json.Str("b"))
+          val c = Json.Arr(
+            Json.Arr(Json.Num(0.1), Json.Num(0.2)),
+            Json.Arr(Json.Num(0.3), Json.Num(0.4)),
+            Json.Arr(Json.Num(-0.3), Json.Null)
+          )
+          val d = Json.Arr(Json.Num(0.1))
+
+          assertTrue(
+            a.as[(String, Int)].is(_.right) == ("a"    -> 3),
+            b.as[(String, String)].is(_.right) == ("a" -> "b"),
+            c.as[List[(Double, Double)]].is(_.left) == """[2][1](expected a Double)""",
+            d.as[(Double, Double)].is(_.left) == "(Expected array of size 2)"
           )
         },
         test("parameterless products") {
@@ -617,6 +634,19 @@ object DecoderSpec extends ZIOSpecDefault {
           val json = """{"a": 1, "b": "foo"}"""
           assertTrue(
             json.fromJson[(Foo, Bar)] == Right((Foo(1), Bar("foo")))
+          )
+        },
+        test("bothWith - ast") {
+          final case class Foo(a: Int)
+          final case class Bar(b: String)
+
+          val fooDecoder: JsonDecoder[Foo]                       = DeriveJsonDecoder.gen
+          val barDecoder: JsonDecoder[Bar]                       = DeriveJsonDecoder.gen
+          implicit val fooAndBarDecoder: JsonDecoder[(Foo, Bar)] = fooDecoder.both(barDecoder)
+
+          val json = Json.Obj("a" -> Json.Num(1), "b" -> Json.Str("foo"))
+          assertTrue(
+            json.as[(Foo, Bar)] == Right((Foo(1), Bar("foo")))
           )
         },
         test("option custom codec") {

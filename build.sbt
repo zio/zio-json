@@ -142,6 +142,9 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform, NativePlatform)
         val work = (1 to i)
           .map(p => s"val a$p = A$p.unsafeDecode(traces(${p - 1}) :: trace, in)")
           .mkString("\n        Lexer.char(trace, in, ',')\n        ")
+        val work2 = (1 to i)
+          .map(p => s"val a$p = A$p.unsafeFromJsonAST(traces(${p - 1}) :: trace, arr($p - 1))")
+          .mkString("\n            ")
         val returns = (1 to i).map(p => s"a$p").mkString(", ")
 
         s"""implicit def tuple$i[$tparams](implicit $implicits): JsonDecoder[Tuple$i[$tparams]] =
@@ -153,6 +156,18 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform, NativePlatform)
            |        Lexer.char(trace, in, ']')
            |        new Tuple$i($returns)
            |      }
+           |      override def unsafeFromJsonAST(trace: List[JsonError], json: Json): Tuple$i[$tparams] = {
+           |        json match {
+           |          case a: Json.Arr =>
+           |            val arr = a.elements
+           |            if (arr.length != $i) {
+           |              Lexer.error("Expected array of size $i", trace)
+           |            }
+           |            $work2
+           |            new Tuple$i($returns)
+           |          case _ => Lexer.error("Not an array", trace)
+           |        }
+           |      }
            |    }""".stripMargin
       }
       IO.write(
@@ -160,6 +175,7 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform, NativePlatform)
         s"""package zio.json
            |
            |import zio.json.internal._
+           |import zio.json.ast._
            |
            |private[json] trait GeneratedTupleDecoders { this: JsonDecoder.type =>
            |  ${decoders.mkString("\n\n  ")}

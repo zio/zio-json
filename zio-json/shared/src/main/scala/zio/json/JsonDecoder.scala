@@ -74,6 +74,12 @@ trait JsonDecoder[A] extends JsonDecoderPlatformSpecific[A] {
         val b = that.unsafeDecode(trace, rr)
         f(a, b)
       }
+
+      override def unsafeFromJsonAST(trace: List[JsonError], json: Json): C = {
+        val a = self.unsafeFromJsonAST(trace, json)
+        val b = that.unsafeFromJsonAST(trace, json)
+        f(a, b)
+      }
     }
 
   /**
