@@ -16,7 +16,7 @@ import java.io.{ StringReader, StringWriter }
 import java.nio.charset.StandardCharsets
 import java.util.Base64
 import scala.jdk.CollectionConverters._
-import scala.util.Try
+import scala.util.control.NonFatal
 import scala.util.matching.Regex
 
 package object yaml {
@@ -67,12 +67,12 @@ package object yaml {
 
   implicit final class DecoderYamlOps(private val raw: String) extends AnyVal {
     def fromYaml[A](implicit decoder: JsonDecoder[A]): Either[String, A] =
-      Try {
+      try {
         val yaml = new Yaml().compose(new StringReader(raw))
-        yamlToJson(yaml)
-      }.toEither.left
-        .map(_.getMessage)
-        .flatMap(decoder.fromJsonAST(_))
+        decoder.fromJsonAST(yamlToJson(yaml))
+      } catch {
+        case NonFatal(e) => Left(e.getMessage)
+      }
   }
 
   private val multiline: Regex = "[\n\u0085\u2028\u2029]".r
