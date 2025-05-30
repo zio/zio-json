@@ -157,7 +157,7 @@ object SafeNumbers {
         exp
       }
     } else {
-      val n = calculateTenPow18SquareNumber(bitLen)
+      val n   = calculateTenPow18SquareNumber(bitLen)
       val ss1 =
         if (ss eq null) getTenPow18Squares(n)
         else ss
@@ -226,7 +226,7 @@ object SafeNumbers {
     val bitLen = x.bitLength
     if (bitLen < 64) write(x.longValue, out)
     else {
-      val n = calculateTenPow18SquareNumber(bitLen)
+      val n   = calculateTenPow18SquareNumber(bitLen)
       val ss1 =
         if (ss eq null) getTenPow18Squares(n)
         else ss

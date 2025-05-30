@@ -94,7 +94,7 @@ private[json] object jsonMemberNames {
     if (s.indexOf('_') == -1 && s.indexOf('-') == -1) {
       if (s.isEmpty) s
       else {
-        val ch = s.charAt(0)
+        val ch      = s.charAt(0)
         val fixedCh =
           if (toPascal) toUpperCase(ch)
           else toLowerCase(ch)
@@ -226,7 +226,7 @@ object DeriveJsonDecoder {
     }.isDefined || !config.allowExtraFields
     if (ctx.parameters.isEmpty) new CaseObjectDecoder(ctx, no_extra)
     else {
-      var splitIndex = -1
+      var splitIndex                                              = -1
       val (names, aliases): (Array[String], Array[(String, Int)]) = {
         val names          = new Array[String](ctx.parameters.size)
         val aliasesBuilder = new ArrayBuffer[(String, Int)]
@@ -244,7 +244,7 @@ object DeriveJsonDecoder {
         val aliases       = aliasesBuilder.toArray
         val allFieldNames = names ++ aliases.map(_._1)
         if (allFieldNames.length != allFieldNames.distinct.length) {
-          val typeName = ctx.typeName.full
+          val typeName   = ctx.typeName.full
           val collisions = aliases
             .map(_._1)
             .distinct
@@ -258,12 +258,12 @@ object DeriveJsonDecoder {
       }
       if (splitIndex < 0) {
         new CollectionJsonDecoder[A] {
-          private[this] val len           = names.length
-          private[this] val matrix        = new StringMatrix(names, aliases)
-          private[this] val spans         = names.map(JsonError.ObjectAccess)
-          private[this] val defaults      = ctx.parameters.map(_.evaluateDefault.orNull).toArray
-          private[this] lazy val tcs      = ctx.parameters.map(_.typeclass).toArray.asInstanceOf[Array[JsonDecoder[Any]]]
-          private[this] lazy val namesMap = (names.zipWithIndex ++ aliases).toMap
+          private[this] val len                      = names.length
+          private[this] val matrix                   = new StringMatrix(names, aliases)
+          private[this] val spans                    = names.map(JsonError.ObjectAccess)
+          private[this] val defaults                 = ctx.parameters.map(_.evaluateDefault.orNull).toArray
+          private[this] lazy val tcs                 = ctx.parameters.map(_.typeclass).toArray.asInstanceOf[Array[JsonDecoder[Any]]]
+          private[this] lazy val namesMap            = (names.zipWithIndex ++ aliases).toMap
           private[this] val explicitEmptyCollections =
             ctx.annotations.collectFirst { case a: jsonExplicitEmptyCollections =>
               a.decoding
@@ -384,18 +384,18 @@ object DeriveJsonDecoder {
       } else {
         val (names1, names2) = names.splitAt(splitIndex)
         val aliases1         = aliases.filter(kv => kv._2 <= splitIndex)
-        val aliases2 = aliases.collect {
+        val aliases2         = aliases.collect {
           case (k, v) if v > splitIndex =>
             (k, v - splitIndex)
         }
         new CollectionJsonDecoder[A] {
-          private[this] val len           = names.length
-          private[this] val matrix1       = new StringMatrix(names1, aliases1)
-          private[this] val matrix2       = new StringMatrix(names2, aliases2)
-          private[this] val spans         = names.map(JsonError.ObjectAccess)
-          private[this] val defaults      = ctx.parameters.map(_.evaluateDefault.orNull).toArray
-          private[this] lazy val tcs      = ctx.parameters.map(_.typeclass).toArray.asInstanceOf[Array[JsonDecoder[Any]]]
-          private[this] lazy val namesMap = (names.zipWithIndex ++ aliases).toMap
+          private[this] val len                      = names.length
+          private[this] val matrix1                  = new StringMatrix(names1, aliases1)
+          private[this] val matrix2                  = new StringMatrix(names2, aliases2)
+          private[this] val spans                    = names.map(JsonError.ObjectAccess)
+          private[this] val defaults                 = ctx.parameters.map(_.evaluateDefault.orNull).toArray
+          private[this] lazy val tcs                 = ctx.parameters.map(_.typeclass).toArray.asInstanceOf[Array[JsonDecoder[Any]]]
+          private[this] lazy val namesMap            = (names.zipWithIndex ++ aliases).toMap
           private[this] val explicitEmptyCollections =
             ctx.annotations.collectFirst { case a: jsonExplicitEmptyCollections =>
               a.decoding
@@ -530,12 +530,12 @@ object DeriveJsonDecoder {
     }
     val (names1, names2) = names.splitAt(64)
     val matrix1          = new StringMatrix(names1)
-    val matrix2 =
+    val matrix2          =
       if (names2.isEmpty) null
       else new StringMatrix(names2)
     lazy val tcs      = ctx.subtypes.map(_.typeclass).toArray.asInstanceOf[Array[JsonDecoder[Any]]]
     lazy val namesMap = names.zipWithIndex.toMap
-    val discrim =
+    val discrim       =
       ctx.annotations.collectFirst { case jsonDiscriminator(n) => n }.orElse(config.sumTypeHandling.discriminatorField)
     lazy val isEnumeration = config.enumValuesAsStrings &&
       ctx.subtypes.forall(_.typeclass.isInstanceOf[CaseObjectDecoder[JsonDecoder, _]])
@@ -738,7 +738,7 @@ object DeriveJsonEncoder {
     else {
       val nameTransform =
         ctx.annotations.collectFirst { case jsonMemberNames(format) => format }.getOrElse(config.fieldNameMapping)
-      val explicitNulls = config.explicitNulls || ctx.annotations.exists(_.isInstanceOf[jsonExplicitNull])
+      val explicitNulls            = config.explicitNulls || ctx.annotations.exists(_.isInstanceOf[jsonExplicitNull])
       val explicitEmptyCollections = ctx.annotations.collectFirst { case a: jsonExplicitEmptyCollections => a.encoding }
         .getOrElse(config.explicitEmptyCollections.encoding)
       val params = ctx.parameters.filter(p => p.annotations.collectFirst { case _: jsonExclude => () }.isEmpty).toArray
@@ -811,7 +811,7 @@ object DeriveJsonEncoder {
     }.toArray
     val encodedNames: Array[String] = names.map(name => JsonEncoder.string.encodeJson(name, None).toString)
     lazy val tcs                    = ctx.subtypes.map(_.typeclass).toArray.asInstanceOf[Array[JsonEncoder[Any]]]
-    val discrim =
+    val discrim                     =
       ctx.annotations.collectFirst { case jsonDiscriminator(n) => n }.orElse(config.sumTypeHandling.discriminatorField)
     lazy val isEnumeration = config.enumValuesAsStrings &&
       ctx.subtypes.forall(_.typeclass == caseObjectEncoder)

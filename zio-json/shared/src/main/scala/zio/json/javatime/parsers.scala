@@ -1006,7 +1006,7 @@ private[json] object parsers {
       }
     }
     val localDateTime = LocalDateTime.of(year, month, day, hour, minute, second, nano)
-    val zoneOffset =
+    val zoneOffset    =
       if (ch == 'Z') {
         if (pos < len) {
           ch = input.charAt(pos)

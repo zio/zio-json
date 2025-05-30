@@ -44,10 +44,10 @@ object StringMatrixSpec extends ZIOSpecDefault {
     },
     test("first resolves to field index") {
       check(genTestStrings) { xs =>
-        val m = new StringMatrix(xs)
+        val m       = new StringMatrix(xs)
         val asserts = xs.indices.map { i =>
           val test = xs(i)
-          var bs = test.zipWithIndex.foldLeft(m.initial) { case (bs, (c, i)) =>
+          var bs   = test.zipWithIndex.foldLeft(m.initial) { case (bs, (c, i)) =>
             m.update(bs, i, c)
           }
           bs = m.exact(bs, test.length)
@@ -98,10 +98,10 @@ object StringMatrixSpec extends ZIOSpecDefault {
     },
     test("alias first resolves to aliased field index") {
       check(genTestStringsAndAliases) { case (xs, aliases) =>
-        val m = new StringMatrix(xs, aliases)
+        val m       = new StringMatrix(xs, aliases)
         val asserts = aliases.indices.map { i =>
           val test = aliases(i)._1
-          var bs = test.zipWithIndex.foldLeft(m.initial) { case (bs, (c, i)) =>
+          var bs   = test.zipWithIndex.foldLeft(m.initial) { case (bs, (c, i)) =>
             m.update(bs, i, c)
           }
           bs = m.exact(bs, test.length)
@@ -131,7 +131,7 @@ object StringMatrixSpec extends ZIOSpecDefault {
     } yield (xs.toArray, aliasF zip aliasN)
 
   private def matcher(xs: Array[String], aliases: Array[(String, Int)], test: String): Array[String] = {
-    val m = new StringMatrix(xs, aliases)
+    val m  = new StringMatrix(xs, aliases)
     var bs = test.foldLeft(m.initial) {
       var i = 0
       (bs, c) =>

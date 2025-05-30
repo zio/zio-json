@@ -176,7 +176,7 @@ object JsonEncoder extends GeneratedTupleEncoders with EncoderLowPriority1 with 
           case '\n' => out.write('\\', 'n')
           case '\r' => out.write('\\', 'r')
           case '\t' => out.write('\\', 't')
-          case c =>
+          case c    =>
             if (c >= ' ') out.write(c)
             else {
               out.write('\\', 'u')
@@ -199,7 +199,7 @@ object JsonEncoder extends GeneratedTupleEncoders with EncoderLowPriority1 with 
         case '\n' => out.write('"', '\\', 'n', '"')
         case '\r' => out.write('"', '\\', 'r', '"')
         case '\t' => out.write('"', '\\', 't', '"')
-        case c =>
+        case c    =>
           if (c >= ' ') out.write('"', c, '"')
           else {
             out.write('"', '\\', 'u')
@@ -251,7 +251,7 @@ object JsonEncoder extends GeneratedTupleEncoders with EncoderLowPriority1 with 
     override def toJsonAST(a: Boolean): Either[String, Json] = new Right(Json.Bool(a))
   }
   implicit val symbol: JsonEncoder[Symbol] = string.contramap(_.name)
-  implicit val byte: JsonEncoder[Byte] = new JsonEncoder[Byte] {
+  implicit val byte: JsonEncoder[Byte]     = new JsonEncoder[Byte] {
     def unsafeEncode(a: Byte, indent: Option[Int], out: Write): Unit = SafeNumbers.write(a.toInt, out)
 
     override def toJsonAST(a: Byte): Either[String, Json] = new Right(Json.Num(a.toInt))

@@ -123,7 +123,7 @@ object NeoJmhPlugin extends AutoPlugin {
     val javaFlags        = (Jmh / javaOptions).value.toVector
 
     val inputs: Set[File] = (bytecodeDir ** "*").filter(_.isFile).get.toSet
-    val cachedGeneration = FileFunction.cached(cacheDir, FilesInfo.hash) { _ =>
+    val cachedGeneration  = FileFunction.cached(cacheDir, FilesInfo.hash) { _ =>
       IO.delete(sourceDir)
       IO.createDirectory(sourceDir)
       IO.delete(resourceDir)

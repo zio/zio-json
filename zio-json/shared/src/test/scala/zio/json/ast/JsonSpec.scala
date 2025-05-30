@@ -65,7 +65,7 @@ object JsonSpec extends ZIOSpecDefault {
               isRight(
                 equalTo(
                   Json.Obj(
-                    "id" -> Json.Num(8500),
+                    "id"   -> Json.Num(8500),
                     "user" -> Json.Obj(
                       "id"   -> Json.Num(6200),
                       "name" -> Json.Str("Twitter API")
@@ -83,7 +83,7 @@ object JsonSpec extends ZIOSpecDefault {
               isRight(
                 equalTo(
                   Json.Obj(
-                    "id" -> Json.Num(8500),
+                    "id"   -> Json.Num(8500),
                     "user" -> Json.Obj(
                       "name" -> Json.Str("Twitter API")
                     ),
@@ -111,7 +111,7 @@ object JsonSpec extends ZIOSpecDefault {
           val str: Json  = Json.Str("hello")
           val bool: Json = Json.Bool(true)
           val arr: Json  = Json.Arr(nul, num, str)
-          val obj: Json = Json.Obj(
+          val obj: Json  = Json.Obj(
             "nul"  -> nul,
             "num"  -> num,
             "str"  -> str,
@@ -212,7 +212,7 @@ object JsonSpec extends ZIOSpecDefault {
           val obj =
             Json.Obj(
               "one" -> Json.Obj(
-                "two" -> Json.Bool(true),
+                "two"   -> Json.Bool(true),
                 "three" -> Json.Obj(
                   "four" -> Json.Null,
                   "five" -> Json.Obj(
@@ -287,7 +287,7 @@ object JsonSpec extends ZIOSpecDefault {
         },
         test(">>>, array, filterType (second operand of >>> is complex)") {
           val downEntities = JsonCursor.field("entities")
-          val downHashtag =
+          val downHashtag  =
             JsonCursor.isObject >>> JsonCursor.field("hashtags") >>> JsonCursor.isArray >>> JsonCursor.element(0)
 
           val combined = downEntities >>> downHashtag
@@ -345,7 +345,7 @@ object JsonSpec extends ZIOSpecDefault {
         test("object, deep") {
           val intersected = tweet.intersect(
             Json.Obj(
-              "id" -> Json.Num(8501),
+              "id"   -> Json.Num(8501),
               "user" -> Json.Obj(
                 "id"   -> Json.Num(6200),
                 "name" -> Json.Str("Twitter API")
@@ -469,7 +469,7 @@ object JsonSpec extends ZIOSpecDefault {
           assert(merged)(
             equalTo(
               Json.Obj(
-                "id" -> Json.Num(8500),
+                "id"   -> Json.Num(8500),
                 "user" -> Json.Obj(
                   "id"      -> Json.Num(6200),
                   "name"    -> Json.Str("Twitter API"),
@@ -525,7 +525,7 @@ object JsonSpec extends ZIOSpecDefault {
               isRight(
                 equalTo(
                   Json.Obj(
-                    "id" -> Json.Num(8500),
+                    "id"       -> Json.Num(8500),
                     "entities" -> Json.Obj(
                       "id"   -> Json.Num(6200),
                       "name" -> Json.Str("Twitter API")
@@ -571,7 +571,7 @@ object JsonSpec extends ZIOSpecDefault {
               isRight(
                 equalTo(
                   Json.Obj(
-                    "id" -> Json.Num(8500),
+                    "id"   -> Json.Num(8500),
                     "user" -> Json.Obj(
                       "id"   -> Json.Num(6200),
                       "name" -> Json.Str("Twitter API")
@@ -590,7 +590,7 @@ object JsonSpec extends ZIOSpecDefault {
               isRight(
                 equalTo(
                   Json.Obj(
-                    "id" -> Json.Num(8500),
+                    "id"   -> Json.Num(8500),
                     "user" -> Json.Obj(
                       "id"   -> Json.Num(6201),
                       "name" -> Json.Str("Twitter API")
@@ -616,7 +616,7 @@ object JsonSpec extends ZIOSpecDefault {
 
   lazy val tweet: Json.Obj =
     Json.Obj(
-      "id" -> Json.Num(8500),
+      "id"   -> Json.Num(8500),
       "user" -> Json.Obj(
         "id"   -> Json.Num(6200),
         "name" -> Json.Str("Twitter API")

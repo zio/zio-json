@@ -170,7 +170,7 @@ sealed abstract class Json { self =>
         case s: Str  => s.value.hashCode
         case n: Num  => n.value.hashCode
         case b: Bool => b.value.hashCode
-        case o: Obj =>
+        case o: Obj  =>
           var result = 0
           o.fields.foreach(tuple => result = result ^ tuple.hashCode)
           result
@@ -337,7 +337,7 @@ object Json {
     def mapValues(f: Json => Json): Json.Obj                = Json.Obj(fields.map(e => e._1 -> f(e._2)))
     def filter(pred: ((String, Json)) => Boolean): Json.Obj = Json.Obj(fields.filter(pred))
     def filterKeys(pred: String => Boolean): Json.Obj       = Json.Obj(fields.filter(e => pred(e._1)))
-    def merge(that: Json.Obj): Json.Obj = {
+    def merge(that: Json.Obj): Json.Obj                     = {
       val fields1  = this.fields
       val fields2  = that.fields
       val leftMap  = fields1.toMap
@@ -386,7 +386,7 @@ object Json {
       if (fields.isEmpty) Obj.empty
       else new Obj(Chunk(fields: _*))
 
-    private lazy val objd = JsonDecoder.keyValueChunk[String, Json]
+    private lazy val objd                  = JsonDecoder.keyValueChunk[String, Json]
     implicit val decoder: JsonDecoder[Obj] = new JsonDecoder[Obj] {
       def unsafeDecode(trace: List[JsonError], in: RetractReader): Obj =
         Obj(objd.unsafeDecode(trace, in))
@@ -397,7 +397,7 @@ object Json {
           case _        => Lexer.error("Not an object", trace)
         }
     }
-    private lazy val obje = JsonEncoder.keyValueChunk[String, Json]
+    private lazy val obje                  = JsonEncoder.keyValueChunk[String, Json]
     implicit val encoder: JsonEncoder[Obj] = new JsonEncoder[Obj] {
       def unsafeEncode(a: Obj, indent: Option[Int], out: Write): Unit =
         obje.unsafeEncode(a.fields, indent, out)
@@ -439,7 +439,7 @@ object Json {
       if (elements.isEmpty) empty
       else new Arr(Chunk(elements: _*))
 
-    private lazy val arrd = JsonDecoder.chunk[Json]
+    private lazy val arrd                  = JsonDecoder.chunk[Json]
     implicit val decoder: JsonDecoder[Arr] = new JsonDecoder[Arr] {
       def unsafeDecode(trace: List[JsonError], in: RetractReader): Arr =
         Arr(arrd.unsafeDecode(trace, in))
@@ -450,7 +450,7 @@ object Json {
           case _        => Lexer.error("Not an array", trace)
         }
     }
-    private lazy val arre = JsonEncoder.chunk[Json]
+    private lazy val arre                  = JsonEncoder.chunk[Json]
     implicit val encoder: JsonEncoder[Arr] = new JsonEncoder[Arr] {
       def unsafeEncode(a: Arr, indent: Option[Int], out: Write): Unit =
         arre.unsafeEncode(a.elements, indent, out)
@@ -523,7 +523,7 @@ object Json {
   object Num {
     @inline def apply(value: Byte): Num  = apply(value.toInt)
     @inline def apply(value: Short): Num = apply(value.toInt)
-    def apply(value: Int): Num = new Num({
+    def apply(value: Int): Num           = new Num({
       if (value < 512 && value > -512) new java.math.BigDecimal(value)
       else BigDecimal(value).bigDecimal
     })
@@ -532,7 +532,7 @@ object Json {
       else BigDecimal(value).bigDecimal
     })
     @inline def apply(value: BigDecimal): Num = new Num(value.bigDecimal)
-    def apply(value: BigInt): Num =
+    def apply(value: BigInt): Num             =
       if (value.isValidLong) apply(value.toLong)
       else new Json.Num(new java.math.BigDecimal(value.bigInteger))
     def apply(value: java.math.BigInteger): Num =
@@ -562,7 +562,7 @@ object Json {
   }
   type Null = Null.type
   case object Null extends Json {
-    private[this] val nullChars: Array[Char] = "null".toCharArray
+    private[this] val nullChars: Array[Char]     = "null".toCharArray
     implicit val decoder: JsonDecoder[Null.type] = new JsonDecoder[Null.type] {
       def unsafeDecode(trace: List[JsonError], in: RetractReader): Null.type = {
         Lexer.readChars(trace, in, nullChars, "null")
@@ -591,11 +591,11 @@ object Json {
       val c = in.nextNonWhitespace()
       in.retract()
       (c: @switch) match {
-        case 'n'       => Null.decoder.unsafeDecode(trace, in)
-        case 'f' | 't' => Bool.decoder.unsafeDecode(trace, in)
-        case '{'       => Obj.decoder.unsafeDecode(trace, in)
-        case '['       => Arr.decoder.unsafeDecode(trace, in)
-        case '"'       => Str.decoder.unsafeDecode(trace, in)
+        case 'n'                                                             => Null.decoder.unsafeDecode(trace, in)
+        case 'f' | 't'                                                       => Bool.decoder.unsafeDecode(trace, in)
+        case '{'                                                             => Obj.decoder.unsafeDecode(trace, in)
+        case '['                                                             => Arr.decoder.unsafeDecode(trace, in)
+        case '"'                                                             => Str.decoder.unsafeDecode(trace, in)
         case '-' | '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' =>
           Num.decoder.unsafeDecode(trace, in)
         case c =>

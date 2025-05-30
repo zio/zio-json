@@ -42,7 +42,7 @@ package object golden {
         resourceDir <- createGoldenDirectory(s"src/test/resources/golden/$relativePath")
         fileName     = Paths.get(s"$name.json")
         filePath     = resourceDir.resolve(fileName)
-        assertion <- ZIO.ifZIO(ZIO.attemptBlocking(Files.exists(filePath)))(
+        assertion   <- ZIO.ifZIO(ZIO.attemptBlocking(Files.exists(filePath)))(
                        validateTest(resourceDir, name, gen, sampleSize),
                        createNewTest(resourceDir, name, gen, sampleSize)
                      )
@@ -62,7 +62,7 @@ package object golden {
     for {
       currentSample <- readSampleFromFile(filePath)
       sample        <- generateSample(gen, sampleSize)
-      assertion <- if (sample == currentSample) {
+      assertion     <- if (sample == currentSample) {
                      ZIO.succeed(assertTrue(sample == currentSample))
                    } else {
                      val diffFileName = Paths.get(s"${name}_changed.json")
@@ -87,7 +87,7 @@ package object golden {
 
     for {
       sample <- generateSample(gen, sampleSize)
-      _ <-
+      _      <-
         ZIO
           .ifZIO(ZIO.attemptBlocking(Files.exists(filePath)))(ZIO.unit, ZIO.attemptBlocking(Files.createFile(filePath)))
       _        <- writeSampleToFile(filePath, sample)
