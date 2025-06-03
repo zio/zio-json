@@ -66,7 +66,7 @@ private[json] object serializers {
 
   def write(x: Instant, out: Write): Unit = {
     val epochSecond = x.getEpochSecond
-    val epochDay =
+    val epochDay    =
       (if (epochSecond >= 0) epochSecond
        else epochSecond - 86399) / 86400 // 86400 == seconds per day
     val secsOfDay             = (epochSecond - epochDay * 86400).toInt
@@ -85,7 +85,7 @@ private[json] object serializers {
     }
     val marchMonth = (marchDayOfYear * 17135 + 6854) >> 19 // (marchDayOfYear * 5 + 2) / 153
     year += (marchMonth * 3277 >> 15) + adjustYear // year += marchMonth / 10 + adjustYear (reset any negative year and convert march-based values back to january-based)
-    val month = marchMonth +
+    val month      = marchMonth +
       (if (marchMonth < 10) 3
        else -9)
     val day =

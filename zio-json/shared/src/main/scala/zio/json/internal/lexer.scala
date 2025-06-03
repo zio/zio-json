@@ -130,7 +130,7 @@ object Lexer {
       case 'f'       => skipFixedChars(in, 4)
       case '{'       => skipObject(in, 0)
       case '['       => skipArray(in, 0)
-      case '"' =>
+      case '"'       =>
         skipString(in, evenBackSlashes = true)
       case '-' | '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' =>
         skipNumber(in)
@@ -351,7 +351,7 @@ object Lexer {
             c1 == '-' && c2 == '-' && c3 == '-' && c4 == '-'
           }
         ) {
-          val ds = hexDigits
+          val ds   = hexDigits
           val msb1 =
             ds(cs(0)).toLong << 28 |
               (ds(cs(1)) << 24 |
@@ -1471,7 +1471,7 @@ object Lexer {
         }
       }
       val localDateTime = LocalDateTime.of(year, month, day, hour, minute, second, nano)
-      val zoneOffset =
+      val zoneOffset    =
         if (ch == 'Z') {
           if (pos < i) {
             ch = cs(pos)
@@ -1862,9 +1862,9 @@ object Lexer {
 // of strings, and a sequence of incoming characters, find the strings that
 // match, by manually maintaining a bitset. Empty strings are not allowed.
 final class StringMatrix(names: Array[String], aliases: Array[(String, Int)] = Array.empty) {
-  val namesLen: Int            = names.length
-  private[this] val width: Int = namesLen + aliases.length
-  val initial: Long            = -1L >>> (64 - width)
+  val namesLen: Int                     = names.length
+  private[this] val width: Int          = namesLen + aliases.length
+  val initial: Long                     = -1L >>> (64 - width)
   private[this] val lengths: Array[Int] = {
     require(namesLen > 0 && width <= 64)
     val ls     = new Array[Int](width)
@@ -1883,7 +1883,7 @@ final class StringMatrix(names: Array[String], aliases: Array[(String, Int)] = A
     }
     ls
   }
-  private[this] val height: Int = lengths.max
+  private[this] val height: Int         = lengths.max
   private[this] val matrix: Array[Char] = {
     val w      = width
     val m      = new Array[Char](height * w)

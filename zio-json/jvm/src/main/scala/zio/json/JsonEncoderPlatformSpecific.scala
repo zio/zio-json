@@ -24,7 +24,7 @@ trait JsonEncoderPlatformSpecific[A] { self: JsonEncoder[A] =>
         for {
           runtime     <- ZIO.runtime[Any]
           chunkBuffer <- Ref.make(Chunk.fromIterable(startWith.toList))
-          writer <- ZIO.fromAutoCloseable {
+          writer      <- ZIO.fromAutoCloseable {
                       ZIO.succeed {
                         new java.io.BufferedWriter(
                           new java.io.Writer {
@@ -45,7 +45,7 @@ trait JsonEncoderPlatformSpecific[A] { self: JsonEncoder[A] =>
                     }
           writeWriter          <- ZIO.succeed(new WriteWriter(writer))
           hasAtLeastOneElement <- Ref.make(false)
-          push = { (is: Option[Chunk[A]]) =>
+          push                  = { (is: Option[Chunk[A]]) =>
             val pushChars = chunkBuffer.getAndUpdate(c => if (c.isEmpty) c else Chunk())
 
             is match {

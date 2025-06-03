@@ -90,7 +90,7 @@ private[codegen] sealed trait JsonType extends Product with Serializable { self 
       case (JNull, right) => JOption(right)
       case (left, JNull)  => JOption(left)
 
-      case (JArray(left), JArray(right)) => JArray(left unify right)
+      case (JArray(left), JArray(right))                                                 => JArray(left unify right)
       case (CaseClass(left, leftFields), CaseClass(right, rightFields)) if left == right =>
         CaseClass(left, (leftFields unify rightFields).asInstanceOf[JObject])
       case (left, right) =>
@@ -206,10 +206,10 @@ object ${clazz.name} {
 
   def unifyTypes(json: Json, key: Option[String] = None): JsonType =
     json match {
-      case Json.Null => JNull
+      case Json.Null          => JNull
       case Json.Arr(elements) =>
         JArray(elements.map(unifyTypes(_, key)).reduce(_ unify _))
-      case Json.Bool(_) => JBoolean
+      case Json.Bool(_)     => JBoolean
       case Json.Str(string) =>
         val localDateTime =
           Try(LocalDateTime.parse(string, DateTimeFormatter.ISO_DATE_TIME)).toOption.map(_ => JLocalDateTime)

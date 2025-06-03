@@ -20,7 +20,7 @@ object JsonTestSuiteSpec extends ZIOSpecDefault {
         a <- ZIO.foreach(f.sorted) { path =>
                for {
                  input <- getResourceAsStringM(s"json_test_suite/$path")
-                 exit <- ZIO.succeed {
+                 exit  <- ZIO.succeed {
                            // Catch Stack overflow
                            try {
                              JsonDecoder[Json]

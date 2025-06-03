@@ -87,7 +87,7 @@ object EncoderPlatformSpecificSpec extends ZIOSpecDefault {
       ),
       suite("helpers in zio.json")(
         test("writeJsonLines writes JSON lines") {
-          val path = Files.createTempFile("log", "json")
+          val path   = Files.createTempFile("log", "json")
           val events = Chunk(
             Event(1, "hello", priority = 1111.1111111),
             Event(12, "hello", priority = 11111111.111),

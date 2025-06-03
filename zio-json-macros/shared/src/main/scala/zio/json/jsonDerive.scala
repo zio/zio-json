@@ -113,11 +113,11 @@ private[json] final class DeriveCodecMacros(val c: blackbox.Context) {
     }
 
   private[this] def codec(clsDef: ClassDef): Tree = {
-    val tpname      = clsDef.name
-    val tparams     = clsDef.tparams
-    val decoderName = TermName("decode" + tpname.decodedName)
-    val encoderName = TermName("encode" + tpname.decodedName)
-    val codecName   = TermName("codecFor" + tpname.decodedName)
+    val tpname                    = clsDef.name
+    val tparams                   = clsDef.tparams
+    val decoderName               = TermName("decode" + tpname.decodedName)
+    val encoderName               = TermName("encode" + tpname.decodedName)
+    val codecName                 = TermName("codecFor" + tpname.decodedName)
     val (decoder, encoder, codec) = if (tparams.isEmpty) {
       val Type = tpname
       (
@@ -126,7 +126,7 @@ private[json] final class DeriveCodecMacros(val c: blackbox.Context) {
         q"""implicit val $codecName: $CodecClass[$Type] = _root_.zio.json.DeriveJsonCodec.gen[$Type]"""
       )
     } else {
-      val tparamNames = tparams.map(_.name)
+      val tparamNames                                              = tparams.map(_.name)
       def mkImplicitParams(prefix: String, typeSymbol: TypeSymbol) =
         tparamNames.map {
           var i = 0

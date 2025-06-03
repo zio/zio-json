@@ -86,8 +86,8 @@ sealed trait RetractReader extends OneCharReader {
 }
 
 final class FastCharSequence(s: Array[Char]) extends CharSequence {
-  def length: Int          = s.length
-  def charAt(i: Int): Char = s(i)
+  def length: Int                                     = s.length
+  def charAt(i: Int): Char                            = s(i)
   def subSequence(start: Int, end: Int): CharSequence =
     new FastCharSequence(Arrays.copyOfRange(s, start, end))
 }

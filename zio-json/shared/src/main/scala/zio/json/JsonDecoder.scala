@@ -705,7 +705,7 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority1 with 
 
 private[json] trait CollectionJsonDecoder[A] extends JsonDecoder[A]
 private[json] trait OptionJsonDecoder[A]     extends JsonDecoder[A]
-private[json] trait MappedJsonDecoder[A] extends JsonDecoder[A] {
+private[json] trait MappedJsonDecoder[A]     extends JsonDecoder[A] {
   private[json] def underlying: JsonDecoder[_]
 }
 

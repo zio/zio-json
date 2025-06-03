@@ -130,8 +130,8 @@ object SafeNumbers {
   ): Int = {
     val bitLen = x.bitLength
     if (bitLen < 64) {
-      val v  = x.longValue
-      val pv = Math.abs(v)
+      val v      = x.longValue
+      val pv     = Math.abs(v)
       val digits =
         if (pv >= 100000000000000000L) {
           if (pv >= 1000000000000000000L) 19
@@ -161,7 +161,7 @@ object SafeNumbers {
         exp
       }
     } else {
-      val n = calculateTenPow18SquareNumber(bitLen)
+      val n   = calculateTenPow18SquareNumber(bitLen)
       val ss1 =
         if (ss eq null) getTenPow18Squares(n)
         else ss
@@ -230,7 +230,7 @@ object SafeNumbers {
     val bitLen = x.bitLength
     if (bitLen < 64) write(x.longValue, out)
     else {
-      val n = calculateTenPow18SquareNumber(bitLen)
+      val n   = calculateTenPow18SquareNumber(bitLen)
       val ss1 =
         if (ss eq null) getTenPow18Squares(n)
         else ss

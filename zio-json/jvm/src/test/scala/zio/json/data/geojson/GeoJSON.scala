@@ -135,7 +135,7 @@ package handrolled {
         val names: Array[String]    = Array("type", "coordinates", "geometries")
         val matrix: StringMatrix    = new StringMatrix(names)
         val spans: Array[JsonError] = names.map(JsonError.ObjectAccess(_))
-        val subtypes: StringMatrix = new StringMatrix(
+        val subtypes: StringMatrix  = new StringMatrix(
           Array(
             "Point",
             "MultiPoint",
@@ -286,12 +286,12 @@ package handrolled {
           Array("type", "properties", "geometry", "features")
         val matrix: StringMatrix    = new StringMatrix(names)
         val spans: Array[JsonError] = names.map(JsonError.ObjectAccess(_))
-        val subtypes: StringMatrix = new StringMatrix(
+        val subtypes: StringMatrix  = new StringMatrix(
           Array("Feature", "FeatureCollection")
         )
         val propertyD: JsonDecoder[Map[String, String]] =
           JsonDecoder[Map[String, String]]
-        val geometryD: JsonDecoder[Geometry] = JsonDecoder[Geometry]
+        val geometryD: JsonDecoder[Geometry]           = JsonDecoder[Geometry]
         lazy val featuresD: JsonDecoder[List[GeoJSON]] =
           JsonDecoder[List[GeoJSON]] // recursive
 

@@ -12,7 +12,7 @@ inThisBuild(
     organization := "dev.zio",
     homepage     := Some(url("https://zio.dev/zio-json/")),
     licenses     := List("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0")),
-    developers := List(
+    developers   := List(
       Developer(
         "jdegoes",
         "John De Goes",
@@ -134,12 +134,12 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform, NativePlatform)
       }
     },
     Compile / sourceGenerators += Def.task {
-      val dir  = (Compile / sourceManaged).value
-      val file = dir / "zio" / "json" / "GeneratedTupleDecoders.scala"
+      val dir      = (Compile / sourceManaged).value
+      val file     = dir / "zio" / "json" / "GeneratedTupleDecoders.scala"
       val decoders = (1 to 22).map { i =>
         val tparams   = (1 to i).map(p => s"A$p").mkString(", ")
         val implicits = (1 to i).map(p => s"A$p: JsonDecoder[A$p]").mkString(", ")
-        val work = (1 to i)
+        val work      = (1 to i)
           .map(p => s"val a$p = A$p.unsafeDecode(traces(${p - 1}) :: trace, in)")
           .mkString("\n        Lexer.char(trace, in, ',')\n        ")
         val work2 = (1 to i)
@@ -179,12 +179,12 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform, NativePlatform)
       Seq(file)
     }.taskValue,
     Compile / sourceGenerators += Def.task {
-      val dir  = (Compile / sourceManaged).value
-      val file = dir / "zio" / "json" / "GeneratedTupleEncoders.scala"
+      val dir      = (Compile / sourceManaged).value
+      val file     = dir / "zio" / "json" / "GeneratedTupleEncoders.scala"
       val encoders = (1 to 22).map { i =>
         val tparams   = (1 to i).map(p => s"A$p").mkString(", ")
         val implicits = (1 to i).map(p => s"A$p: JsonEncoder[A$p]").mkString(", ")
-        val work = (1 to i)
+        val work      = (1 to i)
           .map(p => s"A$p.unsafeEncode(t._$p, indent, out)")
           .mkString("\n        if (indent.isEmpty) out.write(',') else out.write(\", \")\n        ")
         s"""implicit def tuple$i[$tparams](implicit $implicits): JsonEncoder[Tuple$i[$tparams]] =
@@ -207,8 +207,8 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform, NativePlatform)
       Seq(file)
     }.taskValue,
     Compile / sourceGenerators += Def.task {
-      val dir  = (Compile / sourceManaged).value
-      val file = dir / "zio" / "json" / "GeneratedTupleCodecs.scala"
+      val dir    = (Compile / sourceManaged).value
+      val file   = dir / "zio" / "json" / "GeneratedTupleCodecs.scala"
       val codecs = (1 to 22).map { i =>
         val tparamDecls = (1 to i).map(p => s"A$p: JsonEncoder: JsonDecoder").mkString(", ")
         val tparams     = (1 to i).map(p => s"A$p").mkString(", ")
@@ -389,9 +389,9 @@ lazy val docs = project
     crossScalaVersions -= ScalaDotty,
     moduleName := "zio-json-docs",
     scalacOptions += "-Ymacro-annotations",
-    projectName    := "ZIO JSON",
-    mainModuleName := (zioJsonJVM / moduleName).value,
-    projectStage   := ProjectStage.ProductionReady,
+    projectName                                := "ZIO JSON",
+    mainModuleName                             := (zioJsonJVM / moduleName).value,
+    projectStage                               := ProjectStage.ProductionReady,
     ScalaUnidoc / unidoc / unidocProjectFilter := inProjects(
       zioJsonJVM,
       zioJsonYaml,

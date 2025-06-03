@@ -138,7 +138,7 @@ private[json] trait CodecLowPriority0 extends CodecLowPriority1 { this: JsonCode
 }
 
 private[json] trait CodecLowPriority1 extends CodecLowPriority2 { this: JsonCodec.type =>
-  implicit def seq[A: JsonEncoder: JsonDecoder]: JsonCodec[Seq[A]] = JsonCodec(JsonEncoder.seq[A], JsonDecoder.seq[A])
+  implicit def seq[A: JsonEncoder: JsonDecoder]: JsonCodec[Seq[A]]   = JsonCodec(JsonEncoder.seq[A], JsonDecoder.seq[A])
   implicit def list[A: JsonEncoder: JsonDecoder]: JsonCodec[List[A]] =
     JsonCodec(JsonEncoder.list[A], JsonDecoder.list[A])
   implicit def vector[A: JsonEncoder: JsonDecoder]: JsonCodec[Vector[A]] =
