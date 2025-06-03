@@ -130,7 +130,7 @@ jobs:
     runs-on: ubuntu-22.04
     timeout-minutes: 60
     needs: [ci]
-    if: github.event_name != 'pull_request'
+    if: ${{ github.event_name != 'pull_request' }}
     steps:
       - name: Checkout current branch
         uses: actions/checkout@v4.2.2
