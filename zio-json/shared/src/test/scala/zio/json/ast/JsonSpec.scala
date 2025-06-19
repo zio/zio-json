@@ -13,36 +13,50 @@ object JsonSpec extends ZIOSpecDefault {
     suite("Json")(
       suite("apply")(
         test("Num()") {
-          assertTrue(Json.Num(0).toString == "0") &&
-          assertTrue(Json.Num(0.0).toString == "0.0") &&
-          assertTrue(Json.Num(1.0).toString == "1.0") &&
-          assertTrue(Json.Num(-0.0).toString == "0.0") &&
-          assertTrue(Json.Num(-1.0).toString == "-1.0") &&
-          assertTrue(Json.Num(7: Byte).toString == "7") &&
-          assertTrue(Json.Num(777: Short).toString == "777") &&
-          assertTrue(Json.Num(123456789).toString == "123456789") &&
-          assertTrue(Json.Num(1.2345678f).toString == "1.2345678") &&
-          assertTrue(Json.Num(1.2345678901234567).toString == "1.2345678901234567") &&
-          assertTrue(Json.Num(1234567890123456789L).toString == "1234567890123456789") &&
-          assertTrue(Json.Num(BigInteger.valueOf(1234567890123456789L)).toString == "1234567890123456789") &&
-          assertTrue(Json.Num(new BigInteger("12345678901234567890")).toString == "12345678901234567890") &&
-          assertTrue(Json.Num(BigInt(1234567890123456789L)).toString == "1234567890123456789") &&
-          assertTrue(Json.Num(BigInt("12345678901234567890")).toString == "12345678901234567890") &&
-          assertTrue(Json.Num(BigDecimal(1234567890123456789L)).toString == "1234567890123456789") &&
-          assertTrue(Json.Num(BigDecimal("12345678901234567890")).toString == "12345678901234567890")
+          assertTrue(
+            Json.Num(0).toString == "0",
+            Json.Num(0.0).toString == "0.0",
+            Json.Num(1.0).toString == "1.0",
+            Json.Num(-0.0).toString == "0.0",
+            Json.Num(-1.0).toString == "-1.0",
+            Json.Num(7: Byte).toString == "7",
+            Json.Num(777: Short).toString == "777",
+            Json.Num(123456789).toString == "123456789",
+            Json.Num(1.2345678f).toString == "1.2345678",
+            Json.Num(1.2345678901234567).toString == "1.2345678901234567",
+            Json.Num(1234567890123456789L).toString == "1234567890123456789",
+            Json.Num(BigInteger.valueOf(1234567890123456789L)).toString == "1234567890123456789",
+            Json.Num(new BigInteger("12345678901234567890")).toString == "12345678901234567890",
+            Json.Num(BigInt(1234567890123456789L)).toString == "1234567890123456789",
+            Json.Num(BigInt("12345678901234567890")).toString == "12345678901234567890",
+            Json.Num(BigDecimal(1234567890123456789L)).toString == "1234567890123456789",
+            Json.Num(BigDecimal("12345678901234567890")).toString == "12345678901234567890"
+          )
         },
         test("Bool()") {
-          assertTrue(Json.Bool.True eq Json.Bool(true)) &&
-          assertTrue(Json.Bool.False eq Json.Bool(false))
+          assertTrue(
+            Json.Bool.True eq Json.Bool(true),
+            Json.Bool.False eq Json.Bool(false)
+          )
         },
         test("()") {
-          assertTrue(Json.Obj.empty eq Json()) &&
-          assertTrue(Json.Obj.empty eq Json.Obj()) &&
-          assertTrue(Json.Arr.empty eq Json.Arr())
+          assertTrue(
+            Json.Obj.empty eq Json(),
+            Json.Obj.empty eq Json.Obj(),
+            Json.Arr.empty eq Json.Arr()
+          )
         },
         test("(Chunk.empty)") {
-          assertTrue(Json.Obj.empty eq Json.Obj(Chunk.empty)) &&
-          assertTrue(Json.Arr.empty eq Json.Arr(Chunk.empty))
+          assertTrue(
+            Json.Obj.empty eq Json.Obj(Chunk.empty),
+            Json.Arr.empty eq Json.Arr(Chunk.empty)
+          )
+        },
+        test("Obj()") {
+          assertTrue(
+            Json.Obj("key", Json.Str("value")).toString == """{"key":"value"}""",
+            Json.Obj("key", Json.Str("value")) == Json.Obj("key" -> Json.Str("value"))
+          )
         }
       ),
       suite("delete")(
