@@ -386,6 +386,9 @@ object Json {
       if (fields.isEmpty) Obj.empty
       else new Obj(Chunk(fields: _*))
 
+    def apply(key: String, value: Json): Obj =
+      new Obj(Chunk.single(key -> value))
+
     private lazy val objd                  = JsonDecoder.keyValueChunk[String, Json]
     implicit val decoder: JsonDecoder[Obj] = new JsonDecoder[Obj] {
       def unsafeDecode(trace: List[JsonError], in: RetractReader): Obj =
