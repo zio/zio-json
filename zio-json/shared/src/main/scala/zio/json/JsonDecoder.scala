@@ -97,7 +97,7 @@ trait JsonDecoder[A] extends JsonDecoderPlatformSpecific[A] {
     }
 
   /**
-   * Returns this decoder but widened to the its given super-type
+   * Returns this decoder but widened to the given super-type
    */
   final def widen[B >: A]: JsonDecoder[B] = self.asInstanceOf[JsonDecoder[B]]
 

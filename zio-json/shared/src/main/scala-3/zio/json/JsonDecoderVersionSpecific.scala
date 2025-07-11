@@ -8,9 +8,6 @@ import scala.compiletime.*
 import scala.compiletime.ops.any.IsConst
 
 private[json] trait JsonDecoderVersionSpecific {
-  inline def derived[A: deriving.Mirror.Of](using config: JsonCodecConfiguration): JsonDecoder[A] =
-    DeriveJsonDecoder.gen[A]
-
   implicit def arraySeq[A: JsonDecoder: reflect.ClassTag]: JsonDecoder[immutable.ArraySeq[A]] =
     new CollectionJsonDecoder[immutable.ArraySeq[A]] {
       private[this] val arrayDecoder = JsonDecoder.array[A]
@@ -20,6 +17,13 @@ private[json] trait JsonDecoderVersionSpecific {
       def unsafeDecode(trace: List[JsonError], in: RetractReader): immutable.ArraySeq[A] =
         immutable.ArraySeq.unsafeWrapArray(arrayDecoder.unsafeDecode(trace, in))
     }
+
+  inline def derived[A: deriving.Mirror.Of](using config: JsonCodecConfiguration): JsonDecoder[A] =
+    DeriveJsonDecoder.gen[A]
+
+  implicit def iArray[A](implicit A: JsonDecoder[A], classTag: reflect.ClassTag[A]): JsonDecoder[IArray[A]] =
+    JsonDecoder.array[A].map(IArray.unsafeFromArray)
+
 }
 
 trait DecoderLowPriorityVersionSpecific {
