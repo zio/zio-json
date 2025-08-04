@@ -17,6 +17,12 @@ object EncoderVesionSpecificSpec extends ZIOSpecDefault {
           assert(immutable.ArraySeq[String]().toJsonPretty)(equalTo("[]")) &&
           assert(immutable.ArraySeq("foo", "bar").toJsonPretty)(equalTo("[\n  \"foo\",\n  \"bar\"\n]"))
         },
+        test("IArray") {
+          assert(IArray.empty[Int].toJson)(equalTo("[]")) &&
+          assert(IArray(1, 2, 3).toJson)(equalTo("[1,2,3]")) &&
+          assert(IArray.empty[String].toJsonPretty)(equalTo("[]")) &&
+          assert(IArray("foo", "bar").toJsonPretty)(equalTo("[\n  \"foo\",\n  \"bar\"\n]"))
+        },
         test("Derives for a product type") {
           case class Foo(bar: String) derives JsonEncoder
 

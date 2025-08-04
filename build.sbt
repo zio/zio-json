@@ -58,7 +58,7 @@ addCommandAlias(
   "zioJsonMacrosNative/test"
 )
 
-val zioVersion = "2.1.19"
+val zioVersion = "2.1.20"
 
 lazy val zioJsonRoot = project
   .in(file("."))
@@ -112,8 +112,8 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform, NativePlatform)
       "org.scala-lang.modules"                %%% "scala-collection-compat" % "2.13.0"     % "test",
       "dev.zio"                               %%% "zio-test"                % zioVersion   % "test",
       "dev.zio"                               %%% "zio-test-sbt"            % zioVersion   % "test",
-      "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-core"     % "2.36.5"     % "test",
-      "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-macros"   % "2.36.5"     % "test",
+      "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-core"     % "2.37.0"     % "test",
+      "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-macros"   % "2.37.0"     % "test",
       "io.circe"                              %%% "circe-core"              % circeVersion % "test",
       "io.circe"                              %%% "circe-generic"           % circeVersion % "test",
       "io.circe"                              %%% "circe-parser"            % circeVersion % "test",
@@ -333,7 +333,7 @@ lazy val zioJsonInteropHttp4s = project
     libraryDependencies ++= Seq(
       "org.http4s"    %% "http4s-dsl"       % "0.23.30",
       "dev.zio"       %% "zio"              % zioVersion,
-      "org.typelevel" %% "cats-effect"      % "3.6.1",
+      "org.typelevel" %% "cats-effect"      % "3.6.3",
       "dev.zio"       %% "zio-interop-cats" % "23.1.0.5" % "test",
       "dev.zio"       %% "zio-test"         % zioVersion % "test",
       "dev.zio"       %% "zio-test-sbt"     % zioVersion % "test"
