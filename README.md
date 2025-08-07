@@ -58,7 +58,7 @@ final case class Banana(curvature: Double) derives JsonDecoder
 
 > [!NOTE]
 >
-> In scala 2, we need to use the `zio-json` code generator. It is best practice to put it on the companion of `Banana`, like so
+> In scala 2, we need to use the `zio-json` semi-automatic derivation. It is best practice to put it on the companion of `Banana`, like so
 >
 > ```scala
 > object Banana {
