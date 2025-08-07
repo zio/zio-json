@@ -71,7 +71,7 @@ Say we want to be able to read some JSON like
 into a Scala `case class`
 
 ```scala
-case class Banana(curvature: Double)
+final case class Banana(curvature: Double)
 ```
 
 <Tabs groupId="language">
@@ -91,7 +91,7 @@ object Banana {
 To do this, we derive an *instance* of the `JsonDecoder` typeclass for `Banana`.
 
 ```scala
-case class Banana(curvature: Double) derives JsonDecoder
+final case class Banana(curvature: Double) derives JsonDecoder
 ```
 
 Note: If your case class is defining default parameters, -Yretain-trees needs to be added to scalacOptions.
@@ -122,7 +122,7 @@ object Banana {
   <TabItem value="scala 3" label="Scala 3" default>
 
 ```scala
-case class Banana(curvature: Double) derives JsonEncoder
+final case class Banana(curvature: Double) derives JsonEncoder
 ```
 
   </TabItem>
@@ -153,17 +153,18 @@ Say we extend our data model to include more data types
 
 ```scala
 sealed trait Fruit
-case class Banana(curvature: Double) extends Fruit
-case class Apple (poison: Boolean)   extends Fruit
+final case class Banana(curvature: Double) extends Fruit
+final case class Apple (poison: Boolean)   extends Fruit
 ```
 
   </TabItem>
   <TabItem value="scala 3" label="Scala 3" default>
 
 ```scala
-enum Fruit:
-  case Banana(curvature: Double) extends Fruit
-  case Apple (poison: Boolean)    extends Fruit
+enum Fruit {
+  case Banana(curvature: Double)
+  case Apple (poison: Boolean)
+}
 ```
 
   </TabItem>
@@ -185,9 +186,10 @@ object Fruit {
   <TabItem value="scala 3" label="Scala 3" default>
 
 ```scala
-enum Fruit derives JsonCodec:
+enum Fruit derives JsonCodec {
   case Banana(curvature: Double)
   case Apple (poison: Boolean)
+}
 ```
 
   </TabItem>
@@ -240,9 +242,10 @@ List(Apple(false), Banana(0.4)).toJsonPretty
 ```scala
 import zio.json.*
 
-enum Fruit extends Product, Serializable derives JsonCodec:
-  case Banana(curvature: Double) extends Fruit
-  case Apple(poison: Boolean)    extends Fruit
+enum Fruit derives JsonCodec {
+  case Banana(curvature: Double)
+  case Apple(poison: Boolean)
+}
 
 export Fruit.*
 

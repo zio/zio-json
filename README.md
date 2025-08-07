@@ -47,13 +47,13 @@ Say we want to be able to read some JSON like
 into a Scala `case class`
 
 ```scala
-case class Banana(curvature: Double)
+final case class Banana(curvature: Double)
 ```
 
 To do this, we derive an *instance* of the `JsonDecoder` typeclass for `Banana`.
 
 ```scala
-case class Banana(curvature: Double) derives JsonDecoder
+final case class Banana(curvature: Double) derives JsonDecoder
 ```
 
 > [!NOTE]
@@ -76,7 +76,7 @@ val res: Either[String, Banana] = Right(Banana(0.5))
 Likewise, to produce JSON from our data we derive a `JsonEncoder`
 
 ```scala
-case class Banana(curvature: Double) derives JsonEncoder
+final case class Banana(curvature: Double) derives JsonEncoder
 
 scala> Banana(0.5).toJson
 val res: String = {"curvature":0.5}
@@ -108,17 +108,19 @@ val res: Either[String, Banana] = Left(.curvature(expected a Double))
 Say we extend our data model to include more data types
 
 ```scala
-enum Fruit:
-  case Banana(curvature: Double) extends Fruit
-  case Apple(poison: Boolean)    extends Fruit
+enum Fruit {
+  case Banana(curvature: Double)
+  case Apple(poison: Boolean)
+}
 ```
 
 we can generate the encoder and decoder for the entire `sealed` family using `JsonCodec`
 
 ```scala
-enum Fruit derives JsonCodec:
+enum Fruit derives JsonCodec {
   case Banana(curvature: Double)
   case Apple(poison: Boolean)
+}
 ```
 
 > [!NOTE]
@@ -128,9 +130,9 @@ enum Fruit derives JsonCodec:
 > ```scala mdoc:compile-only
 > import zio.json._
 > 
-> sealed trait Fruit                   extends Product with Serializable
-> case class Banana(curvature: Double) extends Fruit
-> case class Apple(poison: Boolean)    extends Fruit
+> sealed trait Fruit
+> final case class Banana(curvature: Double) extends Fruit
+> final case class Apple(poison: Boolean)    extends Fruit
 > 
 > object Fruit {
 >   implicit val decoder: JsonDecoder[Fruit] =
