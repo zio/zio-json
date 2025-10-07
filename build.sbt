@@ -109,7 +109,7 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform, NativePlatform)
     libraryDependencies ++= Seq(
       "dev.zio"                               %%% "zio"                     % zioVersion,
       "dev.zio"                               %%% "zio-streams"             % zioVersion,
-      "org.scala-lang.modules"                %%% "scala-collection-compat" % "2.13.0"     % "test",
+      "org.scala-lang.modules"                %%% "scala-collection-compat" % "2.14.0"     % "test",
       "dev.zio"                               %%% "zio-test"                % zioVersion   % "test",
       "dev.zio"                               %%% "zio-test-sbt"            % zioVersion   % "test",
       "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-core"     % "2.38.3"     % "test",
@@ -291,7 +291,7 @@ lazy val zioJsonYaml = project
   .settings(
     libraryDependencies ++= Seq(
       "org.yaml"                % "snakeyaml"               % "2.5",
-      "org.scala-lang.modules" %% "scala-collection-compat" % "2.13.0",
+      "org.scala-lang.modules" %% "scala-collection-compat" % "2.14.0",
       "dev.zio"                %% "zio"                     % zioVersion,
       "dev.zio"                %% "zio-test"                % zioVersion % "test",
       "dev.zio"                %% "zio-test-sbt"            % zioVersion % "test"
