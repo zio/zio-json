@@ -29,7 +29,7 @@ jobs:
       - name: Cache scala dependencies
         uses: coursier/cache-action@v6
       - name: Lint code
-        run: sbt "++2.12; check; ++2.13; check; ++3.3; check"
+        run: sbt "++2.12.x; check; ++2.13.x; check; ++3.3.x; check"
 
   benchmarks:
     runs-on: ubuntu-22.04
@@ -37,7 +37,7 @@ jobs:
       fail-fast: false
       matrix:
         java: ['11', '21']
-        scala: ['2.13.17', '3.3.7']
+        scala: ['2.13.x', '3.x']
     steps:
       - name: Checkout current branch
         uses: actions/checkout@v5.0.0
@@ -51,7 +51,7 @@ jobs:
       - name: Cache scala dependencies
         uses: coursier/cache-action@v6
       - name: Compile benchmarks
-        run: sbt ++${{ matrix.scala }}! jmh:compile
+        run: sbt ++${{ matrix.scala }} jmh:compile
 
   mdoc:
     runs-on: ubuntu-22.04
@@ -76,7 +76,7 @@ jobs:
       fail-fast: false
       matrix:
         java: ['11', '21']
-        scala: ['2.12.20', '2.13.17', '3.3.7']
+        scala: ['2.12.x', '2.13.x', '3.x']
         platform: ['JVM', 'JS', 'Native']
     steps:
       - name: Checkout current branch
@@ -97,10 +97,10 @@ jobs:
         if: matrix.platform == 'Native'
         run: sudo apt-get update && sudo apt-get install -y libuv1-dev
       - name: Run Macros tests
-        if: ${{ !startsWith(matrix.scala, '3.3.') }}
-        run: sbt ++${{ matrix.scala }}! testScala2${{ matrix.platform }}
+        if: ${{ !startsWith(matrix.scala, '3.') }}
+        run: sbt ++${{ matrix.scala }} testScala2${{ matrix.platform }}
       - name: Run tests
-        run: sbt ++${{ matrix.scala }}! test${{ matrix.platform }}
+        run: sbt ++${{ matrix.scala }} test${{ matrix.platform }}
 
   mima_check:
     runs-on: ubuntu-22.04

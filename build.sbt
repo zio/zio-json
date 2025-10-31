@@ -101,7 +101,7 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform, NativePlatform)
     scalacOptions -= "-opt:l:inline",
     scalacOptions -= "-opt-inline-from:zio.internal.**",
     Test / scalacOptions ++= {
-      if (scalaVersion.value == ScalaDotty)
+      if (scalaVersion.value == Scala3)
         Vector("-Yretain-trees", "-Xmax-inlines:128")
       else
         Vector.empty
@@ -308,7 +308,7 @@ lazy val zioJsonMacros = crossProject(JSPlatform, JVMPlatform, NativePlatform)
   .settings(crossProjectSettings)
   .settings(macroExpansionSettings)
   .settings(
-    crossScalaVersions -= ScalaDotty,
+    crossScalaVersions -= Scala3,
     scalacOptions -= "-Xfatal-warnings", // not quite ready.
     libraryDependencies ++= Seq(
       "org.scala-lang" % "scala-reflect" % scalaVersion.value % Provided,
@@ -364,7 +364,7 @@ lazy val zioJsonInteropScalaz7x = crossProject(JSPlatform, JVMPlatform, NativePl
   .settings(stdSettings("zio-json-interop-scalaz7x"))
   .settings(buildInfoSettings("zio.json.interop.scalaz7x"))
   .settings(
-    crossScalaVersions -= ScalaDotty,
+    crossScalaVersions -= Scala3,
     libraryDependencies ++= Seq(
       "org.scalaz" %%% "scalaz-core"  % "7.3.8",
       "dev.zio"    %%% "zio-test"     % zioVersion % "test",
@@ -386,7 +386,7 @@ lazy val docs = project
     zioJsonInteropScalaz7x.jvm
   )
   .settings(
-    crossScalaVersions -= ScalaDotty,
+    crossScalaVersions -= Scala3,
     moduleName := "zio-json-docs",
     scalacOptions += "-Ymacro-annotations",
     projectName                                := "ZIO JSON",
