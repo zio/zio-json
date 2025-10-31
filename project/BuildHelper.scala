@@ -19,8 +19,6 @@ object BuildHelper {
   val Scala213: String = "2.13.17"
   val Scala3: String   = "3.3.7"
 
-  val SilencerVersion = "1.7.19"
-
   private val stdOptions = Seq(
     "-deprecation",
     "-encoding",
@@ -92,10 +90,6 @@ object BuildHelper {
     }
   )
 
-  val scalaReflectSettings = Seq(
-    libraryDependencies ++= Seq("dev.zio" %%% "izumi-reflect" % "1.0.0-M10")
-  )
-
   // Keep this consistent with the version in .core-tests/shared/src/test/scala/REPLSpec.scala
   val replSettings = makeReplSettings {
     """|import zio._
@@ -137,7 +131,7 @@ object BuildHelper {
 
   def extraOptions(scalaVersion: String, optimize: Boolean) =
     CrossVersion.partialVersion(scalaVersion) match {
-      case Some((3, 1)) =>
+      case Some((3, _)) =>
         Seq(
           "-language:implicitConversions",
           "-Xignore-scala2-macros"
@@ -219,10 +213,7 @@ object BuildHelper {
     },
     scalacOptions ++= stdOptions ++ extraOptions(scalaVersion.value, optimize = !isSnapshot.value),
     libraryDependencies ++= {
-      if (scalaVersion.value == Scala3)
-        Seq(
-          "com.github.ghik" % s"silencer-lib_$Scala213" % SilencerVersion % Provided
-        )
+      if (scalaVersion.value == Scala3) Seq.empty
       else
         Seq(
           compilerPlugin("org.typelevel" %% "kind-projector" % "0.13.4" cross CrossVersion.full)
