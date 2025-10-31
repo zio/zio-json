@@ -202,9 +202,9 @@ object BuildHelper {
     }
   )
 
-  def stdSettings(prjName: String, isScala3Compatible: Boolean = true) = Seq(
+  def stdSettings(prjName: String) = Seq(
     name               := s"$prjName",
-    crossScalaVersions := Seq(Scala212, Scala213) ++ (if (isScala3Compatible) Seq(Scala3) else Seq.empty),
+    crossScalaVersions := Seq(Scala212, Scala213, Scala3),
     scalacOptions ++= stdOptions ++ extraOptions(scalaVersion.value, optimize = !isSnapshot.value),
     libraryDependencies ++= {
       if (scalaVersion.value == Scala3) Seq.empty
@@ -214,7 +214,7 @@ object BuildHelper {
         )
     },
     versionScheme     := Some("early-semver"),
-    semanticdbEnabled := true, // enable SemanticDB
+    semanticdbEnabled := scalaVersion.value == Scala213, // enable SemanticDB
     semanticdbOptions ++= (CrossVersion.partialVersion(scalaVersion.value) match {
       case Some((2, _)) => Seq("-P:semanticdb:synthetics:on")
       case _            => Seq.empty

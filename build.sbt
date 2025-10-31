@@ -5,7 +5,7 @@ import com.typesafe.tools.mima.plugin.MimaKeys.mimaPreviousArtifacts
 import explicitdeps.ExplicitDepsPlugin.autoImport.moduleFilterRemoveValue
 import sbtcrossproject.CrossPlugin.autoImport.crossProject
 
-Global / onChangedBuildSource := IgnoreSourceChanges
+Global / onChangedBuildSource := ReloadOnSourceChanges
 
 inThisBuild(
   List(
@@ -36,32 +36,32 @@ addCommandAlias("prepare", "fmt")
 
 addCommandAlias(
   "testJVM",
-  "zioJsonJVM/test; zioJsonYaml/test; zioJsonInteropHttp4s/test; zioJsonInteropScalaz7xJVM/test; zioJsonGolden/test; zioJsonInteropRefinedJVM/test"
+  "zioJsonJVM/test; zioJsonYaml/test; zioJsonInteropHttp4s/test; zioJsonGolden/test; zioJsonInteropRefinedJVM/test"
 )
 
 addCommandAlias(
   "testJS",
-  "zioJsonJS/test; zioJsonInteropScalaz7xJS/test; zioJsonInteropRefinedJS/test"
+  "zioJsonJS/test; zioJsonInteropRefinedJS/test"
 )
 
 addCommandAlias(
   "testNative",
-  "zioJsonNative/test; zioJsonInteropScalaz7xNative/test; zioJsonInteropRefinedNative/test"
+  "zioJsonNative/test; zioJsonInteropRefinedNative/test"
 )
 
 addCommandAlias(
   "testScala2JVM",
-  "zioJsonMacrosJVM/test"
+  "zioJsonMacrosJVM/test; zioJsonInteropScalaz7xJVM/test"
 )
 
 addCommandAlias(
   "testScala2JS",
-  "zioJsonMacrosJS/test"
+  "zioJsonMacrosJS/test; zioJsonInteropScalaz7xJS/test"
 )
 
 addCommandAlias(
   "testScala2Native",
-  "zioJsonMacrosNative/test"
+  "zioJsonMacrosNative/test; zioJsonInteropScalaz7xNative/test"
 )
 
 val zioVersion = "2.1.22"
@@ -368,14 +368,14 @@ lazy val zioJsonInteropRefined = crossProject(JSPlatform, JVMPlatform, NativePla
 lazy val zioJsonInteropScalaz7x = crossProject(JSPlatform, JVMPlatform, NativePlatform)
   .in(file("zio-json-interop-scalaz7x"))
   .dependsOn(zioJson)
-  .settings(stdSettings("zio-json-interop-scalaz7x", isScala3Compatible = false))
+  .settings(stdSettings("zio-json-interop-scalaz7x"))
   .settings(buildInfoSettings("zio.json.interop.scalaz7x"))
   .settings(
     crossScalaVersions -= Scala3,
     libraryDependencies ++= Seq(
-      ("org.scalaz" %%% "scalaz-core"  % "7.3.8").cross(CrossVersion.for3Use2_13),
-      "dev.zio"     %%% "zio-test"     % zioVersion % Test,
-      "dev.zio"     %%% "zio-test-sbt" % zioVersion % Test
+      "org.scalaz" %%% "scalaz-core"  % "7.3.8",
+      "dev.zio"    %%% "zio-test"     % zioVersion % Test,
+      "dev.zio"    %%% "zio-test-sbt" % zioVersion % Test
     ),
     testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework")
   )
