@@ -18,14 +18,17 @@ jobs:
     timeout-minutes: 30
     steps:
       - name: Checkout current branch
-        uses: actions/checkout@v5.0.0
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
-      - name: Setup Action
-        uses: coursier/setup-action@v1
+      - name: Setup Java
+        uses: actions/setup-java@v5
         with:
-          jvm: temurin:11
-          apps: sbt
+          distribution: temurin
+          java-version: 17
+          check-latest: true
+      - name: Setup sbt
+        uses: sbt/setup-sbt@v1
       - name: Cache scala dependencies
         uses: coursier/cache-action@v6
       - name: Lint code
@@ -36,18 +39,21 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        java: ['11', '21']
+        java: ['17']
         scala: ['2.13.x', '3.x']
     steps:
       - name: Checkout current branch
-        uses: actions/checkout@v5.0.0
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
-      - name: Setup Action
-        uses: coursier/setup-action@v1
+      - name: Setup Java
+        uses: actions/setup-java@v5
         with:
-          jvm: temurin:${{ matrix.java }}
-          apps: sbt
+          distribution: temurin
+          java-version: ${{ matrix.java }}
+          check-latest: true
+      - name: Setup sbt
+        uses: sbt/setup-sbt@v1
       - name: Cache scala dependencies
         uses: coursier/cache-action@v6
       - name: Compile benchmarks
@@ -58,39 +64,45 @@ jobs:
     timeout-minutes: 60
     steps:
       - name: Checkout current branch
-        uses: actions/checkout@v5.0.0
-      - name: Setup Action
-        uses: coursier/setup-action@v1
+        uses: actions/checkout@v5
+      - name: Setup Java
+        uses: actions/setup-java@v5
         with:
-          jvm: temurin:11
-          apps: sbt
+          distribution: temurin
+          java-version: 17
+          check-latest: true
+      - name: Setup sbt
+        uses: sbt/setup-sbt@v1
       - name: Cache scala dependencies
         uses: coursier/cache-action@v6
       - name: Check Document Generation
         run: sbt compileDocs
 
-  test:
+  testCross:
     runs-on: ubuntu-22.04
     timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
-        java: ['11', '21']
+        java: ['17']
         scala: ['2.12.x', '2.13.x', '3.x']
         platform: ['JVM', 'JS', 'Native']
     steps:
       - name: Checkout current branch
-        uses: actions/checkout@v5.0.0
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
       - name: Install Boehm GC
         if: ${{ startsWith(matrix.platform, 'Native') }}
         run: sudo apt-get update && sudo apt-get install -y libgc-dev
-      - name: Setup Action
-        uses: coursier/setup-action@v1
+      - name: Setup Java
+        uses: actions/setup-java@v5
         with:
-          jvm: temurin:${{ matrix.java }}
-          apps: sbt
+          distribution: temurin
+          java-version: ${{ matrix.java }}
+          check-latest: true
+      - name: Setup sbt
+        uses: sbt/setup-sbt@v1
       - name: Cache scala dependencies
         uses: coursier/cache-action@v6
       - name: Install libuv
@@ -102,26 +114,61 @@ jobs:
       - name: Run tests
         run: sbt ++${{ matrix.scala }} test${{ matrix.platform }}
 
+  testJVM:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        java: ['21', '25'] # Test on 17 is covered in 'testCross' job
+        scala: ['2.12.x', '2.13.x', '3.x']
+        platform: ['JVM']
+    steps:
+      - name: Checkout current branch
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - name: Install Boehm GC
+        if: ${{ startsWith(matrix.platform, 'Native') }}
+        run: sudo apt-get update && sudo apt-get install -y libgc-dev
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: ${{ matrix.java }}
+          check-latest: true
+      - name: Setup sbt
+        uses: sbt/setup-sbt@v1
+      - name: Cache scala dependencies
+        uses: coursier/cache-action@v6
+      - name: Run Macros tests
+        if: ${{ !startsWith(matrix.scala, '3.') }}
+        run: sbt ++${{ matrix.scala }} testScala2${{ matrix.platform }}
+      - name: Run tests
+        run: sbt ++${{ matrix.scala }} test${{ matrix.platform }}
+
+
   mima_check:
     runs-on: ubuntu-22.04
     timeout-minutes: 30
     steps:
       - name: Checkout current branch
-        uses: actions/checkout@v5.0.0
+        uses: actions/checkout@v5
         with:
           fetch-depth: 300
       - name: Fetch tags
         run: git fetch --depth=300 origin +refs/tags/*:refs/tags/*
-      - name: Setup Action
-        uses: coursier/setup-action@v1
+      - name: Setup Java
+        uses: actions/setup-java@v5
         with:
-          jvm: temurin:11
-          apps: sbt
+          distribution: temurin
+          java-version: 17
+          check-latest: true
       - run: sbt +mimaReportBinaryIssues
 
   ci:
     runs-on: ubuntu-22.04
-    needs: [lint, mdoc, benchmarks, test, mima_check]
+    needs: [lint, mdoc, benchmarks, testCross, testJVM, mima_check]
     steps:
       - name: Aggregate of lint, and all tests
         run: echo "ci passed"
@@ -133,14 +180,17 @@ jobs:
     if: ${{ github.event_name != 'pull_request' }}
     steps:
       - name: Checkout current branch
-        uses: actions/checkout@v5.0.0
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
-      - name: Setup Action
-        uses: coursier/setup-action@v1
+      - name: Setup Java
+        uses: actions/setup-java@v5
         with:
-          jvm: temurin:11
-          apps: sbt
+          distribution: temurin
+          java-version: 17
+          check-latest: true
+      - name: Setup sbt
+        uses: sbt/setup-sbt@v1
       - name: Release
         run: sbt ci-release
         env:
