@@ -58,7 +58,7 @@ addCommandAlias(
   "zioJsonMacrosNative/test"
 )
 
-val zioVersion = "2.1.20"
+val zioVersion = "2.1.22"
 
 lazy val zioJsonRoot = project
   .in(file("."))
@@ -86,7 +86,7 @@ lazy val zioJsonRoot = project
     zioJsonGolden
   )
 
-val circeVersion = "0.14.14"
+val circeVersion = "0.14.15"
 
 lazy val zioJson = crossProject(JSPlatform, JVMPlatform, NativePlatform)
   .in(file("zio-json"))
@@ -112,8 +112,8 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform, NativePlatform)
       "org.scala-lang.modules"                %%% "scala-collection-compat" % "2.13.0"     % "test",
       "dev.zio"                               %%% "zio-test"                % zioVersion   % "test",
       "dev.zio"                               %%% "zio-test-sbt"            % zioVersion   % "test",
-      "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-core"     % "2.37.6"     % "test",
-      "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-macros"   % "2.37.6"     % "test",
+      "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-core"     % "2.38.3"     % "test",
+      "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-macros"   % "2.38.3"     % "test",
       "io.circe"                              %%% "circe-core"              % circeVersion % "test",
       "io.circe"                              %%% "circe-generic"           % circeVersion % "test",
       "io.circe"                              %%% "circe-parser"            % circeVersion % "test",
@@ -290,7 +290,7 @@ lazy val zioJsonYaml = project
   .settings(buildInfoSettings("zio.json.yaml"))
   .settings(
     libraryDependencies ++= Seq(
-      "org.yaml"                % "snakeyaml"               % "2.4",
+      "org.yaml"                % "snakeyaml"               % "2.5",
       "org.scala-lang.modules" %% "scala-collection-compat" % "2.13.0",
       "dev.zio"                %% "zio"                     % zioVersion,
       "dev.zio"                %% "zio-test"                % zioVersion % "test",
@@ -331,7 +331,7 @@ lazy val zioJsonInteropHttp4s = project
   .settings(buildInfoSettings("zio.json.interop.http4s"))
   .settings(
     libraryDependencies ++= Seq(
-      "org.http4s"    %% "http4s-dsl"       % "0.23.30",
+      "org.http4s"    %% "http4s-dsl"       % "0.23.32",
       "dev.zio"       %% "zio"              % zioVersion,
       "org.typelevel" %% "cats-effect"      % "3.6.3",
       "dev.zio"       %% "zio-interop-cats" % "23.1.0.5" % "test",
