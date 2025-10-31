@@ -368,7 +368,7 @@ lazy val zioJsonInteropRefined = crossProject(JSPlatform, JVMPlatform, NativePla
 lazy val zioJsonInteropScalaz7x = crossProject(JSPlatform, JVMPlatform, NativePlatform)
   .in(file("zio-json-interop-scalaz7x"))
   .dependsOn(zioJson)
-  .settings(stdSettings("zio-json-interop-scalaz7x"))
+  .settings(stdSettings("zio-json-interop-scalaz7x", isScala3Compatible = false))
   .settings(buildInfoSettings("zio.json.interop.scalaz7x"))
   .settings(
     crossScalaVersions -= Scala3,

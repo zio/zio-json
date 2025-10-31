@@ -202,9 +202,9 @@ object BuildHelper {
     }
   )
 
-  def stdSettings(prjName: String) = Seq(
-    name                     := s"$prjName",
-    crossScalaVersions       := Seq(Scala212, Scala213, Scala3),
+  def stdSettings(prjName: String, isScala3Compatible: Boolean = true) = Seq(
+    name               := s"$prjName",
+    crossScalaVersions := Seq(Scala212, Scala213) ++ (if (isScala3Compatible) Seq(Scala3) else Seq.empty),
     scalacOptions ++= stdOptions ++ extraOptions(scalaVersion.value, optimize = !isSnapshot.value),
     libraryDependencies ++= {
       if (scalaVersion.value == Scala3) Seq.empty
