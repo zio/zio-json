@@ -19,6 +19,8 @@ object BuildHelper {
   val Scala213: String = "2.13.17"
   val Scala3: String   = "3.3.7"
 
+  val JdkReleaseVersion: String = "17"
+
   private val stdOptions = Seq(
     "-deprecation",
     "-encoding",
@@ -205,6 +207,8 @@ object BuildHelper {
   def stdSettings(prjName: String) = Seq(
     name               := s"$prjName",
     crossScalaVersions := Seq(Scala212, Scala213, Scala3),
+    javacOptions ++= Seq("-source", JdkReleaseVersion, "-target", JdkReleaseVersion),
+    scalacOptions ++= Seq(s"-release:$JdkReleaseVersion"),
     scalacOptions ++= stdOptions ++ extraOptions(scalaVersion.value, optimize = !isSnapshot.value),
     libraryDependencies ++= {
       if (scalaVersion.value == Scala3) Seq.empty
