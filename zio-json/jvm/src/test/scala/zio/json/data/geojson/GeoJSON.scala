@@ -2,7 +2,6 @@ package zio.json.data.geojson
 
 import zio.json._
 import zio.json.ast._
-import com.github.ghik.silencer.silent
 import io.circe.{ Codec, Decoder, Encoder }
 import io.circe.generic.semiauto.deriveCodec
 import io.circe.syntax.EncoderOps
@@ -28,7 +27,6 @@ package generated {
     features: List[GeoJSON] // NOTE: recursive
   ) extends GeoJSON
 
-  @silent("Block result was adapted via implicit conversion")
   object Geometry {
     implicit lazy val zioJsonJsonDecoder: JsonDecoder[Geometry] =
       DeriveJsonDecoder.gen[Geometry]
@@ -67,7 +65,7 @@ package generated {
       )
     }
   }
-  @silent("Block result was adapted via implicit conversion")
+
   object GeoJSON {
     implicit lazy val zioJsonJsonDecoder: JsonDecoder[GeoJSON] =
       DeriveJsonDecoder.gen[GeoJSON]
@@ -95,8 +93,6 @@ package generated {
 
 package handrolled {
 
-  import com.github.ghik.silencer.silent
-
   sealed abstract class Geometry
   final case class Point(coordinates: (Double, Double))                          extends Geometry
   final case class MultiPoint(coordinates: List[(Double, Double)])               extends Geometry
@@ -114,7 +110,6 @@ package handrolled {
     features: List[GeoJSON] // NOTE: recursive
   ) extends GeoJSON
 
-  @silent("Block result was adapted via implicit conversion")
   object Geometry {
     // this is an example of a handrolled decoder that avoids using the
     // backtracking algorithm that is normally used for sealed traits with a
@@ -267,7 +262,7 @@ package handrolled {
       )
     }
   }
-  @silent("Block result was adapted via implicit conversion")
+
   object GeoJSON {
     // This uses a hand rolled decoder that guesses the type based on the field
     // names to protect against attack vectors that put the hint at the end of
