@@ -232,7 +232,7 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform, NativePlatform)
       )
       Seq(file)
     }.taskValue,
-    inConfig(Jmh)(org.scalafmt.sbt.ScalafmtPlugin.scalafmtConfigSettings),
+    inConfig(Jmh)(org.scalafmt.sbt.ScalafmtPlugin.scalafmtConfigSettings(Jmh)),
     testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework"),
     mimaBinaryIssueFilters ++= Seq(
       exclude[Problem]("zio.json.CaseObjectDecoder.*") // FIXME: false negative reported by mima
