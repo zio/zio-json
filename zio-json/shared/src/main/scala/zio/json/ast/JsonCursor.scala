@@ -73,7 +73,7 @@ object JsonCursor {
 
   val isString: JsonCursor[Json, Json.Str] = filter(JsonType.Str)
 
-  def filter[A <: Json](jsonType: JsonType[A]): JsonCursor[Json, A] = identity.filterType(jsonType)
+  def filter[A <: Json](jsonType: JsonType[A]): JsonCursor[Json, A] = FilterType(identity, jsonType)
   def element(index: Int): JsonCursor[Json.Arr, Json]               = DownElement(isArray, index)
   def field(name: String): JsonCursor[Json.Obj, Json]               = DownField(isObject, name)
 

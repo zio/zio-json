@@ -16,6 +16,7 @@
 package zio.json
 
 import zio.json.ast.Json
+import zio.json.ast.JsonType.rightNull
 import zio.json.internal.{ FastStringWrite, SafeNumbers, Write }
 import zio.json.javatime.serializers
 import zio.{ Chunk, NonEmptyChunk }
@@ -312,7 +313,7 @@ object JsonEncoder extends GeneratedTupleEncoders with EncoderLowPriority1 with 
     override def isNothing(oa: Option[A]): Boolean = (oa eq None) || A.isNothing(oa.get)
 
     override def toJsonAST(oa: Option[A]): Either[String, Json] =
-      if (oa eq None) new Right(Json.Null)
+      if (oa eq None) rightNull
       else A.toJsonAST(oa.get)
   }
 
