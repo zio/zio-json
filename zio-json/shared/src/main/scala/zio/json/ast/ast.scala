@@ -19,6 +19,7 @@ import zio.Chunk
 import zio.json.JsonDecoder.JsonError
 import zio.json._
 import zio.json.ast.Json._
+import zio.json.ast.JsonType.rightNull
 import zio.json.internal._
 
 import scala.annotation._
@@ -74,7 +75,7 @@ sealed abstract class Json { self =>
   final def delete(cursor: JsonCursor[_, _]): Either[String, Json] = {
     val c = cursor.asInstanceOf[JsonCursor[_, Json]]
 
-    transformOrDelete(c, delete = true)(_ => Right(Json.Null))
+    transformOrDelete(c, delete = true)(_ => rightNull)
   }
 
   override final def equals(that: Any): Boolean = {
@@ -160,8 +161,9 @@ sealed abstract class Json { self =>
           a.elements.lift(index).map(Right(_)).getOrElse(Left(s"The array does not have index ${index}"))
         }
 
-      case JsonCursor.FilterType(parent, t @ jsonType) =>
-        self.get(parent).flatMap(x => jsonType.get(x))
+      case JsonCursor.FilterType(parent, jsonType) =>
+        if (parent eq JsonCursor.identity) jsonType.get(self)
+        else self.get(parent).flatMap(jsonType.get)
     }
 
   override final def hashCode: Int =

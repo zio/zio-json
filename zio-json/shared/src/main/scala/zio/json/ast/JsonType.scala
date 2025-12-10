@@ -20,11 +20,19 @@ sealed trait JsonType[A] {
 }
 
 object JsonType {
+  private[json] val rightNull: Either[String, Json.Null] = new Right(Json.Null)
+  private val expectedNull: Left[String, Nothing]        = new Left("expected null")
+  private val expectedBool: Left[String, Nothing]        = new Left("expected boolean")
+  private val expectedObject: Left[String, Nothing]      = new Left("expected object")
+  private val expectedArray: Left[String, Nothing]       = new Left("expected array")
+  private val expectedString: Left[String, Nothing]      = new Left("expected string")
+  private val expectedNumber: Left[String, Nothing]      = new Left("expected number")
+
   case object Null extends JsonType[Json.Null] {
     def get(json: Json): Either[String, Json.Null] =
       json match {
-        case _: Json.Null.type => new Right(Json.Null)
-        case _                 => new Left("expected null")
+        case _: Json.Null.type => rightNull
+        case _                 => expectedNull
       }
   }
 
@@ -32,7 +40,7 @@ object JsonType {
     def get(json: Json): Either[String, Json.Bool] =
       json match {
         case x: Json.Bool => new Right(x)
-        case _            => new Left("expected boolean")
+        case _            => expectedBool
       }
   }
 
@@ -40,7 +48,7 @@ object JsonType {
     def get(json: Json): Either[String, Json.Obj] =
       json match {
         case x: Json.Obj => new Right(x)
-        case _           => new Left("expected object")
+        case _           => expectedObject
       }
   }
 
@@ -48,7 +56,7 @@ object JsonType {
     def get(json: Json): Either[String, Json.Arr] =
       json match {
         case x: Json.Arr => new Right(x)
-        case _           => new Left("expected array")
+        case _           => expectedArray
       }
   }
 
@@ -56,7 +64,7 @@ object JsonType {
     def get(json: Json): Either[String, Json.Str] =
       json match {
         case x: Json.Str => new Right(x)
-        case _           => new Left("expected string")
+        case _           => expectedString
       }
   }
 
@@ -64,7 +72,7 @@ object JsonType {
     def get(json: Json): Either[String, Json.Num] =
       json match {
         case x: Json.Num => new Right(x)
-        case _           => new Left("expected number")
+        case _           => expectedNumber
       }
   }
 }
