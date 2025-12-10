@@ -21,12 +21,12 @@ sealed trait JsonType[A] {
 
 object JsonType {
   private[json] val rightNull: Either[String, Json.Null] = new Right(Json.Null)
-  private val expectedNull: Left[String, Nothing]       = new Left("expected null")
-  private val expectedBool: Left[String, Nothing]       = new Left("expected boolean")
-  private val expectedObject: Left[String, Nothing]     = new Left("expected object")
-  private val expectedArray: Left[String, Nothing]      = new Left("expected array")
-  private val expectedString: Left[String, Nothing]     = new Left("expected string")
-  private val expectedNumber: Left[String, Nothing]     = new Left("expected number")
+  private val expectedNull: Left[String, Nothing]        = new Left("expected null")
+  private val expectedBool: Left[String, Nothing]        = new Left("expected boolean")
+  private val expectedObject: Left[String, Nothing]      = new Left("expected object")
+  private val expectedArray: Left[String, Nothing]       = new Left("expected array")
+  private val expectedString: Left[String, Nothing]      = new Left("expected string")
+  private val expectedNumber: Left[String, Nothing]      = new Left("expected number")
 
   case object Null extends JsonType[Json.Null] {
     def get(json: Json): Either[String, Json.Null] =
