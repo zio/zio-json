@@ -268,14 +268,7 @@ object BuildHelper {
   val scalaJavaTimeVersion = "2.6.0"
 
   def nativeSettings = Seq(
-    nativeConfig ~= { cfg =>
-      import scala.scalanative.build.Mode
-
-      val os = System.getProperty("os.name").toLowerCase
-      // For some unknown reason, we can't run the test suites in debug mode on MacOS
-      if (os.contains("mac")) cfg.withMode(Mode.releaseFast)
-      else cfg
-    },
+    nativeConfig ~= { cfg => cfg.withMode(scala.scalanative.build.Mode.releaseFast) },
     scalacOptions += "-P:scalanative:genStaticForwardersForNonTopLevelObjects",
     Test / fork := false
   )
