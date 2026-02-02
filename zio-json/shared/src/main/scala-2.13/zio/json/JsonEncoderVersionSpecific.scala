@@ -7,7 +7,7 @@ import scala.collection.immutable
 
 private[json] trait JsonEncoderVersionSpecific {
   implicit def arraySeq[A: JsonEncoder: scala.reflect.ClassTag]: JsonEncoder[immutable.ArraySeq[A]] =
-    new JsonEncoder[immutable.ArraySeq[A]] {
+    new JsonEncoder.AbstractJsonEncoder[immutable.ArraySeq[A]] {
       private[this] val arrayEnc = JsonEncoder.array[A]
 
       override def isEmpty(as: immutable.ArraySeq[A]): Boolean = as.isEmpty

@@ -541,7 +541,7 @@ object DeriveJsonDecoder {
       ctx.subtypes.forall(_.typeclass.isInstanceOf[CaseObjectDecoder[JsonDecoder, _]])
     if (discrim.isEmpty && isEnumeration) {
       if (names.length <= 64) {
-        new JsonDecoder[A] {
+        new JsonDecoder.AbstractJsonDecoder[A] {
           def unsafeDecode(trace: List[JsonError], in: RetractReader): A = {
             val idx = Lexer.enumeration(trace, in, matrix1)
             if (idx >= 0) tcs(idx).asInstanceOf[CaseObjectDecoder[JsonDecoder, A]].ctx.rawConstruct(Nil)
@@ -559,7 +559,7 @@ object DeriveJsonDecoder {
             }
         }
       } else {
-        new JsonDecoder[A] {
+        new JsonDecoder.AbstractJsonDecoder[A] {
           def unsafeDecode(trace: List[JsonError], in: RetractReader): A = {
             val idx = Lexer.enumeration128(trace, in, matrix1, matrix2)
             if (idx >= 0) tcs(idx).asInstanceOf[CaseObjectDecoder[JsonDecoder, A]].ctx.rawConstruct(Nil)
@@ -580,7 +580,7 @@ object DeriveJsonDecoder {
     } else if (discrim.isEmpty) {
       // We're not allowing extra fields in this encoding
       if (names.length <= 64) {
-        new JsonDecoder[A] {
+        new JsonDecoder.AbstractJsonDecoder[A] {
           private[this] val spans = names.map(JsonError.ObjectAccess)
 
           def unsafeDecode(trace: List[JsonError], in: RetractReader): A = {
@@ -607,7 +607,7 @@ object DeriveJsonDecoder {
             }
         }
       } else {
-        new JsonDecoder[A] {
+        new JsonDecoder.AbstractJsonDecoder[A] {
           private[this] val spans = names.map(JsonError.ObjectAccess)
 
           def unsafeDecode(trace: List[JsonError], in: RetractReader): A = {
@@ -636,7 +636,7 @@ object DeriveJsonDecoder {
       }
     } else {
       if (names.length <= 64) {
-        new JsonDecoder[A] {
+        new JsonDecoder.AbstractJsonDecoder[A] {
           private[this] val hintfield  = discrim.get
           private[this] val hintmatrix = new StringMatrix(Array(hintfield))
           private[this] val spans      = names.map(JsonError.Message)
@@ -676,7 +676,7 @@ object DeriveJsonDecoder {
             }
         }
       } else {
-        new JsonDecoder[A] {
+        new JsonDecoder.AbstractJsonDecoder[A] {
           private[this] val hintfield  = discrim.get
           private[this] val hintmatrix = new StringMatrix(Array(hintfield))
           private[this] val spans      = names.map(JsonError.Message)
@@ -723,7 +723,7 @@ object DeriveJsonDecoder {
 }
 
 object DeriveJsonEncoder {
-  private lazy val caseObjectEncoder = new JsonEncoder[Any] {
+  private lazy val caseObjectEncoder = new JsonEncoder.AbstractJsonEncoder[Any] {
     override def isEmpty(a: Any): Boolean = true
 
     def unsafeEncode(a: Any, indent: Option[Int], out: Write): Unit = out.write("{}")
@@ -742,7 +742,7 @@ object DeriveJsonEncoder {
       val explicitEmptyCollections = ctx.annotations.collectFirst { case a: jsonExplicitEmptyCollections => a.encoding }
         .getOrElse(config.explicitEmptyCollections.encoding)
       val params = ctx.parameters.filter(p => p.annotations.collectFirst { case _: jsonExclude => () }.isEmpty).toArray
-      new JsonEncoder[A] {
+      new JsonEncoder.AbstractJsonEncoder[A] {
         private[this] lazy val fields = params.map { p =>
           FieldEncoder(
             p = p,
@@ -816,7 +816,7 @@ object DeriveJsonEncoder {
     lazy val isEnumeration = config.enumValuesAsStrings &&
       ctx.subtypes.forall(_.typeclass == caseObjectEncoder)
     if (discrim.isEmpty && isEnumeration) {
-      new JsonEncoder[A] {
+      new JsonEncoder.AbstractJsonEncoder[A] {
         private[this] val casts = ctx.subtypes.map(_.cast).toArray
 
         def unsafeEncode(a: A, indent: Option[Int], out: Write): Unit = {
@@ -832,7 +832,7 @@ object DeriveJsonEncoder {
         }
       }
     } else if (discrim.isEmpty) {
-      new JsonEncoder[A] {
+      new JsonEncoder.AbstractJsonEncoder[A] {
         private[this] val casts = ctx.subtypes.map(_.cast).toArray
 
         def unsafeEncode(a: A, indent: Option[Int], out: Write): Unit = {
@@ -856,7 +856,7 @@ object DeriveJsonEncoder {
         }
       }
     } else {
-      new JsonEncoder[A] {
+      new JsonEncoder.AbstractJsonEncoder[A] {
         private[this] val casts                = ctx.subtypes.map(_.cast).toArray
         private[this] val hintFieldName        = discrim.get
         private[this] val encodedHintFieldName = JsonEncoder.string.encodeJson(hintFieldName, None).toString
