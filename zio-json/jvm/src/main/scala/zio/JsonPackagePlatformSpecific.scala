@@ -74,6 +74,35 @@ trait JsonPackagePlatformSpecific {
   def writeJsonLinesAs[R, A: JsonEncoder](path: String, stream: ZStream[R, Throwable, A]): RIO[R, Unit] =
     writeJsonLinesAs(Paths.get(path), stream)
 
+  def readJsonArrayAs[A: JsonDecoder](file: File): ZStream[Any, Throwable, A] =
+    readJsonArrayAs(file.toPath)
+
+  def readJsonArrayAs[A: JsonDecoder](path: Path): ZStream[Any, Throwable, A] =
+    ZStream
+      .fromPath(path)
+      .via(
+        ZPipeline.utf8Decode >>>
+          stringToChars >>>
+          JsonDecoder[A].decodeJsonPipeline(JsonStreamDelimiter.Array)
+      )
+
+  def readJsonArrayAs[A: JsonDecoder](path: String): ZStream[Any, Throwable, A] =
+    readJsonArrayAs(Paths.get(path))
+
+  def readJsonArrayAs[A: JsonDecoder](url: URL): ZStream[Any, Throwable, A] = {
+    val scoped = ZIO
+      .fromAutoCloseable(ZIO.attempt(url.openStream()))
+      .refineToOrDie[IOException]
+
+    ZStream
+      .fromInputStreamScoped(scoped)
+      .via(
+        ZPipeline.utf8Decode >>>
+          stringToChars >>>
+          JsonDecoder[A].decodeJsonPipeline(JsonStreamDelimiter.Array)
+      )
+  }
+
   private def stringToChars: ZPipeline[Any, Nothing, String, Char] =
     ZPipeline.mapChunks[String, Char](_.flatMap(_.toCharArray))
 
