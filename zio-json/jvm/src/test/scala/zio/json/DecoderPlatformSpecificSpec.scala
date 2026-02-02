@@ -252,6 +252,57 @@ object DecoderPlatformSpecificSpec extends ZIOSpecDefault {
               assert(lines(0))(equalTo(Event(1603669875, "hello"))) &&
               assert(lines(1))(equalTo(Event(1603669876, "world")))
             }
+          },
+          test("readJsonArrayAs reads from files") {
+            import logEvent._
+
+            for {
+              lines <- readJsonArrayAs[Event](Paths.get("zio-json/jvm/src/test/resources/test_array.json")).runCollect
+            } yield {
+              assert(lines(0))(equalTo(Event(1603669875, "hello"))) &&
+              assert(lines(1))(equalTo(Event(1603669876, "world"))) &&
+              assert(lines(2))(equalTo(Event(1603669877, "array")))
+            }
+          },
+          test("readJsonArrayAs reads from URLs") {
+            import logEvent._
+
+            val url = this.getClass.getClassLoader.getResource("test_array.json")
+
+            for {
+              lines <- readJsonArrayAs[Event](url).runCollect
+            } yield {
+              assert(lines(0))(equalTo(Event(1603669875, "hello"))) &&
+              assert(lines(1))(equalTo(Event(1603669876, "world"))) &&
+              assert(lines(2))(equalTo(Event(1603669877, "array")))
+            }
+          },
+          test("readJsonArrayAs reads empty arrays") {
+            import logEvent._
+
+            val emptyArrayPath = Paths.get("zio-json/jvm/src/test/resources/empty_array.json")
+
+            for {
+              _     <- ZIO.attemptBlocking(java.nio.file.Files.write(emptyArrayPath, "[]".getBytes))
+              lines <- readJsonArrayAs[Event](emptyArrayPath).runCollect
+              _     <- ZIO.attemptBlocking(java.nio.file.Files.delete(emptyArrayPath))
+            } yield {
+              assert(lines)(isEmpty)
+            }
+          },
+          test("readJsonArrayAs reads real-world competitions.json") {
+            import competitionData._
+
+            for {
+              competitions <- readJsonArrayAs[Competition](
+                                Paths.get("zio-json/jvm/src/test/resources/competitions.json")
+                              ).runCollect
+            } yield {
+              assert(competitions.nonEmpty)(isTrue) &&
+              assert(competitions.head.competition_id)(equalTo(9)) &&
+              assert(competitions.head.country_name)(equalTo("Germany")) &&
+              assert(competitions.head.competition_name)(equalTo("1. Bundesliga"))
+            }
           }
         ),
         suite("combinators")(
@@ -394,5 +445,24 @@ object DecoderPlatformSpecificSpec extends ZIOSpecDefault {
 
     implicit val eventDecoder: JsonDecoder[Event] = DeriveJsonDecoder.gen[Event]
     implicit val eventEncoder: JsonEncoder[Event] = DeriveJsonEncoder.gen[Event]
+  }
+
+  object competitionData {
+    case class Competition(
+      competition_id: Int,
+      season_id: Int,
+      country_name: String,
+      competition_name: String,
+      competition_gender: String,
+      competition_youth: Boolean,
+      competition_international: Boolean,
+      season_name: String,
+      match_updated: Option[String],
+      match_updated_360: Option[String],
+      match_available_360: Option[String],
+      match_available: Option[String]
+    )
+
+    implicit val competitionDecoder: JsonDecoder[Competition] = DeriveJsonDecoder.gen[Competition]
   }
 }
