@@ -21,6 +21,18 @@ trait JsonPackagePlatformSpecific {
   def readJsonAs(url: URL): ZStream[Any, Throwable, ast.Json] =
     readJsonLinesAs[ast.Json](url)
 
+  def readJsonArray(file: File): ZStream[Any, Throwable, ast.Json] =
+    readJsonArrayAs[ast.Json](file)
+
+  def readJsonArray(path: Path): ZStream[Any, Throwable, ast.Json] =
+    readJsonArrayAs[ast.Json](path)
+
+  def readJsonArray(path: String): ZStream[Any, Throwable, ast.Json] =
+    readJsonArrayAs[ast.Json](path)
+
+  def readJsonArray(url: URL): ZStream[Any, Throwable, ast.Json] =
+    readJsonArrayAs[ast.Json](url)
+
   def readJsonLinesAs[A: JsonDecoder](file: File): ZStream[Any, Throwable, A] =
     readJsonLinesAs(file.toPath)
 
