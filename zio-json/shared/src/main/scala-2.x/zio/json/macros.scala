@@ -723,7 +723,7 @@ object DeriveJsonDecoder {
 }
 
 object DeriveJsonEncoder {
-  private lazy val caseObjectEncoder = new JsonEncoder.AbstractJsonEncoder[Any] {
+  private lazy val caseObjectEncoder: JsonEncoder[Any] = new JsonEncoder.AbstractJsonEncoder[Any] {
     override def isEmpty(a: Any): Boolean = true
 
     def unsafeEncode(a: Any, indent: Option[Int], out: Write): Unit = out.write("{}")
