@@ -154,7 +154,7 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform, NativePlatform)
           .mkString("\n            ")
         val returns = (1 to i).map(p => s"a$p").mkString(", ")
         s"""implicit def tuple$i[$tparams](implicit $implicits): JsonDecoder[Tuple$i[$tparams]] =
-           |    new JsonDecoder[Tuple$i[$tparams]] {
+           |    new JsonDecoder.AbstractJsonDecoder[Tuple$i[$tparams]] {
            |      private[this] val traces: Array[JsonError] = (0 to ${i - 1}).map(JsonError.ArrayAccess(_)).toArray
            |      def unsafeDecode(trace: List[JsonError], in: RetractReader): Tuple$i[$tparams] = {
            |        Lexer.char(trace, in, '[')
@@ -195,7 +195,7 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform, NativePlatform)
           .map(p => s"A$p.unsafeEncode(t._$p, indent, out)")
           .mkString("\n        if (indent.isEmpty) out.write(',') else out.write(\", \")\n        ")
         s"""implicit def tuple$i[$tparams](implicit $implicits): JsonEncoder[Tuple$i[$tparams]] =
-           |    new JsonEncoder[Tuple$i[$tparams]] {
+           |    new JsonEncoder.AbstractJsonEncoder[Tuple$i[$tparams]] {
            |      def unsafeEncode(t: Tuple$i[$tparams], indent: Option[Int], out: internal.Write): Unit = {
            |        out.write('[')
            |        $work

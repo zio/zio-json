@@ -534,7 +534,7 @@ sealed class JsonDecoderDerivation(config: JsonCodecConfiguration) extends Deriv
         !ctx.isEnum && ctx.subtypes.forall(_.isObject))
     if (discrim.isEmpty && isEnumeration) {
       if (names.length <= 64) {
-        new JsonDecoder[A] {
+        new JsonDecoder.AbstractJsonDecoder[A] {
           def unsafeDecode(trace: List[JsonError], in: RetractReader): A = {
             val idx = Lexer.enumeration(trace, in, matrix1)
             if (idx >= 0) tcs(idx).asInstanceOf[CaseObjectDecoder[JsonDecoder, A]].ctx.rawConstruct(Nil)
@@ -551,7 +551,7 @@ sealed class JsonDecoderDerivation(config: JsonCodecConfiguration) extends Deriv
             }
         }
       } else {
-        new JsonDecoder[A] {
+        new JsonDecoder.AbstractJsonDecoder[A] {
           def unsafeDecode(trace: List[JsonError], in: RetractReader): A = {
             val idx = Lexer.enumeration128(trace, in, matrix1, matrix2)
             if (idx >= 0) tcs(idx).asInstanceOf[CaseObjectDecoder[JsonDecoder, A]].ctx.rawConstruct(Nil)
@@ -571,7 +571,7 @@ sealed class JsonDecoderDerivation(config: JsonCodecConfiguration) extends Deriv
     } else if (discrim.isEmpty) {
       // We're not allowing extra fields in this encoding
       if (names.length <= 64) {
-        new JsonDecoder[A] {
+        new JsonDecoder.AbstractJsonDecoder[A] {
           private val spans = names.map(JsonError.ObjectAccess(_))
 
           def unsafeDecode(trace: List[JsonError], in: RetractReader): A = {
@@ -598,7 +598,7 @@ sealed class JsonDecoderDerivation(config: JsonCodecConfiguration) extends Deriv
             }
         }
       } else {
-        new JsonDecoder[A] {
+        new JsonDecoder.AbstractJsonDecoder[A] {
           private val spans = names.map(JsonError.ObjectAccess(_))
 
           def unsafeDecode(trace: List[JsonError], in: RetractReader): A = {
@@ -627,7 +627,7 @@ sealed class JsonDecoderDerivation(config: JsonCodecConfiguration) extends Deriv
       }
     } else {
       if (names.length <= 64) {
-        new JsonDecoder[A] {
+        new JsonDecoder.AbstractJsonDecoder[A] {
           private val hintfield = discrim.get
           private val hintmatrix = new StringMatrix(Array(hintfield))
           private val spans = names.map(JsonError.Message(_))
@@ -667,7 +667,7 @@ sealed class JsonDecoderDerivation(config: JsonCodecConfiguration) extends Deriv
             }
         }
       } else {
-        new JsonDecoder[A] {
+        new JsonDecoder.AbstractJsonDecoder[A] {
           private val hintfield = discrim.get
           private val hintmatrix = new StringMatrix(Array(hintfield))
           private val spans = names.map(JsonError.Message(_))
@@ -719,7 +719,7 @@ sealed class JsonDecoderDerivation(config: JsonCodecConfiguration) extends Deriv
   }
 }
 
-private lazy val caseObjectEncoder = new JsonEncoder[Any] {
+private lazy val caseObjectEncoder: JsonEncoder[Any] = new JsonEncoder.AbstractJsonEncoder[Any] {
   override def isEmpty(a: Any): Boolean = true
 
   def unsafeEncode(a: Any, indent: Option[Int], out: Write): Unit = out.write("{}")
@@ -753,7 +753,7 @@ sealed class JsonEncoderDerivation(config: JsonCodecConfiguration) extends Deriv
       val params = IArray.genericWrapArray(ctx.params.filterNot { param =>
         param.annotations.collectFirst { case _: jsonExclude => () }.isDefined
       }).toArray
-      new JsonEncoder[A] {
+      new JsonEncoder.AbstractJsonEncoder[A] {
         private lazy val fields = params.map { p =>
           FieldEncoder(
             p = p,
@@ -829,7 +829,7 @@ sealed class JsonEncoderDerivation(config: JsonCodecConfiguration) extends Deriv
       (ctx.isEnum && ctx.subtypes.forall(_.typeclass == caseObjectEncoder) ||
         !ctx.isEnum && ctx.subtypes.forall(_.isObject))
     if (discrim.isEmpty && isEnumeration) {
-      new JsonEncoder[A] {
+      new JsonEncoder.AbstractJsonEncoder[A] {
         private val casts = IArray.genericWrapArray(ctx.subtypes.map(_.cast)).toArray
 
         def unsafeEncode(a: A, indent: Option[Int], out: Write): Unit = {
@@ -845,7 +845,7 @@ sealed class JsonEncoderDerivation(config: JsonCodecConfiguration) extends Deriv
         }
       }
     } else if (discrim.isEmpty) {
-      new JsonEncoder[A] {
+      new JsonEncoder.AbstractJsonEncoder[A] {
         private val casts = IArray.genericWrapArray(ctx.subtypes.map(_.cast)).toArray
 
         def unsafeEncode(a: A, indent: Option[Int], out: Write): Unit = {
@@ -869,7 +869,7 @@ sealed class JsonEncoderDerivation(config: JsonCodecConfiguration) extends Deriv
         }
       }
     } else {
-      new JsonEncoder[A] {
+      new JsonEncoder.AbstractJsonEncoder[A] {
         private val casts = IArray.genericWrapArray(ctx.subtypes.map(_.cast)).toArray
         private val hintFieldName = discrim.get
         private val encodedHintFieldName = JsonEncoder.string.encodeJson(hintFieldName, None).toString

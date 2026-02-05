@@ -120,7 +120,7 @@ package handrolled {
     // custom decoders and is not a requirement to use the JsonDecoder[GeoJSON]
     // custom decoder (below) which is necessary to avert a DOS attack.
     implicit lazy val zioJsonJsonDecoder: JsonDecoder[Geometry] =
-      new JsonDecoder[Geometry] {
+      new JsonDecoder.AbstractJsonDecoder[Geometry] {
         import zio.json._
         import JsonDecoder.JsonError
         import internal._
@@ -270,7 +270,7 @@ package handrolled {
     // potentially complex and even skipping over it is expensive... it's a bit
     // of a corner case.
     implicit lazy val zioJsonJsonDecoder: JsonDecoder[GeoJSON] =
-      new JsonDecoder[GeoJSON] {
+      new JsonDecoder.AbstractJsonDecoder[GeoJSON] {
         import zio.json._
         import JsonDecoder.JsonError
         import internal._

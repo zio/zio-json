@@ -392,7 +392,7 @@ object Json {
       new Obj(Chunk.single(key -> value))
 
     private lazy val objd                  = JsonDecoder.keyValueChunk[String, Json]
-    implicit val decoder: JsonDecoder[Obj] = new JsonDecoder[Obj] {
+    implicit val decoder: JsonDecoder[Obj] = new JsonDecoder.AbstractJsonDecoder[Obj] {
       def unsafeDecode(trace: List[JsonError], in: RetractReader): Obj =
         Obj(objd.unsafeDecode(trace, in))
 
@@ -403,7 +403,7 @@ object Json {
         }
     }
     private lazy val obje                  = JsonEncoder.keyValueChunk[String, Json]
-    implicit val encoder: JsonEncoder[Obj] = new JsonEncoder[Obj] {
+    implicit val encoder: JsonEncoder[Obj] = new JsonEncoder.AbstractJsonEncoder[Obj] {
       def unsafeEncode(a: Obj, indent: Option[Int], out: Write): Unit =
         obje.unsafeEncode(a.fields, indent, out)
 
@@ -445,7 +445,7 @@ object Json {
       else new Arr(Chunk(elements: _*))
 
     private lazy val arrd                  = JsonDecoder.chunk[Json]
-    implicit val decoder: JsonDecoder[Arr] = new JsonDecoder[Arr] {
+    implicit val decoder: JsonDecoder[Arr] = new JsonDecoder.AbstractJsonDecoder[Arr] {
       def unsafeDecode(trace: List[JsonError], in: RetractReader): Arr =
         Arr(arrd.unsafeDecode(trace, in))
 
@@ -456,7 +456,7 @@ object Json {
         }
     }
     private lazy val arre                  = JsonEncoder.chunk[Json]
-    implicit val encoder: JsonEncoder[Arr] = new JsonEncoder[Arr] {
+    implicit val encoder: JsonEncoder[Arr] = new JsonEncoder.AbstractJsonEncoder[Arr] {
       def unsafeEncode(a: Arr, indent: Option[Int], out: Write): Unit =
         arre.unsafeEncode(a.elements, indent, out)
 
@@ -478,7 +478,7 @@ object Json {
       if (value) True
       else False
 
-    implicit val decoder: JsonDecoder[Bool] = new JsonDecoder[Bool] {
+    implicit val decoder: JsonDecoder[Bool] = new JsonDecoder.AbstractJsonDecoder[Bool] {
       def unsafeDecode(trace: List[JsonError], in: RetractReader): Bool =
         Bool(JsonDecoder.boolean.unsafeDecode(trace, in))
 
@@ -488,7 +488,7 @@ object Json {
           case _       => Lexer.error("Not a bool value", trace)
         }
     }
-    implicit val encoder: JsonEncoder[Bool] = new JsonEncoder[Bool] {
+    implicit val encoder: JsonEncoder[Bool] = new JsonEncoder.AbstractJsonEncoder[Bool] {
       def unsafeEncode(a: Bool, indent: Option[Int], out: Write): Unit =
         JsonEncoder.boolean.unsafeEncode(a.value, indent, out)
 
@@ -502,7 +502,7 @@ object Json {
     override def mapString(f: String => String): Json.Str = new Json.Str(f(value))
   }
   object Str {
-    implicit val decoder: JsonDecoder[Str] = new JsonDecoder[Str] {
+    implicit val decoder: JsonDecoder[Str] = new JsonDecoder.AbstractJsonDecoder[Str] {
       def unsafeDecode(trace: List[JsonError], in: RetractReader): Str =
         Str(JsonDecoder.string.unsafeDecode(trace, in))
 
@@ -512,7 +512,7 @@ object Json {
           case _      => Lexer.error("Not a string value", trace)
         }
     }
-    implicit val encoder: JsonEncoder[Str] = new JsonEncoder[Str] {
+    implicit val encoder: JsonEncoder[Str] = new JsonEncoder.AbstractJsonEncoder[Str] {
       def unsafeEncode(a: Str, indent: Option[Int], out: Write): Unit =
         JsonEncoder.string.unsafeEncode(a.value, indent, out)
 
@@ -546,7 +546,7 @@ object Json {
     def apply(value: Float): Num  = new Num(new java.math.BigDecimal(SafeNumbers.toString(value)))
     def apply(value: Double): Num = new Num(new java.math.BigDecimal(SafeNumbers.toString(value)))
 
-    implicit val decoder: JsonDecoder[Num] = new JsonDecoder[Num] {
+    implicit val decoder: JsonDecoder[Num] = new JsonDecoder.AbstractJsonDecoder[Num] {
       def unsafeDecode(trace: List[JsonError], in: RetractReader): Num =
         Num(JsonDecoder.bigDecimal.unsafeDecode(trace, in))
 
@@ -556,7 +556,7 @@ object Json {
           case _      => Lexer.error("Not a number", trace)
         }
     }
-    implicit val encoder: JsonEncoder[Num] = new JsonEncoder[Num] {
+    implicit val encoder: JsonEncoder[Num] = new JsonEncoder.AbstractJsonEncoder[Num] {
       def unsafeEncode(a: Num, indent: Option[Int], out: Write): Unit =
         JsonEncoder.bigDecimal.unsafeEncode(a.value, indent, out)
 
@@ -568,7 +568,7 @@ object Json {
   type Null = Null.type
   case object Null extends Json {
     private[this] val nullChars: Array[Char]     = "null".toCharArray
-    implicit val decoder: JsonDecoder[Null.type] = new JsonDecoder[Null.type] {
+    implicit val decoder: JsonDecoder[Null.type] = new JsonDecoder.AbstractJsonDecoder[Null.type] {
       def unsafeDecode(trace: List[JsonError], in: RetractReader): Null.type = {
         Lexer.readChars(trace, in, nullChars, "null")
         Null
@@ -579,7 +579,7 @@ object Json {
         Null
       }
     }
-    implicit val encoder: JsonEncoder[Null.type] = new JsonEncoder[Null.type] {
+    implicit val encoder: JsonEncoder[Null.type] = new JsonEncoder.AbstractJsonEncoder[Null.type] {
       def unsafeEncode(a: Null.type, indent: Option[Int], out: Write): Unit =
         out.write("null")
 
@@ -591,7 +591,7 @@ object Json {
     override def asNull: Some[Unit] = new Some(())
   }
 
-  implicit val decoder: JsonDecoder[Json] = new JsonDecoder[Json] {
+  implicit val decoder: JsonDecoder[Json] = new JsonDecoder.AbstractJsonDecoder[Json] {
     def unsafeDecode(trace: List[JsonError], in: RetractReader): Json = {
       val c = in.nextNonWhitespace()
       in.retract()
@@ -611,7 +611,7 @@ object Json {
     override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): Json =
       json
   }
-  implicit val encoder: JsonEncoder[Json] = new JsonEncoder[Json] {
+  implicit val encoder: JsonEncoder[Json] = new JsonEncoder.AbstractJsonEncoder[Json] {
     def unsafeEncode(a: Json, indent: Option[Int], out: Write): Unit =
       a match {
         case j: Obj  => Obj.encoder.unsafeEncode(j, indent, out)
