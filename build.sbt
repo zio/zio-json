@@ -243,6 +243,8 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform, NativePlatform)
       exclude[Problem]("zio.JsonPackagePlatformSpecific.*"),
       exclude[Problem]("zio.json.JsonDecoderPlatformSpecific.*"),
       exclude[Problem]("zio.json.JsonEncoderPlatformSpecific.*"),
+      exclude[Problem]("zio.json.JsonDecoder#AbstractJsonDecoder.*"),
+      exclude[Problem]("zio.json.JsonEncoder#AbstractJsonEncoder.*"),
       exclude[Problem]("zio.json.package.*")
     ),
     libraryDependencies ++= Seq(
@@ -257,6 +259,8 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform, NativePlatform)
       exclude[Problem]("zio.JsonPackagePlatformSpecific.*"),
       exclude[Problem]("zio.json.JsonDecoderPlatformSpecific.*"),
       exclude[Problem]("zio.json.JsonEncoderPlatformSpecific.*"),
+      exclude[Problem]("zio.json.JsonDecoder#AbstractJsonDecoder.*"),
+      exclude[Problem]("zio.json.JsonEncoder#AbstractJsonEncoder.*"),
       exclude[Problem]("zio.json.package.*")
     ),
     libraryDependencies ++= Seq(
