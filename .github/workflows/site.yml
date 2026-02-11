@@ -30,29 +30,40 @@ jobs:
       run: sbt  +publishLocal
     - name: Check website build process
       run: sbt docs/clean; sbt  docs/buildWebsite
-  publish-docs:
-    name: Publish Docs
+  release-docs:
+    name: Release Docs
     runs-on: ubuntu-latest
+    continue-on-error: false
+    needs:
+      - release
     if: ${{ ((github.event_name == 'release') && (github.event.action == 'published')) || (github.event_name == 'workflow_dispatch') }}
+    permissions:
+      id-token: write
+      contents: read
     steps:
-    - name: Git Checkout
-      uses: actions/checkout@v6.0.2
-      with:
-        fetch-depth: '0'
-    - name: Setup Action
-      uses: coursier/setup-action@v2
-      with:
-        jvm: temurin:17
-        apps: sbt
-    - name: Setup NodeJs
-      uses: actions/setup-node@v6
-      with:
-        node-version: 16.x
-        registry-url: https://registry.npmjs.org
-    - name: Publish Docs to NPM Registry
-      run: sbt  docs/publishToNpm
-      env:
-        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Git Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: '0'
+      - name: Install libuv
+        run: sudo apt-get update && sudo apt-get install -y libuv1-dev
+      - name: Setup Scala
+        uses: actions/setup-java@v5
+        with:
+          distribution: corretto
+          java-version: '17'
+          check-latest: true
+      - name: Setup SBT
+        uses: sbt/setup-sbt@v1
+      - name: Cache Dependencies
+        uses: coursier/cache-action@v7
+      - name: Setup NodeJs
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24.12.0
+          registry-url: https://registry.npmjs.org
+      - name: Publish Docs to NPM Registry
+        run: sbt docs/publishToNpm
   generate-readme:
     name: Generate README
     runs-on: ubuntu-latest
