@@ -30,7 +30,7 @@ jobs:
       - name: Setup sbt
         uses: sbt/setup-sbt@v1
       - name: Cache scala dependencies
-        uses: coursier/cache-action@v7
+        uses: coursier/cache-action@v8
       - name: Lint code
         run: sbt "++2.12.x; check; ++2.13.x; check; ++3.3.x; check"
 
@@ -55,7 +55,7 @@ jobs:
       - name: Setup sbt
         uses: sbt/setup-sbt@v1
       - name: Cache scala dependencies
-        uses: coursier/cache-action@v7
+        uses: coursier/cache-action@v8
       - name: Compile benchmarks
         run: sbt ++${{ matrix.scala }} jmh:compile
 
@@ -74,7 +74,7 @@ jobs:
       - name: Setup sbt
         uses: sbt/setup-sbt@v1
       - name: Cache scala dependencies
-        uses: coursier/cache-action@v7
+        uses: coursier/cache-action@v8
       - name: Check Document Generation
         run: sbt compileDocs
 
@@ -104,7 +104,7 @@ jobs:
       - name: Setup sbt
         uses: sbt/setup-sbt@v1
       - name: Cache scala dependencies
-        uses: coursier/cache-action@v7
+        uses: coursier/cache-action@v8
       - name: Install libuv
         if: matrix.platform == 'Native'
         run: sudo apt-get update && sudo apt-get install -y libuv1-dev
@@ -140,7 +140,7 @@ jobs:
       - name: Setup sbt
         uses: sbt/setup-sbt@v1
       - name: Cache scala dependencies
-        uses: coursier/cache-action@v7
+        uses: coursier/cache-action@v8
       - name: Run Macros tests
         if: ${{ !startsWith(matrix.scala, '3.') }}
         run: sbt ++${{ matrix.scala }} testScala2${{ matrix.platform }}
