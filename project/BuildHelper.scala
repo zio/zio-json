@@ -19,7 +19,7 @@ object BuildHelper {
   val Scala213: String = "2.13.18"
   val Scala3: String   = "3.3.7"
 
-  val JdkReleaseVersion: String = "17"
+  val JdkReleaseVersion: String = "11"
 
   private val stdOptions = Seq(
     "-deprecation",
