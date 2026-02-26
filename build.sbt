@@ -243,6 +243,10 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform, NativePlatform)
       exclude[Problem]("zio.JsonPackagePlatformSpecific.*"),
       exclude[Problem]("zio.json.JsonDecoderPlatformSpecific.*"),
       exclude[Problem]("zio.json.JsonEncoderPlatformSpecific.*"),
+      exclude[Problem]("zio.json.JsonDecoder#AbstractJsonDecoder.decodeJsonStream*"),
+      exclude[Problem]("zio.json.JsonDecoder#AbstractJsonDecoder.decodeJsonPipeline*"),
+      exclude[Problem]("zio.json.JsonEncoder#AbstractJsonEncoder.encodeJson*Pipeline"),
+      exclude[Problem]("zio.json.JsonEncoder#AbstractJsonEncoder.encodeJsonStream"),
       exclude[Problem]("zio.json.package.*")
     ),
     libraryDependencies ++= Seq(
@@ -257,6 +261,10 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform, NativePlatform)
       exclude[Problem]("zio.JsonPackagePlatformSpecific.*"),
       exclude[Problem]("zio.json.JsonDecoderPlatformSpecific.*"),
       exclude[Problem]("zio.json.JsonEncoderPlatformSpecific.*"),
+      exclude[Problem]("zio.json.JsonDecoder#AbstractJsonDecoder.decodeJsonStream*"),
+      exclude[Problem]("zio.json.JsonDecoder#AbstractJsonDecoder.decodeJsonPipeline*"),
+      exclude[Problem]("zio.json.JsonEncoder#AbstractJsonEncoder.encodeJson*Pipeline"),
+      exclude[Problem]("zio.json.JsonEncoder#AbstractJsonEncoder.encodeJsonStream"),
       exclude[Problem]("zio.json.package.*")
     ),
     libraryDependencies ++= Seq(
