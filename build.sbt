@@ -305,7 +305,7 @@ lazy val zioJsonYaml = project
   .settings(buildInfoSettings("zio.json.yaml"))
   .settings(
     libraryDependencies ++= Seq(
-      "org.yaml"                % "snakeyaml"               % "2.5",
+      "org.yaml"                % "snakeyaml"               % "2.6",
       "org.scala-lang.modules" %% "scala-collection-compat" % "2.14.0",
       "dev.zio"                %% "zio"                     % zioVersion,
       "dev.zio"                %% "zio-test"                % zioVersion % Test,
