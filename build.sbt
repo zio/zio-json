@@ -119,8 +119,8 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform, NativePlatform)
       "org.scala-lang.modules"                %%% "scala-collection-compat" % "2.14.0"     % Test,
       "dev.zio"                               %%% "zio-test"                % zioVersion   % Test,
       "dev.zio"                               %%% "zio-test-sbt"            % zioVersion   % Test,
-      "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-core"     % "2.38.8"     % Test,
-      "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-macros"   % "2.38.8"     % Test,
+      "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-core"     % "2.38.9"     % Test,
+      "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-macros"   % "2.38.9"     % Test,
       "io.circe"                              %%% "circe-core"              % circeVersion % Test,
       "io.circe"                              %%% "circe-generic"           % circeVersion % Test,
       "io.circe"                              %%% "circe-parser"            % circeVersion % Test,
@@ -136,7 +136,7 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform, NativePlatform)
         case _ =>
           Seq(
             "org.scala-lang"                 % "scala-reflect" % scalaVersion.value % Provided,
-            "com.softwaremill.magnolia1_2" %%% "magnolia"      % "1.1.10"
+            "com.softwaremill.magnolia1_2" %%% "magnolia"      % "1.1.12"
           )
       }
     },
@@ -243,6 +243,10 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform, NativePlatform)
       exclude[Problem]("zio.JsonPackagePlatformSpecific.*"),
       exclude[Problem]("zio.json.JsonDecoderPlatformSpecific.*"),
       exclude[Problem]("zio.json.JsonEncoderPlatformSpecific.*"),
+      exclude[Problem]("zio.json.JsonDecoder#AbstractJsonDecoder.decodeJsonStream*"),
+      exclude[Problem]("zio.json.JsonDecoder#AbstractJsonDecoder.decodeJsonPipeline*"),
+      exclude[Problem]("zio.json.JsonEncoder#AbstractJsonEncoder.encodeJson*Pipeline"),
+      exclude[Problem]("zio.json.JsonEncoder#AbstractJsonEncoder.encodeJsonStream"),
       exclude[Problem]("zio.json.package.*")
     ),
     libraryDependencies ++= Seq(
@@ -257,6 +261,10 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform, NativePlatform)
       exclude[Problem]("zio.JsonPackagePlatformSpecific.*"),
       exclude[Problem]("zio.json.JsonDecoderPlatformSpecific.*"),
       exclude[Problem]("zio.json.JsonEncoderPlatformSpecific.*"),
+      exclude[Problem]("zio.json.JsonDecoder#AbstractJsonDecoder.decodeJsonStream*"),
+      exclude[Problem]("zio.json.JsonDecoder#AbstractJsonDecoder.decodeJsonPipeline*"),
+      exclude[Problem]("zio.json.JsonEncoder#AbstractJsonEncoder.encodeJson*Pipeline"),
+      exclude[Problem]("zio.json.JsonEncoder#AbstractJsonEncoder.encodeJsonStream"),
       exclude[Problem]("zio.json.package.*")
     ),
     libraryDependencies ++= Seq(
@@ -297,7 +305,7 @@ lazy val zioJsonYaml = project
   .settings(buildInfoSettings("zio.json.yaml"))
   .settings(
     libraryDependencies ++= Seq(
-      "org.yaml"                % "snakeyaml"               % "2.5",
+      "org.yaml"                % "snakeyaml"               % "2.6",
       "org.scala-lang.modules" %% "scala-collection-compat" % "2.14.0",
       "dev.zio"                %% "zio"                     % zioVersion,
       "dev.zio"                %% "zio-test"                % zioVersion % Test,
