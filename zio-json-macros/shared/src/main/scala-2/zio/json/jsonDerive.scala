@@ -3,22 +3,6 @@ package zio.json
 import scala.language.experimental.macros
 import scala.reflect.macros.blackbox
 
-/**
- * Define a config for derivation macro
- */
-sealed abstract class JsonDeriveConfig
-
-object JsonDeriveConfig {
-  // Derive a JsonCodec
-  case object Codec extends JsonDeriveConfig
-
-  // Derive only a JsonEncoder
-  case object Encoder extends JsonDeriveConfig
-
-  // Derive only a JsonDecoder
-  case object Decoder extends JsonDeriveConfig
-}
-
 class jsonDerive(
   val config: JsonDeriveConfig = JsonDeriveConfig.Codec
 ) extends scala.annotation.StaticAnnotation {

@@ -323,13 +323,15 @@ lazy val zioJsonMacros = crossProject(JSPlatform, JVMPlatform, NativePlatform)
   .settings(crossProjectSettings)
   .settings(macroExpansionSettings)
   .settings(
-    crossScalaVersions -= Scala3,
     scalacOptions -= "-Xfatal-warnings", // not quite ready.
     libraryDependencies ++= Seq(
-      "org.scala-lang" % "scala-reflect" % scalaVersion.value % Provided,
       "dev.zio"      %%% "zio-test"      % zioVersion         % Test,
       "dev.zio"      %%% "zio-test-sbt"  % zioVersion         % Test
     ),
+    libraryDependencies ++= {
+      if (scalaVersion.value == Scala3) Seq.empty
+      else Seq("org.scala-lang" % "scala-reflect" % scalaVersion.value % Provided)
+    },
     testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework")
   )
   .nativeSettings(nativeSettings)
