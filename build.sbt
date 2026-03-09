@@ -348,7 +348,7 @@ lazy val zioJsonInteropHttp4s = project
     libraryDependencies ++= Seq(
       "org.http4s"    %% "http4s-dsl"       % "0.23.33",
       "dev.zio"       %% "zio"              % zioVersion,
-      "org.typelevel" %% "cats-effect"      % "3.6.3",
+      "org.typelevel" %% "cats-effect"      % "3.7.0",
       "dev.zio"       %% "zio-interop-cats" % "23.1.0.13" % Test,
       "dev.zio"       %% "zio-test"         % zioVersion  % Test,
       "dev.zio"       %% "zio-test-sbt"     % zioVersion  % Test
