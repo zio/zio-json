@@ -36,17 +36,17 @@ addCommandAlias("prepare", "fmt")
 
 addCommandAlias(
   "testJVM",
-  "zioJsonJVM/test; zioJsonYaml/test; zioJsonInteropHttp4s/test; zioJsonGolden/test; zioJsonInteropRefinedJVM/test"
+  "zioJsonJVM/test; zioJsonYaml/test; zioJsonInteropHttp4s/test; zioJsonGolden/test; zioJsonInteropRefinedJVM/test; zioJsonInteropEnumeratumJVM/test"
 )
 
 addCommandAlias(
   "testJS",
-  "zioJsonJS/test; zioJsonInteropRefinedJS/test"
+  "zioJsonJS/test; zioJsonInteropRefinedJS/test; zioJsonInteropEnumeratumJS/test"
 )
 
 addCommandAlias(
   "testNative",
-  "zioJsonNative/test; zioJsonInteropRefinedNative/test"
+  "zioJsonNative/test; zioJsonInteropRefinedNative/test; zioJsonInteropEnumeratumNative/test"
 )
 
 addCommandAlias(
@@ -90,6 +90,9 @@ lazy val zioJsonRoot = project
     zioJsonInteropScalaz7x.js,
     zioJsonInteropScalaz7x.jvm,
     zioJsonInteropScalaz7x.native,
+    zioJsonInteropEnumeratum.js,
+    zioJsonInteropEnumeratum.jvm,
+    zioJsonInteropEnumeratum.native,
     zioJsonGolden
   )
 
@@ -389,6 +392,25 @@ lazy val zioJsonInteropScalaz7x = crossProject(JSPlatform, JVMPlatform, NativePl
   )
   .enablePlugins(BuildInfoPlugin)
 
+lazy val zioJsonInteropEnumeratum = crossProject(JSPlatform, JVMPlatform, NativePlatform)
+  .in(file("zio-json-interop-enumeratum"))
+  .dependsOn(zioJson)
+  .settings(stdSettings("zio-json-interop-enumeratum"))
+  .settings(buildInfoSettings("zio.json.interop.enumeratum"))
+  .settings(
+    scalacOptions ++= {
+      if (scalaVersion.value == Scala3) Seq("-Yretain-trees") else Seq.empty
+    },
+    libraryDependencies ++= Seq(
+      "com.beachape" %%% "enumeratum"   % "1.9.7",
+      "dev.zio"      %%% "zio-test"     % zioVersion % Test,
+      "dev.zio"      %%% "zio-test-sbt" % zioVersion % Test
+    ),
+    mimaPreviousArtifacts := Set(),
+    testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework")
+  )
+  .enablePlugins(BuildInfoPlugin)
+
 lazy val docs = project
   .in(file("zio-json-docs"))
   .dependsOn(
@@ -398,7 +420,8 @@ lazy val docs = project
     zioJsonMacrosJVM,
     zioJsonInteropHttp4s,
     zioJsonInteropRefined.jvm,
-    zioJsonInteropScalaz7x.jvm
+    zioJsonInteropScalaz7x.jvm,
+    zioJsonInteropEnumeratum.jvm
   )
   .settings(
     crossScalaVersions -= Scala3,
@@ -414,6 +437,7 @@ lazy val docs = project
       zioJsonInteropHttp4s,
       zioJsonInteropRefined.jvm,
       zioJsonInteropScalaz7x.jvm,
+      zioJsonInteropEnumeratum.jvm,
       zioJsonGolden
     ),
     mimaPreviousArtifacts := Set(),
