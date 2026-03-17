@@ -50,6 +50,37 @@ trait JsonPackagePlatformSpecific {
       )
   }
 
+  // NEW FEATURE: Read JSON arrays as stream
+
+  def readJsonArrayAs[A: JsonDecoder](file: File): ZStream[Any, Throwable, A] =
+    readJsonArrayAs(file.toPath)
+
+  def readJsonArrayAs[A: JsonDecoder](path: Path): ZStream[Any, Throwable, A] =
+    ZStream
+      .fromPath(path)
+      .via(
+        ZPipeline.utf8Decode >>>
+          stringToChars >>>
+          JsonDecoder[A].decodeJsonPipeline(JsonStreamDelimiter.Array)
+      )
+
+  def readJsonArrayAs[A: JsonDecoder](path: String): ZStream[Any, Throwable, A] =
+    readJsonArrayAs(Paths.get(path))
+
+  def readJsonArrayAs[A: JsonDecoder](url: URL): ZStream[Any, Throwable, A] = {
+    val scoped = ZIO
+      .fromAutoCloseable(ZIO.attempt(url.openStream()))
+      .refineToOrDie[IOException]
+
+    ZStream
+      .fromInputStreamScoped(scoped)
+      .via(
+        ZPipeline.utf8Decode >>>
+          stringToChars >>>
+          JsonDecoder[A].decodeJsonPipeline(JsonStreamDelimiter.Array)
+      )
+  }
+
   def writeJsonLines[R](file: File, stream: ZStream[R, Throwable, ast.Json]): RIO[R, Unit] =
     writeJsonLinesAs(file, stream)
 

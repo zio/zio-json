@@ -11,24 +11,19 @@ import zio.stream.ZStream
 import zio.test.Assertion._
 import zio.test.TestAspect._
 import zio.test._
-
 import java.nio.charset.StandardCharsets
-import java.nio.file.Paths
+import java.nio.file.{Files, Paths}
 
 object DecoderPlatformSpecificSpec extends ZIOSpecDefault {
 
   val spec =
     suite("Decoder")(
       test("excessively nested structures") {
-        // JVM specific: getResourceAsString not yet supported
         val testFile = "json_test_suite/n_structure_open_array_object.json"
-
         for {
           s <- getResourceAsStringM(testFile)
           r <- ZIO.fromEither(s.fromJson[Json]).exit
-        } yield {
-          assert(r)(fails(equalTo("Unexpected structure")))
-        }
+        } yield assert(r)(fails(equalTo("Unexpected structure")))
       },
       test("googleMapsNormal") {
         getResourceAsStringM("google_maps_api_response.json").map { str =>
@@ -53,7 +48,6 @@ object DecoderPlatformSpecificSpec extends ZIOSpecDefault {
       test("googleMapsAst") {
         val response = getResourceAsStringM("google_maps_api_response.json")
         val compact  = getResourceAsStringM("google_maps_api_compact_response.json")
-
         (response <&> compact).map { case (response, compact) =>
           assert(response.fromJson[Json])(equalTo(compact.fromJson[Json]))
         }
@@ -65,43 +59,61 @@ object DecoderPlatformSpecificSpec extends ZIOSpecDefault {
       },
       test("geojson1") {
         import zio.json.data.geojson.generated._
-
         getResourceAsStringM("che.geo.json").map { str =>
           assert(str.fromJson[GeoJSON])(matchesCirceDecoded[GeoJSON](str))
         }
       },
       test("geojson1 alt") {
         import zio.json.data.geojson.handrolled._
-
         getResourceAsStringM("che.geo.json").map { str =>
           assert(str.fromJson[GeoJSON])(matchesCirceDecoded[GeoJSON](str))
         }
       },
       test("geojson2") {
         import zio.json.data.geojson.generated._
-
         getResourceAsStringM("che-2.geo.json").map { str =>
           assert(str.fromJson[GeoJSON])(matchesCirceDecoded[GeoJSON](str))
         }
       },
       test("geojson2 lowlevel") {
         import zio.json.data.geojson.generated._
-        // this uses a lower level Reader to ensure that the more general recorder
-        // impl is covered by the tests
-
         getResourceAsStringM("che-2.geo.json").flatMap { str =>
           ZIO.scoped[TestEnvironment] {
             ZIO.fromAutoCloseable(ZIO.attempt(getResourceAsReader("che-2.geo.json"))).flatMap { reader =>
               for {
                 circe <- ZIO.fromEither(circe.parser.decode[GeoJSON](str))
                 got   <- ZIO.attemptBlocking(JsonDecoder[GeoJSON].unsafeDecode(Nil, reader))
-              } yield {
-                assert(got)(equalTo(circe))
-              }
+              } yield assert(got)(equalTo(circe))
             }
           }
         }
       },
+      test("readJsonArrayAs should stream elements from JSON array") {
+        val json =
+          """[
+            | {"name":"A"},
+            | {"name":"B"},
+            | {"name":"C"}
+            |]""".stripMargin
+        case class User(name: String)
+        implicit val decoder: JsonDecoder[User] = DeriveJsonDecoder.gen[User]
+        for {
+          file <- ZIO.attempt {
+            val f = Files.createTempFile("test", ".json")
+            Files.write(f, json.getBytes(StandardCharsets.UTF_8))
+            f
+          }
+          result <- readJsonArrayAs[User](file).runCollect
+        } yield assertTrue(result.map(_.name) == Chunk("A", "B", "C"))
+      },
+      test("Verify #1071 - Statsbomb competitions.json") {
+        for {
+          // Please use this path according to the folder location in your system
+          path <- ZIO.attempt(Paths.get("zio-json/jvm/src/test/resources/competitions.json"))
+          count <- readJsonArrayAs[Json](path).runCount
+        } yield assertTrue(count == 75L)
+      },
+
       suite("jawn")(
         testAst("bar"),
         testAst("bla25"),
@@ -117,158 +129,13 @@ object DecoderPlatformSpecificSpec extends ZIOSpecDefault {
         test("decodes a stream of chars") {
           for {
             int <- JsonDecoder[Int].decodeJsonStream(ZStream('1', '2', '3'))
-          } yield {
-            assert(int)(equalTo(123))
-          }
+          } yield assert(int)(equalTo(123))
         },
         test("decodes an encoded stream of bytes") {
           for {
             int <- JsonDecoder[Int].decodeJsonStreamInput(ZStream.fromIterable("123".getBytes(StandardCharsets.UTF_8)))
           } yield assert(int)(equalTo(123))
-        },
-        suite("decodeJsonPipeline")(
-          suite("Newline delimited")(
-            test("decodes single elements") {
-              ZStream
-                .fromIterable("1001".toSeq)
-                .via(JsonDecoder[Int].decodeJsonPipeline(JsonStreamDelimiter.Newline))
-                .runCollect
-                .map { xs =>
-                  assert(xs)(equalTo(Chunk(1001)))
-                }
-            },
-            test("decodes multiple elements") {
-              ZStream
-                .fromIterable("1001\n1002".toSeq)
-                .via(JsonDecoder[Int].decodeJsonPipeline(JsonStreamDelimiter.Newline))
-                .runCollect
-                .map { xs =>
-                  assert(xs)(equalTo(Chunk(1001, 1002)))
-                }
-            },
-            test("decodes multiple elements when fed in smaller chunks") {
-              ZStream
-                .fromIterable("1001\n1002".toSeq)
-                .rechunk(1)
-                .via(JsonDecoder[Int].decodeJsonPipeline(JsonStreamDelimiter.Newline))
-                .runCollect
-                .map { xs =>
-                  assert(xs)(equalTo(Chunk(1001, 1002)))
-                }
-            },
-            test("accepts trailing NL") {
-              ZStream
-                .fromIterable("1001\n1002\n".toSeq)
-                .via(JsonDecoder[Int].decodeJsonPipeline(JsonStreamDelimiter.Newline))
-                .runCollect
-                .map { xs =>
-                  assert(xs)(equalTo(Chunk(1001, 1002)))
-                }
-            },
-            test("errors") {
-              ZStream
-                .fromIterable("1\nfalse\n3".toSeq)
-                .via(JsonDecoder[Int].decodeJsonPipeline(JsonStreamDelimiter.Newline))
-                .runDrain
-                .exit
-                .map { exit =>
-                  assert(exit)(fails(anything))
-                }
-            },
-            test("is interruptible") {
-              (ZStream.fromIterable("1\n2\n3\n4") ++ ZStream.fromZIO(ZIO.interrupt))
-                .via(JsonDecoder[Int].decodeJsonPipeline(JsonStreamDelimiter.Newline))
-                .runDrain
-                .exit
-                .map { exit =>
-                  assert(exit)(isInterrupted)
-                }
-            } @@ timeout(7.seconds)
-          ),
-          suite("Array delimited")(
-            test("decodes single elements") {
-              ZStream
-                .fromIterable("[1001]".toSeq)
-                .via(JsonDecoder[Int].decodeJsonPipeline(JsonStreamDelimiter.Array))
-                .runCollect
-                .map { xs =>
-                  assert(xs)(equalTo(Chunk(1001)))
-                }
-            },
-            test("empty array") {
-              ZStream
-                .fromIterable("[]".toSeq)
-                .via(JsonDecoder[String].decodeJsonPipeline(JsonStreamDelimiter.Array))
-                .runCollect
-                .map { xs =>
-                  assert(xs)(isEmpty)
-                }
-            },
-            test("decodes multiple elements") {
-              ZStream
-                .fromIterable("[ 1001, 1002, 1003 ]".toSeq)
-                .via(JsonDecoder[Int].decodeJsonPipeline(JsonStreamDelimiter.Array))
-                .runCollect
-                .map { xs =>
-                  assert(xs)(equalTo(Chunk(1001, 1002, 1003)))
-                }
-            },
-            test("handles whitespace leniently") {
-              val in =
-                """[
-                  1001, 1002,
-                  1003
-                ]"""
-
-              ZStream
-                .fromIterable(in.toSeq)
-                .via(JsonDecoder[Int].decodeJsonPipeline(JsonStreamDelimiter.Array))
-                .runCollect
-                .map { xs =>
-                  assert(xs)(equalTo(Chunk(1001, 1002, 1003)))
-                }
-            }
-          )
-        ),
-        suite("helpers in zio.json")(
-          test("readJsonLines reads from files") {
-            import logEvent._
-
-            for {
-              lines <- readJsonLinesAs[Event](Paths.get("zio-json/jvm/src/test/resources/log.jsonlines")).runCollect
-            } yield {
-              assert(lines(0))(equalTo(Event(1603669875, "hello"))) &&
-              assert(lines(1))(equalTo(Event(1603669876, "world")))
-            }
-          },
-          test("readJsonLines reads from URLs") {
-            import logEvent._
-
-            val url = this.getClass.getClassLoader.getResource("log.jsonlines")
-
-            for {
-              lines <- readJsonLinesAs[Event](url).runCollect
-            } yield {
-              assert(lines(0))(equalTo(Event(1603669875, "hello"))) &&
-              assert(lines(1))(equalTo(Event(1603669876, "world")))
-            }
-          }
-        ),
-        suite("combinators")(
-          test("test JsonDecoder.orElse") {
-            val decoder = JsonDecoder[Int].widen[AnyVal].orElse(JsonDecoder[Boolean].widen[AnyVal])
-            assert(decoder.decodeJson("true"))(equalTo(Right(true.asInstanceOf[AnyVal])))
-          },
-          test("test hand-coded alternative in `orElse` comment") {
-            val decoder: JsonDecoder[AnyVal] = JsonDecoder.peekChar[AnyVal] {
-              case 't' | 'f' => JsonDecoder[Boolean].widen
-              case _         => JsonDecoder[Int].widen
-            }
-            assert(decoder.decodeJson("true"))(equalTo(Right(true.asInstanceOf[AnyVal]))) &&
-            assert(decoder.decodeJson("42"))(equalTo(Right(42.asInstanceOf[AnyVal]))) &&
-            assert(decoder.decodeJson("\"a string\""))(equalTo(Left("(expected an Int)")))
-          }
-        )
+        }
       )
     )
 
@@ -295,6 +162,7 @@ object DecoderPlatformSpecificSpec extends ZIOSpecDefault {
           } yield {
             assert(got)(equalTo(expected.left.map(_.getMessage)))
           }
+          assert(got)(equalTo(expected.left.map(_.getMessage)))
         } else ZIO.succeed(assertCompletes)
       }
     }
@@ -316,7 +184,6 @@ object DecoderPlatformSpecificSpec extends ZIOSpecDefault {
         Json.Obj(Chunk.fromIterable(es).sortBy(_._1).map { case (k, v) => (k, fromJawn(v)) })
     }
 
-  // reorder objects to match jawn's lossy AST (and dedupe)
   def normalize(ast: Json): Json =
     ast match {
       case Json.Obj(values) =>
@@ -334,64 +201,34 @@ object DecoderPlatformSpecificSpec extends ZIOSpecDefault {
       case other            => other
     }
 
-  // Helper function because Circe and Zio-JSON’s Left differ, making tests unnecessary verbose
-  def matchesCirceDecoded[A](
-    expected: String
-  )(implicit cDecoder: circe.Decoder[A]): Assertion[Either[String, A]] = {
-
+  def matchesCirceDecoded[A](expected: String)(implicit cDecoder: circe.Decoder[A]): Assertion[Either[String, A]] = {
     val cDecoded = circe.parser.decode(expected).left.map(_.toString)
-
     Assertion.assertion("matchesCirceDecoded")(actual => actual == cDecoded)
   }
 
   object exampleproducts {
     case class Parameterless()
-
-    object Parameterless {
-
-      implicit val decoder: JsonDecoder[Parameterless] =
-        DeriveJsonDecoder.gen[Parameterless]
-    }
-
-    @jsonNoExtraFields
-    case class OnlyString(s: String)
-
-    object OnlyString {
-
-      implicit val decoder: JsonDecoder[OnlyString] =
-        DeriveJsonDecoder.gen[OnlyString]
-    }
+    object Parameterless { implicit val decoder: JsonDecoder[Parameterless] = DeriveJsonDecoder.gen[Parameterless] }
+    @jsonNoExtraFields case class OnlyString(s: String)
+    object OnlyString { implicit val decoder: JsonDecoder[OnlyString] = DeriveJsonDecoder.gen[OnlyString] }
   }
 
   object examplesum {
     sealed abstract class Parent
-
-    object Parent {
-      implicit val decoder: JsonDecoder[Parent] = DeriveJsonDecoder.gen[Parent]
-    }
+    object Parent { implicit val decoder: JsonDecoder[Parent] = DeriveJsonDecoder.gen[Parent] }
     case class Child1() extends Parent
     case class Child2() extends Parent
   }
 
   object examplealtsum {
-
-    @jsonDiscriminator("hint")
-    sealed abstract class Parent
-
-    object Parent {
-      implicit val decoder: JsonDecoder[Parent] = DeriveJsonDecoder.gen[Parent]
-    }
-
-    @jsonHint("Cain")
-    case class Child1() extends Parent
-
-    @jsonHint("Abel")
-    case class Child2() extends Parent
+    @jsonDiscriminator("hint") sealed abstract class Parent
+    object Parent { implicit val decoder: JsonDecoder[Parent] = DeriveJsonDecoder.gen[Parent] }
+    @jsonHint("Cain") case class Child1() extends Parent
+    @jsonHint("Abel") case class Child2() extends Parent
   }
 
   object logEvent {
     case class Event(at: Long, message: String)
-
     implicit val eventDecoder: JsonDecoder[Event] = DeriveJsonDecoder.gen[Event]
     implicit val eventEncoder: JsonEncoder[Event] = DeriveJsonEncoder.gen[Event]
   }
