@@ -12,7 +12,7 @@ import zio.test.Assertion._
 import zio.test.TestAspect._
 import zio.test._
 import java.nio.charset.StandardCharsets
-import java.nio.file.{Files, Paths}
+import java.nio.file.{ Files, Paths }
 
 object DecoderPlatformSpecificSpec extends ZIOSpecDefault {
 
@@ -99,17 +99,17 @@ object DecoderPlatformSpecificSpec extends ZIOSpecDefault {
         implicit val decoder: JsonDecoder[User] = DeriveJsonDecoder.gen[User]
         for {
           file <- ZIO.attempt {
-            val f = Files.createTempFile("test", ".json")
-            Files.write(f, json.getBytes(StandardCharsets.UTF_8))
-            f
-          }
+                    val f = Files.createTempFile("test", ".json")
+                    Files.write(f, json.getBytes(StandardCharsets.UTF_8))
+                    f
+                  }
           result <- readJsonArrayAs[User](file).runCollect
         } yield assertTrue(result.map(_.name) == Chunk("A", "B", "C"))
       },
       test("Verify #1071 - Statsbomb competitions.json") {
         for {
           // Please use this path according to the folder location in your system
-          path <- ZIO.attempt(Paths.get("zio-json/jvm/src/test/resources/competitions.json"))
+          path  <- ZIO.attempt(Paths.get("zio-json/jvm/src/test/resources/competitions.json"))
           count <- readJsonArrayAs[Json](path).runCount
         } yield assertTrue(count == 75L)
       },
