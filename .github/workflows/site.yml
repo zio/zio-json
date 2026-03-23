@@ -22,7 +22,7 @@ jobs:
       with:
         fetch-depth: '0'
     - name: Setup Action
-      uses: coursier/setup-action@v2
+      uses: coursier/setup-action@v3
       with:
         jvm: temurin:17
         apps: sbt
@@ -75,7 +75,7 @@ jobs:
         ref: ${{ github.head_ref }}
         fetch-depth: '0'
     - name: Setup Action
-      uses: coursier/setup-action@v2
+      uses: coursier/setup-action@v3
       with:
         jvm: temurin:17
         apps: sbt
