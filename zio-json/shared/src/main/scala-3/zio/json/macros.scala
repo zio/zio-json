@@ -1,63 +1,82 @@
 package zio.json
 
 import scala.deriving.Mirror
-import scala.compiletime.*
+import scala.compiletime._
+import zio.json.internal._
 
-object DeriveJsonEncoder {
-  inline def apply[A](using m: Mirror.Of[A]): JsonEncoder[A] = {
-    val elemEncoders = summonAll[m.MirroredElemTypes]
-    val elemLabels   = summonLabels[m.MirroredElemLabels]
+trait MirrorJsonDecoder {
 
-    inline m match {
-      case s: Mirror.SumOf[A]     => deriveSum(s, elemEncoders, elemLabels)
-      case p: Mirror.ProductOf[A] => deriveProduct(p, elemEncoders, elemLabels)
-    }
-  }
+  inline implicit def derived[A](implicit m: Mirror.Of[A]): JsonDecoder[A] = {
+    // metadata retrieval is zero-cost at compile time
+    val fieldLabels = constValueTuple[m.MirroredElemLabels].toList.map(_.toString).toArray
+    val fieldCount = constValue[Tuple.Size[m.MirroredElemTypes]]
 
-  private inline def summonAll[T <: Tuple]: List[JsonEncoder[?]] =
-    inline erasedValue[T] match {
-      case _: EmptyTuple => Nil
-      case _: (t *: ts)  => summonInline[JsonEncoder[t]] :: summonAll[ts]
-    }
+    new JsonDecoder[A] {
+      def decodeJson(trace: List[JsonError], in: RetractReader): Either[JsonError, A] = {
+        inline m match {
+          case p: Mirror.ProductOf[A] =>
+            val buffer = new Array[AnyRef](fieldCount)
+            
+            // Hot-path: Recursive inlining for raw speed
+            decodeUnrolled[m.MirroredElemTypes](trace, in, buffer, fieldLabels, 0) match {
+              case Right(_) => 
+                try {
+                  // Direct product creation to bypass Tuple allocation overhead
+                  Right(p.fromProduct(new Product {
+                    def canEqual(that: Any): Boolean = true
+                    def productArity: Int = fieldCount
+                    def productElement(n: Int): Any = buffer(n)
+                  }.asInstanceOf[p.MirroredElemTypes]))
+                } catch {
+                  case e: Exception => Left(JsonError.Message(e.getMessage) :: trace)
+                }
+              case Left(err) => Left(err)
+            }
 
-  private inline def summonLabels[T <: Tuple]: List[String] =
-    inline erasedValue[T] match {
-      case _: EmptyTuple => Nil
-      case _: (t *: ts)  => constValue[t].asInstanceOf[String] :: summonLabels[ts]
-    }
-
-  private def deriveProduct[A](
-    p: Mirror.ProductOf[A],
-    encoders: List[JsonEncoder[?]],
-    labels: List[String]
-  ): JsonEncoder[A] = new JsonEncoder[A] {
-    def unsafeEncode(a: A, indent: Option[Int], out: internal.Write): Unit = {
-      out.write('{')
-      val pStruct = a.asInstanceOf[Product]
-      var i = 0
-      while (i < labels.length) {
-        if (i > 0) out.write(',')
-        JsonEncoder.string.unsafeEncode(labels(i), indent, out)
-        out.write(':')
-        encoders(i).asInstanceOf[JsonEncoder[Any]].unsafeEncode(pStruct.productElement(i), indent, out)
-        i += 1
+          case _: Mirror.SumOf[A] =>
+            val tag = in.readString()
+            // Using the outer implicit 'm' for types and labels
+            decodeSumUnrolled[A, m.MirroredElemTypes, m.MirroredElemLabels](trace, in, tag)
+        }
       }
-      out.write('}')
     }
   }
 
-  private def deriveSum[A](
-    s: Mirror.SumOf[A],
-    encoders: List[JsonEncoder[?]],
-    labels: List[String]
-  ): JsonEncoder[A] = new JsonEncoder[A] {
-    def unsafeEncode(a: A, indent: Option[Int], out: internal.Write): Unit = {
-      val index = s.ordinal(a)
-      out.write('{')
-      JsonEncoder.string.unsafeEncode(labels(index), indent, out)
-      out.write(':')
-      encoders(index).asInstanceOf[JsonEncoder[Any]].unsafeEncode(a, indent, out)
-      out.write('}')
+  private inline def decodeUnrolled[T <: Tuple](
+    trace: List[JsonError], 
+    in: RetractReader, 
+    buffer: Array[AnyRef], 
+    labels: Array[String], 
+    index: Int
+  ): Either[JsonError, Unit] = {
+    inline erasedValue[T] match {
+      case _: EmptyTuple => Right(())
+      case _: (head *: tail) => 
+        val fieldName = labels(index)
+        val context = JsonError.ObjectContext(fieldName) :: trace
+        
+        summonInline[JsonDecoder[head]].decodeJson(context, in) match {
+          case Right(value) =>
+            buffer(index) = value.asInstanceOf[AnyRef]
+            decodeUnrolled[tail](trace, in, buffer, labels, index + 1)
+          case Left(err) => Left(err)
+        }
+    }
+  }
+
+  private inline def decodeSumUnrolled[A, ET <: Tuple, EL <: Tuple](
+    trace: List[JsonError], 
+    in: RetractReader, 
+    tag: String
+  ): Either[JsonError, A] = {
+    inline (erasedValue[ET], erasedValue[EL]) match {
+      case (_: (et *: ets), _: (el *: els)) =>
+        if (tag == constValue[el].asInstanceOf[String])
+          summonInline[JsonDecoder[et]].asInstanceOf[JsonDecoder[A]].decodeJson(trace, in)
+        else 
+          decodeSumUnrolled[A, ets, els](trace, in, tag)
+      case _ => 
+        Left(JsonError.Message(s"Unknown discriminator tag: $tag") :: trace)
     }
   }
 }
