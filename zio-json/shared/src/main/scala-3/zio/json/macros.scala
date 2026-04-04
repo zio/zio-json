@@ -2,46 +2,63 @@ package zio.json
 
 import scala.deriving.Mirror
 import scala.compiletime._
+import zio.json.ast.Json
 import zio.json.internal._
+import zio.Chunk
 
 trait MirrorJsonDecoder {
-  inline implicit def derived[A](implicit m: Mirror.Of[A]): JsonDecoder[A] = {
-    new JsonDecoder[A] {
-      def decodeJson(trace: List[JsonError], in: RetractReader): Either[JsonError, A] = {
+  inline val discriminator: String = "type"
+  implicit val config: JsonDecoder.Config = JsonDecoder.Config(ignoreUnknownFields = true)
+
+  inline implicit def derived[A](implicit m: Mirror.Of[A]): JsonDecoder[A] = new JsonDecoder[A] {
+    def decodeJson(trace: List[JsonError], in: RetractReader): Either[JsonError, A] = 
+      JsonDecoder[Json].decodeJson(trace, in).flatMap(fromJsonAST)
+
+    override def fromJsonAST(json: Json): Either[JsonError, A] = json match {
+      case Json.Str(tag) => 
+        inline m match {
+          case s: Mirror.SumOf[A] => decodeSumFromAST[A, m.MirroredElemTypes, m.MirroredElemLabels](Nil, Json.Obj(Chunk(discriminator -> Json.Str(tag))), tag)
+          case _ => Left(JsonError.Message("Expected object for product type") :: Nil)
+        }
+      case obj: Json.Obj =>
         inline m match {
           case p: Mirror.ProductOf[A] =>
             val size = constValue[Tuple.Size[m.MirroredElemTypes]]
             val buffer = new Array[Any](size)
-            // FINAL FIX: Recursively peeling both Types and Labels tuples
-            decodeProductRecursive[m.MirroredElemTypes, m.MirroredElemLabels](trace, in, buffer, 0) match {
-              case null => Right(p.fromProduct(Tuple.fromArray(buffer).asInstanceOf[p.MirroredElemTypes]))
-              case err  => Left(err)
+            decodeFieldsRecursive[m.MirroredElemTypes, m.MirroredElemLabels](Nil, obj.fields, buffer, 0) match {
+              case None => Right(p.fromProduct(Tuple.fromArray(buffer).asInstanceOf[p.MirroredElemTypes]))
+              case Some(err) => Left(err)
             }
-
           case s: Mirror.SumOf[A] =>
-            // Sum types usually need a discriminator (type field) in ZIO JSON
-            val tag = in.readString() 
-            decodeSumFast[A, m.MirroredElemTypes, m.MirroredElemLabels](trace, in, tag)
+            obj.fields.find(_._1 == discriminator) match {
+              case Some((_, Json.Str(tag))) => decodeSumFromAST[A, m.MirroredElemTypes, m.MirroredElemLabels](Nil, obj, tag)
+              case _ => Left(JsonError.Message(s"Missing discriminator '$discriminator'") :: Nil)
+            }
         }
-      }
+      case _ => Left(JsonError.Message("Invalid JSON format") :: Nil)
     }
   }
 
-  // Peeling logic: T for Types, L for Labels
-  private inline def decodeProductRecursive[T <: Tuple, L <: Tuple](
-    trace: List[JsonError], in: RetractReader, buffer: Array[Any], index: Int
-  ): JsonError =
+  private inline def decodeSumFromAST[A, ET <: Tuple, EL <: Tuple](trace: List[JsonError], obj: Json.Obj, tag: String): Either[JsonError, A] =
+    inline (erasedValue[ET], erasedValue[EL]) match {
+      case _: (et *: ets, el *: els) =>
+        if (tag == constValue[el].asInstanceOf[String]) summonInline[JsonDecoder[et]].asInstanceOf[JsonDecoder[A]].fromJsonAST(obj)
+        else decodeSumFromAST[A, ets, els](trace, obj, tag)
+      case _ => Left(JsonError.Message(s"Unknown tag: $tag") :: trace)
+    }
+
+  private inline def decodeFieldsRecursive[T <: Tuple, L <: Tuple](trace: List[JsonError], fields: Chunk[(String, Json)], buffer: Array[Any], index: Int): Option[JsonError] =
     inline (erasedValue[T], erasedValue[L]) match {
-      case _: (EmptyTuple, EmptyTuple) => null
+      case _: (EmptyTuple, EmptyTuple) => None
       case _: (tHead *: tTail, lHead *: lTail) =>
         val label = constValue[lHead].toString
-        val decoder = summonInline[JsonDecoder[tHead]]
-        decoder.decodeJson(JsonError.ObjectContext(label) :: trace, in) match {
-          case Right(v) =>
-            buffer(index) = v
-            decodeProductRecursive[tTail, lTail](trace, in, buffer, index + 1)
-          case Left(e) => e
+        fields.find(_._1 == label) match {
+          case Some((_, json)) => summonInline[JsonDecoder[tHead]].fromJsonAST(json) match {
+            case Right(v) => buffer(index) = v; decodeFieldsRecursive[tTail, lTail](trace, fields, buffer, index + 1)
+            case Left(e) => Some(JsonError.ObjectContext(label) :: e)
+          }
+          case None => Some(JsonError.Message(s"Missing field: $label") :: trace)
         }
-      case _ => JsonError.Message("Internal error: Tuple mismatch")
+      case _ => None
     }
 }
