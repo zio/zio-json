@@ -6,52 +6,42 @@ import zio.json.internal._
 
 trait MirrorJsonDecoder {
   inline implicit def derived[A](implicit m: Mirror.Of[A]): JsonDecoder[A] = {
-    val labels = constValueTuple[m.MirroredElemLabels].toList.map(_.toString).toArray
-    val size = constValue[Tuple.Size[m.MirroredElemTypes]]
-
     new JsonDecoder[A] {
       def decodeJson(trace: List[JsonError], in: RetractReader): Either[JsonError, A] = {
         inline m match {
           case p: Mirror.ProductOf[A] =>
+            val size = constValue[Tuple.Size[m.MirroredElemTypes]]
             val buffer = new Array[Any](size)
-            // FINAL FIX: Inline recursion to keep index as a Literal Type
-            val err = decodeProductInline[m.MirroredElemTypes](trace, in, buffer, labels, 0)
-            if (err == null) Right(p.fromProduct(Tuple.fromArray(buffer).asInstanceOf[p.MirroredElemTypes]))
-            else Left(err)
+            // FINAL FIX: Recursively peeling both Types and Labels tuples
+            decodeProductRecursive[m.MirroredElemTypes, m.MirroredElemLabels](trace, in, buffer, 0) match {
+              case null => Right(p.fromProduct(Tuple.fromArray(buffer).asInstanceOf[p.MirroredElemTypes]))
+              case err  => Left(err)
+            }
 
           case s: Mirror.SumOf[A] =>
-            val tag = in.readString()
+            // Sum types usually need a discriminator (type field) in ZIO JSON
+            val tag = in.readString() 
             decodeSumFast[A, m.MirroredElemTypes, m.MirroredElemLabels](trace, in, tag)
         }
       }
     }
   }
 
-  // Purely inline recursion: No runtime loop, completely unrolled by the compiler
-  private inline def decodeProductInline[T <: Tuple](
-    trace: List[JsonError], in: RetractReader, buffer: Array[Any], labels: Array[String], inline index: Int
+  // Peeling logic: T for Types, L for Labels
+  private inline def decodeProductRecursive[T <: Tuple, L <: Tuple](
+    trace: List[JsonError], in: RetractReader, buffer: Array[Any], index: Int
   ): JsonError =
-    inline erasedValue[T] match {
-      case _: EmptyTuple => null
-      case _: (head *: tail) =>
-        // Now 'index' is a compile-time constant!
-        val decoder = summonInline[JsonDecoder[head]]
-        decoder.decodeJson(JsonError.ObjectContext(labels(index)) :: trace, in) match {
+    inline (erasedValue[T], erasedValue[L]) match {
+      case _: (EmptyTuple, EmptyTuple) => null
+      case _: (tHead *: tTail, lHead *: lTail) =>
+        val label = constValue[lHead].toString
+        val decoder = summonInline[JsonDecoder[tHead]]
+        decoder.decodeJson(JsonError.ObjectContext(label) :: trace, in) match {
           case Right(v) =>
             buffer(index) = v
-            decodeProductInline[tail](trace, in, buffer, labels, index + 1)
+            decodeProductRecursive[tTail, lTail](trace, in, buffer, index + 1)
           case Left(e) => e
         }
-    }
-
-  private inline def decodeSumFast[A, ET <: Tuple, EL <: Tuple](
-    trace: List[JsonError], in: RetractReader, tag: String
-  ): Either[JsonError, A] =
-    inline (erasedValue[ET], erasedValue[EL]) match {
-      case _: (et *: ets, el *: els) =>
-        if (tag == constValue[el].asInstanceOf[String])
-          summonInline[JsonDecoder[et]].asInstanceOf[JsonDecoder[A]].decodeJson(trace, in)
-        else decodeSumFast[A, ets, els](trace, in, tag)
-      case _ => Left(JsonError.Message(s"Unknown tag: $tag"))
+      case _ => JsonError.Message("Internal error: Tuple mismatch")
     }
 }
