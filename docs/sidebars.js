@@ -19,6 +19,7 @@ const sidebars = {
           collapsed: true,
           items: [
             "interop/akka-http",
+            "interop/enumeratum",
             "interop/http4s",
             "interop/refined",
             "interop/scalaz-7x"
