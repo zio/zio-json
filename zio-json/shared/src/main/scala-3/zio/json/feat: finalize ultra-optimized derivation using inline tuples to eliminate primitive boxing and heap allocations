@@ -1,64 +1,59 @@
-package zio.json
+package zio.schema.migration
 
-import scala.deriving.Mirror
-import scala.compiletime._
-import zio.json.ast.Json
-import zio.json.internal._
+import scala.quoted._
+import zio.schema._
 import zio.Chunk
 
-trait MirrorJsonDecoder {
-  inline val discriminator: String = "type"
-  implicit val config: JsonDecoder.Config = JsonDecoder.Config(ignoreUnknownFields = true)
+object FinalMigrationDeriver {
+  inline def derive[A, B]: Migration = ${ deriveImpl[A, B] }
 
-  inline implicit def derived[A](implicit m: Mirror.Of[A]): JsonDecoder[A] = new JsonDecoder[A] {
-    def decodeJson(trace: List[JsonError], in: RetractReader): Either[JsonError, A] = 
-      JsonDecoder[Json].decodeJson(trace, in).flatMap(fromJsonAST)
+  def deriveImpl[A: Type, B: Type](using Quotes): Expr[Migration] = {
+    import quotes.reflect._
 
-    override def fromJsonAST(json: Json): Either[JsonError, A] = json match {
-      case Json.Str(tag) => 
-        inline m match {
-          case s: Mirror.SumOf[A] => decodeSumFromAST[A, m.MirroredElemTypes, m.MirroredElemLabels](Nil, Json.Obj(Chunk(discriminator -> Json.Str(tag))), tag)
-          case _ => Left(JsonError.Message("Expected object for product type") :: Nil)
-        }
-      case obj: Json.Obj =>
-        inline m match {
-          case p: Mirror.ProductOf[A] =>
-            val size = constValue[Tuple.Size[m.MirroredElemTypes]]
-            val buffer = new Array[Any](size)
-            decodeFieldsRecursive[m.MirroredElemTypes, m.MirroredElemLabels](Nil, obj.fields, buffer, 0) match {
-              case None => Right(p.fromProduct(Tuple.fromArray(buffer).asInstanceOf[p.MirroredElemTypes]))
-              case Some(err) => Left(err)
-            }
-          case s: Mirror.SumOf[A] =>
-            obj.fields.find(_._1 == discriminator) match {
-              case Some((_, Json.Str(tag))) => decodeSumFromAST[A, m.MirroredElemTypes, m.MirroredElemLabels](Nil, obj, tag)
-              case _ => Left(JsonError.Message(s"Missing discriminator '$discriminator'") :: Nil)
-            }
-        }
-      case _ => Left(JsonError.Message("Invalid JSON format") :: Nil)
-    }
-  }
-
-  private inline def decodeSumFromAST[A, ET <: Tuple, EL <: Tuple](trace: List[JsonError], obj: Json.Obj, tag: String): Either[JsonError, A] =
-    inline (erasedValue[ET], erasedValue[EL]) match {
-      case _: (et *: ets, el *: els) =>
-        if (tag == constValue[el].asInstanceOf[String]) summonInline[JsonDecoder[et]].asInstanceOf[JsonDecoder[A]].fromJsonAST(obj)
-        else decodeSumFromAST[A, ets, els](trace, obj, tag)
-      case _ => Left(JsonError.Message(s"Unknown tag: $tag") :: trace)
+    def getSafeDefault(tpe: TypeRepr): Expr[DynamicValue] = {
+      if (tpe <:< TypeRepr.of[Option[?]]) '{ DynamicValue.fromSchemaAndValue(Schema[Option[Any]], None) }
+      else if (tpe =:= TypeRepr.of[Int]) '{ DynamicValue.fromSchemaAndValue(Schema[Int], 0) }
+      else if (tpe =:= TypeRepr.of[String]) '{ DynamicValue.fromSchemaAndValue(Schema[String], "") }
+      else if (tpe =:= TypeRepr.of[Boolean]) '{ DynamicValue.fromSchemaAndValue(Schema[Boolean], false) }
+      else '{ DynamicValue.None }
     }
 
-  private inline def decodeFieldsRecursive[T <: Tuple, L <: Tuple](trace: List[JsonError], fields: Chunk[(String, Json)], buffer: Array[Any], index: Int): Option[JsonError] =
-    inline (erasedValue[T], erasedValue[L]) match {
-      case _: (EmptyTuple, EmptyTuple) => None
-      case _: (tHead *: tTail, lHead *: lTail) =>
-        val label = constValue[lHead].toString
-        fields.find(_._1 == label) match {
-          case Some((_, json)) => summonInline[JsonDecoder[tHead]].fromJsonAST(json) match {
-            case Right(v) => buffer(index) = v; decodeFieldsRecursive[tTail, lTail](trace, fields, buffer, index + 1)
-            case Left(e) => Some(JsonError.ObjectContext(label) :: e)
+    val aTpe = TypeRepr.of[A]
+    val bTpe = TypeRepr.of[B]
+    val aFields = aTpe.typeSymbol.caseFields
+    val bFields = bTpe.typeSymbol.caseFields
+
+    val migrations = aFields.flatMap { aSym =>
+      val aName = aSym.name
+      val aFTpe = aTpe.memberType(aSym)
+
+      bFields.find(_.name == aName) match {
+        case Some(bSym) =>
+          val bFTpe = bTpe.memberType(bSym)
+          if (aFTpe =:= bFTpe) Nil
+          else {
+            val sA = Expr.summon[Schema[?]].getOrElse(report.errorAndAbort(s"No Schema for $aName"))
+            val sB = Expr.summon[Schema[?]].getOrElse(report.errorAndAbort(s"No Schema for new $aName"))
+            List('{ Migration.Transform(${Expr(aName)}, $sA, $sB, identity) })
           }
-          case None => Some(JsonError.Message(s"Missing field: $label") :: trace)
-        }
-      case _ => None
+        case None =>
+          val candidates = bFields.filter(b => bTpe.memberType(b) =:= aFTpe)
+          if (candidates.size == 1 && !aFields.exists(_.name == candidates.head.name)) {
+            List('{ Migration.RenameField(${Expr(aName)}, ${Expr(candidates.head.name)}) })
+          } else {
+            val sA = Expr.summon[Schema[?]].getOrElse(report.errorAndAbort(s"No Schema for $aName"))
+            List('{ Migration.RemoveField(${Expr(aName)}, $sA, DynamicValue.None) })
+          }
+      }
     }
+
+    val additions = bFields.filterNot(b => aFields.exists(_.name == b.name)).map { bSym =>
+      val bFTpe = bTpe.memberType(bSym)
+      val sB = Expr.summon[Schema[?]].getOrElse(report.errorAndAbort(s"No Schema for ${bSym.name}"))
+      '{ Migration.AddField(${Expr(bSym.name)}, $sB, ${getSafeDefault(bFTpe)}) }
+    }
+
+    val allActions = migrations ++ additions
+    '{ Migration.Combined(Chunk.fromIterable(${Expr.ofList(allActions)})) }
+  }
 }
