@@ -1,59 +1,93 @@
-package zio.schema.migration
+package zio.json.internal
 
 import scala.quoted._
-import zio.schema._
-import zio.Chunk
+import zio.json._
+import zio.json.internal._
+import scala.deriving.Mirror
 
-object FinalMigrationDeriver {
-  inline def derive[A, B]: Migration = ${ deriveImpl[A, B] }
+object GhostProductDecoder {
+  inline def derived[A](using m: Mirror.ProductOf[A]): JsonDecoder[A] = ${ deriveImpl[A]('m) }
 
-  def deriveImpl[A: Type, B: Type](using Quotes): Expr[Migration] = {
+  def deriveImpl[A: Type](m: Expr[Mirror.ProductOf[A]])(using Quotes): Expr[JsonDecoder[A]] = {
     import quotes.reflect._
+    val tpe = TypeRepr.of[A]
+    val fields = tpe.typeSymbol.caseFields
+    val n = fields.size
+    
+    if (n > 64) report.errorAndAbort(s"Phantom optimization supports up to 64 fields. Found: $n")
 
-    def getSafeDefault(tpe: TypeRepr): Expr[DynamicValue] = {
-      if (tpe <:< TypeRepr.of[Option[?]]) '{ DynamicValue.fromSchemaAndValue(Schema[Option[Any]], None) }
-      else if (tpe =:= TypeRepr.of[Int]) '{ DynamicValue.fromSchemaAndValue(Schema[Int], 0) }
-      else if (tpe =:= TypeRepr.of[String]) '{ DynamicValue.fromSchemaAndValue(Schema[String], "") }
-      else if (tpe =:= TypeRepr.of[Boolean]) '{ DynamicValue.fromSchemaAndValue(Schema[Boolean], false) }
-      else '{ DynamicValue.None }
-    }
-
-    val aTpe = TypeRepr.of[A]
-    val bTpe = TypeRepr.of[B]
-    val aFields = aTpe.typeSymbol.caseFields
-    val bFields = bTpe.typeSymbol.caseFields
-
-    val migrations = aFields.flatMap { aSym =>
-      val aName = aSym.name
-      val aFTpe = aTpe.memberType(aSym)
-
-      bFields.find(_.name == aName) match {
-        case Some(bSym) =>
-          val bFTpe = bTpe.memberType(bSym)
-          if (aFTpe =:= bFTpe) Nil
-          else {
-            val sA = Expr.summon[Schema[?]].getOrElse(report.errorAndAbort(s"No Schema for $aName"))
-            val sB = Expr.summon[Schema[?]].getOrElse(report.errorAndAbort(s"No Schema for new $aName"))
-            List('{ Migration.Transform(${Expr(aName)}, $sA, $sB, identity) })
-          }
-        case None =>
-          val candidates = bFields.filter(b => bTpe.memberType(b) =:= aFTpe)
-          if (candidates.size == 1 && !aFields.exists(_.name == candidates.head.name)) {
-            List('{ Migration.RenameField(${Expr(aName)}, ${Expr(candidates.head.name)}) })
-          } else {
-            val sA = Expr.summon[Schema[?]].getOrElse(report.errorAndAbort(s"No Schema for $aName"))
-            List('{ Migration.RemoveField(${Expr(aName)}, $sA, DynamicValue.None) })
-          }
+    val matrix = Lexer.fieldMatrix(fields.map(_.name).toArray)
+    val decoders = fields.map { f =>
+      tpe.memberType(f).asType match {
+        case '[t] => Expr.summon[JsonDecoder[t]].getOrElse(report.errorAndAbort(s"No Decoder for ${f.name}"))
       }
     }
 
-    val additions = bFields.filterNot(b => aFields.exists(_.name == b.name)).map { bSym =>
-      val bFTpe = bTpe.memberType(bSym)
-      val sB = Expr.summon[Schema[?]].getOrElse(report.errorAndAbort(s"No Schema for ${bSym.name}"))
-      '{ Migration.AddField(${Expr(bSym.name)}, $sB, ${getSafeDefault(bFTpe)}) }
-    }
+    '{
+      new JsonDecoder[A] {
+        private val localMatrix = ${Expr(matrix)}
+        private val allSetMask: Long = if (${Expr(n)} == 64) -1L else (1L << ${Expr(n)}) - 1L
 
-    val allActions = migrations ++ additions
-    '{ Migration.Combined(Chunk.fromIterable(${Expr.ofList(allActions)})) }
+        def decodeJson(trace: List[JsonError], in: RetractReader): Either[JsonError, A] = {
+          val values = new Array[Any](${Expr(n)})
+          var seenMask: Long = 0L 
+          var error: JsonError = null
+
+          ${
+            val inits = fields.zipWithIndex.map { case (f, i) =>
+              val fTpe = tpe.memberType(f)
+              fTpe.asType match {
+                case '[Int]     => '{ values(${Expr(i)}) = 0 }
+                case '[Long]    => '{ values(${Expr(i)}) = 0L }
+                case '[Double]  => '{ values(${Expr(i)}) = 0.0 }
+                case '[Float]   => '{ values(${Expr(i)}) = 0.0f }
+                case '[Boolean] => '{ values(${Expr(i)}) = false }
+                case _          => '{ values(${Expr(i)}) = null }
+              }
+            }
+            Block(inits.map(_.asTerm).toList, '{()}.asTerm).asExpr
+          }
+
+          if (Lexer.firstField(trace, in) != null) {
+            var field: String = Lexer.lastFieldName
+            while (field != null && error == null) {
+              val idx = Lexer.fieldIndex(field, localMatrix)
+              if (idx != -1) {
+                val bit = 1L << idx
+                if ((seenMask & bit) != 0L) error = JsonError.Message("Duplicate field: " + field) :: trace
+                else {
+                  seenMask |= bit
+                  ${
+                    val cases = fields.zipWithIndex.map { case (f, i) =>
+                      CaseDef(Literal(IntConstant(i)), None, '{
+                        ${decoders(i)}.decodeJson(trace, in) match {
+                          case Right(v) => values(${Expr(i)}) = v
+                          case Left(e) => error = e
+                        }
+                      }.asTerm)
+                    } :+ CaseDef(Wildcard(), None, '{ Lexer.skipValue(trace, in) }.asTerm)
+                    Match('{ idx }.asTerm, cases).asExpr
+                  }
+                }
+              } else Lexer.skipValue(trace, in)
+              if (error == null) field = Lexer.nextField(trace, in)
+            }
+          }
+
+          if (error == null && (seenMask & allSetMask) != allSetMask) {
+            ${
+              val check = fields.zipWithIndex.collect {
+                case (f, i) if !(tpe.memberType(f) <:< TypeRepr.of[Option[?]]) =>
+                  '{ if ((seenMask & (1L << ${Expr(i)})) == 0L) error = JsonError.Message("Missing field: " + ${Expr(f.name)}) :: trace }
+              }
+              Block(check.map(_.asTerm).toList, '{()}.asTerm).asExpr
+            }
+          }
+
+          if (error != null) Left(error)
+          else Right($m.fromProduct(Tuple.fromArray(values).asInstanceOf[m.MirroredElemTypes]))
+        }
+      }
+    }
   }
 }
