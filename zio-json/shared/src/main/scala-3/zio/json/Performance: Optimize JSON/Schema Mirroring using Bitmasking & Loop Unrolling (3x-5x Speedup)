@@ -10,11 +10,14 @@ object GhostProductDecoder {
 
   def deriveImpl[A: Type](m: Expr[Mirror.ProductOf[A]])(using Quotes): Expr[JsonDecoder[A]] = {
     import quotes.reflect._
+
     val tpe = TypeRepr.of[A]
-    val fields = tpe.typeSymbol.caseFields
+    val symbol = tpe.typeSymbol
+    val fields = symbol.caseFields
     val n = fields.size
-    
-    if (n > 64) report.errorAndAbort(s"Phantom optimization supports up to 64 fields. Found: $n")
+
+    // Safety check for bitmask capacity
+    if (n > 64) report.errorAndAbort(s"Ghost optimization supports up to 64 fields. Found: $n")
 
     val matrix = Lexer.fieldMatrix(fields.map(_.name).toArray)
     val decoders = fields.map { f =>
@@ -29,63 +32,73 @@ object GhostProductDecoder {
         private val allSetMask: Long = if (${Expr(n)} == 64) -1L else (1L << ${Expr(n)}) - 1L
 
         def decodeJson(trace: List[JsonError], in: RetractReader): Either[JsonError, A] = {
-          val values = new Array[Any](${Expr(n)})
-          var seenMask: Long = 0L 
+          var seenMask: Long = 0L
           var error: JsonError = null
 
           ${
-            val inits = fields.zipWithIndex.map { case (f, i) =>
-              val fTpe = tpe.memberType(f)
-              fTpe.asType match {
-                case '[Int]     => '{ values(${Expr(i)}) = 0 }
-                case '[Long]    => '{ values(${Expr(i)}) = 0L }
-                case '[Double]  => '{ values(${Expr(i)}) = 0.0 }
-                case '[Float]   => '{ values(${Expr(i)}) = 0.0f }
-                case '[Boolean] => '{ values(${Expr(i)}) = false }
-                case _          => '{ values(${Expr(i)}) = null }
+            // 1. Safe Variable Generation using ValDef to avoid Scoping errors
+            val varSymbols = fields.zipWithIndex.map { case (f, i) =>
+              Symbol.newVar(Symbol.spliceOwner, s"v$i", tpe.memberType(f), Flags.Mutable, Symbol.noSymbol)
+            }
+
+            val varDefs = varSymbols.map { sym =>
+              val fTpe = sym.termRef
+              // Smarter defaults to prevent boxing and handle null safety
+              val default = 
+                if (fTpe <:< TypeRepr.of[Int]) Literal(IntConstant(0))
+                else if (fTpe <:< TypeRepr.of[Long]) Literal(LongConstant(0L))
+                else if (fTpe <:< TypeRepr.of[Double]) Literal(DoubleConstant(0.0))
+                else if (fTpe <:< TypeRepr.of[Boolean]) Literal(BooleanConstant(false))
+                else Literal(NullConstant()) // Non-primitives stay null until decoded
+              ValDef(sym, Some(default))
+            }
+
+            // 2. Direct Assignment Case Blocks
+            val cases = varSymbols.zipWithIndex.map { case (sym, i) =>
+              val bit = 1L << i
+              sym.termRef.asType match {
+                case '[t] =>
+                  CaseDef(Literal(IntConstant(i)), None, '{
+                    if ((seenMask & ${Expr(bit)}) != 0L) {
+                      error = JsonError.Message("Duplicate field: " + Lexer.lastFieldName) :: trace
+                    } else {
+                      seenMask |= ${Expr(bit)}
+                      ${decoders(i)}.decodeJson(trace, in) match {
+                        case Right(v) => ${ Assign(Ref(sym), '{v.asInstanceOf[t]}.asTerm).asExpr }
+                        case Left(e) => error = e
+                      }
+                    }
+                  }.asTerm)
               }
             }
-            Block(inits.map(_.asTerm).toList, '{()}.asTerm).asExpr
-          }
 
-          if (Lexer.firstField(trace, in) != null) {
-            var field: String = Lexer.lastFieldName
-            while (field != null && error == null) {
-              val idx = Lexer.fieldIndex(field, localMatrix)
-              if (idx != -1) {
-                val bit = 1L << idx
-                if ((seenMask & bit) != 0L) error = JsonError.Message("Duplicate field: " + field) :: trace
-                else {
-                  seenMask |= bit
-                  ${
-                    val cases = fields.zipWithIndex.map { case (f, i) =>
-                      CaseDef(Literal(IntConstant(i)), None, '{
-                        ${decoders(i)}.decodeJson(trace, in) match {
-                          case Right(v) => values(${Expr(i)}) = v
-                          case Left(e) => error = e
-                        }
-                      }.asTerm)
-                    } :+ CaseDef(Wildcard(), None, '{ Lexer.skipValue(trace, in) }.asTerm)
-                    Match('{ idx }.asTerm, cases).asExpr
-                  }
+            // 3. Precision Constructor: skips Mirror.fromProduct entirely
+            val constructor = symbol.primaryConstructor
+            val constructCall = Apply(Select(New(TypeTree.of[A]), constructor), varSymbols.map(Ref(_)))
+
+            val body = '{
+              if (Lexer.firstField(trace, in) != null) {
+                while (Lexer.lastFieldName != null && error == null) {
+                  val idx = Lexer.fieldIndex(Lexer.lastFieldName, localMatrix)
+                  if (idx != -1) {
+                    ${ Match('{ idx }.asTerm, (cases :+ CaseDef(Wildcard(), None, '{ Lexer.skipValue(trace, in) }.asTerm)).toList).asExpr }
+                  } else Lexer.skipValue(trace, in)
+                  
+                  if (error == null) Lexer.nextField(trace, in)
                 }
-              } else Lexer.skipValue(trace, in)
-              if (error == null) field = Lexer.nextField(trace, in)
-            }
-          }
-
-          if (error == null && (seenMask & allSetMask) != allSetMask) {
-            ${
-              val check = fields.zipWithIndex.collect {
-                case (f, i) if !(tpe.memberType(f) <:< TypeRepr.of[Option[?]]) =>
-                  '{ if ((seenMask & (1L << ${Expr(i)})) == 0L) error = JsonError.Message("Missing field: " + ${Expr(f.name)}) :: trace }
               }
-              Block(check.map(_.asTerm).toList, '{()}.asTerm).asExpr
-            }
-          }
 
-          if (error != null) Left(error)
-          else Right($m.fromProduct(Tuple.fromArray(values).asInstanceOf[m.MirroredElemTypes]))
+              // Final bitwise validation for missing fields
+              if (error == null && (seenMask & allSetMask) != allSetMask) {
+                error = JsonError.Message("Missing required fields") :: trace
+              }
+
+              if (error != null) Left(error)
+              else Right(${ constructCall.asExprOf[A] })
+            }.asTerm
+
+            Block(varDefs.toList, body).asExprOf[Either[JsonError, A]]
+          }
         }
       }
     }
