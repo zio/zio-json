@@ -326,15 +326,33 @@ lazy val zioJsonMacros = crossProject(JSPlatform, JVMPlatform, NativePlatform)
   .settings(crossProjectSettings)
   .settings(macroExpansionSettings)
   .settings(
-    crossScalaVersions -= Scala3,
-    scalacOptions -= "-Xfatal-warnings", // not quite ready.
-    libraryDependencies ++= Seq(
-      "org.scala-lang" % "scala-reflect" % scalaVersion.value % Provided,
-      "dev.zio"      %%% "zio-test"      % zioVersion         % Test,
-      "dev.zio"      %%% "zio-test-sbt"  % zioVersion         % Test
-    ),
-    testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework")
-  )
+  // ✅ removed: crossScalaVersions -= Scala3
+
+  scalacOptions -= "-Xfatal-warnings", // not quite ready.
+
+  scalacOptions ++= {
+    if (scalaVersion.value == Scala3)
+      Seq("-Yretain-trees")
+    else
+      Seq()
+  },
+
+  libraryDependencies ++= {
+    val base = Seq(
+      "dev.zio" %%% "zio-test"     % zioVersion % Test,
+      "dev.zio" %%% "zio-test-sbt" % zioVersion % Test
+    )
+
+    CrossVersion.partialVersion(scalaVersion.value) match {
+      case Some((2, _)) =>
+        base :+ ("org.scala-lang" % "scala-reflect" % scalaVersion.value % Provided)
+      case _ =>
+        base
+    }
+  },
+
+  testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework")
+)
   .nativeSettings(nativeSettings)
 
 lazy val zioJsonMacrosJVM = zioJsonMacros.jvm.dependsOn(zioJsonJVM)
