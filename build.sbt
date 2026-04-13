@@ -326,8 +326,6 @@ lazy val zioJsonMacros = crossProject(JSPlatform, JVMPlatform, NativePlatform)
   .settings(crossProjectSettings)
   .settings(macroExpansionSettings)
   .settings(
-    // ✅ removed: crossScalaVersions -= Scala3
-
     scalacOptions -= "-Xfatal-warnings", // not quite ready.
 
     scalacOptions ++= {
@@ -352,12 +350,12 @@ lazy val zioJsonMacros = crossProject(JSPlatform, JVMPlatform, NativePlatform)
     },
 
     testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework"),
-    
+
     // Disable MiMa for zio-json-macros as it's a new module or not published for Scala 3 in older versions
     mimaPreviousArtifacts := Set()
   )
   .nativeSettings(nativeSettings)
-  
+
 lazy val zioJsonMacrosJVM = zioJsonMacros.jvm.dependsOn(zioJsonJVM)
 
 lazy val zioJsonMacrosJS = zioJsonMacros.js
