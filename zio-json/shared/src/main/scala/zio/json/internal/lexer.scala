@@ -138,7 +138,8 @@ object Lexer {
     }
 
   def skipNumber(in: RetractReader): Unit = {
-    while (isNumber(in.readChar())) ()
+    try while (isNumber(in.readChar())) ()
+    catch { case _: UnexpectedEnd => return }
     in.retract()
   }
 
