@@ -13,9 +13,8 @@ trait JsonPackagePlatformSpecific {
   /**
    * Streams newline-delimited JSON values from a file.
    *
-   * Each line in the file is expected to be a complete, valid JSON value. This is the
-   * "JSON Lines" (NDJSON) format. For streaming elements from a JSON array file, use
-   * [[readJsonArrayAs]] instead.
+   * Each line in the file is expected to be a complete, valid JSON value. This is the "JSON Lines" (NDJSON) format. For
+   * streaming elements from a JSON array file, use [[readJsonArrayAs]] instead.
    */
   def readJsonAs(file: File): ZStream[Any, Throwable, ast.Json] =
     readJsonLinesAs[ast.Json](file)
@@ -23,9 +22,8 @@ trait JsonPackagePlatformSpecific {
   /**
    * Streams newline-delimited JSON values from a file path.
    *
-   * Each line in the file is expected to be a complete, valid JSON value. This is the
-   * "JSON Lines" (NDJSON) format. For streaming elements from a JSON array file, use
-   * [[readJsonArrayAs]] instead.
+   * Each line in the file is expected to be a complete, valid JSON value. This is the "JSON Lines" (NDJSON) format. For
+   * streaming elements from a JSON array file, use [[readJsonArrayAs]] instead.
    */
   def readJsonAs(path: Path): ZStream[Any, Throwable, ast.Json] =
     readJsonLinesAs[ast.Json](path)
@@ -33,9 +31,8 @@ trait JsonPackagePlatformSpecific {
   /**
    * Streams newline-delimited JSON values from a file path string.
    *
-   * Each line in the file is expected to be a complete, valid JSON value. This is the
-   * "JSON Lines" (NDJSON) format. For streaming elements from a JSON array file, use
-   * [[readJsonArrayAs]] instead.
+   * Each line in the file is expected to be a complete, valid JSON value. This is the "JSON Lines" (NDJSON) format. For
+   * streaming elements from a JSON array file, use [[readJsonArrayAs]] instead.
    */
   def readJsonAs(path: String): ZStream[Any, Throwable, ast.Json] =
     readJsonLinesAs[ast.Json](path)
@@ -43,8 +40,8 @@ trait JsonPackagePlatformSpecific {
   /**
    * Streams newline-delimited JSON values from a URL.
    *
-   * Each line is expected to be a complete, valid JSON value (JSON Lines / NDJSON format).
-   * For streaming elements from a JSON array, use [[readJsonArrayAs]] instead.
+   * Each line is expected to be a complete, valid JSON value (JSON Lines / NDJSON format). For streaming elements from
+   * a JSON array, use [[readJsonArrayAs]] instead.
    */
   def readJsonAs(url: URL): ZStream[Any, Throwable, ast.Json] =
     readJsonLinesAs[ast.Json](url)
@@ -52,9 +49,8 @@ trait JsonPackagePlatformSpecific {
   /**
    * Streams individual elements from a JSON array file.
    *
-   * The file must contain a single top-level JSON array. Each element of the array is
-   * decoded and emitted as a separate stream element, enabling constant-memory processing
-   * of large JSON array files.
+   * The file must contain a single top-level JSON array. Each element of the array is decoded and emitted as a separate
+   * stream element, enabling constant-memory processing of large JSON array files.
    *
    * For newline-delimited JSON (JSON Lines / NDJSON), use [[readJsonAs]] instead.
    */
@@ -64,9 +60,8 @@ trait JsonPackagePlatformSpecific {
   /**
    * Streams individual elements from a JSON array file path.
    *
-   * The file must contain a single top-level JSON array. Each element of the array is
-   * decoded and emitted as a separate stream element, enabling constant-memory processing
-   * of large JSON array files.
+   * The file must contain a single top-level JSON array. Each element of the array is decoded and emitted as a separate
+   * stream element, enabling constant-memory processing of large JSON array files.
    *
    * For newline-delimited JSON (JSON Lines / NDJSON), use [[readJsonAs]] instead.
    */
@@ -82,8 +77,8 @@ trait JsonPackagePlatformSpecific {
   /**
    * Streams individual elements from a JSON array file path string.
    *
-   * The file must contain a single top-level JSON array. Each element is decoded and
-   * emitted as a separate stream element. For newline-delimited JSON, use [[readJsonAs]].
+   * The file must contain a single top-level JSON array. Each element is decoded and emitted as a separate stream
+   * element. For newline-delimited JSON, use [[readJsonAs]].
    */
   def readJsonArrayAs[A: JsonDecoder](path: String): ZStream[Any, Throwable, A] =
     readJsonArrayAs(Paths.get(path))
@@ -91,8 +86,8 @@ trait JsonPackagePlatformSpecific {
   /**
    * Streams individual elements from a JSON array URL.
    *
-   * The response must contain a single top-level JSON array. Each element is decoded and
-   * emitted as a separate stream element. For newline-delimited JSON, use [[readJsonAs]].
+   * The response must contain a single top-level JSON array. Each element is decoded and emitted as a separate stream
+   * element. For newline-delimited JSON, use [[readJsonAs]].
    */
   def readJsonArrayAs[A: JsonDecoder](url: URL): ZStream[Any, Throwable, A] = {
     val scoped = ZIO
