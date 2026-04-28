@@ -1,8 +1,9 @@
 package zio.json
 
 import io.circe
-import org.typelevel.jawn.{ ast => jawn }
+import org.typelevel.jawn.{ast => jawn}
 import zio._
+import zio.json.DecoderPlatformSpecificSpec.test
 import zio.json.TestUtils._
 import zio.json.ast._
 import zio.json.data.googlemaps._
@@ -251,6 +252,18 @@ object DecoderPlatformSpecificSpec extends ZIOSpecDefault {
             } yield {
               assert(lines(0))(equalTo(Event(1603669875, "hello"))) &&
               assert(lines(1))(equalTo(Event(1603669876, "world")))
+            }
+          },
+            test("readJsonLines array reads from URLs") {
+            import logEvent._
+
+            val url = this.getClass.getClassLoader.getResource("logtest.jsonlines")
+
+            for {
+              lines <- readJsonLinesAs[Event](url,JsonStreamDelimiter.Array).runCollect
+            } yield {
+              assert(lines(0))(equalTo(Event(1603669875, "hello"))) &&
+                assert(lines(1))(equalTo(Event(1603669876, "world")))
             }
           }
         ),

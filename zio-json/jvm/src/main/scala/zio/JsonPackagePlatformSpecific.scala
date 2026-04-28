@@ -36,7 +36,7 @@ trait JsonPackagePlatformSpecific {
   def readJsonLinesAs[A: JsonDecoder](path: String): ZStream[Any, Throwable, A] =
     readJsonLinesAs(Paths.get(path))
 
-  def readJsonLinesAs[A: JsonDecoder](url: URL): ZStream[Any, Throwable, A] = {
+  def readJsonLinesAs[A: JsonDecoder](url: URL, delimiter:JsonStreamDelimiter = JsonStreamDelimiter.Newline): ZStream[Any, Throwable, A] = {
     val scoped = ZIO
       .fromAutoCloseable(ZIO.attempt(url.openStream()))
       .refineToOrDie[IOException]
@@ -46,7 +46,7 @@ trait JsonPackagePlatformSpecific {
       .via(
         ZPipeline.utf8Decode >>>
           stringToChars >>>
-          JsonDecoder[A].decodeJsonPipeline(JsonStreamDelimiter.Newline)
+          JsonDecoder[A].decodeJsonPipeline(delimiter)
       )
   }
 
