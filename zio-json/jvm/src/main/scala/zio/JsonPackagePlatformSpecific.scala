@@ -24,18 +24,6 @@ trait JsonPackagePlatformSpecific {
   def readJsonLinesAs[A: JsonDecoder](file: File): ZStream[Any, Throwable, A] =
     readJsonLinesAs(file.toPath)
 
-  def readJsonLinesAs[A: JsonDecoder](path: Path): ZStream[Any, Throwable, A] =
-    ZStream
-      .fromPath(path)
-      .via(
-        ZPipeline.utf8Decode >>>
-          stringToChars >>>
-          JsonDecoder[A].decodeJsonPipeline(JsonStreamDelimiter.Newline)
-      )
-
-  def readJsonLinesAs[A: JsonDecoder](path: String): ZStream[Any, Throwable, A] =
-    readJsonLinesAs(Paths.get(path))
-
   def readJsonLinesAs[A: JsonDecoder](
     url: URL,
     delimiter: JsonStreamDelimiter = JsonStreamDelimiter.Newline
@@ -52,6 +40,9 @@ trait JsonPackagePlatformSpecific {
           JsonDecoder[A].decodeJsonPipeline(delimiter)
       )
   }
+
+  def readJsonLinesAs[A: JsonDecoder](path: String): ZStream[Any, Throwable, A] =
+    readJsonLinesAs(Paths.get(path))
 
   def writeJsonLines[R](file: File, stream: ZStream[R, Throwable, ast.Json]): RIO[R, Unit] =
     writeJsonLinesAs(file, stream)
