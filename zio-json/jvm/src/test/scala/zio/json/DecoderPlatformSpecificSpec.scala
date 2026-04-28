@@ -257,7 +257,7 @@ object DecoderPlatformSpecificSpec extends ZIOSpecDefault {
           test("readJsonArray reads from URLs") {
             import logEvent._
 
-            val url = this.getClass.getClassLoader.getResource("logtest.jsonlines")
+            val url = this.getClass.getClassLoader.getResource("logtest.jsonArray")
 
             for {
               lines <- readJsonLinesAs[Event](url,JsonStreamDelimiter.Array).runCollect
