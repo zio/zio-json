@@ -254,7 +254,7 @@ object DecoderPlatformSpecificSpec extends ZIOSpecDefault {
               assert(lines(1))(equalTo(Event(1603669876, "world")))
             }
           },
-            test("readJsonLines array reads from URLs") {
+          test("readJsonArray reads from URLs") {
             import logEvent._
 
             val url = this.getClass.getClassLoader.getResource("logtest.jsonlines")
