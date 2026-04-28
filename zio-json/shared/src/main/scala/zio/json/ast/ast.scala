@@ -167,25 +167,21 @@ sealed abstract class Json { self =>
     }
 
   override final def hashCode: Int =
-    31 * {
-      self match {
-        case s: Str  => s.value.hashCode
-        case n: Num  => n.value.hashCode
-        case b: Bool => b.value.hashCode
-        case o: Obj  =>
-          var result = 0
-          o.fields.foreach(tuple => result = result ^ tuple.hashCode)
-          result
-        case a: Arr =>
-          var result = 0
-          var index  = 0
-          a.elements.foreach { json =>
-            result = result ^ (index, json).hashCode
-            index += 1
-          }
-          result
-        case _ => 1
-      }
+    self match {
+      case s: Str  => s.value.hashCode
+      case n: Num  => n.value.hashCode
+      case b: Bool => b.value.hashCode
+      case o: Obj  =>
+        var result = 0
+        o.fields.foreach(tuple => result = result ^ tuple.hashCode)
+        result
+      case a: Arr =>
+        var result = 0
+        a.elements.foreach { json =>
+          result = 31 * result + json.hashCode
+        }
+        result
+      case _ => 1
     }
 
   /**
