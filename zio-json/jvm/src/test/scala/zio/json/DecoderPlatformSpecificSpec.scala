@@ -1,7 +1,7 @@
 package zio.json
 
 import io.circe
-import org.typelevel.jawn.{ast => jawn}
+import org.typelevel.jawn.{ ast => jawn }
 import zio._
 import zio.json.DecoderPlatformSpecificSpec.test
 import zio.json.TestUtils._
@@ -260,10 +260,10 @@ object DecoderPlatformSpecificSpec extends ZIOSpecDefault {
             val url = this.getClass.getClassLoader.getResource("logtest.jsonArray")
 
             for {
-              lines <- readJsonLinesAs[Event](url,JsonStreamDelimiter.Array).runCollect
+              lines <- readJsonLinesAs[Event](url, JsonStreamDelimiter.Array).runCollect
             } yield {
               assert(lines(0))(equalTo(Event(1603669875, "hello"))) &&
-                assert(lines(1))(equalTo(Event(1603669876, "world")))
+              assert(lines(1))(equalTo(Event(1603669876, "world")))
             }
           }
         ),
