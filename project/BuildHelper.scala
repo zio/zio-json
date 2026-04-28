@@ -217,6 +217,9 @@ object BuildHelper {
           compilerPlugin("org.typelevel" %% "kind-projector" % "0.13.4" cross CrossVersion.full)
         )
     },
+    libraryDependencySchemes ++= Seq(
+      "org.scala-native" %% "test-interface_native0.5" % VersionScheme.Always
+    ),
     versionScheme     := Some("early-semver"),
     semanticdbEnabled := scalaVersion.value == Scala213, // enable SemanticDB
     semanticdbOptions ++= (CrossVersion.partialVersion(scalaVersion.value) match {
