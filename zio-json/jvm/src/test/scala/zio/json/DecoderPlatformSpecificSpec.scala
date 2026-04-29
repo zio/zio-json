@@ -241,6 +241,19 @@ object DecoderPlatformSpecificSpec extends ZIOSpecDefault {
               assert(lines(1))(equalTo(Event(1603669876, "world")))
             }
           },
+          test("readJsonLines reads Array from files") {
+            import logEvent._
+
+            for {
+              lines <- readJsonLinesAs[Event](
+                         Paths.get("zio-json/jvm/src/test/resources/log.jsonarray"),
+                         JsonStreamDelimiter.Array
+                       ).runCollect
+            } yield {
+              assert(lines(0))(equalTo(Event(1603669875, "hello"))) &&
+              assert(lines(1))(equalTo(Event(1603669876, "world")))
+            }
+          },
           test("readJsonLines reads from URLs") {
             import logEvent._
 
@@ -248,6 +261,18 @@ object DecoderPlatformSpecificSpec extends ZIOSpecDefault {
 
             for {
               lines <- readJsonLinesAs[Event](url).runCollect
+            } yield {
+              assert(lines(0))(equalTo(Event(1603669875, "hello"))) &&
+              assert(lines(1))(equalTo(Event(1603669876, "world")))
+            }
+          },
+          test("readJsonLines reads Array from URLs") {
+            import logEvent._
+
+            val url = this.getClass.getClassLoader.getResource("log.jsonarray")
+
+            for {
+              lines <- readJsonLinesAs[Event](url, JsonStreamDelimiter.Array).runCollect
             } yield {
               assert(lines(0))(equalTo(Event(1603669875, "hello"))) &&
               assert(lines(1))(equalTo(Event(1603669876, "world")))
