@@ -139,7 +139,7 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform, NativePlatform)
         case _ =>
           Seq(
             "org.scala-lang"                 % "scala-reflect" % scalaVersion.value % Provided,
-            "com.softwaremill.magnolia1_2" %%% "magnolia"      % "1.1.13"
+            "com.softwaremill.magnolia1_2" %%% "magnolia"      % "1.1.14"
           )
       }
     },
