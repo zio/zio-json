@@ -18,7 +18,7 @@ jobs:
     if: ${{ github.event_name == 'pull_request' }}
     steps:
     - name: Git Checkout
-      uses: actions/checkout@v6.0.2
+      uses: actions/checkout@v7
       with:
         fetch-depth: '0'
     - name: Setup Action
@@ -42,7 +42,7 @@ jobs:
       contents: read
     steps:
       - name: Git Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: '0'
       - name: Install libuv
@@ -70,7 +70,7 @@ jobs:
     if: ${{ (github.event_name == 'push') || ((github.event_name == 'release') && (github.event.action == 'published')) }}
     steps:
     - name: Git Checkout
-      uses: actions/checkout@v6.0.2
+      uses: actions/checkout@v7
       with:
         ref: ${{ github.head_ref }}
         fetch-depth: '0'
