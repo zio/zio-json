@@ -127,7 +127,7 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform, NativePlatform)
       "io.circe"                              %%% "circe-core"              % circeVersion % Test,
       "io.circe"                              %%% "circe-generic"           % circeVersion % Test,
       "io.circe"                              %%% "circe-parser"            % circeVersion % Test,
-      "org.typelevel"                         %%% "jawn-ast"                % "1.6.0"      % Test
+      "org.typelevel"                         %%% "jawn-ast"                % "1.7.0"      % Test
     ),
     // scala version specific dependencies
     libraryDependencies ++= {
