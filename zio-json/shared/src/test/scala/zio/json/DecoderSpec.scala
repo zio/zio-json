@@ -296,10 +296,11 @@ object DecoderSpec extends ZIOSpecDefault {
         },
         test("aliases - alias collides with field name") {
           for {
-            error <- ZIO.attempt {
-                       case class Mango(@jsonAliases("r") roundness: Int, @jsonAliases("radius") r: Int)
-                       DeriveJsonDecoder.gen[Mango]
-                     }.flip
+            error <-
+              ZIO.attempt {
+                case class Mango(@jsonAliases("r") roundness: Int, @jsonAliases("radius") r: Int)
+                DeriveJsonDecoder.gen[Mango]
+              }.flip
           } yield assertTrue(
             // Class name in Scala 2: zio.json.DecoderSpec.spec.Mango
             // Class name in Scala 3: zio.json.DecoderSpec.spec.$anonfun.Mango
@@ -310,10 +311,11 @@ object DecoderSpec extends ZIOSpecDefault {
         },
         test("aliases - alias collides with another alias") {
           for {
-            error <- ZIO.attempt {
-                       case class Mango(@jsonAliases("r") roundness: Int, @jsonAliases("r") radius: Int)
-                       DeriveJsonDecoder.gen[Mango]
-                     }.flip
+            error <-
+              ZIO.attempt {
+                case class Mango(@jsonAliases("r") roundness: Int, @jsonAliases("r") radius: Int)
+                DeriveJsonDecoder.gen[Mango]
+              }.flip
           } yield assertTrue(
             error.getMessage.matches(
               "Field names and aliases in case class zio.json.DecoderSpec.spec(.\\$anonfun)?.Mango must be distinct, alias\\(es\\) r collide with a field or another alias"
