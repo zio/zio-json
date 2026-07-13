@@ -122,8 +122,8 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform, NativePlatform)
       "org.scala-lang.modules"                %%% "scala-collection-compat" % "2.14.0"     % Test,
       "dev.zio"                               %%% "zio-test"                % zioVersion   % Test,
       "dev.zio"                               %%% "zio-test-sbt"            % zioVersion   % Test,
-      "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-core"     % "2.38.16"    % Test,
-      "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-macros"   % "2.38.16"    % Test,
+      "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-core"     % "2.39.0"     % Test,
+      "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-macros"   % "2.39.0"     % Test,
       "io.circe"                              %%% "circe-core"              % circeVersion % Test,
       "io.circe"                              %%% "circe-generic"           % circeVersion % Test,
       "io.circe"                              %%% "circe-parser"            % circeVersion % Test,
@@ -134,7 +134,7 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform, NativePlatform)
       CrossVersion.partialVersion(scalaVersion.value) match {
         case Some((3, _)) =>
           Seq(
-            "com.softwaremill.magnolia1_3" %%% "magnolia" % "1.3.21"
+            "com.softwaremill.magnolia1_3" %%% "magnolia" % "1.3.22"
           )
         case _ =>
           Seq(
@@ -349,7 +349,7 @@ lazy val zioJsonInteropHttp4s = project
   .settings(buildInfoSettings("zio.json.interop.http4s"))
   .settings(
     libraryDependencies ++= Seq(
-      "org.http4s"    %% "http4s-dsl"       % "0.23.34",
+      "org.http4s"    %% "http4s-dsl"       % "0.23.36",
       "dev.zio"       %% "zio"              % zioVersion,
       "org.typelevel" %% "cats-effect"      % "3.7.0",
       "dev.zio"       %% "zio-interop-cats" % "23.1.0.13" % Test,
@@ -368,7 +368,7 @@ lazy val zioJsonInteropRefined = crossProject(JSPlatform, JVMPlatform, NativePla
   .settings(buildInfoSettings("zio.json.interop.refined"))
   .settings(
     libraryDependencies ++= Seq(
-      "eu.timepit" %%% "refined"      % "0.11.3",
+      "eu.timepit" %%% "refined"      % "0.11.4",
       "dev.zio"    %%% "zio-test"     % zioVersion % Test,
       "dev.zio"    %%% "zio-test-sbt" % zioVersion % Test
     ),
