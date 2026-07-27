@@ -147,10 +147,11 @@ private[zio] final class FastStringReader(s: CharSequence) extends RetractReader
  * This exists so that bytes coming off the wire can be parsed without first being copied into a `String`: peak memory
  * is the chunk plus a constant, instead of the chunk plus a full sized copy of it.
  *
- * Malformed input produces `�`, one per malformed sequence, as `new String(bytes, UTF_8)` does. The two agree on well
- * formed input and on the usual damage (truncated tails, stray continuation bytes, overlong forms), but not byte for
- * byte on every malformed sequence: `CharsetDecoder`'s maximal subpart rule emits three replacements for a CESU-8
- * encoded surrogate such as `ED A0 80` where this emits one.
+ * Malformed input produces `�` following the Unicode maximal subpart rule, which is character for character what
+ * `new String(bytes, UTF_8)` yields on the JVM: truncated tails, stray continuation bytes, overlong forms, CESU-8
+ * encoded surrogates and code points past U+10FFFF all decode identically. This reader behaves the same on every
+ * platform, whereas the JS and Native UTF-8 decoders do not always agree with the JVM on how many replacement
+ * characters a given malformed sequence is worth.
  */
 private[zio] final class Utf8ChunkReader(chunk: Chunk[Byte]) extends RetractReader {
   private[this] val len: Int     = chunk.length
@@ -162,18 +163,32 @@ private[zio] final class Utf8ChunkReader(chunk: Chunk[Byte]) extends RetractRead
   private[this] var markI: Int       = 0
   private[this] var markPending: Int = -1
 
-  // Bytes are pulled through a window rather than read one at a time off the Chunk: Chunk#byte is a virtual call
-  // taking an implicit witness, and on a Chunk.Concat it walks the tree on every byte, which costs several times more
-  // than the parse itself. Bulk copying keeps that to one arraycopy per window and makes reads plain array loads.
-  private[this] val buf: Array[Byte] = new Array(math.min(len, Utf8ChunkReader.WindowSize))
-  private[this] var base: Int        = 0 // index in the chunk of buf(0)
-  private[this] var limit: Int       = 0 // number of valid bytes in buf
+  // Bytes are read out of a plain array rather than one at a time off the Chunk: Chunk#byte is a virtual call taking
+  // an implicit witness, and on a Chunk.Concat it walks the tree on every byte, which costs several times more than
+  // the parse itself.
+  //
+  // A Chunk.ByteArray is read in place, with no copy at all. That is the shape Chunk.fromArray produces, which is
+  // what callers with an Array[Byte] already in hand reach for to avoid a copy, and what zio-http hands back for a
+  // body it took from Netty. Any other shape is pulled through a fixed window, one arraycopy per refill, which keeps
+  // peak memory constant. Both end up in the same `buf(k - base)` read below, so there is only one hot path.
+  private[this] var buf: Array[Byte] = _
+  private[this] var base: Int        = 0 // buf(k - base) is the byte at index k of the chunk
+  private[this] var limit: Int       = 0 // reads are served from buf while k - base < limit
 
-  def close(): Unit = ()
+  chunk match {
+    case Chunk.ByteArray(array, offset, length) =>
+      buf = array
+      base = -offset
+      limit = offset + length // k < len implies k - base < limit, so fill() is never reached
+    case _ =>
+      buf = new Array(math.min(len, Utf8ChunkReader.WindowSize))
+  }
+
+  override def close(): Unit = ()
 
   override def read(): Int = readNext()
 
-  def readChar(): Char = {
+  override def readChar(): Char = {
     val c = readNext()
     if (c == -1) throw new UnexpectedEnd
     c.toChar
@@ -199,7 +214,7 @@ private[zio] final class Utf8ChunkReader(chunk: Chunk[Byte]) extends RetractRead
     c
   }
 
-  def retract(): Unit = {
+  override def retract(): Unit = {
     i = markI
     pending = markPending
   }
@@ -240,42 +255,53 @@ private[zio] final class Utf8ChunkReader(chunk: Chunk[Byte]) extends RetractRead
     else decodeMultiByte(b0 & 0xff)
   }
 
-  @noinline private[this] def decodeMultiByte(b0: Int): Int =
-    if (b0 < 0xc2) Utf8ChunkReader.Replacement // stray continuation byte, or an overlong 0xc0/0xc1 lead
-    else if (b0 < 0xe0) {
-      val b1 = continuation()
-      if (b1 < 0) Utf8ChunkReader.Replacement
-      else ((b0 & 0x1f) << 6) | b1
-    } else if (b0 < 0xf0) {
-      val b1 = continuation()
-      if (b1 < 0) return Utf8ChunkReader.Replacement
-      val b2 = continuation()
-      if (b2 < 0) return Utf8ChunkReader.Replacement
+  @noinline private[this] def decodeMultiByte(b0: Int): Int = {
+    // Per-lead ranges for the second byte, from the Unicode "well-formed UTF-8 byte sequences" table. Enforcing them
+    // here rather than validating the code point afterwards is what makes the number of replacement characters match
+    // CharsetDecoder: a second byte outside the range leaves the lead as a malformed sequence on its own, and that
+    // second byte then gets examined as a fresh lead rather than being swallowed with it.
+    var lo   = 0x80
+    var hi   = 0xbf
+    val need =
+      if (b0 < 0xc2) return Utf8ChunkReader.Replacement // continuation byte on its own, or an overlong 0xc0/0xc1 lead
+      else if (b0 < 0xe0) 2
+      else if (b0 < 0xf0) {
+        if (b0 == 0xe0) lo = 0xa0 // rejects overlong forms
+        3
+      } else if (b0 < 0xf5) {
+        if (b0 == 0xf0) lo = 0x90      // rejects overlong forms
+        else if (b0 == 0xf4) hi = 0x8f // rejects anything past U+10FFFF
+        4
+      } else return Utf8ChunkReader.Replacement // no lead byte above 0xf4 is ever valid
+
+    val b1 = continuation(lo, hi)
+    if (b1 < 0) return Utf8ChunkReader.Replacement
+    if (need == 2) return ((b0 & 0x1f) << 6) | b1
+
+    val b2 = continuation(0x80, 0xbf)
+    if (b2 < 0) return Utf8ChunkReader.Replacement
+    if (need == 3) {
       val cp = ((b0 & 0x0f) << 12) | (b1 << 6) | b2
-      if (cp < 0x800 || (cp >= 0xd800 && cp <= 0xdfff)) Utf8ChunkReader.Replacement // overlong, or a lone surrogate
-      else cp
-    } else if (b0 < 0xf5) {
-      val b1 = continuation()
-      if (b1 < 0) return Utf8ChunkReader.Replacement
-      val b2 = continuation()
-      if (b2 < 0) return Utf8ChunkReader.Replacement
-      val b3 = continuation()
-      if (b3 < 0) return Utf8ChunkReader.Replacement
-      val cp = ((b0 & 0x07) << 18) | (b1 << 12) | (b2 << 6) | b3
-      if (cp < 0x10000 || cp > 0x10ffff) Utf8ChunkReader.Replacement // overlong, or beyond the Unicode range
-      else {
-        val u = cp - 0x10000
-        pending = 0xdc00 | (u & 0x3ff)
-        0xd800 | (u >> 10)
-      }
-    } else Utf8ChunkReader.Replacement // would encode beyond U+10FFFF
+      // a CESU-8 encoded surrogate is only rejected once all three bytes are in hand, so it costs one replacement
+      // rather than three. CharsetDecoder draws the same distinction: a bad second byte truncates the subpart, an
+      // otherwise well formed sequence that happens to name a surrogate does not.
+      return if (cp >= 0xd800 && cp <= 0xdfff) Utf8ChunkReader.Replacement else cp
+    }
+
+    val b3 = continuation(0x80, 0xbf)
+    if (b3 < 0) return Utf8ChunkReader.Replacement
+    // the ranges above already guarantee this is a valid code point outside the BMP
+    val u = (((b0 & 0x07) << 18) | (b1 << 12) | (b2 << 6) | b3) - 0x10000
+    pending = 0xdc00 | (u & 0x3ff)
+    0xd800 | (u >> 10)
+  }
 
   // the offending byte is deliberately left unconsumed so that it is re-examined as a fresh lead byte
-  private[this] def continuation(): Int = {
+  private[this] def continuation(lo: Int, hi: Int): Int = {
     val i = this.i
     if (i >= len) return -1
     val b = byteAt(i) & 0xff
-    if ((b & 0xc0) != 0x80) return -1
+    if (b < lo || b > hi) return -1
     this.i = i + 1
     b & 0x3f
   }

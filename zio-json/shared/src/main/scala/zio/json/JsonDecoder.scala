@@ -114,6 +114,16 @@ trait JsonDecoder[A] extends JsonDecoderPlatformSpecific[A] {
     }
 
   /**
+   * Attempts to decode a value of type `A` from the specified UTF-8 encoded bytes, but may fail with a human-readable
+   * error message if the provided bytes do not encode a value of this type.
+   *
+   * The array is read in place, not copied.
+   *
+   * Note: This method may not entirely consume the specified array.
+   */
+  final def decodeJson(bytes: Array[Byte]): Either[String, A] = decodeJson(Chunk.fromArray(bytes))
+
+  /**
    * Returns this decoder but widened to the given super-type
    */
   final def widen[B >: A]: JsonDecoder[B] = self.asInstanceOf[JsonDecoder[B]]

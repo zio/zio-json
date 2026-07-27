@@ -46,7 +46,15 @@ val bytes: Chunk[Byte] = Chunk.fromArray("""{ "curvature": 0.5 }""".getBytes("UT
 bytes.fromJson[Banana]
 ```
 
+A bare `Array[Byte]` works the same way, and is not copied either.
+
+```scala mdoc
+"""{ "curvature": 0.5 }""".getBytes("UTF-8").fromJson[Banana]
+```
+
 The bytes are turned into characters as the parser consumes them, so peak memory is the chunk plus a constant. Going through `new String(chunk.toArray, UTF_8)` instead holds the chunk, an array copy of it and the `String` all at once, which matters once payloads get large.
+
+A chunk that is already backed by a single array — what `Chunk.fromArray` produces, and what an HTTP body handed over from Netty looks like — is read in place, with no copy at all. Other shapes, such as a body assembled from several network reads, are pulled through a small fixed window.
 
 The input is expected to be UTF-8, as [RFC 8259](https://www.rfc-editor.org/rfc/rfc8259#section-8.1) requires for JSON interchange. Malformed input decodes to the replacement character, as `new String(bytes, UTF_8)` does. Errors are reported exactly as for the `CharSequence` variant.
 

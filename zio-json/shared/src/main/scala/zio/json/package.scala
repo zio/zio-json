@@ -50,4 +50,14 @@ package object json extends JsonPackagePlatformSpecific {
      */
     @inline def fromJson[A](implicit decoder: JsonDecoder[A]): Either[String, A] = decoder.decodeJson(json)
   }
+
+  implicit final class DecoderByteArrayOps(private val json: Array[Byte]) extends AnyVal {
+
+    /**
+     * Attempts to decode the UTF-8 encoded bytes as an `A`, without copying them into a `String` first.
+     *
+     * Errors are reported exactly as for the `CharSequence` variant.
+     */
+    @inline def fromJson[A](implicit decoder: JsonDecoder[A]): Either[String, A] = decoder.decodeJson(json)
+  }
 }
