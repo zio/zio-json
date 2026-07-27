@@ -128,23 +128,23 @@ object ChunkDecoderSpec extends ZIOSpecDefault {
           def decode(bs: Int*): Either[String, String] = rawString(bs: _*).fromJson[String]
 
           assertTrue(
-            decode(0xc3) == Right("�") &&                        // truncated 2 byte sequence
-              decode(0x80) == Right("�") &&                      // stray continuation byte
-              decode(0xbf) == Right("�") &&                      // stray continuation byte, high
-              decode(0xc3, 0x28) == Right("�(") &&               // bad continuation, byte re-examined
-              decode(0xc0, 0x80) == Right("��") &&               // overlong NUL
-              decode(0xc1, 0xbf) == Right("��") &&               // overlong solidus
-              decode(0xe0, 0x80, 0x80) == Right("���") &&        // overlong, 3 byte
-              decode(0xe0, 0xa0) == Right("�") &&                // truncated 3 byte sequence
-              decode(0xe2, 0x82) == Right("�") &&                // truncated euro sign
-              decode(0xf0, 0x9f, 0x98) == Right("�") &&          // truncated 4 byte sequence
-              decode(0xf0, 0x80, 0x80, 0x80) == Right("����") && // overlong, 4 byte
-              decode(0xf5, 0x80, 0x80, 0x80) == Right("����") && // beyond U+10FFFF
-              decode(0xff) == Right("�") &&                      // never valid in UTF-8
-              decode(0xfe) == Right("�"),
-            decode(0xed, 0xa0, 0x80) == Right("�") &&     // CESU-8 surrogate, one subpart of three
-              decode(0x41, 0x80, 0x42) == Right("A�B") && // recovers to the next valid byte
-              decode(0xc3, 0xa9, 0x80, 0xc3, 0xa9) == Right("é�é")
+            decode(0xc3) == Right("\ufffd"),                                     // truncated 2 byte sequence
+            decode(0x80) == Right("\ufffd"),                                     // stray continuation byte
+            decode(0xbf) == Right("\ufffd"),                                     // stray continuation byte, high
+            decode(0xc3, 0x28) == Right("\ufffd("),                              // bad continuation, byte re-examined
+            decode(0xc0, 0x80) == Right("\ufffd\ufffd"),                         // overlong NUL
+            decode(0xc1, 0xbf) == Right("\ufffd\ufffd"),                         // overlong solidus
+            decode(0xe0, 0x80, 0x80) == Right("\ufffd\ufffd\ufffd"),             // overlong, 3 byte
+            decode(0xe0, 0xa0) == Right("\ufffd"),                               // truncated 3 byte sequence
+            decode(0xe2, 0x82) == Right("\ufffd"),                               // truncated euro sign
+            decode(0xf0, 0x9f, 0x98) == Right("\ufffd"),                         // truncated 4 byte sequence
+            decode(0xf0, 0x80, 0x80, 0x80) == Right("\ufffd\ufffd\ufffd\ufffd"), // overlong, 4 byte
+            decode(0xf5, 0x80, 0x80, 0x80) == Right("\ufffd\ufffd\ufffd\ufffd"), // beyond U+10FFFF
+            decode(0xff) == Right("\ufffd"),                                     // never valid in UTF-8
+            decode(0xfe) == Right("\ufffd"),
+            decode(0xed, 0xa0, 0x80) == Right("\ufffd"),   // CESU-8 surrogate, one subpart of three
+            decode(0x41, 0x80, 0x42) == Right("A\ufffdB"), // recovers to the next valid byte
+            decode(0xc3, 0xa9, 0x80, 0xc3, 0xa9) == Right("\u00e9\ufffd\u00e9")
           )
         },
         test("matches CharsetDecoder on every one and two byte sequence") {
@@ -368,11 +368,8 @@ object ChunkDecoderSpec extends ZIOSpecDefault {
    * Feeds raw bytes through a JSON string literal and checks the decoded text against what the JDK's own UTF-8 decoder
    * makes of the same bytes. JVM only: other platforms do not promise CharsetDecoder's replacement rules.
    */
-  private def agreesWithJdk(bs: Chunk[Byte]): Boolean = {
-    val doc = Chunk.fromArray(utf8("\"")) ++ bs ++ Chunk.fromArray(utf8("\""))
-
-    doc.fromJson[String] == Right(new String(bs.toArray, UTF_8))
-  }
+  private def agreesWithJdk(bs: Chunk[Byte]): Boolean =
+    rawString(bs).fromJson[String] == Right(new String(bs.toArray, UTF_8))
 
   private def hex(bs: Chunk[Byte]): String = bs.map(b => f"${b & 0xff}%02X").mkString(" ")
 
