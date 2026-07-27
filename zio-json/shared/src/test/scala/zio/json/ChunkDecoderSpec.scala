@@ -87,6 +87,23 @@ object ChunkDecoderSpec extends ZIOSpecDefault {
             bytes("0.1234567890123456789").fromJson[BigDecimal] == Right(BigDecimal("0.1234567890123456789"))
           )
         },
+        test("agrees with the CharSequence path for every scalar type") {
+          // the scalar decoders reach UnsafeNumbers by a different route than the AST does, so they get their own sweep
+          parityOf[Boolean]("true") &&
+          parityOf[Option[Int]]("null") &&
+          parityOf[Char](""""a"""") &&
+          parityOf[String](""""aé中😀"""") &&
+          parityOf[Byte]("-128") &&
+          parityOf[Short]("32767") &&
+          parityOf[Int]("-2147483648") &&
+          parityOf[Long]("9223372036854775807") &&
+          parityOf[Double]("-1.5e3") &&
+          parityOf[Float]("1e-3") &&
+          parityOf[BigInt]("123456789012345678901234567890") &&
+          parityOf[BigDecimal]("0.1234567890123456789") &&
+          parityOf[List[Int]]("[1,2,3]") &&
+          parityOf[Map[String, Int]]("""{"a":1,"b":2}""")
+        },
         test("decodes collections and nesting") {
           assertTrue(
             bytes("[]").fromJson[List[Int]] == Right(Nil),
