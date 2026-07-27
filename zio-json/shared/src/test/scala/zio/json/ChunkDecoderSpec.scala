@@ -116,12 +116,24 @@ object ChunkDecoderSpec extends ZIOSpecDefault {
         },
         test("decodes every code point in the BMP and a sample above it") {
           // excludes the surrogate range, which is not encodable
-          val bmp    = ((0x20 to 0xd7ff) ++ (0xe000 to 0xffff)).map(_.toChar).mkString
-          val astral = (0x10000 to 0x10ffff by 997).map(cp => new String(Character.toChars(cp))).mkString
+          val bmp    = ((0x20 to 0xd7ff) ++ (0xe000 to 0xffff)).map(_.toChar.toString)
+          val astral = (0x10000 to 0x10ffff by 997).map(cp => new String(Character.toChars(cp)))
+
+          // Decoded in batches, and only the indices of bad batches reach the assertion. Putting the whole 63k
+          // character string in the assertion instead makes zio-test hand it to PrettyPrint, which overflows a
+          // StringBuilder on Scala Native.
+          def badBatches(cps: Seq[String], size: Int): Seq[Int] =
+            cps
+              .grouped(size)
+              .zipWithIndex
+              .collect {
+                case (batch, i) if { val s = batch.mkString; bytes(quoted(s)).fromJson[String] != Right(s) } => i
+              }
+              .toSeq
 
           assertTrue(
-            bytes(quoted(bmp)).fromJson[String] == Right(bmp),
-            bytes(quoted(astral)).fromJson[String] == Right(astral)
+            badBatches(bmp, 512) == Seq.empty[Int],
+            badBatches(astral, 64) == Seq.empty[Int]
           )
         },
         test("replaces malformed input, as new String(bytes, UTF_8) does") {
