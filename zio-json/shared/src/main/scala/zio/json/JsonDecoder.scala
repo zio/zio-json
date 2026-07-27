@@ -97,6 +97,23 @@ trait JsonDecoder[A] extends JsonDecoderPlatformSpecific[A] {
     }
 
   /**
+   * Attempts to decode a value of type `A` from the specified UTF-8 encoded bytes, but may fail with a human-readable
+   * error message if the provided bytes do not encode a value of this type.
+   *
+   * The bytes are decoded as they are parsed rather than copied into a `String` first, so this is the allocation
+   * friendly way to handle a payload that already arrived as bytes, e.g. an HTTP response body.
+   *
+   * Note: This method may not entirely consume the specified chunk.
+   */
+  final def decodeJson(bytes: Chunk[Byte]): Either[String, A] =
+    try new Right(unsafeDecode(Nil, new Utf8ChunkReader(bytes)))
+    catch {
+      case e: JsonDecoder.UnsafeJson => new Left(JsonError.render(e.trace))
+      case _: UnexpectedEnd          => new Left("Unexpected end of input")
+      case _: StackOverflowError     => new Left("Unexpected structure")
+    }
+
+  /**
    * Returns this decoder but widened to the given super-type
    */
   final def widen[B >: A]: JsonDecoder[B] = self.asInstanceOf[JsonDecoder[B]]

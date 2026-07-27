@@ -34,6 +34,24 @@ Now we can parse JSON into our object
 """{ "curvature": 0.5 }""".fromJson[Banana]
 ```
 
+### Decoding from bytes
+
+JSON usually arrives as bytes rather than as text: an HTTP response body, a file, a Kafka record. A `Chunk[Byte]` can be decoded directly, without being copied into a `String` first.
+
+```scala mdoc
+import zio.Chunk
+
+val bytes: Chunk[Byte] = Chunk.fromArray("""{ "curvature": 0.5 }""".getBytes("UTF-8"))
+
+bytes.fromJson[Banana]
+```
+
+The bytes are turned into characters as the parser consumes them, so peak memory is the chunk plus a constant. Going through `new String(chunk.toArray, UTF_8)` instead holds the chunk, an array copy of it and the `String` all at once, which matters once payloads get large.
+
+The input is expected to be UTF-8, as [RFC 8259](https://www.rfc-editor.org/rfc/rfc8259#section-8.1) requires for JSON interchange. Malformed input decodes to the replacement character, as `new String(bytes, UTF_8)` does. Errors are reported exactly as for the `CharSequence` variant.
+
+For payloads that do not fit in memory at all, use `JsonDecoder[A].decodeJsonStreamInput(stream)` to decode straight from a `ZStream[R, Throwable, Byte]`.
+
 ### Automatic Derivation and case class default field values
 
 If a case class field is defined with a default value and the field is not present or `null`, the default value will be used (or evaluated when it is a method).

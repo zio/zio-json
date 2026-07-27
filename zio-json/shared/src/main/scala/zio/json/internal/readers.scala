@@ -20,6 +20,8 @@ package zio.json.internal
 // synchronise on a lock, and do not require up-front decisions about buffer
 // sizes.
 
+import zio.Chunk
+
 import java.util.Arrays
 import scala.annotation._
 import scala.util.control.NoStackTrace
@@ -137,6 +139,153 @@ private[zio] final class FastStringReader(s: CharSequence) extends RetractReader
   def retract(): Unit = i -= 1
 
   def history(idx: Int): Char = s.charAt(idx)
+}
+
+/**
+ * A Reader over a `Chunk[Byte]` holding UTF-8 encoded text, decoding to chars on the fly.
+ *
+ * This exists so that bytes coming off the wire can be parsed without first being copied into a `String`: peak memory
+ * is the chunk plus a constant, instead of the chunk plus a full sized copy of it.
+ *
+ * Malformed input produces `�`, one per malformed sequence, as `new String(bytes, UTF_8)` does. The two agree on well
+ * formed input and on the usual damage (truncated tails, stray continuation bytes, overlong forms), but not byte for
+ * byte on every malformed sequence: `CharsetDecoder`'s maximal subpart rule emits three replacements for a CESU-8
+ * encoded surrogate such as `ED A0 80` where this emits one.
+ */
+private[zio] final class Utf8ChunkReader(chunk: Chunk[Byte]) extends RetractReader {
+  private[this] val len: Int     = chunk.length
+  private[this] var i: Int       = 0
+  private[this] var pending: Int = -1 // low surrogate owed to the next read
+
+  // position to rewind to on retract(). Only moved when a char is actually produced, so that retracting after the end
+  // of input replays the last real char, as FastStringReader's `i -= 1` does.
+  private[this] var markI: Int       = 0
+  private[this] var markPending: Int = -1
+
+  // Bytes are pulled through a window rather than read one at a time off the Chunk: Chunk#byte is a virtual call
+  // taking an implicit witness, and on a Chunk.Concat it walks the tree on every byte, which costs several times more
+  // than the parse itself. Bulk copying keeps that to one arraycopy per window and makes reads plain array loads.
+  private[this] val buf: Array[Byte] = new Array(math.min(len, Utf8ChunkReader.WindowSize))
+  private[this] var base: Int        = 0 // index in the chunk of buf(0)
+  private[this] var limit: Int       = 0 // number of valid bytes in buf
+
+  def close(): Unit = ()
+
+  override def read(): Int = readNext()
+
+  def readChar(): Char = {
+    val c = readNext()
+    if (c == -1) throw new UnexpectedEnd
+    c.toChar
+  }
+
+  override def nextNonWhitespace(): Char = {
+    // whitespace is always single byte, so it can be skipped without decoding. Not safe while a low surrogate is
+    // owed, since that has to come out before anything after it is consumed; the loop below handles that case.
+    if (pending < 0) {
+      val from = this.i
+      var i    = from
+      while (i < len && isAsciiWhitespace(byteAt(i)))
+        i += 1
+      if (i != from) {
+        markI = i - 1
+        markPending = -1
+      }
+      this.i = i
+    }
+    var c = readChar()
+    while (isWhitespace(c))
+      c = readChar()
+    c
+  }
+
+  def retract(): Unit = {
+    i = markI
+    pending = markPending
+  }
+
+  // callers must have checked k < len. k may be behind the window after a retract, hence the lower bound check
+  @inline private[this] def byteAt(k: Int): Byte = {
+    val j = k - base
+    if (j >= 0 && j < limit) buf(j)
+    else fill(k)
+  }
+
+  private[this] def fill(k: Int): Byte = {
+    val n = math.min(buf.length, len - k)
+    chunk.toArray(k, buf, 0, n)
+    base = k
+    limit = n
+    buf(0)
+  }
+
+  @inline private[this] def isAsciiWhitespace(b: Byte): Boolean =
+    b == ' ' || b == '\n' || b == '\r' || b == '\t'
+
+  private[this] def readNext(): Int = {
+    val pending = this.pending
+    val i       = this.i
+    if (pending >= 0) {
+      markI = i
+      markPending = pending
+      this.pending = -1
+      return pending
+    }
+    if (i >= len) return -1 // mark deliberately left alone, see above
+    markI = i
+    markPending = -1
+    val b0 = byteAt(i)
+    this.i = i + 1
+    if (b0 >= 0) b0.toInt // 0xxxxxxx, the overwhelmingly common case for JSON
+    else decodeMultiByte(b0 & 0xff)
+  }
+
+  @noinline private[this] def decodeMultiByte(b0: Int): Int =
+    if (b0 < 0xc2) Utf8ChunkReader.Replacement // stray continuation byte, or an overlong 0xc0/0xc1 lead
+    else if (b0 < 0xe0) {
+      val b1 = continuation()
+      if (b1 < 0) Utf8ChunkReader.Replacement
+      else ((b0 & 0x1f) << 6) | b1
+    } else if (b0 < 0xf0) {
+      val b1 = continuation()
+      if (b1 < 0) return Utf8ChunkReader.Replacement
+      val b2 = continuation()
+      if (b2 < 0) return Utf8ChunkReader.Replacement
+      val cp = ((b0 & 0x0f) << 12) | (b1 << 6) | b2
+      if (cp < 0x800 || (cp >= 0xd800 && cp <= 0xdfff)) Utf8ChunkReader.Replacement // overlong, or a lone surrogate
+      else cp
+    } else if (b0 < 0xf5) {
+      val b1 = continuation()
+      if (b1 < 0) return Utf8ChunkReader.Replacement
+      val b2 = continuation()
+      if (b2 < 0) return Utf8ChunkReader.Replacement
+      val b3 = continuation()
+      if (b3 < 0) return Utf8ChunkReader.Replacement
+      val cp = ((b0 & 0x07) << 18) | (b1 << 12) | (b2 << 6) | b3
+      if (cp < 0x10000 || cp > 0x10ffff) Utf8ChunkReader.Replacement // overlong, or beyond the Unicode range
+      else {
+        val u = cp - 0x10000
+        pending = 0xdc00 | (u & 0x3ff)
+        0xd800 | (u >> 10)
+      }
+    } else Utf8ChunkReader.Replacement // would encode beyond U+10FFFF
+
+  // the offending byte is deliberately left unconsumed so that it is re-examined as a fresh lead byte
+  private[this] def continuation(): Int = {
+    val i = this.i
+    if (i >= len) return -1
+    val b = byteAt(i) & 0xff
+    if ((b & 0xc0) != 0x80) return -1
+    this.i = i + 1
+    b & 0x3f
+  }
+}
+
+private[zio] object Utf8ChunkReader {
+  private final val Replacement = 0xfffd
+
+  // large enough that the copies amortise away, small enough to stay irrelevant next to the chunk itself
+  private final val WindowSize = 8192
 }
 
 // this tends to be a bit slower than creating an implementation that implements
