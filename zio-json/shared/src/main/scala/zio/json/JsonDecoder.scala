@@ -89,8 +89,10 @@ trait JsonDecoder[A] extends JsonDecoderPlatformSpecific[A] {
    * Note: This method may not entirely consume the specified character sequence.
    */
   final def decodeJson(str: CharSequence): Either[String, A] =
-    try new Right(unsafeDecode(Nil, new FastStringReader(str)))
-    catch {
+    try {
+      SpanStack.get.release(0) // a previous decode on this thread may have failed and left spans behind
+      new Right(unsafeDecode(Nil, new FastStringReader(str)))
+    } catch {
       case e: JsonDecoder.UnsafeJson => new Left(JsonError.render(e.trace))
       case _: UnexpectedEnd          => new Left("Unexpected end of input")
       case _: StackOverflowError     => new Left("Unexpected structure")
@@ -106,8 +108,10 @@ trait JsonDecoder[A] extends JsonDecoderPlatformSpecific[A] {
    * Note: This method may not entirely consume the specified chunk.
    */
   final def decodeJson(bytes: Chunk[Byte]): Either[String, A] =
-    try new Right(unsafeDecode(Nil, new Utf8ChunkReader(bytes)))
-    catch {
+    try {
+      SpanStack.get.release(0) // a previous decode on this thread may have failed and left spans behind
+      new Right(unsafeDecode(Nil, new Utf8ChunkReader(bytes)))
+    } catch {
       case e: JsonDecoder.UnsafeJson => new Left(JsonError.render(e.trace))
       case _: UnexpectedEnd          => new Left("Unexpected end of input")
       case _: StackOverflowError     => new Left("Unexpected structure")
@@ -146,10 +150,13 @@ trait JsonDecoder[A] extends JsonDecoderPlatformSpecific[A] {
     new JsonDecoder.AbstractJsonDecoder[A1] {
       def unsafeDecode(trace: List[JsonError], in: RetractReader): A1 = {
         val rr = RecordingReader(in)
+        val st = SpanStack.get
+        val m  = st.mark()
         try self.unsafeDecode(trace, rr)
         catch {
           case _: JsonDecoder.UnsafeJson | _: UnexpectedEnd =>
             rr.rewind()
+            st.release(m) // the failed alternative unwound without popping; those spans are not ours
             that.unsafeDecode(trace, rr)
         }
       }
@@ -160,11 +167,16 @@ trait JsonDecoder[A] extends JsonDecoderPlatformSpecific[A] {
           case _: JsonDecoder.UnsafeJson | _: UnexpectedEnd => that.unsafeFromJsonAST(trace, json)
         }
 
-      override def unsafeDecodeMissing(trace: List[JsonError]): A1 =
+      override def unsafeDecodeMissing(trace: List[JsonError]): A1 = {
+        val st = SpanStack.get
+        val m  = st.mark()
         try self.unsafeDecodeMissing(trace)
         catch {
-          case _: JsonDecoder.UnsafeJson | _: UnexpectedEnd => that.unsafeDecodeMissing(trace)
+          case _: JsonDecoder.UnsafeJson | _: UnexpectedEnd =>
+            st.release(m)
+            that.unsafeDecodeMissing(trace)
         }
+      }
     }
 
   /**
@@ -254,8 +266,10 @@ trait JsonDecoder[A] extends JsonDecoderPlatformSpecific[A] {
    * more performant implementation.
    */
   final def fromJsonAST(json: Json): Either[String, A] =
-    try new Right(unsafeFromJsonAST(Nil, json))
-    catch {
+    try {
+      SpanStack.get.release(0) // as decodeJson: a previous decode may have failed and left spans behind
+      new Right(unsafeFromJsonAST(Nil, json))
+    } catch {
       case e: JsonDecoder.UnsafeJson => new Left(JsonError.render(e.trace))
       case _: UnexpectedEnd          => new Left("Unexpected end of input")
       case _: StackOverflowError     => new Left("Unexpected structure")
@@ -661,13 +675,16 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority1 with 
             val field = Lexer.field(trace, in, matrix)
             if (field == -1) Lexer.skipValue(trace, in)
             else {
-              val trace_ = spans(field) :: trace
+              val st = SpanStack.get
+              st.push(spans(field))
               if (field < 3) {
-                if (left != null) Lexer.error("duplicate", trace_)
-                left = A.unsafeDecode(trace_, in)
+                if (left != null) Lexer.error("duplicate", trace)
+                left = A.unsafeDecode(trace, in)
+                st.pop()
               } else {
-                if (right != null) Lexer.error("duplicate", trace_)
-                right = B.unsafeDecode(trace_, in)
+                if (right != null) Lexer.error("duplicate", trace)
+                right = B.unsafeDecode(trace, in)
+                st.pop()
               }
             }
             Lexer.nextField(trace, in)
@@ -686,9 +703,12 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority1 with 
   )(implicit A: JsonDecoder[A]): T[A] = {
     val c = in.nextNonWhitespace()
     if (c == '[') {
-      var i = 0
+      var i  = 0
+      val st = SpanStack.get
       if (Lexer.firstArrayElement(in)) while ({
-        builder += A.unsafeDecode(new JsonError.ArrayAccess(i) :: trace, in)
+        st.push(new JsonError.ArrayAccess(i))
+        builder += A.unsafeDecode(trace, in)
+        st.pop()
         i += 1
         Lexer.nextArrayElement(trace, in)
       }) ()
@@ -706,12 +726,14 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority1 with 
     if (c == '{') {
       if (Lexer.firstField(trace, in))
         while ({
-          val field  = Lexer.string(trace, in).toString
-          val trace_ = new JsonError.ObjectAccess(field) :: trace
+          val field = Lexer.string(trace, in).toString
+          val st    = SpanStack.get
+          st.push(new JsonError.ObjectAccess(field))
           c = in.nextNonWhitespace()
           if (c != ':') Lexer.error("':'", c, trace)
-          val value = V.unsafeDecode(trace_, in)
-          builder += ((K.unsafeDecodeField(trace_, field), value))
+          val value = V.unsafeDecode(trace, in)
+          builder += ((K.unsafeDecodeField(trace, field), value))
+          st.pop()
           Lexer.nextField(trace, in)
         }) ()
       return builder.result()
@@ -753,9 +775,10 @@ private[json] trait DecoderLowPriority1 extends DecoderLowPriority2 {
         val c = in.nextNonWhitespace()
         if (c == '[') {
           if (Lexer.firstArrayElement(in)) {
-            var l = 8
-            var x = new Array[A](l)
-            var i = 0
+            var l  = 8
+            var x  = new Array[A](l)
+            var i  = 0
+            val st = SpanStack.get
             while ({
               if (i == l) {
                 l <<= 1
@@ -763,7 +786,9 @@ private[json] trait DecoderLowPriority1 extends DecoderLowPriority2 {
                 System.arraycopy(x, 0, x1, 0, i)
                 x = x1
               }
-              x(i) = A.unsafeDecode(new JsonError.ArrayAccess(i) :: trace, in)
+              st.push(new JsonError.ArrayAccess(i))
+              x(i) = A.unsafeDecode(trace, in)
+              st.pop()
               i += 1
               Lexer.nextArrayElement(trace, in)
             }) ()

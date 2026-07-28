@@ -12,8 +12,10 @@ trait JsonDecoderPlatformSpecific[A] { self: JsonDecoder[A] =>
 
   private def readAll(reader: java.io.Reader): ZIO[Any, Throwable, A] =
     ZIO.attemptBlocking {
-      try unsafeDecode(Nil, new zio.json.internal.WithRetractReader(reader))
-      catch {
+      try {
+        zio.json.internal.SpanStack.get.release(0) // as decodeJson: a previous decode may have left spans behind
+        unsafeDecode(Nil, new zio.json.internal.WithRetractReader(reader))
+      } catch {
         case JsonDecoder.UnsafeJson(trace)      => throw new Exception(JsonError.render(trace))
         case _: zio.json.internal.UnexpectedEnd => throw new Exception("unexpected end of input")
       }
@@ -117,6 +119,7 @@ trait JsonDecoderPlatformSpecific[A] { self: JsonDecoder[A] =>
                   }
                 }
 
+                zio.json.internal.SpanStack.get.release(0)
                 unsafeDecode(Nil, jsonReader)
               } catch {
                 case t @ JsonDecoder.UnsafeJson(trace) =>

@@ -150,7 +150,7 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform, NativePlatform)
         val tparams   = (1 to i).map(p => s"A$p").mkString(", ")
         val implicits = (1 to i).map(p => s"A$p: JsonDecoder[A$p]").mkString(", ")
         val work      = (1 to i)
-          .map(p => s"val a$p = A$p.unsafeDecode(traces(${p - 1}) :: trace, in)")
+          .map(p => s"st.push(traces(${p - 1})); val a$p = A$p.unsafeDecode(trace, in); st.pop()")
           .mkString("\n        Lexer.char(trace, in, ',')\n        ")
         val work2 = (1 to i)
           .map(p => s"val a$p = A$p.unsafeFromJsonAST(traces(${p - 1}) :: trace, arr($p - 1))")
@@ -160,6 +160,7 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform, NativePlatform)
            |    new JsonDecoder.AbstractJsonDecoder[Tuple$i[$tparams]] {
            |      private[this] val traces: Array[JsonError] = (0 to ${i - 1}).map(JsonError.ArrayAccess(_)).toArray
            |      def unsafeDecode(trace: List[JsonError], in: RetractReader): Tuple$i[$tparams] = {
+           |        val st = SpanStack.get
            |        Lexer.char(trace, in, '[')
            |        $work
            |        Lexer.char(trace, in, ']')

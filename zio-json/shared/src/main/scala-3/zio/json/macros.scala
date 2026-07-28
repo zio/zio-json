@@ -8,7 +8,7 @@ import scala.reflect.*
 import zio.Chunk
 import zio.json.JsonDecoder.JsonError
 import zio.json.ast.Json
-import zio.json.internal.{ FieldEncoder, Lexer, RecordingReader, RetractReader, StringMatrix, Write }
+import zio.json.internal.{ FieldEncoder, Lexer, RecordingReader, RetractReader, SpanStack, StringMatrix, Write }
 
 import scala.annotation._
 import scala.collection.Factory
@@ -286,13 +286,22 @@ sealed class JsonDecoderDerivation(config: JsonCodecConfiguration) extends Deriv
                 else null
               }
               (idx: Int, trace: List[JsonError]) => {
-                val trace_ = spans(idx) :: trace
+                val st = SpanStack.get
+                st.push(spans(idx))
                 val decoder = missingValueDecoders(idx)
-                if (decoder eq null) Lexer.error("missing", trace_)
-                decoder.unsafeDecodeMissing(trace_)
+                if (decoder eq null) Lexer.error("missing", trace)
+                val a = decoder.unsafeDecodeMissing(trace)
+                st.pop()
+                a
               }
             } else {
-              (idx: Int, trace: List[JsonError]) => tcs(idx).unsafeDecodeMissing(spans(idx) :: trace)
+              (idx: Int, trace: List[JsonError]) => {
+                val st = SpanStack.get
+                st.push(spans(idx))
+                val a = tcs(idx).unsafeDecodeMissing(trace)
+                st.pop()
+                a
+              }
             }
 
           @tailrec
@@ -321,6 +330,7 @@ sealed class JsonDecoderDerivation(config: JsonCodecConfiguration) extends Deriv
           override def unsafeDecode(trace: List[JsonError], in: RetractReader): A = {
             Lexer.char(trace, in, '{')
             val ps = new Array[Any](len)
+            val st = SpanStack.get
             if (Lexer.firstField(trace, in))
               while({
                 val idx = Lexer.field(trace, in, matrix)
@@ -330,9 +340,17 @@ sealed class JsonDecoderDerivation(config: JsonCodecConfiguration) extends Deriv
                     ps(idx) = if ((default eq null) || in.nextNonWhitespace() != 'n' && {
                       in.retract()
                       true
-                    }) tcs(idx).unsafeDecode(spans(idx) :: trace, in)
+                    }) {
+                      st.push(spans(idx))
+                      val a = tcs(idx).unsafeDecode(trace, in)
+                      st.pop()
+                      a
+                    }
                     else if (in.readChar() == 'u' && in.readChar() == 'l' && in.readChar() == 'l') default()
-                    else Lexer.error("expected 'null'", spans(idx) :: trace)
+                    else {
+                      st.push(spans(idx))
+                      Lexer.error("expected 'null'", trace)
+                    }
                   } else Lexer.error("duplicate", trace)
                 } else if (no_extra) Lexer.error("invalid extra field", trace)
                 else Lexer.skipValue(trace, in)
@@ -408,13 +426,22 @@ sealed class JsonDecoderDerivation(config: JsonCodecConfiguration) extends Deriv
                 else null
               }
               (idx: Int, trace: List[JsonError]) => {
-                val trace_ = spans(idx) :: trace
+                val st = SpanStack.get
+                st.push(spans(idx))
                 val decoder = missingValueDecoders(idx)
-                if (decoder eq null) Lexer.error("missing", trace_)
-                decoder.unsafeDecodeMissing(trace_)
+                if (decoder eq null) Lexer.error("missing", trace)
+                val a = decoder.unsafeDecodeMissing(trace)
+                st.pop()
+                a
               }
             } else {
-              (idx: Int, trace: List[JsonError]) => tcs(idx).unsafeDecodeMissing(spans(idx) :: trace)
+              (idx: Int, trace: List[JsonError]) => {
+                val st = SpanStack.get
+                st.push(spans(idx))
+                val a = tcs(idx).unsafeDecodeMissing(trace)
+                st.pop()
+                a
+              }
             }
 
           @tailrec
@@ -443,6 +470,7 @@ sealed class JsonDecoderDerivation(config: JsonCodecConfiguration) extends Deriv
           override def unsafeDecode(trace: List[JsonError], in: RetractReader): A = {
             Lexer.char(trace, in, '{')
             val ps = new Array[Any](len)
+            val st = SpanStack.get
             if (Lexer.firstField(trace, in))
               while({
                 val idx = Lexer.field128(trace, in, matrix1, matrix2)
@@ -452,9 +480,17 @@ sealed class JsonDecoderDerivation(config: JsonCodecConfiguration) extends Deriv
                     ps(idx) = if ((default eq null) || in.nextNonWhitespace() != 'n' && {
                       in.retract()
                       true
-                    }) tcs(idx).unsafeDecode(spans(idx) :: trace, in)
+                    }) {
+                      st.push(spans(idx))
+                      val a = tcs(idx).unsafeDecode(trace, in)
+                      st.pop()
+                      a
+                    }
                     else if (in.readChar() == 'u' && in.readChar() == 'l' && in.readChar() == 'l') default()
-                    else Lexer.error("expected 'null'", spans(idx) :: trace)
+                    else {
+                      st.push(spans(idx))
+                      Lexer.error("expected 'null'", trace)
+                    }
                   } else Lexer.error("duplicate", trace)
                 } else if (no_extra) Lexer.error("invalid extra field", trace)
                 else Lexer.skipValue(trace, in)
@@ -579,7 +615,10 @@ sealed class JsonDecoderDerivation(config: JsonCodecConfiguration) extends Deriv
             if (Lexer.firstField(trace, in)) {
               val idx = Lexer.field(trace, in, matrix1)
               if (idx >= 0) {
-                val a = tcs(idx).unsafeDecode(spans(idx) :: trace, in).asInstanceOf[A]
+                val st = SpanStack.get
+                st.push(spans(idx))
+                val a = tcs(idx).unsafeDecode(trace, in).asInstanceOf[A]
+                st.pop()
                 Lexer.char(trace, in, '}')
                 a
               } else Lexer.error("invalid disambiguator", trace)
@@ -606,7 +645,10 @@ sealed class JsonDecoderDerivation(config: JsonCodecConfiguration) extends Deriv
             if (Lexer.firstField(trace, in)) {
               val idx = Lexer.field128(trace, in, matrix1, matrix2)
               if (idx >= 0) {
-                val a = tcs(idx).unsafeDecode(spans(idx) :: trace, in).asInstanceOf[A]
+                val st = SpanStack.get
+                st.push(spans(idx))
+                val a = tcs(idx).unsafeDecode(trace, in).asInstanceOf[A]
+                st.pop()
                 Lexer.char(trace, in, '}')
                 a
               } else Lexer.error("invalid disambiguator", trace)
@@ -641,7 +683,11 @@ sealed class JsonDecoderDerivation(config: JsonCodecConfiguration) extends Deriv
                   val idx = Lexer.enumeration(trace, in_, matrix1)
                   if (idx >= 0) {
                     in_.rewind()
-                    return tcs(idx).unsafeDecode(spans(idx) :: trace, in_).asInstanceOf[A]
+                    val st = SpanStack.get
+                    st.push(spans(idx))
+                    val a = tcs(idx).unsafeDecode(trace, in_).asInstanceOf[A]
+                    st.pop()
+                    return a
                   } else Lexer.error("invalid disambiguator", trace)
                 } else Lexer.skipValue(trace, in_)
                 Lexer.nextField(trace, in_)
@@ -681,7 +727,11 @@ sealed class JsonDecoderDerivation(config: JsonCodecConfiguration) extends Deriv
                   val idx = Lexer.enumeration128(trace, in_, matrix1, matrix2)
                   if (idx >= 0) {
                     in_.rewind()
-                    return tcs(idx).unsafeDecode(spans(idx) :: trace, in_).asInstanceOf[A]
+                    val st = SpanStack.get
+                    st.push(spans(idx))
+                    val a = tcs(idx).unsafeDecode(trace, in_).asInstanceOf[A]
+                    st.pop()
+                    return a
                   } else Lexer.error("invalid disambiguator", trace)
                 } else Lexer.skipValue(trace, in_)
                 Lexer.nextField(trace, in_)

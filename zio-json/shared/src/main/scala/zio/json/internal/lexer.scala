@@ -30,8 +30,10 @@ object Lexer {
 
   val NumberMaxBits: Int = 256
 
+  // the spans between `trace` and here are on the SpanStack rather than consed onto `trace` (see SpanStack); this is
+  // the one place that turns them back into the list JsonError.render folds over
   @noinline def error(msg: String, trace: List[JsonError]): Nothing =
-    throw UnsafeJson(JsonError.Message(msg) :: trace)
+    throw UnsafeJson(JsonError.Message(msg) :: SpanStack.get.pathTo(trace))
 
   @noinline private[json] def error(expected: String, got: Char, trace: List[JsonError]): Nothing =
     error(s"expected $expected got '$got'", trace)
