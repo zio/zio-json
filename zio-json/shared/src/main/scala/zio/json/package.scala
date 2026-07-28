@@ -25,6 +25,14 @@ package object json extends JsonPackagePlatformSpecific {
     @inline def toJsonPretty(implicit encoder: JsonEncoder[A]): String = encoder.encodeJson(a, Some(0)).toString
 
     @inline def toJsonAST(implicit encoder: JsonEncoder[A]): Either[String, Json] = encoder.toJsonAST(a)
+
+    /**
+     * Encodes directly to UTF-8 bytes, without building a `String` first. See [[JsonEncoder#encodeJsonBytes]].
+     */
+    @inline def toJsonBytes(implicit encoder: JsonEncoder[A]): Array[Byte] = encoder.encodeJsonBytes(a, None)
+
+    /** As [[toJsonBytes]], wrapped in a `Chunk` without copying. */
+    @inline def toJsonChunk(implicit encoder: JsonEncoder[A]): Chunk[Byte] = encoder.encodeJsonChunk(a, None)
   }
 
   implicit final class DecoderOps(private val json: CharSequence) extends AnyVal {
