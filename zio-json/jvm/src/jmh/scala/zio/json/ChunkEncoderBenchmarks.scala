@@ -32,8 +32,8 @@ class ChunkEncoderBenchmarks {
   def setup(): Unit = {
     decoded = getResourceAsString("google_maps_api_response.json").fromJson[DistanceMatrix].fold(sys.error, identity)
 
-    assert(java.util.Arrays.equals(encodeZioBytes(), encodeZioViaString()))
-    assert(java.util.Arrays.equals(encodeZioBytes(), encodeZioChunk().toArray))
+    assert(java.util.Arrays.equals(encodeZioBytesArray(), encodeZioViaString()))
+    assert(java.util.Arrays.equals(encodeZioBytesArray(), encodeZioBytes().toArray))
   }
 
   /** Baseline: build a `String`, discard it immediately -- most of an app's callers do this today. */
@@ -47,11 +47,11 @@ class ChunkEncoderBenchmarks {
     JsonEncoder[DistanceMatrix].encodeJson(decoded, None).toString.getBytes(UTF_8)
 
   @Benchmark
-  def encodeZioBytes(): Array[Byte] =
+  def encodeZioBytesArray(): Array[Byte] =
     decoded.toJsonBytesArray
 
   @Benchmark
-  def encodeZioChunk(): zio.Chunk[Byte] =
+  def encodeZioBytes(): zio.Chunk[Byte] =
     decoded.toJsonBytes
 
   @Benchmark
