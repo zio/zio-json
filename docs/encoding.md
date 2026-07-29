@@ -28,7 +28,7 @@ Banana(0.5).toJson
 
 ### Encoding to bytes
 
-A JSON value is often about to leave the process as bytes anyway: an HTTP response body, a file, a Kafka record. `toJsonBytes` encodes directly to UTF-8 bytes without building a `String` first, returned as a `Chunk[Byte]`.
+A JSON value is often about to leave the process as bytes anyway: an HTTP response body, a file, a Kafka record. `toJsonBytes` encodes to UTF-8 bytes, returned as a `Chunk[Byte]`.
 
 ```scala mdoc
 Banana(0.5).toJsonBytes
@@ -40,7 +40,7 @@ Banana(0.5).toJsonBytes
 Banana(0.5).toJsonBytesArray
 ```
 
-Building the `String` and then calling `.getBytes("UTF-8")` on it, as `Banana(0.5).toJson.getBytes("UTF-8")` does, holds the `String` and the byte array at once; encoding straight to bytes only ever holds the array being built, which matters once payloads get large.
+Building the `String` and then calling `.getBytes("UTF-8")` on it, as `Banana(0.5).toJson.getBytes("UTF-8")` does, allocates the `String` and the byte array on every call. On the JVM and Native, `toJsonBytes` instead encodes into reused per-thread buffers and allocates only the resulting bytes, which matters once payloads get large or frequent. (On Scala.js it is equivalent to the `String` route.)
 
 A lone (unpaired) UTF-16 surrogate in a `String` field is replaced with a single `?`, matching what `"...".getBytes("UTF-8")` does. This is not the `U+FFFD` replacement character used on the decode side when turning bytes into a `String`.
 

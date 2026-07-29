@@ -17,7 +17,7 @@ package zio.json
 
 import zio.json.ast.Json
 import zio.json.ast.JsonType.rightNull
-import zio.json.internal.{ FastStringWrite, SafeNumbers, Utf8ArrayWrite, Write }
+import zio.json.internal.{ FastStringWrite, SafeNumbers, Utf8Bytes, Write }
 import zio.json.javatime.serializers
 import zio.{ Chunk, NonEmptyChunk }
 import java.util.UUID
@@ -76,26 +76,27 @@ trait JsonEncoder[A] extends JsonEncoderPlatformSpecific[A] {
   }
 
   /**
-   * Encodes the specified value directly to UTF-8 bytes, with the specified indentation level.
+   * Encodes the specified value to UTF-8 bytes, with the specified indentation level.
    *
-   * The bytes are written as they are produced rather than built up as a `String` first, so this is the allocation
-   * friendly way to produce a payload that is about to leave the process as bytes anyway, e.g. an HTTP response body.
+   * The value is encoded into a reused per-thread buffer and transcoded to UTF-8 from there, so on the JVM and Native
+   * no intermediate `String` is allocated: this is the allocation friendly way to produce a payload that is about to
+   * leave the process as bytes anyway, e.g. an HTTP response body. (On Scala.js it is equivalent to
+   * `encodeJson(a, indent).toString.getBytes(UTF_8)`.)
    */
   final def encodeJsonBytes(a: A, indent: Option[Int] = None): Chunk[Byte] =
     Chunk.fromArray(encodeJsonBytesArray(a, indent))
 
   /**
-   * Encodes the specified value directly to UTF-8 bytes, with the specified indentation level.
+   * Encodes the specified value to UTF-8 bytes, with the specified indentation level.
    *
    * See [[encodeJsonBytes]]; this is the same array before it is wrapped in a `Chunk`.
    */
   final def encodeJsonBytesArray(a: A, indent: Option[Int] = None): Array[Byte] = {
-    val writePool = JsonEncoder.byteWritePools.get
+    val writePool = JsonEncoder.writePools.get
     try {
       val write = writePool.acquire()
       unsafeEncode(a, indent, write)
-      write.finish()
-      write.result()
+      Utf8Bytes.fromWrite(write)
     } finally writePool.release()
   }
 
@@ -169,39 +170,6 @@ object JsonEncoder extends GeneratedTupleEncoders with EncoderLowPriority1 with 
 
   private val writePools = new ThreadLocal[FastStringWritePool] {
     override def initialValue(): FastStringWritePool = new FastStringWritePool
-  }
-
-  // mirrors FastStringWritePool; kept separate rather than made generic, since the two Write implementations are
-  // unrelated (chars vs UTF-8 bytes) and this stays a small, easy to follow duplicate rather than an abstraction
-  // neither call site needs a second variant of
-  private class ByteWritePool {
-    private[this] var weakRef: java.lang.ref.WeakReference[Array[Utf8ArrayWrite]] =
-      new java.lang.ref.WeakReference(Array(new Utf8ArrayWrite(64)))
-    private[this] var level: Int = 0
-
-    def acquire(): Utf8ArrayWrite = {
-      var writes = weakRef.get
-      var level  = this.level
-      if (writes eq null) { // the reference was collected by GC
-        level = 0
-        writes = new Array(0)
-      }
-      if (level == writes.length) { // exceding the deepest level of recusion
-        writes = java.util.Arrays.copyOf(writes, level + 1)
-        writes(level) = new Utf8ArrayWrite(64)
-        weakRef = new java.lang.ref.WeakReference(writes)
-      }
-      val write = writes(level)
-      this.level = level + 1 // increase the level of recusrion
-      write.reset()
-      write
-    }
-
-    def release(): Unit = if (level > 0) level -= 1 // decrease the level of recusrion
-  }
-
-  private val byteWritePools = new ThreadLocal[ByteWritePool] {
-    override def initialValue(): ByteWritePool = new ByteWritePool
   }
 
   @inline def apply[A](implicit a: JsonEncoder[A]): JsonEncoder[A] = a

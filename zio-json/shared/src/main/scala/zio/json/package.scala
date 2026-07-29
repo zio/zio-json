@@ -27,7 +27,8 @@ package object json extends JsonPackagePlatformSpecific {
     @inline def toJsonAST(implicit encoder: JsonEncoder[A]): Either[String, Json] = encoder.toJsonAST(a)
 
     /**
-     * Encodes directly to UTF-8 bytes, without building a `String` first. See [[JsonEncoder#encodeJsonBytes]].
+     * Encodes to UTF-8 bytes, avoiding the intermediate `String` on the JVM and Native. See
+     * [[JsonEncoder#encodeJsonBytes]].
      */
     @inline def toJsonBytes(implicit encoder: JsonEncoder[A]): Chunk[Byte] = encoder.encodeJsonBytes(a, None)
 

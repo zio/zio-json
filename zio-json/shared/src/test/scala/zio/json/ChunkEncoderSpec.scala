@@ -109,8 +109,8 @@ object ChunkEncoderSpec extends ZIOSpecDefault {
           parity("a\uD800\uD800b") &&
           parity("a\uD800Zb") &&
           parity(Person("a\uD800b", 1, List("x\uDC00y"))) &&
-          // a pending surrogate resolved by the multi-char write of an escape sequence, and one left for the
-          // closing quote -- the escaped path is the only place a surrogate and an escape can interleave
+          // a lone surrogate directly followed by an escape sequence, and one directly before the closing quote --
+          // the escaped path is the only place a surrogate and an escape can interleave
           parity("a\uD800\"b") &&
           parity("a\uD800\nb") &&
           parity("\"\uD800")
