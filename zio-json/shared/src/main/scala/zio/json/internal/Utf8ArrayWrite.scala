@@ -11,6 +11,10 @@ import java.util.Arrays
  * unresolved leading (high) surrogate is held in `pending` until the next char either completes the pair or proves it
  * was never going to be completed; [[finish]] must be called once encoding is done to flush a pair left incomplete at
  * the very end.
+ *
+ * The hot paths (ASCII, which is most of any JSON document: structure, field names, numbers, unescaped string content)
+ * check `pending` once, hoist the capacity check out of the per-char work and write straight into the array; everything
+ * else falls back to the stateful char-at-a-time path.
  */
 private[zio] final class Utf8ArrayWrite(initial: Int) extends Write {
   require(initial >= 8)
@@ -73,7 +77,15 @@ private[zio] final class Utf8ArrayWrite(initial: Int) extends Write {
   @inline private[this] def isHighSurrogate(c: Char): Boolean = c >= 0xd800 && c <= 0xdbff
   @inline private[this] def isLowSurrogate(c: Char): Boolean  = c >= 0xdc00 && c <= 0xdfff
 
-  def write(c: Char): Unit = {
+  def write(c: Char): Unit =
+    if (pending < 0 && c < 0x80) {
+      val bs = ensure(1)
+      bs(count) = c.toByte
+      count += 1
+    } else writeSlow(c)
+
+  // multi-byte, surrogate, or resolving a pending surrogate: the general, stateful path
+  private[this] def writeSlow(c: Char): Unit = {
     val p = pending
     if (p >= 0) {
       pending = -1
@@ -90,30 +102,160 @@ private[zio] final class Utf8ArrayWrite(initial: Int) extends Write {
 
   def write(s: String): Unit = {
     val len = s.length
-    if (len == 0) return
-    ensure(len) // best case (pure ASCII, the common case for JSON) needs exactly this many bytes
-    var i = 0
-    if (pending >= 0) {
-      write(s.charAt(0)) // resolves against, or replaces, the pending surrogate from a previous write
-      i = 1
+    var i   = 0
+    // a pending surrogate from a previous write must resolve through the stateful path before the fast loop can run
+    while (pending >= 0 && i < len) {
+      writeSlow(s.charAt(i))
+      i += 1
     }
-    var bs = bytes
     while (i < len) {
-      val c = s.charAt(i)
-      // pending must also route through write(c): an ASCII char does not excuse resolving a surrogate left over
-      // from the char before it
-      if (c < 0x80 && pending < 0) {
-        if (count == bs.length) bs = ensure(1)
-        bs(count) = c.toByte
-        count += 1
+      // find the run of ASCII chars starting at i, then copy it in bulk (on the JVM, a single System.arraycopy
+      // from the string's backing array -- the bulk intrinsic a char-by-char loop cannot get)
+      var j = i
+      while (j < len && s.charAt(j) < 0x80) j += 1
+      if (j > i) {
+        val n  = j - i
+        val bs = ensure(n)
+        AsciiCopy.copy(s, i, j, bs, count)
+        count += n
+        i = j
+      }
+      if (i < len) {
+        writeSlow(s.charAt(i)) // may leave a pending high surrogate, which the loop below must resolve
         i += 1
-      } else {
-        write(c) // multi-byte, surrogate, or resolving a pending surrogate: the general, stateful path
-        bs = bytes
-        i += 1
+        while (pending >= 0 && i < len) {
+          writeSlow(s.charAt(i))
+          i += 1
+        }
       }
     }
   }
+
+  override def write(c1: Char, c2: Char): Unit =
+    if (pending < 0 && (c1 | c2) < 0x80) {
+      val bs = ensure(2)
+      val i  = count
+      bs(i) = c1.toByte
+      bs(i + 1) = c2.toByte
+      count = i + 2
+    } else {
+      write(c1)
+      write(c2)
+    }
+
+  override def write(c1: Char, c2: Char, c3: Char): Unit =
+    if (pending < 0 && (c1 | c2 | c3) < 0x80) {
+      val bs = ensure(3)
+      val i  = count
+      bs(i) = c1.toByte
+      bs(i + 1) = c2.toByte
+      bs(i + 2) = c3.toByte
+      count = i + 3
+    } else {
+      write(c1)
+      write(c2)
+      write(c3)
+    }
+
+  override def write(c1: Char, c2: Char, c3: Char, c4: Char): Unit =
+    if (pending < 0 && (c1 | c2 | c3 | c4) < 0x80) {
+      val bs = ensure(4)
+      val i  = count
+      bs(i) = c1.toByte
+      bs(i + 1) = c2.toByte
+      bs(i + 2) = c3.toByte
+      bs(i + 3) = c4.toByte
+      count = i + 4
+    } else {
+      write(c1)
+      write(c2)
+      write(c3)
+      write(c4)
+    }
+
+  override def write(c1: Char, c2: Char, c3: Char, c4: Char, c5: Char): Unit =
+    if (pending < 0 && (c1 | c2 | c3 | c4 | c5) < 0x80) {
+      val bs = ensure(5)
+      val i  = count
+      bs(i) = c1.toByte
+      bs(i + 1) = c2.toByte
+      bs(i + 2) = c3.toByte
+      bs(i + 3) = c4.toByte
+      bs(i + 4) = c5.toByte
+      count = i + 5
+    } else {
+      write(c1)
+      write(c2)
+      write(c3)
+      write(c4)
+      write(c5)
+    }
+
+  // (s & 0x8080) == 0 <=> both packed chars, (s & 0xff) and (s >> 8), are ASCII: bit 7 is the low char's non-ASCII
+  // bit, and bit 15 is the sign, so its absence means s >= 0, which caps the high char at 0x7f (a negative short
+  // would sign-extend, putting the high char at 0xff00 or above)
+  override def write(s: Short): Unit =
+    if (pending < 0 && (s & 0x8080) == 0) {
+      val bs = ensure(2)
+      val i  = count
+      bs(i) = (s & 0xff).toByte
+      bs(i + 1) = (s >> 8).toByte
+      count = i + 2
+    } else {
+      write((s & 0xff).toChar)
+      write((s >> 8).toChar)
+    }
+
+  override def write(s1: Short, s2: Short): Unit =
+    if (pending < 0 && ((s1 | s2) & 0x8080) == 0) {
+      val bs = ensure(4)
+      val i  = count
+      bs(i) = (s1 & 0xff).toByte
+      bs(i + 1) = (s1 >> 8).toByte
+      bs(i + 2) = (s2 & 0xff).toByte
+      bs(i + 3) = (s2 >> 8).toByte
+      count = i + 4
+    } else {
+      write(s1)
+      write(s2)
+    }
+
+  override def write(s1: Short, s2: Short, s3: Short): Unit =
+    if (pending < 0 && ((s1 | s2 | s3) & 0x8080) == 0) {
+      val bs = ensure(6)
+      val i  = count
+      bs(i) = (s1 & 0xff).toByte
+      bs(i + 1) = (s1 >> 8).toByte
+      bs(i + 2) = (s2 & 0xff).toByte
+      bs(i + 3) = (s2 >> 8).toByte
+      bs(i + 4) = (s3 & 0xff).toByte
+      bs(i + 5) = (s3 >> 8).toByte
+      count = i + 6
+    } else {
+      write(s1)
+      write(s2)
+      write(s3)
+    }
+
+  override def write(s1: Short, s2: Short, s3: Short, s4: Short): Unit =
+    if (pending < 0 && ((s1 | s2 | s3 | s4) & 0x8080) == 0) {
+      val bs = ensure(8)
+      val i  = count
+      bs(i) = (s1 & 0xff).toByte
+      bs(i + 1) = (s1 >> 8).toByte
+      bs(i + 2) = (s2 & 0xff).toByte
+      bs(i + 3) = (s2 >> 8).toByte
+      bs(i + 4) = (s3 & 0xff).toByte
+      bs(i + 5) = (s3 >> 8).toByte
+      bs(i + 6) = (s4 & 0xff).toByte
+      bs(i + 7) = (s4 >> 8).toByte
+      count = i + 8
+    } else {
+      write(s1)
+      write(s2)
+      write(s3)
+      write(s4)
+    }
 
   /** Call once encoding is complete, to replace a high surrogate left unpaired at the very end. */
   def finish(): Unit =

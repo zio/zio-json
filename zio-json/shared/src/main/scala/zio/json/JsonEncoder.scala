@@ -81,7 +81,15 @@ trait JsonEncoder[A] extends JsonEncoderPlatformSpecific[A] {
    * The bytes are written as they are produced rather than built up as a `String` first, so this is the allocation
    * friendly way to produce a payload that is about to leave the process as bytes anyway, e.g. an HTTP response body.
    */
-  final def encodeJsonBytes(a: A, indent: Option[Int] = None): Array[Byte] = {
+  final def encodeJsonBytes(a: A, indent: Option[Int] = None): Chunk[Byte] =
+    Chunk.fromArray(encodeJsonBytesArray(a, indent))
+
+  /**
+   * Encodes the specified value directly to UTF-8 bytes, with the specified indentation level.
+   *
+   * See [[encodeJsonBytes]]; this is the same array before it is wrapped in a `Chunk`.
+   */
+  final def encodeJsonBytesArray(a: A, indent: Option[Int] = None): Array[Byte] = {
     val writePool = JsonEncoder.byteWritePools.get
     try {
       val write = writePool.acquire()
@@ -90,13 +98,6 @@ trait JsonEncoder[A] extends JsonEncoderPlatformSpecific[A] {
       write.result()
     } finally writePool.release()
   }
-
-  /**
-   * Encodes the specified value directly to UTF-8 bytes, with the specified indentation level.
-   *
-   * See [[encodeJsonBytes]]; this wraps the same array without copying it.
-   */
-  final def encodeJsonChunk(a: A, indent: Option[Int] = None): Chunk[Byte] = Chunk.fromArray(encodeJsonBytes(a, indent))
 
   /**
    * This default may be overridden when this value may be missing within a JSON object and still be encoded.

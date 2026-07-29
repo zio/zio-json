@@ -20,17 +20,17 @@ object ChunkEncoderSpec extends ZIOSpecDefault {
     val expected = viaString(a)
 
     assertTrue(
-      a.toJsonBytes.sameElements(expected),
-      a.toJsonChunk.toArray.sameElements(expected),
-      JsonEncoder[A].encodeJsonBytes(a).sameElements(expected),
-      JsonEncoder[A].encodeJsonChunk(a).toArray.sameElements(expected)
+      a.toJsonBytesArray.sameElements(expected),
+      a.toJsonBytes.toArray.sameElements(expected),
+      JsonEncoder[A].encodeJsonBytesArray(a).sameElements(expected),
+      JsonEncoder[A].encodeJsonBytes(a).toArray.sameElements(expected)
     )
   }
 
   private def parityPretty[A](a: A)(implicit encoder: JsonEncoder[A]): TestResult = {
     val expected = JsonEncoder[A].encodeJson(a, Some(0)).toString.getBytes(UTF_8)
 
-    assertTrue(JsonEncoder[A].encodeJsonBytes(a, Some(0)).sameElements(expected))
+    assertTrue(JsonEncoder[A].encodeJsonBytesArray(a, Some(0)).sameElements(expected))
   }
 
   val spec: Spec[Environment, Any] =
@@ -91,7 +91,7 @@ object ChunkEncoderSpec extends ZIOSpecDefault {
             s.grouped(size)
               .zipWithIndex
               .collect {
-                case (batch, i) if !batch.toJsonBytes.sameElements(viaString(batch)) => i
+                case (batch, i) if !batch.toJsonBytesArray.sameElements(viaString(batch)) => i
               }
               .toSeq
 
@@ -108,7 +108,12 @@ object ChunkEncoderSpec extends ZIOSpecDefault {
           parity("abc\uD800xyz") &&
           parity("a\uD800\uD800b") &&
           parity("a\uD800Zb") &&
-          parity(Person("a\uD800b", 1, List("x\uDC00y")))
+          parity(Person("a\uD800b", 1, List("x\uDC00y"))) &&
+          // a pending surrogate resolved by the multi-char write of an escape sequence, and one left for the
+          // closing quote -- the escaped path is the only place a surrogate and an escape can interleave
+          parity("a\uD800\"b") &&
+          parity("a\uD800\nb") &&
+          parity("\"\uD800")
         },
         test("agrees with the String path on generated strings, including lone surrogates") {
           val genMaybeSurrogate =

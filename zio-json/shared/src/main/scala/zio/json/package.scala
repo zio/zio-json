@@ -29,10 +29,10 @@ package object json extends JsonPackagePlatformSpecific {
     /**
      * Encodes directly to UTF-8 bytes, without building a `String` first. See [[JsonEncoder#encodeJsonBytes]].
      */
-    @inline def toJsonBytes(implicit encoder: JsonEncoder[A]): Array[Byte] = encoder.encodeJsonBytes(a, None)
+    @inline def toJsonBytes(implicit encoder: JsonEncoder[A]): Chunk[Byte] = encoder.encodeJsonBytes(a, None)
 
-    /** As [[toJsonBytes]], wrapped in a `Chunk` without copying. */
-    @inline def toJsonChunk(implicit encoder: JsonEncoder[A]): Chunk[Byte] = encoder.encodeJsonChunk(a, None)
+    /** As [[toJsonBytes]], as the raw array before it is wrapped in a `Chunk`. */
+    @inline def toJsonBytesArray(implicit encoder: JsonEncoder[A]): Array[Byte] = encoder.encodeJsonBytesArray(a, None)
   }
 
   implicit final class DecoderOps(private val json: CharSequence) extends AnyVal {

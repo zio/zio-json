@@ -12,9 +12,9 @@ import java.io.IOException
 import java.nio.charset.StandardCharsets.UTF_8
 
 /**
- * Parity of `toJsonBytes`/`toJsonChunk` against `toJson.getBytes(UTF_8)`, encoding real-world fixtures decoded through
- * the derived decoders -- nested objects, arrays, non-ASCII content and string escaping all at once, as opposed to
- * `ChunkEncoderSpec`'s narrower, targeted cases.
+ * Parity of `toJsonBytes`/`toJsonBytesArray` against `toJson.getBytes(UTF_8)`, encoding real-world fixtures decoded
+ * through the derived decoders -- nested objects, arrays, non-ASCII content and string escaping all at once, as opposed
+ * to `ChunkEncoderSpec`'s narrower, targeted cases.
  *
  * There is no encode-side analogue of the decoder corpus sweep (`ChunkDecoderCorpusSpec`): every valid Scala value
  * encodes to something, there is no "malformed input" to defend against here, only agreement between the two output
@@ -28,8 +28,8 @@ object ChunkEncoderCorpusSpec extends ZIOSpecDefault {
       val expected = a.toJson.getBytes(UTF_8)
 
       assertTrue(
-        a.toJsonBytes.sameElements(expected),
-        a.toJsonChunk.toArray.sameElements(expected)
+        a.toJsonBytesArray.sameElements(expected),
+        a.toJsonBytes.toArray.sameElements(expected)
       )
     }
 

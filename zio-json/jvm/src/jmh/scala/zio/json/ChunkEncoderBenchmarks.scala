@@ -48,11 +48,11 @@ class ChunkEncoderBenchmarks {
 
   @Benchmark
   def encodeZioBytes(): Array[Byte] =
-    decoded.toJsonBytes
+    decoded.toJsonBytesArray
 
   @Benchmark
   def encodeZioChunk(): zio.Chunk[Byte] =
-    decoded.toJsonChunk
+    decoded.toJsonBytes
 
   @Benchmark
   def encodeJsoniter(): Array[Byte] =
