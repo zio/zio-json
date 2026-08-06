@@ -11,7 +11,8 @@ addSbtPlugin("org.scala-native"   % "sbt-scala-native"              % "0.5.12")
 addSbtPlugin("org.scalameta"      % "sbt-scalafmt"                  % "2.6.2")
 addSbtPlugin("pl.project13.scala" % "sbt-jcstress"                  % "0.2.0")
 addSbtPlugin("org.scoverage"      % "sbt-scoverage"                 % "2.4.4")
-addSbtPlugin("dev.zio"            % "zio-sbt-website"               % "0.6.1")
-addSbtPlugin("ch.epfl.scala"      % "sbt-scalafix"                  % "0.14.7")
+resolvers += "Sonatype Snapshots" at "https://central.sonatype.com/repository/maven-snapshots/"
+addSbtPlugin("dev.zio"       % "zio-sbt-website" % "0.6.3+7-c58c349e-SNAPSHOT")
+addSbtPlugin("ch.epfl.scala" % "sbt-scalafix"    % "0.14.7")
 
 libraryDependencies += "org.snakeyaml" % "snakeyaml-engine" % "3.1"
