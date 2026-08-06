@@ -4,9 +4,12 @@
 
 # ZIO JSON
 
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
 [ZIO Json](https://github.com/zio/zio-json) is a fast and secure JSON library with tight ZIO integration.
 
-[![Production Ready](https://img.shields.io/badge/Project%20Stage-Production%20Ready-brightgreen.svg)](https://github.com/zio/zio/wiki/Project-Stages) [![Sonatype Releases](https://img.shields.io/nexus/r/https/oss.sonatype.org/dev.zio/zio-json_2.13.svg?label=Sonatype%20Release)](https://oss.sonatype.org/content/repositories/releases/dev/zio/zio-json_2.13/) [![Sonatype Snapshots](https://img.shields.io/nexus/s/https/oss.sonatype.org/dev.zio/zio-json_2.13.svg?label=Sonatype%20Snapshot)](https://oss.sonatype.org/content/repositories/snapshots/dev/zio/zio-json_2.13/) [![javadoc](https://javadoc.io/badge2/dev.zio/zio-json-docs_2.13/javadoc.svg)](https://javadoc.io/doc/dev.zio/zio-json-docs_2.13) [![ZIO JSON](https://img.shields.io/github/stars/zio/zio-json?style=social)](https://github.com/zio/zio-json)
+[![Production Ready](https://img.shields.io/badge/Project%20Stage-Production%20Ready-brightgreen.svg)](https://github.com/zio/zio/wiki/Project-Stages) ![CI Badge](https://github.com/zio/zio-json/workflows/CI/badge.svg) [![Sonatype Releases](https://img.shields.io/maven-central/v/dev.zio/zio-json_2.13.svg?label=Sonatype%20Release)](https://central.sonatype.com/artifact/dev.zio/zio-json_2.13) [![Sonatype Snapshots](https://img.shields.io/maven-metadata/v?metadataUrl=https%3A%2F%2Fcentral.sonatype.com%2Frepository%2Fmaven-snapshots%2Fdev%2Fzio%2Fzio-json_2.13%2Fmaven-metadata.xml&label=Sonatype%20Snapshot)](https://central.sonatype.com/repository/maven-snapshots/dev/zio/zio-json_2.13/) [![javadoc](https://javadoc.io/badge2/dev.zio/zio-json_2.13/javadoc.svg)](https://javadoc.io/doc/dev.zio/zio-json_2.13) [![ZIO JSON](https://img.shields.io/github/stars/zio/zio-json?style=social)](https://github.com/zio/zio-json)
 
 ## Introduction
 
@@ -15,7 +18,7 @@ The goal of this project is to create the best all-round JSON library for Scala:
 - **Performance** to handle more requests per second than the incumbents, i.e. reduced operational costs.
 - **Security** to mitigate against adversarial JSON payloads that threaten the capacity of the server.
 - **Fast Compilation** no shapeless, no type astronautics.
-- **Future-Proof**, prepared for Scala 3 and runs on JDK 11+ JVMs.
+- **Future-Proof**, prepared for Scala 3 and next-generation Java.
 - **Simple** small codebase, concise documentation that covers everything.
 - **Helpful errors** are readable by humans and machines.
 - **ZIO Integration** so nothing more is required.
@@ -25,7 +28,15 @@ The goal of this project is to create the best all-round JSON library for Scala:
 In order to use this library, we need to add the following line in our `build.sbt` file:
 
 ```scala
-libraryDependencies += "dev.zio" %% "zio-json" % "0.7.42"
+libraryDependencies += "dev.zio" %% "zio-json" % "0.10.0"
+```
+
+For cross-platform projects with Scala.js and Scala Native need to replace `%%` operator by `%%%`, 
+and optionally when using `java.time.ZoneId` and `java.time.ZonedDateTime` types need to add 
+the dependency on the latest version of Timezone DB:
+
+```scala
+libraryDependencies += "io.github.cquiroz" %%% "scala-java-time-tzdb" % "latest.integration"
 ```
 
 ## Example
@@ -34,9 +45,22 @@ Let's try a simple example of encoding and decoding JSON using ZIO JSON.
 
 All the following code snippets assume that the following imports have been declared
 
+<Tabs groupId="language">
+  <TabItem value="scala 2" label="Scala 2">
+
 ```scala
 import zio.json._
 ```
+
+  </TabItem>
+  <TabItem value="scala 3" label="Scala 3" default>
+
+```scala
+import zio.json.*
+```
+
+  </TabItem>
+</Tabs>
 
 Say we want to be able to read some JSON like
 
@@ -50,21 +74,30 @@ into a Scala `case class`
 final case class Banana(curvature: Double)
 ```
 
+<Tabs groupId="language">
+  <TabItem value="scala 2" label="Scala 2">
+
+To do this, we create an *instance* of the `JsonDecoder` typeclass for `Banana` using the `zio-json` code generator. It is best practice to put it on the companion of `Banana`, like so
+
+```scala
+object Banana {
+  implicit val decoder: JsonDecoder[Banana] = DeriveJsonDecoder.gen[Banana]
+}
+```
+
+  </TabItem>
+  <TabItem value="scala 3" label="Scala 3" default>
+
 To do this, we derive an *instance* of the `JsonDecoder` typeclass for `Banana`.
 
 ```scala
 final case class Banana(curvature: Double) derives JsonDecoder
 ```
 
-> [!NOTE]
->
-> In scala 2, we need to use the `zio-json` semi-automatic derivation. It is best practice to put it on the companion of `Banana`, like so
->
-> ```scala
-> object Banana {
->   implicit val decoder: JsonDecoder[Banana] = DeriveJsonDecoder.gen[Banana]
-> }
-> ```
+Note: If your case class is defining default parameters, -Yretain-trees needs to be added to scalacOptions.
+
+  </TabItem>
+</Tabs>
 
 Now we can parse JSON into our object
 
@@ -75,9 +108,27 @@ val res: Either[String, Banana] = Right(Banana(0.5))
 
 Likewise, to produce JSON from our data we derive a `JsonEncoder`
 
+<Tabs groupId="language">
+  <TabItem value="scala 2" label="Scala 2">
+
+```scala
+object Banana {
+  ...
+  implicit val encoder: JsonEncoder[Banana] = DeriveJsonEncoder.gen[Banana]
+}
+```
+
+  </TabItem>
+  <TabItem value="scala 3" label="Scala 3" default>
+
 ```scala
 final case class Banana(curvature: Double) derives JsonEncoder
+```
 
+  </TabItem>
+</Tabs>
+
+```
 scala> Banana(0.5).toJson
 val res: String = {"curvature":0.5}
 
@@ -88,70 +139,61 @@ val res: String =
 }
 ```
 
-> [!NOTE]
->
-> In scala 2:
-> ```scala
-> object Banana {
->   ...
->   implicit val encoder: JsonEncoder[Banana] = DeriveJsonEncoder.gen[Banana]
-> }
-> ```
-
 And bad JSON will produce an error in `jq` syntax with an additional piece of contextual information (in parentheses)
 
 ```
-scala> """{"curvature": true}""".fromJson[Banana]
+scala> """{"curvature": womp}""".fromJson[Banana]
 val res: Either[String, Banana] = Left(.curvature(expected a Double))
 ```
 
 Say we extend our data model to include more data types
 
+<Tabs groupId="language">
+  <TabItem value="scala 2" label="Scala 2">
+
+```scala
+sealed trait Fruit
+final case class Banana(curvature: Double) extends Fruit
+final case class Apple (poison: Boolean)   extends Fruit
+```
+
+  </TabItem>
+  <TabItem value="scala 3" label="Scala 3" default>
+
 ```scala
 enum Fruit {
   case Banana(curvature: Double)
-  case Apple(poison: Boolean)
+  case Apple (poison: Boolean)
 }
 ```
 
-we can generate the encoder and decoder for the entire `sealed` family using `JsonCodec`
+  </TabItem>
+</Tabs>
+
+we can generate the encoder and decoder for the entire `sealed` family
+
+<Tabs groupId="language">
+  <TabItem value="scala 2" label="Scala 2">
+
+```scala
+object Fruit {
+  implicit val decoder: JsonDecoder[Fruit] = DeriveJsonDecoder.gen[Fruit]
+  implicit val encoder: JsonEncoder[Fruit] = DeriveJsonEncoder.gen[Fruit]
+}
+```
+
+  </TabItem>
+  <TabItem value="scala 3" label="Scala 3" default>
 
 ```scala
 enum Fruit derives JsonCodec {
   case Banana(curvature: Double)
-  case Apple(poison: Boolean)
+  case Apple (poison: Boolean)
 }
 ```
 
-> [!NOTE]
->
-> In scala 2:
->
-> ```scala mdoc:compile-only
-> import zio.json._
-> 
-> sealed trait Fruit
-> final case class Banana(curvature: Double) extends Fruit
-> final case class Apple(poison: Boolean)    extends Fruit
-> 
-> object Fruit {
->   implicit val decoder: JsonDecoder[Fruit] =
->     DeriveJsonDecoder.gen[Fruit]
-> 
->   implicit val encoder: JsonEncoder[Fruit] =
->     DeriveJsonEncoder.gen[Fruit]
-> }
-> 
-> val json1         = """{ "Banana":{ "curvature":0.5 }}"""
-> val json2         = """{ "Apple": { "poison": false }}"""
-> val malformedJson = """{ "Banana":{ "curvature": true }}"""
-> 
-> json1.fromJson[Fruit]
-> json2.fromJson[Fruit]
-> malformedJson.fromJson[Fruit]
-> 
-> List(Apple(false), Banana(0.4)).toJsonPretty
-> ```
+  </TabItem>
+</Tabs>
 
 allowing us to load the fruit based on a single field type tag in the JSON
 
@@ -165,9 +207,65 @@ val res: Either[String, Fruit] = Right(Apple(false))
 
 Almost all of the standard library data types are supported as fields on the case class, and it is easy to add support if one is missing.
 
+<Tabs groupId="language">
+  <TabItem value="scala 2" label="Scala 2">
+
+```scala
+import zio.json._
+
+sealed trait Fruit                   extends Product with Serializable
+case class Banana(curvature: Double) extends Fruit
+case class Apple(poison: Boolean)    extends Fruit
+
+object Fruit {
+  implicit val decoder: JsonDecoder[Fruit] =
+    DeriveJsonDecoder.gen[Fruit]
+
+  implicit val encoder: JsonEncoder[Fruit] =
+    DeriveJsonEncoder.gen[Fruit]
+}
+
+val json1         = """{ "Banana":{ "curvature":0.5 }}"""
+val json2         = """{ "Apple": { "poison": false }}"""
+val malformedJson = """{ "Banana":{ "curvature": true }}"""
+
+json1.fromJson[Fruit]
+json2.fromJson[Fruit]
+malformedJson.fromJson[Fruit]
+
+List(Apple(false), Banana(0.4)).toJsonPretty
+```
+
+  </TabItem>
+  <TabItem value="scala 3" label="Scala 3" default>
+
+```scala
+import zio.json.*
+
+enum Fruit derives JsonCodec {
+  case Banana(curvature: Double)
+  case Apple(poison: Boolean)
+}
+
+export Fruit.*
+
+val json1         = """{ "Banana":{ "curvature":0.5 }}"""
+val json2         = """{ "Apple": { "poison": false }}"""
+val malformedJson = """{ "Banana":{ "curvature": true }}"""
+
+json1.fromJson[Fruit]
+json2.fromJson[Fruit]
+malformedJson.fromJson[Fruit]
+
+List(Apple(false), Banana(0.4)).toJsonPretty
+```
+
+  </TabItem>
+</Tabs>
+
 # How
 
-High **performance** is achieved by decoding JSON directly from the input source into business objects. See benchmark results of throughput and allocation rate for synthetic and real-world message samples in comparison with other JSON parsers [here](https://plokhotnyuk.github.io/jsoniter-scala/).
+Extreme **performance** is achieved by decoding JSON directly from the input source into business objects (inspired by [plokhotnyuk](https://github.com/plokhotnyuk/jsoniter-scala)). Although not a requirement, the latest advances in [Java Loom](https://wiki.openjdk.java.net/display/loom/Main) can be used to support arbitrarily large payloads with near-zero overhead.
 
 Best in class **security** is achieved with an aggressive *early exit* strategy that avoids costly stack traces, even when parsing malformed numbers. Malicious (and badly formed) payloads are rejected before finishing reading.
 
