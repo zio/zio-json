@@ -6,6 +6,7 @@ const sidebars = {
       collapsed: false,
       link: { type: "doc", id: "index" },
       items: [
+        "getting-started",
         "decoding",
         "encoding",
         "configuration",
