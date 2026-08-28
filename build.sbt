@@ -1,5 +1,5 @@
 import BuildHelper.*
-import com.typesafe.tools.mima.core.Problem
+import com.typesafe.tools.mima.core.*
 import com.typesafe.tools.mima.core.ProblemFilters.exclude
 import com.typesafe.tools.mima.plugin.MimaKeys.mimaPreviousArtifacts
 import explicitdeps.ExplicitDepsPlugin.autoImport.moduleFilterRemoveValue
@@ -110,7 +110,7 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform, NativePlatform)
     // as per @fommil, optimization slows things down.
     scalacOptions -= "-opt:l:inline",
     scalacOptions -= "-opt-inline-from:zio.internal.**",
-    Test / scalacOptions ++= {
+    scalacOptions ++= {
       if (scalaVersion.value == Scala3)
         Vector("-Yretain-trees", "-Xmax-inlines:128")
       else
@@ -133,9 +133,7 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform, NativePlatform)
     libraryDependencies ++= {
       CrossVersion.partialVersion(scalaVersion.value) match {
         case Some((3, _)) =>
-          Seq(
-            "com.softwaremill.magnolia1_3" %%% "magnolia" % "1.3.23"
-          )
+          Seq.empty
         case _ =>
           Seq(
             "org.scala-lang"                 % "scala-reflect" % scalaVersion.value % Provided,
@@ -238,8 +236,32 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform, NativePlatform)
     inConfig(Jmh)(org.scalafmt.sbt.ScalafmtPlugin.scalafmtConfigSettings(Jmh)),
     testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework"),
     mimaBinaryIssueFilters ++= Seq(
-      exclude[Problem]("zio.json.CaseObjectDecoder.*") // FIXME: false negative reported by mima
+      exclude[Problem]("zio.json.CaseObjectDecoder.*"),
+      exclude[MissingClassProblem]("zio.json.CaseObjectDecoder"),
+      exclude[DirectMissingMethodProblem]("zio.json.DeriveJsonDecoder.join"),
+      exclude[DirectMissingMethodProblem]("zio.json.DeriveJsonDecoder.split"),
+      exclude[DirectMissingMethodProblem]("zio.json.DeriveJsonDecoder.subtypes$default$2"),
+      exclude[DirectMissingMethodProblem]("zio.json.DeriveJsonDecoder.getParams$default$4"),
+      exclude[DirectMissingMethodProblem]("zio.json.DeriveJsonDecoder.getParams_$default$5"),
+      exclude[DirectMissingMethodProblem]("zio.json.DeriveJsonDecoder.getParams__$default$6"),
+      exclude[MissingTypesProblem]("zio.json.DeriveJsonDecoder$"),
+      exclude[MissingClassProblem]("zio.json.DeriveJsonDecoder$ArraySeq"),
+      exclude[DirectMissingMethodProblem]("zio.json.DeriveJsonEncoder.join"),
+      exclude[DirectMissingMethodProblem]("zio.json.DeriveJsonEncoder.split"),
+      exclude[DirectMissingMethodProblem]("zio.json.DeriveJsonEncoder.subtypes$default$2"),
+      exclude[DirectMissingMethodProblem]("zio.json.DeriveJsonEncoder.getParams$default$4"),
+      exclude[DirectMissingMethodProblem]("zio.json.DeriveJsonEncoder.getParams_$default$5"),
+      exclude[DirectMissingMethodProblem]("zio.json.DeriveJsonEncoder.getParams__$default$6"),
+      exclude[MissingTypesProblem]("zio.json.DeriveJsonEncoder$"),
+      exclude[MissingClassProblem]("zio.json.JsonDecoderDerivation"),
+      exclude[MissingClassProblem]("zio.json.JsonDecoderDerivation$ArraySeq"),
+      exclude[MissingClassProblem]("zio.json.JsonEncoderDerivation"),
+      exclude[MissingClassProblem]("zio.json.macros$package"),
+      exclude[MissingClassProblem]("zio.json.macros$package$")
     )
+  )
+  .jvmSettings(
+    Jmh / unmanagedClasspath ++= (Test / fullClasspath).value
   )
   .jsSettings(
     mimaBinaryIssueFilters ++= Seq(
@@ -351,7 +373,7 @@ lazy val zioJsonInteropHttp4s = project
     libraryDependencies ++= Seq(
       "org.http4s"    %% "http4s-dsl"       % "0.23.36",
       "dev.zio"       %% "zio"              % zioVersion,
-      "org.typelevel" %% "cats-effect"      % "3.7.1",
+      "org.typelevel" %% "cats-effect"      % "3.7.0",
       "dev.zio"       %% "zio-interop-cats" % "23.1.0.13" % Test,
       "dev.zio"       %% "zio-test"         % zioVersion  % Test,
       "dev.zio"       %% "zio-test-sbt"     % zioVersion  % Test

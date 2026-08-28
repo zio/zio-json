@@ -324,6 +324,15 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority1 with 
       }
   }
 
+  implicit val unit: JsonDecoder[Unit] = new JsonDecoder.AbstractJsonDecoder[Unit] {
+    def unsafeDecode(trace: List[JsonError], in: RetractReader): Unit = {
+      Lexer.skipValue(trace, in)
+      ()
+    }
+
+    override def unsafeFromJsonAST(trace: List[JsonError], json: Json): Unit = ()
+  }
+
   implicit val char: JsonDecoder[Char] = new JsonDecoder.AbstractJsonDecoder[Char] {
     def unsafeDecode(trace: List[JsonError], in: RetractReader): Char = Lexer.char(trace, in)
 

@@ -6,10 +6,10 @@ import zio.test._
 
 import scala.collection.immutable
 
-object EncoderVesionSpecificSpec extends ZIOSpecDefault {
+object EncoderVersionSpecificSpec extends ZIOSpecDefault {
 
   val spec: Spec[Environment, Any] =
-    suite("EncoderVesionSpecific")(
+    suite("EncoderVersionSpecific")(
       suite("toJson")(
         test("collections") {
           assert(immutable.ArraySeq[Int]().toJson)(equalTo("[]")) &&
@@ -88,6 +88,23 @@ object EncoderVesionSpecificSpec extends ZIOSpecDefault {
           case class Foo(aOrB: Map["A" | "B", Int]) derives JsonEncoder
 
           assertTrue(Foo(Map("A" -> 1, "B" -> 2)).toJson == """{"aOrB":{"A":1,"B":2}}""")
+        },
+        test("@jsonExplicitEmptyCollections encodes empty collections") {
+          import WithExplicitEmpty._
+          // With annotation (encoding=true, the default), empty list SHOULD be written as "items":[]
+          val result = WithExplicitEmpty(List.empty, "test").toJson
+          assertTrue(result == """{"items":[],"name":"test"}""")
+        },
+        test("@jsonExplicitEmptyCollections(encoding = false) omits empty collections") {
+          import WithExplicitEmptyEncodingOff._
+          // With encoding=false, empty list should be omitted
+          val result = WithExplicitEmptyEncodingOff(List.empty, "test").toJson
+          assertTrue(result == """{"name":"test"}""")
+        },
+        test("@jsonExplicitEmptyCollections encodes non-empty collections normally") {
+          import WithExplicitEmpty._
+          val result = WithExplicitEmpty(List(1, 2, 3), "test").toJson
+          assertTrue(result == """{"items":[1,2,3],"name":"test"}""")
         }
       ),
       suite("toJsonAST")(

@@ -6,10 +6,10 @@ import zio.test._
 
 import scala.collection.immutable
 
-object EncoderVesionSpecificSpec extends ZIOSpecDefault {
+object EncoderVersionSpecificSpec extends ZIOSpecDefault {
 
   val spec: Spec[Environment, Any] =
-    suite("EncoderVesionSpecific")(
+    suite("EncoderVersionSpecific")(
       suite("toJson")(
         test("collections") {
           assert(immutable.ArraySeq[Int]().toJson)(equalTo("[]")) &&

@@ -302,10 +302,9 @@ object DecoderSpec extends ZIOSpecDefault {
                 DeriveJsonDecoder.gen[Mango]
               }.flip
           } yield assertTrue(
-            // Class name in Scala 2: zio.json.DecoderSpec.spec.Mango
-            // Class name in Scala 3: zio.json.DecoderSpec.spec.$anonfun.Mango
+            // Class name varies across Scala versions
             error.getMessage.matches(
-              "Field names and aliases in case class zio.json.DecoderSpec.spec(.\\$anonfun)?.Mango must be distinct, alias\\(es\\) r collide with a field or another alias"
+              "Field names and aliases in case class zio\\.json\\.DecoderSpec.+Mango must be distinct, alias\\(es\\) r collide with a field or another alias"
             )
           )
         },
@@ -318,7 +317,7 @@ object DecoderSpec extends ZIOSpecDefault {
               }.flip
           } yield assertTrue(
             error.getMessage.matches(
-              "Field names and aliases in case class zio.json.DecoderSpec.spec(.\\$anonfun)?.Mango must be distinct, alias\\(es\\) r collide with a field or another alias"
+              "Field names and aliases in case class zio\\.json\\.DecoderSpec.+Mango must be distinct, alias\\(es\\) r collide with a field or another alias"
             )
           )
         },
@@ -330,7 +329,7 @@ object DecoderSpec extends ZIOSpecDefault {
                      }.flip
           } yield assertTrue(
             error.getMessage.matches(
-              "Field names and aliases in case class zio.json.DecoderSpec.spec(.\\$anonfun)?.Mango must be distinct, alias\\(es\\) r collide with a field or another alias"
+              "Field names and aliases in case class zio\\.json\\.DecoderSpec.+Mango must be distinct, alias\\(es\\) r collide with a field or another alias"
             )
           )
         },
@@ -433,7 +432,7 @@ object DecoderSpec extends ZIOSpecDefault {
                      }.flip
           } yield assertTrue(
             error.getMessage.matches(
-              """Case names in ADT zio.json.DecoderSpec.spec(.\$anonfun)?.Fruit must be distinct, name\(s\) Banana are duplicated"""
+              """Case names in ADT zio\.json\.DecoderSpec.+Fruit must be distinct, name\(s\) Banana are duplicated"""
             )
           )
         },

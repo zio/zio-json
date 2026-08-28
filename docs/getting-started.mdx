@@ -237,7 +237,7 @@ Extreme **performance** is achieved by decoding JSON directly from the input sou
 
 Best in class **security** is achieved with an aggressive *early exit* strategy that avoids costly stack traces, even when parsing malformed numbers. Malicious (and badly formed) payloads are rejected before finishing reading.
 
-**Fast compilation** and **future-proofing** is possible thanks to [Magnolia](https://propensive.com/opensource/magnolia/) which allows us to generate boilerplate in a way that will survive the exodus to Scala 3. `zio-json` is internally implemented using a [`java.io.Reader`](https://docs.oracle.com/en/java/javase/14/docs/api/java.base/java/io/Reader.html) / [`java.io.Writer`](https://docs.oracle.com/en/java/javase/14/docs/api/java.base/java/io/Writer.html)-like interface, which is making a comeback to center stage in Loom.
+**Fast compilation** and **future-proofing**: For Scala 2, derivation uses [Magnolia](https://propensive.com/opensource/magnolia/). For Scala 3, derivation uses native Scala 3 macros. `zio-json` is internally implemented using a [`java.io.Reader`](https://docs.oracle.com/en/java/javase/14/docs/api/java.base/java/io/Reader.html) / [`java.io.Writer`](https://docs.oracle.com/en/java/javase/14/docs/api/java.base/java/io/Writer.html)-like interface, which is making a comeback to center stage in Loom.
 
 **Simplicity** is achieved by using well-known software patterns and avoiding bloat. The only requirement to use this library is to know about Scala's encoding of typeclasses, described in [Functional Programming for Mortals](https://leanpub.com/fpmortals/read#leanpub-auto-functionality).
 
