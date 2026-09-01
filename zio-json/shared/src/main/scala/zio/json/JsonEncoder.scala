@@ -254,6 +254,11 @@ object JsonEncoder extends GeneratedTupleEncoders with EncoderLowPriority1 with 
 
     override def toJsonAST(a: Boolean): Either[String, Json] = new Right(Json.Bool(a))
   }
+  implicit val unit: JsonEncoder[Unit] = new JsonEncoder.AbstractJsonEncoder[Unit] {
+    def unsafeEncode(a: Unit, indent: Option[Int], out: Write): Unit = out.write('{', '}')
+
+    override def toJsonAST(a: Unit): Either[String, Json] = new Right(Json.Obj(Chunk.empty))
+  }
   implicit val symbol: JsonEncoder[Symbol] = string.contramap(_.name)
   implicit val byte: JsonEncoder[Byte]     = new JsonEncoder.AbstractJsonEncoder[Byte] {
     def unsafeEncode(a: Byte, indent: Option[Int], out: Write): Unit = SafeNumbers.write(a.toInt, out)

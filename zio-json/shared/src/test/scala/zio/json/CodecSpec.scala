@@ -57,6 +57,13 @@ object CodecSpec extends ZIOSpecDefault {
             forall(isRight(isRight(equalTo(2))))
           )
         },
+        test("Unit codec") {
+          val left: Either[String, Unit]  = Left("hello")
+          val right: Either[String, Unit] = Right(())
+          assert(left.toJson.fromJson[Either[String, Unit]])(isRight(equalTo(Left("hello")))) &&
+          assert(right.toJson.fromJson[Either[String, Unit]])(isRight(equalTo(Right(())))) &&
+          assert("{}".fromJson[Unit])(isRight(equalTo(())))
+        },
         test("parameterless products") {
           import exampleproducts._
 
