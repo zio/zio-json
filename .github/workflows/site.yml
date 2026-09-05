@@ -4,6 +4,9 @@
 name: Website
 'on':
   workflow_dispatch: {}
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
   release:
     types:
     - published
@@ -34,9 +37,12 @@ jobs:
     name: Release Docs
     runs-on: ubuntu-latest
     continue-on-error: false
-    needs:
-      - release
-    if: ${{ ((github.event_name == 'release') && (github.event.action == 'published')) || (github.event_name == 'workflow_dispatch') }}
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'workflow_run' &&
+       github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'release' &&
+       github.event.workflow_run.head_repository.full_name == github.repository)
     permissions:
       id-token: write
       contents: read
@@ -44,6 +50,7 @@ jobs:
       - name: Git Checkout
         uses: actions/checkout@v7
         with:
+          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
           fetch-depth: '0'
       - name: Install libuv
         run: sudo apt-get update && sudo apt-get install -y libuv1-dev
