@@ -31,7 +31,7 @@ object Lexer {
   val NumberMaxBits: Int = 256
 
   @noinline def error(msg: String, trace: List[JsonError]): Nothing =
-    throw UnsafeJson(JsonError.Message(msg) :: trace)
+    throw new UnsafeJson(new ::(new JsonError.Message(msg), trace))
 
   @noinline private[json] def error(expected: String, got: Char, trace: List[JsonError]): Nothing =
     error(s"expected $expected got '$got'", trace)
@@ -39,9 +39,8 @@ object Lexer {
   @noinline private[json] def error(c: Char, trace: List[JsonError]): Nothing =
     error(s"invalid '\\$c' in string", trace)
 
-  // FIXME: remove trace paramenter in the next major version
   // True if we got anything besides a }, False for }
-  @inline def firstField(trace: List[JsonError], in: RetractReader): Boolean =
+  @inline def firstField(in: RetractReader): Boolean =
     if (in.nextNonWhitespace() != '}') {
       in.retract()
       true
@@ -73,12 +72,12 @@ object Lexer {
     val f = enumeration(trace, in, matrix)
     val c = in.nextNonWhitespace()
     if (c == ':') return f
-    error("':'", c, trace)
+    error(':', c, trace)
   }
 
   def enumeration(trace: List[JsonError], in: OneCharReader, matrix: StringMatrix): Int = {
     var c = in.nextNonWhitespace()
-    if (c != '"') error("'\"'", c, trace)
+    if (c != '"') error('\"', c, trace)
     var bs = matrix.initial
     var i  = 0
     while ({
@@ -121,7 +120,7 @@ object Lexer {
     val f = enumeration128(trace, in, matrix1, matrix2)
     val c = in.nextNonWhitespace()
     if (c == ':') return f
-    error("':'", c, trace)
+    error(':', c, trace)
   }
 
   @noinline def skipValue(trace: List[JsonError], in: RetractReader): Unit =
@@ -142,10 +141,6 @@ object Lexer {
     catch { case _: UnexpectedEnd => return }
     in.retract()
   }
-
-  // FIXME: remove in the next major version
-  def skipString(trace: List[JsonError], in: OneCharReader): Unit =
-    skipString(in, evenBackSlashes = true)
 
   @tailrec private def skipFixedChars(in: OneCharReader, n: Int): Unit =
     if (n > 0) {
@@ -269,45 +264,6 @@ object Lexer {
       case UnsafeNumbers.UnsafeNumber => error(s"expected a BigDecimal with $NumberMaxBits-bit mantissa", trace)
     }
 
-  // FIXME: remove in the next major version
-  def streamingString(trace: List[JsonError], in: OneCharReader): java.io.Reader = {
-    char(trace, in, '"')
-    new OneCharReader {
-      def close(): Unit = in.close()
-
-      private[this] var escaped = false
-
-      @tailrec override def read(): Int = {
-        val c = in.readChar()
-        if (escaped) {
-          escaped = false
-          ((c: @switch) match {
-            case '"' | '\\' | '/' => c
-            case 'b'              => '\b'
-            case 'f'              => '\f'
-            case 'n'              => '\n'
-            case 'r'              => '\r'
-            case 't'              => '\t'
-            case 'u'              => nextHex4(trace, in)
-            case c                => error(c, trace)
-          }).toInt
-        } else if (c == '\\') {
-          escaped = true
-          read()
-        } else if (c == '"') -1 // this is the EOS for the caller
-        else if (c < ' ') error("invalid control in string", trace)
-        else c.toInt
-      }
-
-      // callers expect to get an EOB so this is rare
-      def readChar(): Char = {
-        val v = read()
-        if (v == -1) throw new UnexpectedEnd
-        v.toChar
-      }
-    }
-  }
-
   def string(trace: List[JsonError], in: OneCharReader): CharSequence = {
     var c = in.nextNonWhitespace()
     if (c == '"') {
@@ -354,42 +310,42 @@ object Lexer {
         ) {
           val ds   = hexDigits
           val msb1 =
-            ds(cs(0)).toLong << 28 |
-              (ds(cs(1)) << 24 |
-                ds(cs(2)) << 20 |
-                ds(cs(3)) << 16 |
-                ds(cs(4)) << 12 |
-                ds(cs(5)) << 8 |
-                ds(cs(6)) << 4 |
-                ds(cs(7)))
+            ds(cs(0).toInt).toLong << 28 |
+              (ds(cs(1).toInt) << 24 |
+                ds(cs(2).toInt) << 20 |
+                ds(cs(3).toInt) << 16 |
+                ds(cs(4).toInt) << 12 |
+                ds(cs(5).toInt) << 8 |
+                ds(cs(6).toInt) << 4 |
+                ds(cs(7).toInt))
           val msb2 =
-            (ds(cs(9)) << 12 |
-              ds(cs(10)) << 8 |
-              ds(cs(11)) << 4 |
-              ds(cs(12))).toLong
+            (ds(cs(9).toInt) << 12 |
+              ds(cs(10).toInt) << 8 |
+              ds(cs(11).toInt) << 4 |
+              ds(cs(12).toInt)).toLong
           val msb3 =
-            (ds(cs(14)) << 12 |
-              ds(cs(15)) << 8 |
-              ds(cs(16)) << 4 |
-              ds(cs(17))).toLong
+            (ds(cs(14).toInt) << 12 |
+              ds(cs(15).toInt) << 8 |
+              ds(cs(16).toInt) << 4 |
+              ds(cs(17).toInt)).toLong
           val lsb1 =
-            (ds(cs(19)) << 12 |
-              ds(cs(20)) << 8 |
-              ds(cs(21)) << 4 |
-              ds(cs(22))).toLong
+            (ds(cs(19).toInt) << 12 |
+              ds(cs(20).toInt) << 8 |
+              ds(cs(21).toInt) << 4 |
+              ds(cs(22).toInt)).toLong
           val lsb2 =
-            (ds(cs(24)) << 16 |
-              ds(cs(25)) << 12 |
-              ds(cs(26)) << 8 |
-              ds(cs(27)) << 4 |
-              ds(cs(28))).toLong << 28 |
-              (ds(cs(29)) << 24 |
-                ds(cs(30)) << 20 |
-                ds(cs(31)) << 16 |
-                ds(cs(32)) << 12 |
-                ds(cs(33)) << 8 |
-                ds(cs(34)) << 4 |
-                ds(cs(35)))
+            (ds(cs(24).toInt) << 16 |
+              ds(cs(25).toInt) << 12 |
+              ds(cs(26).toInt) << 8 |
+              ds(cs(27).toInt) << 4 |
+              ds(cs(28).toInt)).toLong << 28 |
+              (ds(cs(29).toInt) << 24 |
+                ds(cs(30).toInt) << 20 |
+                ds(cs(31).toInt) << 16 |
+                ds(cs(32).toInt) << 12 |
+                ds(cs(33).toInt) << 8 |
+                ds(cs(34).toInt) << 4 |
+                ds(cs(35).toInt))
           if ((msb1 | msb2 | msb3 | lsb1 | lsb2) >= 0L) {
             return new UUID(msb1 << 32 | msb2 << 16 | msb3, lsb1 << 48 | lsb2)
           }
@@ -439,7 +395,7 @@ object Lexer {
       var result = 0L
       var i      = from
       while (i < to) {
-        result = (result << 4) | ds(cs(i))
+        result = (result << 4) | ds(cs(i).toInt)
         i += 1
       }
       if ((result & mask) == 0L) return result
@@ -1710,8 +1666,6 @@ object Lexer {
   @noinline private[this] def zonedDateTimeError(trace: List[JsonError]): Nothing =
     error("expected a ZonedDateTime", trace)
 
-  @noinline private[this] def zoneIdError(trace: List[JsonError]): Nothing = error("expected a ZoneId", trace)
-
   @noinline private[this] def zoneOffsetError(trace: List[JsonError]): Nothing = error("expected a ZoneOffset", trace)
 
   private[this] val charArrays = new ThreadLocal[Array[Char]] {
@@ -1752,7 +1706,7 @@ object Lexer {
 
   def char(trace: List[JsonError], in: OneCharReader): Char = {
     var c = in.nextNonWhitespace()
-    if (c != '"') error("'\"'", c, trace)
+    if (c != '"') error('\"', c, trace)
     c = in.readChar()
     if (
       c == '"' || {
@@ -1835,14 +1789,11 @@ object Lexer {
 
   @inline def char(trace: List[JsonError], in: OneCharReader, c: Char): Unit = {
     val got = in.nextNonWhitespace()
-    if (got != c) error(s"'$c'", got, trace)
+    if (got != c) error(c, got, trace)
   }
 
-  // FIXME: remove on next major version release
-  @inline def charOnly(trace: List[JsonError], in: OneCharReader, c: Char): Unit = {
-    val got = in.readChar()
-    if (got != c) error(s"'$c'", got, trace)
-  }
+  @noinline def error(c: Char, got: Char, trace: List[JsonError]): Nothing =
+    error(s"expected '$c' got '$got'", trace)
 
   @inline private[this] def isNumber(c: Char): Boolean =
     (c: @switch) match {

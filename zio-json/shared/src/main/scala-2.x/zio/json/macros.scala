@@ -318,7 +318,7 @@ object DeriveJsonDecoder {
             // to instantiate the case class. Would also require JsonDecoder to be
             // specialised.
             val ps = new Array[Any](len)
-            if (Lexer.firstField(trace, in)) {
+            if (Lexer.firstField(in)) {
               do {
                 val idx = Lexer.field(trace, in, matrix)
                 if (idx >= 0) {
@@ -450,7 +450,7 @@ object DeriveJsonDecoder {
             // to instantiate the case class. Would also require JsonDecoder to be
             // specialised.
             val ps = new Array[Any](len)
-            if (Lexer.firstField(trace, in)) {
+            if (Lexer.firstField(in)) {
               do {
                 val idx = Lexer.field128(trace, in, matrix1, matrix2)
                 if (idx >= 0) {
@@ -585,7 +585,7 @@ object DeriveJsonDecoder {
 
           def unsafeDecode(trace: List[JsonError], in: RetractReader): A = {
             Lexer.char(trace, in, '{')
-            if (Lexer.firstField(trace, in)) {
+            if (Lexer.firstField(in)) {
               val idx = Lexer.field(trace, in, matrix1)
               if (idx >= 0) {
                 val a = tcs(idx).unsafeDecode(spans(idx) :: trace, in).asInstanceOf[A]
@@ -612,7 +612,7 @@ object DeriveJsonDecoder {
 
           def unsafeDecode(trace: List[JsonError], in: RetractReader): A = {
             Lexer.char(trace, in, '{')
-            if (Lexer.firstField(trace, in)) {
+            if (Lexer.firstField(in)) {
               val idx = Lexer.field128(trace, in, matrix1, matrix2)
               if (idx >= 0) {
                 val a = tcs(idx).unsafeDecode(spans(idx) :: trace, in).asInstanceOf[A]
@@ -644,7 +644,7 @@ object DeriveJsonDecoder {
           def unsafeDecode(trace: List[JsonError], in: RetractReader): A = {
             val in_ = RecordingReader(in)
             Lexer.char(trace, in_, '{')
-            if (Lexer.firstField(trace, in_)) {
+            if (Lexer.firstField(in_)) {
               do {
                 if (Lexer.field(trace, in_, hintmatrix) >= 0) {
                   val idx = Lexer.enumeration(trace, in_, matrix1)
@@ -684,7 +684,7 @@ object DeriveJsonDecoder {
           def unsafeDecode(trace: List[JsonError], in: RetractReader): A = {
             val in_ = RecordingReader(in)
             Lexer.char(trace, in_, '{')
-            if (Lexer.firstField(trace, in_)) {
+            if (Lexer.firstField(in_)) {
               do {
                 if (Lexer.field(trace, in_, hintmatrix) >= 0) {
                   val idx = Lexer.enumeration128(trace, in_, matrix1, matrix2)

@@ -33,7 +33,7 @@ package object yaml {
           case Some(width) =>
             dumperOptions.setWidth(width)
             dumperOptions.setSplitLines(true)
-          case None =>
+          case _ =>
             dumperOptions.setSplitLines(false)
         }
         dumperOptions.setLineBreak(options.lineBreak)

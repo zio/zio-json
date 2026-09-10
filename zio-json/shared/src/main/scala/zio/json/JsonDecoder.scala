@@ -353,7 +353,7 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority1 with 
       } else {
         val a = Lexer.byte(trace, in)
         val c = in.readChar()
-        if (c != '"') Lexer.error("'\"'", c, trace)
+        if (c != '"') Lexer.error('\"', c, trace)
         a
       }
 
@@ -383,7 +383,7 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority1 with 
       } else {
         val a = Lexer.short(trace, in)
         val c = in.readChar()
-        if (c != '"') Lexer.error("'\"'", c, trace)
+        if (c != '"') Lexer.error('\"', c, trace)
         a
       }
 
@@ -413,7 +413,7 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority1 with 
       } else {
         val a = Lexer.int(trace, in)
         val c = in.readChar()
-        if (c != '"') Lexer.error("'\"'", c, trace)
+        if (c != '"') Lexer.error('\"', c, trace)
         a
       }
 
@@ -442,7 +442,7 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority1 with 
       } else {
         val a = Lexer.long(trace, in)
         val c = in.readChar()
-        if (c != '"') Lexer.error("'\"'", c, trace)
+        if (c != '"') Lexer.error('\"', c, trace)
         a
       }
 
@@ -473,7 +473,7 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority1 with 
         } else {
           val a = Lexer.bigInteger(trace, in)
           val c = in.readChar()
-          if (c != '"') Lexer.error("'\"'", c, trace)
+          if (c != '"') Lexer.error('\"', c, trace)
           a
         }
 
@@ -502,7 +502,7 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority1 with 
       } else {
         val a = Lexer.bigInt(trace, in)
         val c = in.readChar()
-        if (c != '"') Lexer.error("'\"'", c, trace)
+        if (c != '"') Lexer.error('\"', c, trace)
         a
       }
 
@@ -531,7 +531,7 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority1 with 
       } else {
         val a = Lexer.float(trace, in)
         val c = in.readChar()
-        if (c != '"') Lexer.error("'\"'", c, trace)
+        if (c != '"') Lexer.error('\"', c, trace)
         a
       }
 
@@ -557,7 +557,7 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority1 with 
       } else {
         val a = Lexer.double(trace, in)
         val c = in.readChar()
-        if (c != '"') Lexer.error("'\"'", c, trace)
+        if (c != '"') Lexer.error('\"', c, trace)
         a
       }
 
@@ -584,7 +584,7 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority1 with 
         } else {
           val a = Lexer.bigDecimal(trace, in)
           val c = in.readChar()
-          if (c != '"') Lexer.error("'\"'", c, trace)
+          if (c != '"') Lexer.error('\"', c, trace)
           a
         }
 
@@ -610,7 +610,7 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority1 with 
       } else {
         val a = Lexer.bigDecimal(trace, in)
         val c = in.readChar()
-        if (c != '"') Lexer.error("'\"'", c, trace)
+        if (c != '"') Lexer.error('\"', c, trace)
         a
       }
 
@@ -662,10 +662,10 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority1 with 
 
       def unsafeDecode(trace: List[JsonError], in: RetractReader): Either[A, B] = {
         val c = in.nextNonWhitespace()
-        if (c != '{') Lexer.error("'{'", c, trace)
+        if (c != '{') Lexer.error('{', c, trace)
         var left: Any  = null
         var right: Any = null
-        if (Lexer.firstField(trace, in))
+        if (Lexer.firstField(in))
           while ({
             val field = Lexer.field(trace, in, matrix)
             if (field == -1) Lexer.skipValue(trace, in)
@@ -703,7 +703,7 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority1 with 
       }) ()
       return builder.result()
     }
-    Lexer.error("'['", c, trace)
+    Lexer.error('[', c, trace)
   }
 
   @inline private[json] def keyValueBuilder[K, V, T[X, Y] <: Iterable[(X, Y)]](
@@ -713,36 +713,20 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority1 with 
   )(implicit K: JsonFieldDecoder[K], V: JsonDecoder[V]): T[K, V] = {
     var c = in.nextNonWhitespace()
     if (c == '{') {
-      if (Lexer.firstField(trace, in))
+      if (Lexer.firstField(in))
         while ({
           val field  = Lexer.string(trace, in).toString
           val trace_ = new JsonError.ObjectAccess(field) :: trace
           c = in.nextNonWhitespace()
-          if (c != ':') Lexer.error("':'", c, trace)
+          if (c != ':') Lexer.error(':', c, trace)
           val value = V.unsafeDecode(trace_, in)
           builder += ((K.unsafeDecodeField(trace_, field), value))
           Lexer.nextField(trace, in)
         }) ()
       return builder.result()
     }
-    Lexer.error("'{'", c, trace)
+    Lexer.error('{', c, trace)
   }
-
-  // FIXME: remove in the next major version
-  private[json] def mapStringOrFail[A](f: String => Either[String, A]): JsonDecoder[A] =
-    new JsonDecoder.AbstractJsonDecoder[A] {
-      def unsafeDecode(trace: List[JsonError], in: RetractReader): A =
-        f(string.unsafeDecode(trace, in)) match {
-          case Right(value) => value
-          case Left(err)    => Lexer.error(err, trace)
-        }
-
-      override def unsafeFromJsonAST(trace: List[JsonError], json: Json): A =
-        f(string.unsafeFromJsonAST(trace, json)) match {
-          case Right(value) => value
-          case Left(err)    => Lexer.error(err, trace)
-        }
-    }
 }
 
 private[json] trait CollectionJsonDecoder[A] extends JsonDecoder[A]
@@ -782,7 +766,7 @@ private[json] trait DecoderLowPriority1 extends DecoderLowPriority2 {
             return x1
           } else return Array.empty
         }
-        Lexer.error("'['", c, trace)
+        Lexer.error('[', c, trace)
       }
     }
 
@@ -1219,16 +1203,6 @@ private[json] trait DecoderLowPriority3 extends DecoderLowPriority4 {
     }
   }
 
-  // FIXME: remove in the next major version
-  private[json] def parseJavaTime[A](f: String => A, s: String): Either[String, A] =
-    try new Right(f(s))
-    catch {
-      case ex: DateTimeException =>
-        new Left(s"${strip(s)} is not a valid ISO-8601 format, ${ex.getMessage}")
-      case _: IllegalArgumentException =>
-        new Left(s"${strip(s)} is not a valid ISO-8601 format")
-    }
-
   implicit val uuid: JsonDecoder[UUID] = new JsonDecoder.AbstractJsonDecoder[UUID] {
     def unsafeDecode(trace: List[JsonError], in: RetractReader): UUID = Lexer.uuid(trace, in)
 
@@ -1264,11 +1238,6 @@ private[json] trait DecoderLowPriority3 extends DecoderLowPriority4 {
       Lexer.error("expected a Currency", trace)
     }
   }
-
-  // FIXME: remove in the next major version
-  @noinline private[json] def strip(s: String, len: Int = 50): String =
-    if (s.length <= len) s
-    else s.substring(0, len) + "..."
 }
 
 private[json] trait DecoderLowPriority4 extends DecoderLowPriorityVersionSpecific {

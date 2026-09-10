@@ -106,10 +106,7 @@ lazy val zioJson = crossProject(JSPlatform, JVMPlatform, NativePlatform)
   .enablePlugins(NeoJmhPlugin)
   .settings(
     scalacOptions -= "-Xfatal-warnings", // not quite ready.
-
     // as per @fommil, optimization slows things down.
-    scalacOptions -= "-opt:l:inline",
-    scalacOptions -= "-opt-inline-from:zio.internal.**",
     scalacOptions ++= {
       if (scalaVersion.value == Scala3)
         Vector("-Yretain-trees", "-Xmax-inlines:128")

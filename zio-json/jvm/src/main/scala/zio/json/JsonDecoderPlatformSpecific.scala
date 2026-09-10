@@ -119,7 +119,7 @@ trait JsonDecoderPlatformSpecific[A] { self: JsonDecoder[A] =>
 
                 unsafeDecode(Nil, jsonReader)
               } catch {
-                case t @ JsonDecoder.UnsafeJson(trace) =>
+                case _ @ JsonDecoder.UnsafeJson(trace) =>
                   throw new Exception(JsonError.render(trace))
               }
 
@@ -168,8 +168,7 @@ trait JsonDecoderPlatformSpecific[A] { self: JsonDecoder[A] =>
             is match {
               case Some(c) =>
                 inQueue.offer(Take.chunk(c)) *> pollElements
-
-              case None =>
+              case _ =>
                 ended.set(true) *> inQueue.offer(Take.end) *> process.join *> pullRest
             }
           }

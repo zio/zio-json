@@ -215,24 +215,6 @@ object JsonEncoder extends GeneratedTupleEncoders with EncoderLowPriority1 with 
     override def toJsonAST(a: Char): Either[String, Json] = new Right(new Json.Str(a.toString))
   }
 
-  // FIXME: remove in the next major version
-  private[json] def explicit[A](f: A => String, g: A => Json): JsonEncoder[A] = new JsonEncoder.AbstractJsonEncoder[A] {
-    def unsafeEncode(a: A, indent: Option[Int], out: Write): Unit = out.write(f(a))
-
-    override def toJsonAST(a: A): Either[String, Json] = new Right(g(a))
-  }
-
-  // FIXME: remove in the next major version
-  private[json] def stringify[A](f: A => String): JsonEncoder[A] = new JsonEncoder.AbstractJsonEncoder[A] {
-    def unsafeEncode(a: A, indent: Option[Int], out: Write): Unit = {
-      out.write('"')
-      out.write(f(a))
-      out.write('"')
-    }
-
-    override def toJsonAST(a: A): Either[String, Json] = new Right(new Json.Str(f(a)))
-  }
-
   // FIXME: add tests
   def suspend[A](encoder0: => JsonEncoder[A]): JsonEncoder[A] =
     new JsonEncoder.AbstractJsonEncoder[A] {

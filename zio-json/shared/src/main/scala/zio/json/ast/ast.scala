@@ -152,7 +152,7 @@ sealed abstract class Json { self =>
         self.get(parent).flatMap { case Obj(fields) =>
           fields.collectFirst { case kv if kv._1 == field => Right(kv._2) } match {
             case Some(x) => x
-            case None    => Left(s"No such field: '$field'")
+            case _       => Left(s"No such field: '$field'")
           }
         }
 
@@ -293,7 +293,7 @@ sealed abstract class Json { self =>
             f(right.head).map(value => Arr(left ++ Chunk(value) ++ right.takeRight(right.length - 1)))
         }
 
-      case JsonCursor.FilterType(parent, t @ jsonType) =>
+      case JsonCursor.FilterType(parent, _ @jsonType) =>
         self.transformOrDelete(parent, delete)(json => jsonType.get(json).flatMap(f))
     }
 
@@ -345,8 +345,8 @@ object Json {
         (fields1 ++ fields2)
           .foldLeft(Map.empty[String, Int] -> 0) { case ((map, nextIndex), (name, _)) =>
             map.get(name) match {
-              case None    => map.updated(name, nextIndex) -> (nextIndex + 1)
               case Some(_) => map                          -> nextIndex
+              case _       => map.updated(name, nextIndex) -> (nextIndex + 1)
             }
           }
           ._1

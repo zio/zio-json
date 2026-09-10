@@ -668,7 +668,7 @@ private[json] object MacroHelpers {
             Expr.summon[scala.deriving.Mirror.Of[t]] match {
               case Some(mirror) =>
                 '{ DeriveJsonEncoder.gen[t](using summonInline[JsonCodecConfiguration])(using $mirror) }
-              case None =>
+              case _ =>
                 report.errorAndAbort(s"Cannot find or derive JsonEncoder for ${Type.show[t]}")
             }
           }
@@ -704,7 +704,7 @@ private[json] object MacroHelpers {
             Expr.summon[scala.deriving.Mirror.Of[t]] match {
               case Some(mirror) =>
                 '{ DeriveJsonDecoder.gen[t](using summonInline[JsonCodecConfiguration])(using $mirror) }
-              case None =>
+              case _ =>
                 report.errorAndAbort(s"Cannot find or derive JsonDecoder for ${Type.show[t]}")
             }
           }
@@ -745,12 +745,12 @@ private[json] object MacroHelpers {
         case '[t] =>
           Expr.summon[JsonDecoder[t]] match {
             case Some(d) => d.asExprOf[JsonDecoder[?]]
-            case None =>
+            case _ =>
               Expr.summon[scala.deriving.Mirror.Of[t]] match {
                 case Some(mirror) =>
                   '{ DeriveJsonDecoder.gen[t](using summonInline[JsonCodecConfiguration])(using $mirror) }
                     .asExprOf[JsonDecoder[?]]
-                case None =>
+                case _ =>
                   report.errorAndAbort(s"Cannot find or derive JsonDecoder for ${Type.show[t]}")
               }
           }
@@ -774,12 +774,12 @@ private[json] object MacroHelpers {
         case '[t] =>
           Expr.summon[JsonEncoder[t]] match {
             case Some(e) => e.asExprOf[JsonEncoder[?]]
-            case None =>
+            case _ =>
               Expr.summon[scala.deriving.Mirror.Of[t]] match {
                 case Some(mirror) =>
                   '{ DeriveJsonEncoder.gen[t](using summonInline[JsonCodecConfiguration])(using $mirror) }
                     .asExprOf[JsonEncoder[?]]
-                case None =>
+                case _ =>
                   report.errorAndAbort(s"Cannot find or derive JsonEncoder for ${Type.show[t]}")
               }
           }
@@ -876,7 +876,7 @@ private[json] object DeriveHelpers {
       def unsafeDecode(trace: List[JsonError], in: RetractReader): A = {
         Lexer.char(trace, in, '{')
         val ps: Array[Any] = Array.ofDim(len)
-        if (Lexer.firstField(trace, in))
+        if (Lexer.firstField(in))
           while ({
             var trace_ = trace
             val field  =
@@ -895,7 +895,7 @@ private[json] object DeriveHelpers {
                   Lexer.error("expected 'null'", trace_)
             } else if (noExtra) {
               throw UnsafeJson(
-                JsonError.Message(s"invalid extra field") :: trace
+                JsonError.Message("invalid extra field") :: trace
               )
             } else
               Lexer.skipValue(trace_, in)
@@ -938,7 +938,7 @@ private[json] object DeriveHelpers {
                   } else {
                     ps(field) = tcs(field).unsafeFromJsonAST(trace_, value)
                   }
-                case None =>
+                case _ =>
                   if (no_extra)
                     throw UnsafeJson(JsonError.Message("invalid extra field") :: trace)
               }
@@ -1051,7 +1051,7 @@ private[json] object DeriveHelpers {
             case Json.Str(value) =>
               namesMap.get(value) match {
                 case Some(idx) => tcs(idx).unsafeFromJsonAST(trace, Json.Obj(Chunk.empty)).asInstanceOf[A]
-                case None      => throw UnsafeJson(JsonError.Message("invalid enumeration value") :: trace)
+                case _      => throw UnsafeJson(JsonError.Message("invalid enumeration value") :: trace)
               }
             case _ => throw UnsafeJson(JsonError.Message("expected string") :: trace)
           }
@@ -1064,7 +1064,7 @@ private[json] object DeriveHelpers {
 
         def unsafeDecode(trace: List[JsonError], in: RetractReader): A = {
           Lexer.char(trace, in, '{')
-          if (Lexer.firstField(trace, in)) {
+          if (Lexer.firstField(in)) {
             val field =
               if (matrix2 eq null) Lexer.field(trace, in, matrix1) else Lexer.field128(trace, in, matrix1, matrix2)
             if (field != -1) {
@@ -1073,7 +1073,7 @@ private[json] object DeriveHelpers {
               Lexer.char(trace, in, '}')
               a.asInstanceOf[A]
             } else
-              throw UnsafeJson(JsonError.Message(s"invalid disambiguator") :: trace)
+              throw UnsafeJson(JsonError.Message("invalid disambiguator") :: trace)
           } else
             throw UnsafeJson(JsonError.Message("expected non-empty object") :: trace)
         }
@@ -1085,7 +1085,7 @@ private[json] object DeriveHelpers {
               namesMap.get(key) match {
                 case Some(idx) =>
                   tcs(idx).unsafeFromJsonAST(JsonError.ObjectAccess(key) :: trace, inner).asInstanceOf[A]
-                case None => throw UnsafeJson(JsonError.Message(s"invalid disambiguator") :: trace)
+                case _ => throw UnsafeJson(JsonError.Message("invalid disambiguator") :: trace)
               }
             case Json.Obj(_) => throw UnsafeJson(JsonError.Message("expected object with a single field") :: trace)
             case _           => throw UnsafeJson(JsonError.Message("expected object") :: trace)
@@ -1104,7 +1104,7 @@ private[json] object DeriveHelpers {
 
           Lexer.char(trace, in_, '{')
 
-          if (Lexer.firstField(trace, in_)) {
+          if (Lexer.firstField(in_)) {
             while ({
               if (Lexer.field(trace, in_, hintmatrix) != -1) {
                 val field =
@@ -1112,7 +1112,7 @@ private[json] object DeriveHelpers {
                   else Lexer.enumeration128(trace, in_, matrix1, matrix2)
 
                 if (field == -1) {
-                  throw UnsafeJson(JsonError.Message(s"invalid disambiguator") :: trace)
+                  throw UnsafeJson(JsonError.Message("invalid disambiguator") :: trace)
                 }
 
                 in_.rewind()
@@ -1138,11 +1138,11 @@ private[json] object DeriveHelpers {
                   namesMap.get(name) match {
                     case Some(idx) =>
                       tcs(idx).unsafeFromJsonAST(spans(idx) :: trace, json).asInstanceOf[A]
-                    case None => throw UnsafeJson(JsonError.Message(s"invalid disambiguator") :: trace)
+                    case _ => throw UnsafeJson(JsonError.Message("invalid disambiguator") :: trace)
                   }
                 case Some(_) =>
                   throw UnsafeJson(JsonError.Message(s"Non-string hint '$hintfield'") :: trace)
-                case None =>
+                case _ =>
                   throw UnsafeJson(JsonError.Message(s"missing hint '$hintfield'") :: trace)
               }
             case _ => throw UnsafeJson(JsonError.Message("expected object") :: trace)

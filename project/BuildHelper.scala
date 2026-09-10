@@ -46,14 +46,6 @@ object BuildHelper {
     "-Ywarn-value-discard"
   )
 
-  private def optimizerOptions(optimize: Boolean) =
-    if (optimize)
-      Seq(
-        "-opt:l:inline",
-        "-opt-inline-from:zio.internal.**"
-      )
-    else Nil
-
   def buildInfoSettings(packageName: String) =
     Seq(
       buildInfoKeys    := Seq[BuildInfoKey](organization, moduleName, name, version, scalaVersion, sbtVersion, isSnapshot),
@@ -131,20 +123,27 @@ object BuildHelper {
     Compile / console / initialCommands := initialCommandsStr
   )
 
-  def extraOptions(scalaVersion: String, optimize: Boolean) =
+  private def extraOptions(scalaVersion: String) =
     CrossVersion.partialVersion(scalaVersion) match {
       case Some((3, _)) =>
         Seq(
+          "-opt",
+          "-opt-inline:zio.json.internal.**",
           "-language:implicitConversions",
           "-Xignore-scala2-macros"
         )
       case Some((2, 13)) =>
         Seq(
+          "-Wopt",
+          "-opt:l:inline",
+          "-opt-inline-from:zio.json.internal.**",
           "-Ywarn-unused:params,-implicits",
           "-Wconf:msg=Boolean literals should be passed:s"
-        ) ++ std2xOptions ++ optimizerOptions(optimize)
+        ) ++ std2xOptions
       case Some((2, 12)) =>
         Seq(
+          "-opt:l:inline",
+          "-opt-inline-from:zio.json.internal.**",
           "-opt-warnings",
           "-Ywarn-extra-implicit",
           "-Ywarn-unused:_,imports",
@@ -160,7 +159,7 @@ object BuildHelper {
           "-Xsource:2.13",
           "-Xmax-classfile-name",
           "242"
-        ) ++ std2xOptions ++ optimizerOptions(optimize)
+        ) ++ std2xOptions
       case _ => Seq.empty
     }
 
@@ -209,7 +208,7 @@ object BuildHelper {
     crossScalaVersions := Seq(Scala212, Scala213, Scala3),
     javacOptions ++= Seq("-source", JdkReleaseVersion, "-target", JdkReleaseVersion),
     scalacOptions ++= Seq(s"-release:$JdkReleaseVersion"),
-    scalacOptions ++= stdOptions ++ extraOptions(scalaVersion.value, optimize = !isSnapshot.value),
+    scalacOptions ++= stdOptions ++ extraOptions(scalaVersion.value),
     libraryDependencies ++= {
       if (scalaVersion.value == Scala3) Seq.empty
       else
@@ -235,7 +234,16 @@ object BuildHelper {
     mimaCheckDirection    := "backward", // TODO: find how we can use "both" for patch versions of 1.x releases
     mimaBinaryIssueFilters ++= Seq(
       exclude[Problem]("zio.json.internal.*"),
-      exclude[Problem]("zio.json.yaml.internal.*")
+      exclude[Problem]("zio.json.yaml.internal.*"),
+      // FIXME: Remove before next release
+      exclude[Problem]("zio.json.DecoderLowPriority3.strip$default$2$"),
+      exclude[Problem]("zio.json.JsonDecoder.mapStringOrFail"),
+      exclude[Problem]("zio.json.JsonDecoder.parseJavaTime"),
+      exclude[Problem]("zio.json.JsonDecoder.strip"),
+      exclude[Problem]("zio.json.JsonDecoder.strip$default$2"),
+      exclude[Problem]("zio.json.JsonEncoder.explicit"),
+      exclude[Problem]("zio.json.JsonEncoder.stringify"),
+      exclude[Problem]("zio.json.JsonFieldDecoder.mapStringOrFail")
     ),
     mimaFailOnProblem := true
   )

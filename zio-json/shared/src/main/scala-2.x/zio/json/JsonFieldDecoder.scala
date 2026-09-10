@@ -73,16 +73,6 @@ object JsonFieldDecoder extends LowPriorityJsonFieldDecoder {
       }
   }
 
-  // FIXME: remove from the next major version
-  private[json] def mapStringOrFail[A](f: String => Either[String, A]): JsonFieldDecoder[A] =
-    new JsonFieldDecoder[A] {
-      def unsafeDecodeField(trace: List[JsonError], in: String): A =
-        f(string.unsafeDecodeField(trace, in)) match {
-          case Left(err)    => Lexer.error(err, trace)
-          case Right(value) => value
-        }
-    }
-
   private[json] def strip(s: String, len: Int = 50): String =
     if (s.length <= len) s
     else s.substring(0, len) + "..."

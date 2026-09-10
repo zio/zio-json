@@ -189,7 +189,7 @@ package handrolled {
           var geometries: List[Geometry] = null
           var subtype: Int               = -1
 
-          if (Lexer.firstField(trace, in))
+          if (Lexer.firstField(in))
             while ({
               val field = Lexer.field(trace, in, matrix)
               if (field == -1) Lexer.skipValue(trace, in)
@@ -298,7 +298,7 @@ package handrolled {
           var features: List[GeoJSON]         = null
           var subtype: Int                    = -1
 
-          if (Lexer.firstField(trace, in))
+          if (Lexer.firstField(in))
             while ({
               val field = Lexer.field(trace, in, matrix)
               if (field == -1) Lexer.skipValue(trace, in)

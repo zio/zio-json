@@ -53,7 +53,7 @@ object Generator {
   def printCaseClasses(input: String): Unit =
     input.fromJson[ast.Json].toOption match {
       case Some(json) => println(scala.Console.CYAN + generate(json) + scala.Console.RESET)
-      case None       => println(s"Invalid JSON: ${input}")
+      case _          => println(s"Invalid JSON: $input")
     }
 
   private[codegen] def pascalFormat(s: String): String = {
@@ -135,7 +135,7 @@ private[codegen] sealed trait JsonType extends Product with Serializable { self 
       //        }
       acc.get(name) match {
         case Some(rhsValue) => acc + (name -> lhsValue.unify(rhsValue))
-        case None           => acc + (name -> makeOptional(lhsValue))
+        case _              => acc + (name -> makeOptional(lhsValue))
       }
     }
 
@@ -229,7 +229,7 @@ object ${clazz.name} {
         }
         key match {
           case Some(key) => CaseClass(pascalFormat(key), result)
-          case None      => CaseClass("RootObject", result)
+          case _         => CaseClass("RootObject", result)
         }
     }
 
