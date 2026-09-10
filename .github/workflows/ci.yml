@@ -32,7 +32,7 @@ jobs:
       - name: Cache scala dependencies
         uses: coursier/cache-action@v7
       - name: Lint code
-        run: sbt "++2.12.x; check; ++2.13.x; check; ++3.3.x; check"
+        run: sbt "++2.12.x; check; ++2.13.x; check; ++3.x; check"
 
   benchmarks:
     runs-on: ubuntu-latest
