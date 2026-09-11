@@ -4,6 +4,7 @@ import com.typesafe.tools.mima.core.ProblemFilters.exclude
 import com.typesafe.tools.mima.plugin.MimaKeys.mimaPreviousArtifacts
 import explicitdeps.ExplicitDepsPlugin.autoImport.moduleFilterRemoveValue
 import sbtcrossproject.CrossPlugin.autoImport.crossProject
+import zio.sbt.githubactions.Step
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
 
@@ -25,7 +26,20 @@ inThisBuild(
       val centralSnapshots = "https://central.sonatype.com/repository/maven-snapshots/"
       if (isSnapshot.value) Some("central-snapshots" at centralSnapshots)
       else localStaging.value
-    }
+    },
+    ciEnabledBranches                := Seq("series/2.x"),
+    ciTargetJavaVersions             := Seq("17", "21", "25"),
+    ciCheckArtifactsCompilationSteps :=
+      ciCheckArtifactsCompilationSteps.value ++ Seq(
+        Step.SingleStep(
+          name = "Compile benchmarks",
+          run = Some("sbt ++2.13.x jmh:compile")
+        ),
+        Step.SingleStep(
+          name = "Check binary compatibility",
+          run = Some("sbt +mimaReportBinaryIssues")
+        )
+      )
   )
 )
 
@@ -64,10 +78,16 @@ addCommandAlias(
   "zioJsonMacrosNative/test; zioJsonInteropScalaz7xNative/test"
 )
 
+addCommandAlias(
+  "lint",
+  "++2.12.x; check; ++2.13.x; check; ++3.x; check"
+)
+
 val zioVersion = "2.1.26"
 
 lazy val zioJsonRoot = project
   .in(file("."))
+  .enablePlugins(ZioSbtCiPlugin)
   .settings(
     publish / skip        := true,
     mimaPreviousArtifacts := Set(),
