@@ -79,21 +79,12 @@ sealed abstract class Json { self =>
   }
 
   override final def equals(that: Any): Boolean = {
-    def objEqual(left: Map[String, Json], right: Chunk[(String, Json)]): Boolean =
-      right.forall { case (key, r) =>
-        left.get(key) match {
-          case Some(l) if l == r => true
-          case _                 => false
-        }
-      }
-
     that match {
       case that: Json =>
         (self, that) match {
           case (Obj(l), Obj(r)) =>
-            // order does not matter for JSON Objects
-            if (l.length == r.length) objEqual(l.toMap, r)
-            else false
+            // order does not matter for JSON Objects; compare maps so duplicate keys cannot mask missing keys
+            l.toMap == r.toMap
           case (Arr(l), Arr(r))   => l == r
           case (Bool(l), Bool(r)) => l == r
           case (Str(l), Str(r))   => l == r

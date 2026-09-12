@@ -169,6 +169,14 @@ object JsonSpec extends ZIOSpecDefault {
 
           assertTrue(obj1 != obj2 && obj2 != obj1)
         },
+        test("equality fails when duplicate keys mask distinct key sets") {
+          val obj1 = Json.Obj(Chunk("a" -> Json.Str("x"), "b" -> Json.Str("x")))
+          val obj2 = Json.Obj(Chunk("a" -> Json.Str("x"), "a" -> Json.Str("x")))
+          val obj3 = Json.Obj(Chunk("x" -> Json.Num(1), "y" -> Json.Num(2)))
+          val obj4 = Json.Obj(Chunk("x" -> Json.Num(1), "x" -> Json.Num(1)))
+
+          assertTrue(obj1 != obj2 && obj2 != obj1 && obj3 != obj4 && obj4 != obj3)
+        },
         test("equality fails for different objects of different sizes") {
           val obj1 = Json.Obj(
             "quux" -> Json.Str("1"),
