@@ -162,10 +162,8 @@ sealed abstract class Json { self =>
       case s: Str  => s.value.hashCode
       case n: Num  => n.value.hashCode
       case b: Bool => b.value.hashCode
-      case o: Obj  =>
-        var result = 0
-        o.fields.foreach(tuple => result = result ^ tuple.hashCode)
-        result
+      case o: Obj =>
+        o.fields.toMap.hashCode
       case a: Arr =>
         var result = 0
         a.elements.foreach { json =>
