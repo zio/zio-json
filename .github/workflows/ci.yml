@@ -44,15 +44,15 @@ jobs:
     - name: Cache Dependencies
       uses: coursier/cache-action@v8.1.1
     - name: Check all code compiles
-      run: sbt +Test/compile
+      run: sbt --no-colors +Test/compile
     - name: Compile benchmarks
       run: sbt ++2.13.x jmh:compile
     - name: Check binary compatibility
       run: sbt +mimaReportBinaryIssues
     - name: Check artifacts build process
-      run: sbt +publishLocal
+      run: sbt --no-colors +publishLocal
     - name: Check website build process
-      run: sbt docs/clean; sbt docs/buildWebsite
+      run: sbt --no-colors docs/clean; sbt --no-colors docs/buildWebsite
   lint:
     name: Lint
     runs-on: ubuntu-latest
@@ -75,9 +75,9 @@ jobs:
     - name: Cache Dependencies
       uses: coursier/cache-action@v8.1.1
     - name: Check if the site workflow is up to date
-      run: sbt ciCheckGithubWorkflow
+      run: sbt --no-colors ciCheckGithubWorkflow
     - name: Lint
-      run: sbt lint
+      run: sbt --no-colors lint
   test:
     name: Test
     runs-on: ubuntu-latest
@@ -107,11 +107,14 @@ jobs:
       with:
         fetch-depth: '0'
     - name: Test
-      run: sbt +test
+      run: sbt --no-colors +test
   update-readme:
     name: Update README
     runs-on: ubuntu-latest
     continue-on-error: false
+    permissions:
+      contents: read
+      pull-requests: write
     if: ${{ (github.event_name == 'release') && (github.event.action == 'published') }}
     steps:
     - name: Git Checkout
@@ -131,7 +134,7 @@ jobs:
     - name: Cache Dependencies
       uses: coursier/cache-action@v8.1.1
     - name: Generate Readme
-      run: sbt docs/generateReadme
+      run: sbt --no-colors docs/generateReadme
     - name: Commit Changes
       run: |
         git config --local user.email "zio-assistant[bot]@users.noreply.github.com"
@@ -160,6 +163,7 @@ jobs:
         token: ${{ steps.generate-token.outputs.token }}
         delete-branch: true
         title: Update README.md
+        add-paths: README.md
     - name: Approve PR
       if: ${{ steps.cpr.outputs.pull-request-number }}
       run: gh pr review "$PR_URL" --approve
@@ -212,7 +216,7 @@ jobs:
     - name: Cache Dependencies
       uses: coursier/cache-action@v8.1.1
     - name: Release
-      run: sbt ci-release
+      run: sbt --no-colors ci-release
       env:
         PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
         PGP_SECRET: ${{ secrets.PGP_SECRET }}
@@ -248,7 +252,7 @@ jobs:
         node-version: 24.12.0
         registry-url: https://registry.npmjs.org
     - name: Publish Docs to NPM Registry
-      run: sbt docs/publishToNpm
+      run: sbt --no-colors docs/publishToNpm
   notify-docs-release:
     name: Notify Docs Release
     runs-on: ubuntu-latest
