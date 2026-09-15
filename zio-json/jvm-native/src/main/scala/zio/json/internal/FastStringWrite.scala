@@ -165,5 +165,9 @@ final class FastStringWrite(initial: Int) extends Write {
 
   def buffer: CharSequence = CharBuffer.wrap(chars, 0, count)
 
+  // the live backing buffer, only valid until the next write or reset: for Utf8Bytes' single-pass transcode
+  private[internal] def unsafeChars: Array[Char] = chars
+  private[internal] def unsafeLength: Int        = count
+
   override def toString: String = new String(chars, 0, count)
 }
