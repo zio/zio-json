@@ -285,7 +285,7 @@ sealed abstract class Json { self =>
       case JsonCursor.DownElement(parent, index) =>
         self.transformOrDelete(parent, false) { case Arr(elements) =>
           val (left, right) = elements.splitAt(index)
-          if (right.isEmpty)
+          if (index < 0 || right.isEmpty)
             Left(s"The array does not have index ${index}")
           else if (delete)
             Right(Arr(left ++ right.takeRight(right.length - 1)))
