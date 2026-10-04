@@ -16,4 +16,4 @@ resolvers += "Sonatype Snapshots" at "https://central.sonatype.com/repository/ma
 addSbtPlugin("dev.zio"       % "zio-sbt-website" % "0.7.0")
 addSbtPlugin("ch.epfl.scala" % "sbt-scalafix"    % "0.14.9")
 
-libraryDependencies += "org.snakeyaml" % "snakeyaml-engine" % "3.1.1"
+libraryDependencies += "org.snakeyaml" % "snakeyaml-engine" % "3.2"
