@@ -17,7 +17,7 @@ package zio.json
 
 import zio.json.ast.Json
 import zio.json.ast.JsonType.rightNull
-import zio.json.internal.{ FastStringWrite, SafeNumbers, Write }
+import zio.json.internal.{ FastStringWrite, SafeNumbers, Utf8Bytes, Write }
 import zio.json.javatime.serializers
 import zio.{ Chunk, NonEmptyChunk }
 import java.util.UUID
@@ -72,6 +72,31 @@ trait JsonEncoder[A] extends JsonEncoderPlatformSpecific[A] {
       val write = writePool.acquire()
       unsafeEncode(a, indent, write)
       write.toString
+    } finally writePool.release()
+  }
+
+  /**
+   * Encodes the specified value to UTF-8 bytes, with the specified indentation level.
+   *
+   * The value is encoded into a reused per-thread buffer and transcoded to UTF-8 from there, so on the JVM and Native
+   * no intermediate `String` is allocated: this is the allocation friendly way to produce a payload that is about to
+   * leave the process as bytes anyway, e.g. an HTTP response body. (On Scala.js it is equivalent to
+   * `encodeJson(a, indent).toString.getBytes(UTF_8)`.)
+   */
+  final def encodeJsonBytes(a: A, indent: Option[Int] = None): Chunk[Byte] =
+    Chunk.fromArray(encodeJsonBytesArray(a, indent))
+
+  /**
+   * Encodes the specified value to UTF-8 bytes, with the specified indentation level.
+   *
+   * See [[encodeJsonBytes]]; this is the same array before it is wrapped in a `Chunk`.
+   */
+  final def encodeJsonBytesArray(a: A, indent: Option[Int] = None): Array[Byte] = {
+    val writePool = JsonEncoder.writePools.get
+    try {
+      val write = writePool.acquire()
+      unsafeEncode(a, indent, write)
+      Utf8Bytes.fromWrite(write)
     } finally writePool.release()
   }
 
