@@ -83,7 +83,7 @@ addCommandAlias(
   "++2.12.x; check; ++2.13.x; check; ++3.x; check"
 )
 
-val zioVersion = "2.1.26"
+val zioVersion = "2.1.27"
 
 lazy val zioJsonRoot = project
   .in(file("."))
