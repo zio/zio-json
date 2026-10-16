@@ -9,23 +9,35 @@ import java.nio.file.Files
 
 object filehelpers {
 
+  /**
+   * System property naming the module root (the directory holding `src/test/resources/golden`). Needed when test
+   * classes are not under `<module>/target`, e.g. sbt 2's `target/out/`. When unset, the root is found from `target`.
+   */
+  val moduleRootProperty: String = "zio.json.golden.moduleRoot"
+
   def getRootDir(file: File)(implicit trace: Trace): Task[File] =
     if (file.getName == "target") ZIO.succeed(file)
     else ZIO.attempt(file.getParentFile).flatMap(getRootDir)
 
-  def createGoldenDirectory(pathToDir: String)(implicit trace: Trace): Task[Path] = {
-    val rootFile =
-      try new File(getClass.getResource("/").toURI)
-      catch { // fixes "java.lang.IllegalArgumentException: URI is not hierarchical" in unit tests with Scala 2.12.20
-        case _: IllegalArgumentException => new File(getClass.getResource(".").toURI)
-      }
+  private[golden] def resolveModuleRoot(moduleRootOverride: Option[String])(implicit trace: Trace): Task[File] =
+    moduleRootOverride match {
+      case Some(moduleRoot) => ZIO.succeed(new File(moduleRoot))
+      case None             =>
+        val rootFile =
+          try new File(getClass.getResource("/").toURI)
+          catch { // fixes "java.lang.IllegalArgumentException: URI is not hierarchical" in unit tests with Scala 2.12.20
+            case _: IllegalArgumentException => new File(getClass.getResource(".").toURI)
+          }
+        getRootDir(rootFile).map(_.getParentFile)
+    }
+
+  def createGoldenDirectory(pathToDir: String)(implicit trace: Trace): Task[Path] =
     for {
-      baseFile <- getRootDir(rootFile)
-      goldenDir = new File(baseFile.getParentFile, pathToDir)
-      path      = goldenDir.toPath
-      _        <- ZIO.attemptBlocking(goldenDir.mkdirs)
+      moduleRoot <- resolveModuleRoot(sys.props.get(moduleRootProperty))
+      goldenDir   = new File(moduleRoot, pathToDir)
+      path        = goldenDir.toPath
+      _          <- ZIO.attemptBlocking(goldenDir.mkdirs)
     } yield path
-  }
 
   def writeSampleToFile(path: Path, sample: GoldenSample)(implicit trace: Trace): IO[IOException, Unit] = {
     val jsonString = sample.toJsonPretty
