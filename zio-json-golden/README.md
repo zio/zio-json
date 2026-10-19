@@ -80,4 +80,13 @@ This can be done by supplying a different `GoldenConfiguration` to the scope
 
 ```
 
+### Locating the golden directory
+
+Golden files live under `<module>/src/test/resources/golden/`. By default the module root is found by walking up from the test classes to the enclosing `target/` directory, which matches sbt 1's layout. Build tools that put test classes elsewhere (e.g. sbt 2, under the build's root `target/out/`) must pass the module root as the `zio.json.golden.moduleRoot` system property:
+
+```scala
+// sbt 2, with `Test / fork := true`
+Test / javaOptions += s"-Dzio.json.golden.moduleRoot=${baseDirectory.value}"
+```
+
 
