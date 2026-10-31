@@ -78,7 +78,7 @@ sealed abstract class Json { self =>
     transformOrDelete(c, delete = true)(_ => rightNull)
   }
 
-  override final def equals(that: Any): Boolean = {
+  override final def equals(that: Any): Boolean =
     that match {
       case that: Json =>
         (self, that) match {
@@ -95,7 +95,6 @@ sealed abstract class Json { self =>
 
       case _ => false
     }
-  }
 
   final def foldDown[A](initial: A)(f: (A, Json) => A): A = {
     val a = f(initial, self)
@@ -162,7 +161,7 @@ sealed abstract class Json { self =>
       case s: Str  => s.value.hashCode
       case n: Num  => n.value.hashCode
       case b: Bool => b.value.hashCode
-      case o: Obj =>
+      case o: Obj  =>
         o.fields.toMap.hashCode
       case a: Arr =>
         var result = 0
