@@ -650,6 +650,30 @@ object DecoderSpec extends ZIOSpecDefault {
             json.as[(Foo, Bar)] == Right((Foo(1), Bar("foo")))
           )
         },
+        test("orElse - lazily evaluates fallback decoder at most once") {
+          var count = 0
+
+          val decoder = JsonDecoder.int.orElseEither {
+            count += 1
+            JsonDecoder.string
+          }
+
+          val r1 = decoder.decodeJson("1")
+          val c1 = count
+          val r2 = decoder.decodeJson("\"a\"")
+          val r3 = decoder.decodeJson("\"b\"")
+          val r4 = decoder.fromJsonAST(Json.Str("c"))
+          val c2 = count
+
+          assertTrue(
+            r1 == Right(Left(1)),
+            c1 == 0,
+            r2 == Right(Right("a")),
+            r3 == Right(Right("b")),
+            r4 == Right(Right("c")),
+            c2 == 1
+          )
+        },
         test("option custom codec") {
           val json = """{"keyStatus": "certified"}"""
           final case class Foo(v: String)

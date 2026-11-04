@@ -67,17 +67,19 @@ trait JsonDecoder[A] extends JsonDecoderPlatformSpecific[A] {
 
   final def bothWith[B, C](that: => JsonDecoder[B])(f: (A, B) => C): JsonDecoder[C] =
     new JsonDecoder.AbstractJsonDecoder[C] {
+      private[this] lazy val thatDecoder: JsonDecoder[B] = that
+
       override def unsafeDecode(trace: List[JsonError], in: RetractReader): C = {
         val rr = RecordingReader(in)
         val a  = self.unsafeDecode(trace, rr)
         rr.rewind()
-        val b = that.unsafeDecode(trace, rr)
+        val b = thatDecoder.unsafeDecode(trace, rr)
         f(a, b)
       }
 
       override def unsafeFromJsonAST(trace: List[JsonError], json: Json): C = {
         val a = self.unsafeFromJsonAST(trace, json)
-        val b = that.unsafeFromJsonAST(trace, json)
+        val b = thatDecoder.unsafeFromJsonAST(trace, json)
         f(a, b)
       }
     }
@@ -144,26 +146,28 @@ trait JsonDecoder[A] extends JsonDecoderPlatformSpecific[A] {
    */
   final def orElse[A1 >: A](that: => JsonDecoder[A1]): JsonDecoder[A1] =
     new JsonDecoder.AbstractJsonDecoder[A1] {
+      private[this] lazy val thatDecoder: JsonDecoder[A1] = that
+
       def unsafeDecode(trace: List[JsonError], in: RetractReader): A1 = {
         val rr = RecordingReader(in)
         try self.unsafeDecode(trace, rr)
         catch {
           case _: JsonDecoder.UnsafeJson | _: UnexpectedEnd =>
             rr.rewind()
-            that.unsafeDecode(trace, rr)
+            thatDecoder.unsafeDecode(trace, rr)
         }
       }
 
       override def unsafeFromJsonAST(trace: List[JsonError], json: Json): A1 =
         try self.unsafeFromJsonAST(trace, json)
         catch {
-          case _: JsonDecoder.UnsafeJson | _: UnexpectedEnd => that.unsafeFromJsonAST(trace, json)
+          case _: JsonDecoder.UnsafeJson | _: UnexpectedEnd => thatDecoder.unsafeFromJsonAST(trace, json)
         }
 
       override def unsafeDecodeMissing(trace: List[JsonError]): A1 =
         try self.unsafeDecodeMissing(trace)
         catch {
-          case _: JsonDecoder.UnsafeJson | _: UnexpectedEnd => that.unsafeDecodeMissing(trace)
+          case _: JsonDecoder.UnsafeJson | _: UnexpectedEnd => thatDecoder.unsafeDecodeMissing(trace)
         }
     }
 
@@ -293,7 +297,7 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority1 with 
 
   def suspend[A](decoder0: => JsonDecoder[A]): JsonDecoder[A] =
     new MappedJsonDecoder[A] {
-      private[json] def underlying: JsonDecoder[A] = decoder0
+      private[json] def underlying: JsonDecoder[A] = decoder
 
       lazy val decoder = decoder0
 
