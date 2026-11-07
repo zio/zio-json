@@ -3,7 +3,7 @@ id: golden-testing
 title: "Golden Testing"
 ---
 
-Golden testing, also called snapshot testing, checks that the JSON produced by your encoder does not change unexpectedly.
+Golden testing (snapshot testing) checks that the JSON produced by your encoder does not change unexpectedly.
 The first time a golden test runs, it generates sample values, encodes them, and stores the JSON in a file. Later runs generate new samples and compare them with the stored file. If the output differs, the test fails and writes the new output next to the stored file, so you can review the change.
 
 The `zio-json-golden` module provides the `goldenTest` function for [ZIO Test](https://zio.dev/reference/test/). It removes the need to write a hand-made expected string for each type.
@@ -45,11 +45,11 @@ The test name is `golden test for <TypeName>`, and the type name is taken from t
 
 ## Lifecycle of a Golden File
 
-The golden file is stored under `src/test/resources/golden/` in the module. The file name is the short type name with a `.json` extension, for example `src/test/resources/golden/Banana.json`. A golden file contains a JSON array with the encoded samples, and the default number of samples is 20.
+The golden file is stored under `src/test/resources/golden/` in the module. The file name is the short type name with a JSON file extension, for example `src/test/resources/golden/Banana.json`. A golden file contains a JSON array with the encoded samples, and the default number of samples is 20.
 
 The test behaves differently depending on which files exist:
 
-- **No golden file exists:** the test creates `Banana_new.json` with the generated samples and fails with a message. To accept the output, remove the `_new` suffix from the file name and run the test again.
+- **No golden file exists:** the test creates `Banana_new.json` with the samples and fails with a message. To accept the output, remove the `_new` suffix from the file name and run the test again.
 - **The golden file exists and the output matches:** the test passes.
 - **The golden file exists and the output differs:** the test writes the new output to `Banana_changed.json` and fails. If the change is intended, copy the contents of `Banana_changed.json` over `Banana.json` and run the test again. If the change is not intended, the test has found a regression.
 
@@ -89,13 +89,13 @@ Set `relativePath` when two types have the same short name, because both golden 
 
 ## Sample Generation
 
-Golden tests compare the output of your encoder with samples produced by the generator, so the generator must produce the same values on each run. Avoid generators that depend on the clock, the file system or other external state.
+Golden tests compare the output of your encoder with samples from the generator, so the generator must return the same values on each run. Avoid generators that depend on the clock, the file system or other external state.
 
 Generators with a fixed range or a small set of cases are easier to review than generators with large ranges, because the golden file grows with `sampleSize`.
 
 ## Locating the Module Root
 
-The golden directory is found relative to the module root. By default, the module root is found by walking up from the test classes to the enclosing `target/` directory. This matches the layout used by sbt 1.
+The module root is the directory that holds `src/test/resources/golden/`. By default, the test walks up from its classes to the enclosing `target/` directory, which matches the layout used by sbt 1.
 
 Build tools that place test classes somewhere else, such as sbt 2 under the build's root `target/out/`, must pass the module root with the `zio.json.golden.moduleRoot` system property:
 
