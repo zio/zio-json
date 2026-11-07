@@ -11,6 +11,10 @@ const sidebars = {
         "encoding",
         "configuration",
         "manual-instances",
+        "json-ast",
+        "streaming",
+        "yaml",
+        "golden-testing",
         "performance",
         "security",
         {
