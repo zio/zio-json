@@ -234,6 +234,42 @@ Pineapple(Nil).toJson
 """{}""".fromJson[Pineapple]
 ```
 
+## jsonExclude
+
+Annotating a case class field with `@jsonExclude` leaves that field out of the encoded JSON. Use it for values that should stay in memory, such as secrets or cached data, and that must not be sent to other systems.
+
+```scala mdoc
+case class Session(user: String, @jsonExclude token: String)
+
+object Session {
+  implicit val codec: JsonCodec[Session] = DeriveJsonCodec.gen[Session]
+}
+```
+
+The encoder skips the excluded field:
+
+```scala mdoc
+Session("alice", "secret").toJson
+```
+
+The decoder does not skip the field. If the JSON contains the field, its value is decoded, and if the JSON does not contain it, decoding fails unless the field has a default value:
+
+```scala mdoc
+"""{"user":"alice"}""".fromJson[Session]
+```
+
+To make the field optional when decoding, give it a default value:
+
+```scala mdoc
+case class SessionWithDefault(user: String, @jsonExclude token: String = "")
+
+object SessionWithDefault {
+  implicit val codec: JsonCodec[SessionWithDefault] = DeriveJsonCodec.gen[SessionWithDefault]
+}
+
+"""{"user":"alice"}""".fromJson[SessionWithDefault]
+```
+
 ## @jsonDerive
 
 **Requires zio-json-macros**
