@@ -24,6 +24,7 @@ We define a case class with a derived codec first:
 
 ```scala mdoc:silent
 import zio.json._
+import zio.json.ast.Json
 import zio.json.yaml._
 
 case class Person(name: String, age: Int, email: Option[String])
@@ -47,7 +48,7 @@ Json.Obj("name" -> Json.Str("Alice"), "tags" -> Json.Arr(Json.Str("admin"), Json
 
 ## Decoding from YAML
 
-The `fromYaml` method on a `String` parses YAML and decodes the result with a `JsonDecoder`:
+The `String#fromYaml` extension method parses YAML and decodes the result with a `JsonDecoder`:
 
 ```scala mdoc
 val yaml: String =
@@ -58,7 +59,7 @@ val yaml: String =
 yaml.fromYaml[Person]
 ```
 
-If the input is not valid YAML, or the resulting structure does not match the decoder, `fromYaml` returns a `Left` with an error message:
+If the input is not valid YAML, or the resulting structure does not match the decoder, `String#fromYaml` returns a `Left` with an error message:
 
 ```scala mdoc
 "name: [unclosed".fromYaml[Person]
@@ -99,7 +100,7 @@ val node = Person("Carol", 25, None).toYamlAST()
 node.isRight
 ```
 
-To go from a YAML string to a `Json` value without decoding into a domain type, use the `fromYaml` method with the `Json` decoder:
+To go from a YAML string to a `Json` value without decoding into a domain type, use `String#fromYaml` with `Json` as the type:
 
 ```scala mdoc
 """items:
