@@ -67,6 +67,8 @@ The `Json#get` method takes a `JsonCursor` and returns the node at that location
 user.asObject.map(_.get("name"))
 ```
 
+Checking for a field that is not present returns `false` inside an `Option`:
+
 ```scala mdoc
 user.asObject.map(_.contains("nickname"))
 ```
@@ -115,6 +117,8 @@ The `delete` method removes the node at a cursor. The `relocate` method moves a 
 user.delete(JsonCursor.field("avatar"))
 ```
 
+Relocating `tags` to `avatar` replaces the `null` value there, and removes `tags` from its original location:
+
 ```scala mdoc
 user.relocate(JsonCursor.field("tags"), JsonCursor.field("avatar"))
 ```
@@ -157,6 +161,8 @@ The `toJson` extension on `Json` renders the AST as a compact string, and `toJso
 ```scala mdoc
 user.toJsonPretty
 ```
+
+Parsing a string into the AST uses the same `fromJson` method as domain types, with `Json` as the type:
 
 ```scala mdoc
 """{"id": 7, "ok": true}""".fromJson[Json]
