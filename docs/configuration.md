@@ -252,21 +252,27 @@ The encoder skips the excluded field:
 Session("alice", "secret").toJson
 ```
 
-The decoder does not skip the field. If the JSON contains the field, its value is decoded, and if the JSON does not contain it, decoding fails unless the field has a default value:
+The decoder does not skip the field. If the JSON contains the field, its value is decoded:
+
+```scala mdoc
+"""{"user":"alice","token":"abc"}""".fromJson[Session]
+```
+
+If the JSON does not contain the field, decoding fails unless the field has a default value:
 
 ```scala mdoc
 """{"user":"alice"}""".fromJson[Session]
 ```
 
-To make the field optional when decoding, give it a default value:
+To make the field optional when decoding, give it a default value. Like the default-value example in [Decoding](./decoding.md), the codec is defined outside the companion object:
 
-```scala mdoc
+```scala mdoc:silent
 case class SessionWithDefault(user: String, @jsonExclude token: String = "")
 
-object SessionWithDefault {
-  implicit val codec: JsonCodec[SessionWithDefault] = DeriveJsonCodec.gen[SessionWithDefault]
-}
+implicit val sessionWithDefaultCodec: JsonCodec[SessionWithDefault] = DeriveJsonCodec.gen[SessionWithDefault]
+```
 
+```scala mdoc
 """{"user":"alice"}""".fromJson[SessionWithDefault]
 ```
 
