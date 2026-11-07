@@ -106,6 +106,4 @@ Test / javaOptions += s"-Dzio.json.golden.moduleRoot=${baseDirectory.value}"
 
 ## Common Mistakes
 
-A golden test for a type that is not encodable fails at compile time, because `goldenTest` needs a `JsonEncoder`.
-
 If a golden file is edited by hand, the test compares the sample with the edited file. Change golden files only through the `_new` and `_changed` workflow above, so that the content always matches what the encoder produces.
