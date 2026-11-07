@@ -56,9 +56,14 @@ Both methods expect exactly one value in the stream, and they may not consume th
 Use the JSON Lines format, one value per line, when you have a sequence of values that you want to process one at a time.
 `JsonEncoder#encodeJsonLinesPipeline` writes each value followed by a newline, and `JsonDecoder#decodeJsonPipeline` with `JsonStreamDelimiter.Newline` reads them back:
 
-```scala mdoc
+```scala mdoc:silent
 val events: ZStream[Any, Nothing, Event] =
   ZStream(Event(1, "created"), Event(2, "updated"), Event(3, "deleted"))
+```
+
+The stream is encoded with the line-delimited pipeline:
+
+```scala mdoc
 
 val lines: String =
   runSync(events.via(JsonEncoder[Event].encodeJsonLinesPipeline).runCollect.map(_.mkString))
@@ -90,6 +95,8 @@ val array: String =
 
 array
 ```
+
+Decoding that string with the default delimiter reads each element back:
 
 ```scala mdoc
 val fromArray: Chunk[Event] =
