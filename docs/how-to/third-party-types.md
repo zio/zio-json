@@ -111,7 +111,7 @@ A `JsonCodec[A]` is one value holding an encoder and a decoder. Make one with `J
 
 ```scala mdoc:silent
 object MoneyCodecs {
-  implicit val codec: JsonCodec[Money] =
+  implicit val moneyCodec: JsonCodec[Money] =
     JsonCodec[String].transformOrFail(parseMoney, formatMoney)
 }
 ```
@@ -140,7 +140,7 @@ println(Receipt(7, Money(300, "EUR")).toJson)
 | `JsonDecoder` only    | Reading JSON                 | The type is only received, never written     |
 | `JsonCodec`           | Both, kept together          | The type is used in both directions          |
 
-A codec keeps the two halves side by side, so a change to the format is made in one place. Separate instances let you supply only the direction you need. Provide one style per type in a given scope. If a `JsonCodec[Money]` and a separate `JsonEncoder[Money]` are both visible, the compiler may report an ambiguous implicit.
+A codec keeps the two halves side by side, so a change to the format is made in one place. Separate instances let you supply only the direction you need. Pick one style per type, so that only one instance of each type is in scope.
 
 ## See also
 

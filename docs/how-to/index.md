@@ -3,7 +3,7 @@ id: index
 title: "How-to guides"
 ---
 
-How-to guides answer one question each: "How do I do X?" Each guide starts with a goal and gives numbered steps. If you are new to ZIO JSON, start with the [Getting Started](../tutorial/getting-started.mdx) tutorial first.
+How-to guides answer one question each: "How do I do X?" Each guide starts with a goal and gives numbered steps. If you are new to ZIO JSON, start with the [Getting Started](../tutorial/getting-started) tutorial first.
 
 ## Encoding and decoding
 
