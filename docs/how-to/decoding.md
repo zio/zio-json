@@ -56,7 +56,7 @@ The bytes are turned into characters as the parser consumes them, so peak memory
 
 A chunk that is already backed by a single array — what `Chunk.fromArray` produces, and what an HTTP body handed over from Netty looks like — is read in place, with no copy at all. Other shapes, such as a body assembled from several network reads, are pulled through a small fixed window.
 
-The input is expected to be UTF-8, as [RFC 8259](https://www.rfc-editor.org/rfc/rfc8259#section-8.1) requires for JSON interchange. Malformed input decodes to the replacement character, as `new String(bytes, UTF_8)` does. Errors are reported exactly as for the `CharSequence` variant.
+The input is expected to be UTF-8, as [RFC 8259](https://www.rfc-editor.org/rfc/rfc8259#section-8.1) requires for JSON interchange. On the JVM, malformed input decodes to the replacement character, as `new String(bytes, UTF_8)` does. Errors are reported exactly as for the `CharSequence` variant.
 
 For payloads that do not fit in memory at all, use `JsonDecoder[A].decodeJsonStreamInput(stream)` to decode straight from a `ZStream[R, Throwable, Byte]`.
 
@@ -109,7 +109,7 @@ object Fruit {
 """{ "Apple": { "poison": false }}""".fromJson[Fruit]
 ```
 
-### String-based union types (Enum)
+### String-based union types (Scala 3 only)
 The codecs support string-based union types (enums) out of the box. This is useful when the overhead of a Enum is not desired.
 
 ```scala
@@ -127,112 +127,11 @@ Decoding fail because 'Pear' is not a valid value
 
 Almost all of the standard library data types are supported as fields on the case class, and it is easy to add support if one is missing.
 
-### Sealed families and enums for Scala 3
-Sealed families where all members are only objects, or a Scala 3 enum with all cases parameterless are interpreted as enumerations and will encode 1:1 with their value-names.
-```scala
-enum Foo derives JsonDecoder:
-  case Bar
-  case Baz
-  case Qux
-```
-or
-```scala
-sealed trait Foo derives JsonDecoder
-object Foo:
-  case object Bar extends Foo
-  case object Baz extends Foo
-  case object Qux extends Foo
-```
+For decoding sealed families and enums of parameterless cases as plain strings, see [Sealed Traits](./sealed-traits.md).
 
 ## Manual instances
 
-Sometimes it is easier to reuse an existing `JsonDecoder` rather than generate a new one. This can be accomplished using convenience methods on the `JsonDecoder` typeclass to *derive* new decoders
-
-```scala
-trait JsonDecoder[A] {
-  def map[B](f: A => B): JsonDecoder[B]
-  def mapOrFail[B](f: A => Either[String, B]): JsonDecoder[B]
-  ...
-}
-```
-
-### `.map`
-
-We can `.map` from another `JsonDecoder` in cases where the conversion will always succeed. This is very useful if we have a `case class` that simply wraps another thing and shares the same expected JSON.
-
-For example, say we want to model the count of fruit with a `case class` to provide us with additional type safety in our business logic (this pattern is known as a *newtype*).
-
-```scala mdoc
-case class FruitCount(value: Int)
-```
-
-but this would cause us to expect JSON of the form
-
-```json
-{"value": 1}
-```
-
-wheres we really expect the raw number. We can derive a decoder from `JsonDecoder[Int]` and `.map` the result into a `FruitCount`
-
-```scala mdoc
-object FruitCount {
-  implicit val decoder: JsonDecoder[FruitCount] =
-    JsonDecoder[Int].map(FruitCount(_))
-}
-```
-
-and now the `JsonDecoder` for `FruitCount` just expects a raw `Int`.
-
-```scala mdoc
-"""3""".fromJson[FruitCount]
-```
-
-Another use case is if we want to encode a `case class` as an array of values, rather than an object with named fields. Such an encoding is very efficient because the messages are smaller and require less processing, but are very strict schemas that cannot be upgraded.
-
-```scala:mdoc:reset
-import zio.json._
-
-case class Things(s: String, i: Int, b: Boolean)
-
-object Things {
-  implicit val decoder: JsonDecoder[Things] =
-    JsonDecoder[(String, Int, Boolean)].map { case (p1, p2, p3) => Things(p1, p2, p3) }
-}
-
-"""[ "hello", 1, true ]""".fromJson[Things]
-```
-
-### `.mapOrFail`
-
-We can use `.mapOrFail` to take the result of another `JsonDecoder` and try to convert it into our custom data type, failing with a message if there is an error.
-
-Say we are using the [`refined`](https://github.com/fthomas/refined) library to ensure that a `Person` data type only holds a non-empty string in its `name` field
-
-```scala mdoc
-import eu.timepit.refined.api.Refined
-import eu.timepit.refined.collection.NonEmpty
-
-case class Person(name: String Refined NonEmpty)
-```
-
-we will get a compile time error because there is no `JsonDecoder[String Refined NonEmpty]`.
-
-```scala mdoc:fail
-object Person {
-  implicit val decoder: JsonDecoder[Person] = DeriveJsonDecoder.gen
-}
-```
-
-However, we can derive one by requesting the `JsonDecoder[String]` and calling `.mapOrFail`, supplying the constructor for our special `String Refined NonEmpty` type
-
-```scala mdoc
-import eu.timepit.refined
-
-implicit val decodeName: JsonDecoder[String Refined NonEmpty] =
-  JsonDecoder[String].mapOrFail(refined.refineV[NonEmpty](_))
-```
-
-Now the code compiles.
+Sometimes it is easier to reuse an existing `JsonDecoder` than to generate a new one: `JsonDecoder#map` and `JsonDecoder#mapOrFail` derive a decoder from another one. See [Manual Instances](./manual-instances.md) for newtypes, array-encoded case classes and validated types such as `refined`.
 
 # Parsing custom JSON
 
@@ -256,12 +155,13 @@ final case class Quote(
 )
 ```
 
-All approaches have the same result:
+Without any customization, decoding this input fails because the field names do not match the case class:
 
 ```scala mdoc:fail
 """{"01. symbol":"IBM","02. open": "182.4300","03. high": "182.8000"}""".fromJson[Quote]
-// >> Right(Quote(IBM,182.4300,182.8000))
 ```
+
+Each approach below makes this input decode to `Right(Quote(IBM,182.4300,182.8000))`.
 
 ## Approach 1: use annotation hints
 
@@ -478,48 +378,4 @@ val name: Option[String] = json.flatMap { json =>
 }
 ```
 
-## Cursors
-
-In practice, it is normally more convenient to use cursors to navigate the JSON AST.
-
-```scala mdoc:reset
-import zio.json._
-import zio.json.ast.Json
-import zio.json.ast.JsonCursor
-import zio.json.ast.Json.Str
-
-val json: Either[String, Json]    = """{"name": "John Doe"}""".fromJson[Json]
-val cursor: JsonCursor[Json, Str] = JsonCursor.field("name").isString
-val name: Either[String, String]  = json.flatMap(_.get(cursor).map(_.value))
-```
-
-Cursors can be composed to navigate more complex JSON structures.
-
-```scala mdoc
-import zio.json._
-import zio.json.ast.Json
-import zio.json.ast.JsonCursor
-
-val json1: Either[String, Json] = """{"posts": [{"id": 0, "title": "foo"}]}""".fromJson[Json]
-val json2: Either[String, Json] = """{"userPosts": [{"id": 1, "title": "bar"}]}""".fromJson[Json]
-
-val commonCursor = 
-  JsonCursor.isArray >>> 
-    JsonCursor.element(0) >>> 
-    JsonCursor.isObject >>> 
-    JsonCursor.field("title") >>> 
-    JsonCursor.isString
-
-val cursor1 = JsonCursor.field("posts")
-val cursor2 = JsonCursor.field("userPosts")
-
-def getTitle(json: Either[String, Json]) =
-  for {
-    ast   <- json
-    posts <- ast.get(cursor1).orElse(ast.get(cursor2))
-    title <- posts.get(commonCursor).map(_.value)
-  } yield title
-
-val title1 = getTitle(json1)
-val title2 = getTitle(json2)
-```
+For navigating the AST with cursors, see [Cursors](../reference/json-ast.md#cursors).
