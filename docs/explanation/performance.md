@@ -5,7 +5,7 @@ title: "Performance"
 
 The following benchmarks are freely available to run on your hardware with `sbt "zioJsonJVM/jmh:run -prof gc"` and can be extended to include more niche libraries. We only compare `zio-json` against Circe and Play as they are the incumbent solutions used by most of the Scala ecosystem.
 
-`zio-json`, when used in legacy mode (i.e. using a `StringReader`), is typically x2 faster than Circe and x5 faster than Play. When used with Loom, `zio-json` has finished its work before the others even begin. The following benchmarks are therefore only for legacy mode comparisons.
+`zio-json`, when used in legacy mode (i.e. using a `StringReader`), has higher ops/sec than Circe in every table below (from about 1.1x to 3x) and than Play (from about 1.5x to 24x). When used with Loom, `zio-json` has finished its work before the others even begin. The following benchmarks are therefore only for legacy mode comparisons.
 
 There are two main factors to consider when comparing the performance of JSON libraries: memory usage and operations per second. We perform measurements in one thread at a time but in a real server situation, there are multiple threads each consuming resources.
 
@@ -61,7 +61,7 @@ circe  19609 ±  370  2873 ± 53     | 13830 ±  109  1730 ± 14
 play    9001 ±  182  3348 ± 67     | 14529 ±  200  3533 ± 48
 ```
 
-`zio-json` easily wins every benchmark except ops/sec for the Twitter test data where Circe matches ops/sec but loses heavily on memory usage. Play loses on every benchmark.
+`zio-json` has the highest ops/sec in every table above. On MB/sec (lower is better) it uses the least memory when decoding, but it trails Circe in all four encoding rows (Google Maps, Twitter, GeoJSON and Synthetic), where Circe uses less memory per second.
 
 ## Even More Performance
 
