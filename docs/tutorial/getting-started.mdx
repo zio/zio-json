@@ -1,244 +1,209 @@
 ---
 id: getting-started
 title: "Getting Started with ZIO Json"
-sidebar_label: "Getting Started"
+description: "Learn ZIO JSON step by step: install it, encode and decode case classes, handle optional fields and sealed traits, and read errors."
+keywords:
+  - "JSON Encoding"
+  - "JSON Decoding"
+  - "Case Class Codec"
+  - "ZIO JSON Tutorial"
 ---
 
-import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem';
+In this tutorial you will install ZIO JSON, turn Scala values into JSON, read JSON back into Scala values, and handle bad input. Every step builds on the one before it, so run the steps in order.
 
-## Example
+By the end you will have a small `Person` model that you can encode, decode, and extend with optional fields, lists, and a sealed trait.
 
-Let's try a simple example of encoding and decoding JSON using ZIO JSON.
+## 1. Install and choose a Scala version
 
-All the following code snippets assume that the following imports have been declared
+Add the library to your `build.sbt`:
 
-<Tabs groupId="language">
-  <TabItem value="scala 2" label="Scala 2">
+```sbt
+libraryDependencies += "dev.zio" %% "zio-json" % "@VERSION@"
+```
 
-```scala
+ZIO JSON works on Scala 2.13 and Scala 3. The code in this tutorial uses Scala 2.13 syntax. Where Scala 3 differs, a short Scala 3 note follows the example.
+
+Every snippet below assumes this import:
+
+```scala mdoc:silent
 import zio.json._
 ```
 
-  </TabItem>
-  <TabItem value="scala 3" label="Scala 3" default>
+The import brings in the typeclasses `JsonEncoder` and `JsonDecoder`, the derivation helpers, and the extension methods `toJson` and `fromJson`.
 
-```scala
-import zio.json.*
-```
+## 2. Encode your first value
 
-  </TabItem>
-</Tabs>
+A *codec* is a pair of one encoder (Scala to JSON) and one decoder (JSON to Scala). The easiest way to get one for a case class is to let the compiler derive it. Put the codec on the companion object so Scala finds it without any import.
 
-Say we want to be able to read some JSON like
+```scala mdoc:silent
+final case class Address(street: String, city: String)
 
-```json
-{"curvature":0.5}
-```
-
-into a Scala `case class`
-
-```scala
-final case class Banana(curvature: Double)
-```
-
-<Tabs groupId="language">
-  <TabItem value="scala 2" label="Scala 2">
-
-To do this, we create an *instance* of the `JsonDecoder` typeclass for `Banana` using the `zio-json` code generator. It is best practice to put it on the companion of `Banana`, like so
-
-```scala
-object Banana {
-  implicit val decoder: JsonDecoder[Banana] = DeriveJsonDecoder.gen[Banana]
+object Address {
+  implicit val codec: JsonCodec[Address] = DeriveJsonCodec.gen[Address]
 }
 ```
 
-  </TabItem>
-  <TabItem value="scala 3" label="Scala 3" default>
+Now call `toJson` on a value:
 
-To do this, we derive an *instance* of the `JsonDecoder` typeclass for `Banana`.
+```scala mdoc
+val home = Address("1 Main St", "Springfield")
+
+println(home.toJson)
+```
+
+Use `toJsonPretty` when you want indented output for people to read:
+
+```scala mdoc
+println(home.toJsonPretty)
+```
+
+On Scala 3 you can skip the companion and write `derives JsonCodec` on the class instead.
 
 ```scala
-final case class Banana(curvature: Double) derives JsonDecoder
+// Scala 3 only
+final case class Address(street: String, city: String) derives JsonCodec
 ```
 
-Note: If your case class is defining default parameters, -Yretain-trees needs to be added to scalacOptions.
+## 3. Decode your first value
 
-  </TabItem>
-</Tabs>
+`fromJson` goes the other way. It does not throw. It returns an `Either[String, A]`: a `Right` with the value, or a `Left` with an error message.
 
-Now we can parse JSON into our object
-
-```
-scala> """{"curvature":0.5}""".fromJson[Banana]
-val res: Either[String, Banana] = Right(Banana(0.5))
+```scala mdoc
+"""{"street":"1 Main St","city":"Springfield"}""".fromJson[Address]
 ```
 
-Likewise, to produce JSON from our data we derive a `JsonEncoder`
+The same codec supplies the decoder, because a `JsonCodec` holds both halves. If you only need one direction, derive just that half with `DeriveJsonEncoder.gen` or `DeriveJsonDecoder.gen`.
 
-<Tabs groupId="language">
-  <TabItem value="scala 2" label="Scala 2">
+## 4. Nest one case class in another
 
-```scala
-object Banana {
-  ...
-  implicit val encoder: JsonEncoder[Banana] = DeriveJsonEncoder.gen[Banana]
+A case class field can be any type that has a codec. Here a `Person` holds an `Address`.
+
+```scala mdoc:silent
+final case class Person(name: String, age: Int, address: Address)
+
+object Person {
+  implicit val codec: JsonCodec[Person] = DeriveJsonCodec.gen[Person]
 }
 ```
 
-  </TabItem>
-  <TabItem value="scala 3" label="Scala 3" default>
+The nested value becomes a nested JSON object:
 
-```scala
-final case class Banana(curvature: Double) derives JsonEncoder
+```scala mdoc
+val alice = Person("Alice", 30, home)
+
+println(alice.toJsonPretty)
 ```
 
-  </TabItem>
-</Tabs>
+Decoding the same text gives the original value back:
 
+```scala mdoc
+alice.toJson.fromJson[Person]
 ```
-scala> Banana(0.5).toJson
-val res: String = {"curvature":0.5}
 
-scala> Banana(0.5).toJsonPretty
-val res: String =
-{
-  "curvature" : 0.5
+## 5. Add optional and list fields
+
+Standard types such as `Option`, `List`, `Map`, `String`, and the numeric types already have codecs. A case class made of them needs nothing extra.
+
+```scala mdoc:silent
+final case class Profile(name: String, nickname: Option[String], tags: List[String])
+
+object Profile {
+  implicit val codec: JsonCodec[Profile] = DeriveJsonCodec.gen[Profile]
 }
 ```
 
-And bad JSON will produce an error in `jq` syntax with an additional piece of contextual information (in parentheses)
+A `None` is left out of the JSON, and a missing field decodes as `None`. A `List` is a JSON array.
 
-```
-scala> """{"curvature": womp}""".fromJson[Banana]
-val res: Either[String, Banana] = Left(.curvature(expected a Double))
-```
+```scala mdoc
+println(Profile("Bob", None, List("admin", "dev")).toJson)
 
-Say we extend our data model to include more data types
-
-<Tabs groupId="language">
-  <TabItem value="scala 2" label="Scala 2">
-
-```scala
-sealed trait Fruit
-final case class Banana(curvature: Double) extends Fruit
-final case class Apple (poison: Boolean)   extends Fruit
+"""{"name":"Bob","tags":["admin","dev"]}""".fromJson[Profile]
 ```
 
-  </TabItem>
-  <TabItem value="scala 3" label="Scala 3" default>
+## 6. Model alternatives with a sealed trait
 
-```scala
-enum Fruit {
-  case Banana(curvature: Double)
-  case Apple (poison: Boolean)
+A `sealed trait` lets one field hold one of several shapes. Derive the codec on the trait itself, and the subtypes need codecs too.
+
+```scala mdoc:silent
+sealed trait Contact
+
+object Contact {
+  final case class Email(address: String) extends Contact
+  final case class Phone(number: String)  extends Contact
+
+  implicit val emailCodec: JsonCodec[Email]  = DeriveJsonCodec.gen[Email]
+  implicit val phoneCodec: JsonCodec[Phone]  = DeriveJsonCodec.gen[Phone]
+  implicit val codec: JsonCodec[Contact]     = DeriveJsonCodec.gen[Contact]
 }
 ```
 
-  </TabItem>
-</Tabs>
+By default the JSON names the subtype in a single wrapper key. This key is the *tag* that tells the decoder which subtype to build.
 
-we can generate the encoder and decoder for the entire `sealed` family
+```scala mdoc
+val contacts: List[Contact] = List(Contact.Email("a@example.com"), Contact.Phone("555-0100"))
 
-<Tabs groupId="language">
-  <TabItem value="scala 2" label="Scala 2">
+println(contacts.toJson)
+
+"""[{"Phone":{"number":"555-0100"}}]""".fromJson[List[Contact]]
+```
+
+You can swap the wrapper key for a field inside the object. That is a *discriminator*, and the sealed-traits how-to guide covers it.
+
+On Scala 3 an `enum` or a sealed trait can use `derives JsonCodec` directly.
 
 ```scala
-object Fruit {
-  implicit val decoder: JsonDecoder[Fruit] = DeriveJsonDecoder.gen[Fruit]
-  implicit val encoder: JsonEncoder[Fruit] = DeriveJsonEncoder.gen[Fruit]
-}
-```
-
-  </TabItem>
-  <TabItem value="scala 3" label="Scala 3" default>
-
-```scala
-enum Fruit derives JsonCodec {
-  case Banana(curvature: Double)
-  case Apple (poison: Boolean)
-}
-```
-
-  </TabItem>
-</Tabs>
-
-allowing us to load the fruit based on a single field type tag in the JSON
-
-```
-scala> """{"Banana":{"curvature":0.5}}""".fromJson[Fruit]
-val res: Either[String, Fruit] = Right(Banana(0.5))
-
-scala> """{"Apple":{"poison":false}}""".fromJson[Fruit]
-val res: Either[String, Fruit] = Right(Apple(false))
-```
-
-Almost all of the standard library data types are supported as fields on the case class, and it is easy to add support if one is missing.
-
-<Tabs groupId="language">
-  <TabItem value="scala 2" label="Scala 2">
-
-```scala mdoc:compile-only
-import zio.json._
-
-sealed trait Fruit                   extends Product with Serializable
-case class Banana(curvature: Double) extends Fruit
-case class Apple(poison: Boolean)    extends Fruit
-
-object Fruit {
-  implicit val decoder: JsonDecoder[Fruit] =
-    DeriveJsonDecoder.gen[Fruit]
-
-  implicit val encoder: JsonEncoder[Fruit] =
-    DeriveJsonEncoder.gen[Fruit]
-}
-
-val json1         = """{ "Banana":{ "curvature":0.5 }}"""
-val json2         = """{ "Apple": { "poison": false }}"""
-val malformedJson = """{ "Banana":{ "curvature": true }}"""
-
-json1.fromJson[Fruit]
-json2.fromJson[Fruit]
-malformedJson.fromJson[Fruit]
-
-List(Apple(false), Banana(0.4)).toJsonPretty
-```
-
-  </TabItem>
-  <TabItem value="scala 3" label="Scala 3" default>
-
-```scala
-import zio.json.*
-
+// Scala 3 only
 enum Fruit derives JsonCodec {
   case Banana(curvature: Double)
   case Apple(poison: Boolean)
 }
-
-export Fruit.*
-
-val json1         = """{ "Banana":{ "curvature":0.5 }}"""
-val json2         = """{ "Apple": { "poison": false }}"""
-val malformedJson = """{ "Banana":{ "curvature": true }}"""
-
-json1.fromJson[Fruit]
-json2.fromJson[Fruit]
-malformedJson.fromJson[Fruit]
-
-List(Apple(false), Banana(0.4)).toJsonPretty
 ```
 
-  </TabItem>
-</Tabs>
+## 7. Handle a decode error
 
-# How
+Bad input never throws. It comes back as a `Left` holding a message. The message is a path in `jq` style, followed by a note in parentheses that says what went wrong.
 
-Extreme **performance** is achieved by decoding JSON directly from the input source into business objects (inspired by [plokhotnyuk](https://github.com/plokhotnyuk/jsoniter-scala)). Although not a requirement, the latest advances in [Java Loom](https://wiki.openjdk.java.net/display/loom/Main) can be used to support arbitrarily large payloads with near-zero overhead.
+A value of the wrong type:
 
-Best in class **security** is achieved with an aggressive *early exit* strategy that avoids costly stack traces, even when parsing malformed numbers. Malicious (and badly formed) payloads are rejected before finishing reading.
+```scala mdoc
+"""{"street":"1 Main St","city":42}""".fromJson[Address]
+```
 
-**Fast compilation** and **future-proofing**: For Scala 2, derivation uses [Magnolia](https://propensive.com/opensource/magnolia/). For Scala 3, derivation uses native Scala 3 macros. `zio-json` is internally implemented using a [`java.io.Reader`](https://docs.oracle.com/en/java/javase/14/docs/api/java.base/java/io/Reader.html) / [`java.io.Writer`](https://docs.oracle.com/en/java/javase/14/docs/api/java.base/java/io/Writer.html)-like interface, which is making a comeback to center stage in Loom.
+A missing field:
 
-**Simplicity** is achieved by using well-known software patterns and avoiding bloat. The only requirement to use this library is to know about Scala's encoding of typeclasses, described in [Functional Programming for Mortals](https://leanpub.com/fpmortals/read#leanpub-auto-functionality).
+```scala mdoc
+"""{"street":"1 Main St"}""".fromJson[Address]
+```
 
-**Helpful errors** are produced in the form of a [`jq`](https://stedolan.github.io/jq/) query, with a note about what went wrong, pointing to the exact part of the payload that failed to parse.
+Text that is not JSON at all:
+
+```scala mdoc
+"""{"street": womp}""".fromJson[Address]
+```
+
+A nested failure keeps the whole path, so you can see exactly where the problem sits:
+
+```scala mdoc
+"""{"name":"Alice","age":30,"address":{"street":"1 Main St","city":false}}""".fromJson[Person]
+```
+
+Because the result is an ordinary `Either`, you handle it with `fold`, `map`, or a `match`, as with any other.
+
+```scala mdoc
+"""{"street":"1 Main St"}""".fromJson[Address] match {
+  case Right(address) => s"Got ${address.city}"
+  case Left(error)    => s"Could not decode: $error"
+}
+```
+
+## 8. Where next
+
+You can now encode, decode, nest, extend, and debug. Pick the guide that matches your next task:
+
+- [Encode values to JSON](../how-to/encoding.md) covers every way to produce JSON, including streams.
+- [Decode JSON into values](../how-to/decoding.md) covers strings, bytes, and streams as input.
+- [Rename fields](../how-to/field-names.md) when the JSON names differ from your Scala names.
+- [Work with sealed traits](../how-to/sealed-traits.md) to change the tag or use a discriminator.
+- [Annotations reference](../reference/annotations.md) lists every `@json...` annotation.
+- [JsonCodec reference](../reference/json-codec.md) lists the codec combinators.
+- [How ZIO JSON works](../explanation/how-it-works.md) explains why it is fast and secure.
