@@ -82,6 +82,7 @@ The most commonly used settings are:
 
 - `dropNulls` (default `true`): removes object fields whose value is `Json.Null`. Option fields that are `None` are controlled by the codec, not by this setting.
 - `indentation` (default `2`) and `sequenceIndentation` (default `2`): the number of spaces used for nested mappings and sequences.
+- `indentWithIndicator` (default `true`): indent the sequence entries relative to the `-` indicator.
 - `maxScalarWidth` (default `Some(80)`): long string scalars are split across lines. Set it to `None` to keep each scalar on one line.
 - `lineBreak`: the line separator. The default follows the platform.
 - `flowStyle`, `scalarStyle` and `keyStyle`: functions that choose the YAML presentation style for each value or key. They let you, for example, force flow style (`{a: 1}`) for small objects.
