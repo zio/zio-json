@@ -5,7 +5,7 @@ title: "JSON AST"
 
 The JSON AST is a tree of values that represents any JSON document, using the `zio.json.ast.Json` type.
 Most code decodes JSON straight into domain types, but the AST is useful when the shape of the document is not known in advance, when you need to edit a document, or when you want to combine several documents.
-For navigating the AST with cursors, see [Cursors](../how-to/decoding.md#cursors) in the decoding guide.
+For navigating the AST with cursors, see [Cursors](#cursors).
 
 ## The Json Type
 
@@ -27,11 +27,11 @@ val user: Json = Json.Obj(
 )
 ```
 
-`Json.Num` has constructors for `Int`, `Long`, `Float`, `Double`, `BigInt`, `BigDecimal` and `java.math.BigInteger`, so numbers keep their precision.
+`Json.Num` wraps a `java.math.BigDecimal`, and its companion has `apply` overloads for `Byte`, `Short`, `Int`, `Long`, `Float`, `Double`, `BigInt`, `BigDecimal` and `java.math.BigInteger`, so numbers keep their precision.
 
 ## Converting Between Types and the AST
 
-Every `JsonEncoder` has a `toJsonAST` method that returns `Either[String, Json]`, and every `JsonDecoder` has a `fromJsonAST` method that goes from a `Json` value to a domain type. The `Json#as` method is the shortcut for decoding:
+`JsonEncoder#toJsonAST` takes a value and returns `Either[String, Json]`, and the `value.toJsonAST` extension calls it with the implicit encoder. `JsonDecoder#fromJsonAST` goes from a `Json` value to a domain type. The `Json#as` method is the shortcut for decoding:
 
 ```scala mdoc:silent
 case class Person(name: String, age: Int)
@@ -169,3 +169,42 @@ Parsing a string into the AST uses the same `fromJson` method as domain types, w
 ```
 
 For encoding and decoding in streams, see [Streaming](../how-to/streaming.md). For YAML, the AST is the intermediate form, as described in [YAML](./yaml.md).
+
+## Cursors
+
+Cursors navigate the JSON AST. They are usually more convenient than pattern matching on `Json` directly.
+
+```scala mdoc
+import zio.json.ast.Json.Str
+
+val nameJson: Either[String, Json] = """{"name": "John Doe"}""".fromJson[Json]
+val nameCursor: JsonCursor[Json, Str] = JsonCursor.field("name").isString
+val nameValue: Either[String, String] = nameJson.flatMap(_.get(nameCursor).map(_.value))
+```
+
+Cursors can be composed to navigate more complex JSON structures.
+
+```scala mdoc
+val json1: Either[String, Json] = """{"posts": [{"id": 0, "title": "foo"}]}""".fromJson[Json]
+val json2: Either[String, Json] = """{"userPosts": [{"id": 1, "title": "bar"}]}""".fromJson[Json]
+
+val commonCursor = 
+  JsonCursor.isArray >>> 
+    JsonCursor.element(0) >>> 
+    JsonCursor.isObject >>> 
+    JsonCursor.field("title") >>> 
+    JsonCursor.isString
+
+val cursor1 = JsonCursor.field("posts")
+val cursor2 = JsonCursor.field("userPosts")
+
+def getTitle(json: Either[String, Json]) =
+  for {
+    ast   <- json
+    posts <- ast.get(cursor1).orElse(ast.get(cursor2))
+    title <- posts.get(commonCursor).map(_.value)
+  } yield title
+
+val title1 = getTitle(json1)
+val title2 = getTitle(json2)
+```
