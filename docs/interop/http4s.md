@@ -16,14 +16,16 @@ libraryDependencies ++= Seq(
 ## Usage
 
 ```scala
+import cats.Applicative
+import org.http4s.EntityEncoder
 import zio.json._
 import zio.json.interop.http4s._
 
 final case class Greeting(greeting: String)
 
 object Greeting {
-  // This JsonCodec[A] will be picked up by the `jsonEncoderOf` method provided by zio-json-interop-http4s
-  implicit val encoder: JsonCodec[Greeting] =
+  // This JsonCodec[A] provides the JsonEncoder[A] used by the `jsonEncoderOf` method provided by zio-json-interop-http4s
+  implicit val codec: JsonCodec[Greeting] =
     DeriveJsonCodec.gen
 
   implicit def entityEncoder[F[_]: Applicative]: EntityEncoder[F, Greeting] =
