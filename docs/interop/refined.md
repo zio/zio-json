@@ -34,3 +34,5 @@ object Person {
 ```scala mdoc
 """{ "name": "Aurora" }""".fromJson[Person]
 ```
+
+To write a decoder for a refined type yourself, see [Manual instances](../how-to/manual-instances.md).
