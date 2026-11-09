@@ -264,7 +264,7 @@ If the JSON does not contain the field, decoding fails unless the field has a de
 """{"user":"alice"}""".fromJson[Session]
 ```
 
-To make the field optional when decoding, give it a default value. Like the default-value example in [Decoding](./decoding.md), the codec is defined outside the companion object:
+To make the field optional when decoding, give it a default value. Like the default-value example in [Decoding](../how-to/decoding.md), the codec is defined outside the companion object:
 
 ```scala mdoc:silent
 case class SessionWithDefault(user: String, @jsonExclude token: String = "")

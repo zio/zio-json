@@ -5,7 +5,7 @@ title: "JSON AST"
 
 The JSON AST is a tree of values that represents any JSON document, using the `zio.json.ast.Json` type.
 Most code decodes JSON straight into domain types, but the AST is useful when the shape of the document is not known in advance, when you need to edit a document, or when you want to combine several documents.
-For navigating the AST with cursors, see [Cursors](./decoding.md#cursors) in the decoding guide.
+For navigating the AST with cursors, see [Cursors](../how-to/decoding.md#cursors) in the decoding guide.
 
 ## The Json Type
 
@@ -168,4 +168,4 @@ Parsing a string into the AST uses the same `fromJson` method as domain types, w
 """{"id": 7, "ok": true}""".fromJson[Json]
 ```
 
-For encoding and decoding in streams, see [Streaming](./streaming.md). For YAML, the AST is the intermediate form, as described in [YAML](./yaml.md).
+For encoding and decoding in streams, see [Streaming](../how-to/streaming.md). For YAML, the AST is the intermediate form, as described in [YAML](./yaml.md).
