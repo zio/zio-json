@@ -36,4 +36,4 @@ the dependency on the latest version of Timezone DB:
 libraryDependencies += "io.github.cquiroz" %%% "scala-java-time-tzdb" % "latest.integration"
 ```
 
-Continue with the [Getting Started](tutorial/getting-started) guide for a walkthrough of encoding and decoding JSON with ZIO JSON.
+Continue with the [Getting Started](tutorial/getting-started.mdx) guide for a walkthrough of encoding and decoding JSON with ZIO JSON.

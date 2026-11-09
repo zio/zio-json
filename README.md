@@ -25,7 +25,7 @@ The goal of this project is to create the best all-round JSON library for Scala:
 In order to use this library, we need to add the following line in our `build.sbt` file:
 
 ```scala
-libraryDependencies += "dev.zio" %% "zio-json" % "1.1.1"
+libraryDependencies += "dev.zio" %% "zio-json" % "1.1.2"
 ```
 
 For cross-platform projects with Scala.js and Scala Native need to replace `%%` operator by `%%%`, 
@@ -36,7 +36,7 @@ the dependency on the latest version of Timezone DB:
 libraryDependencies += "io.github.cquiroz" %%% "scala-java-time-tzdb" % "latest.integration"
 ```
 
-Continue with the [Getting Started](docs/getting-started.mdx) guide for a walkthrough of encoding and decoding JSON with ZIO JSON.
+Continue with the [Getting Started](docs/tutorial/getting-started.mdx) guide for a walkthrough of encoding and decoding JSON with ZIO JSON.
 
 ## Documentation
 
