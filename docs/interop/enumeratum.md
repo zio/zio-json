@@ -92,9 +92,9 @@ case object LibraryItem extends IntEnum[LibraryItem] with IntZioJsonEnum[Library
 LibraryItem.Book.toJson
 // 1
 
-"3".fromJson[LibraryItem]
+3.fromJson[LibraryItem]
 // Right(Magazine)
 
-"999".fromJson[LibraryItem]
-// Left('999' is not a member of enum LibraryItem)
+999.fromJson[LibraryItem]
+// Left("('999' is not a member of enum LibraryItem)")
 ```
