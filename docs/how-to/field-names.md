@@ -136,7 +136,7 @@ implicit val cherryCodec: JsonCodec[Cherry] = DeriveJsonCodec.gen[Cherry]
 
 ## 5. Read old names with `@jsonAliases`
 
-After a field has been renamed, you may still receive JSON that uses the old name. `@jsonAliases` lists extra names that the decoder accepts for that field. It was added in zio-json 0.4.3.
+After a field has been renamed, you may still receive JSON that uses the old name. `@jsonAliases` lists extra names that the decoder accepts for that field. It was added in zio-json 0.5.0.
 
 ```scala mdoc:silent
 case class Strawberry(@jsonAliases("seeds", "pips") seedCount: Int)
@@ -158,7 +158,7 @@ Keep these points in mind:
 
 - The annotation has no effect on encoding. The encoder always writes the main name.
 - An alias is matched exactly as you wrote it. A `@jsonMemberNames` format is not applied to aliases.
-- A field name and its aliases must not collide with another field or alias of the same class. On Scala 2, deriving the decoder fails with an `AssertionError` if they do.
+- A field name and its aliases must not collide with another field or alias of the same class. On Scala 2 and Scala 3, deriving the decoder fails with an `AssertionError` if they do.
 
 ## See also
 
