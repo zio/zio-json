@@ -81,8 +81,8 @@ Say we are using the [`refined`](https://github.com/fthomas/refined) library to 
 
 ```scala
 import zio.json._
-import zio.json.interop.refined._
 
+import eu.timepit.refined
 import eu.timepit.refined.api.Refined
 import eu.timepit.refined.collection.NonEmpty
 
@@ -93,7 +93,7 @@ object Person {
 }
 ```
 
-we will get a compiletime error because there is no `JsonDecoder[String Refined NonEmpty]`.
+this does not compile, because there is no `JsonDecoder[String Refined NonEmpty]` in scope.
 
 However, we can derive one by requesting the `JsonDecoder[String]` and calling `.mapOrFail`, supplying the constructor for our special `String Refined NonEmpty` type
 
@@ -104,4 +104,4 @@ implicit val decodeName: JsonDecoder[String Refined NonEmpty] =
 
 Now the code compiles.
 
-In fact, we do not need to provide `decodeName` for each `Refined` data type; `zio-json` comes with support out of the box, see the Integrations section below.
+In fact, we do not need to provide `decodeName` for each `Refined` data type; `zio-json` comes with support out of the box, see [Refined Interop](../interop/refined.md).

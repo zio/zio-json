@@ -116,7 +116,7 @@ Choose JSON Lines for logs and exported data that are written and read increment
 
 The `zio.json` package object provides helpers that combine these pipelines with file streams. They are available on the JVM only.
 
-`readJsonLinesAs` reads a file of JSON Lines into a stream of values of a type with a decoder, and `writeJsonLinesAs` writes a stream of values to a file as JSON Lines. There are overloads for `File`, `Path`, and `String`:
+`readJsonLinesAs` reads a file of JSON Lines into a stream of values of a type with a decoder, and `writeJsonLinesAs` writes a stream of values to a file as JSON Lines. `readJsonLinesAs` has overloads for `File`, `Path`, `String` and `URL`, and `writeJsonLinesAs` has overloads for `File`, `Path` and `String`:
 
 ```scala mdoc:compile-only
 import zio._

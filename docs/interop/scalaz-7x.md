@@ -7,7 +7,7 @@ title: "Scalaz 7.x Interop"
 
 ```scala
 libraryDependencies ++= Seq(
-  "dev.zio" % "zio-json-interop-scalaz" % "@VERSION@"
+  "dev.zio" %% "zio-json-interop-scalaz7x" % "@VERSION@"
 )
 ```
 

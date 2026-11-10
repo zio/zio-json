@@ -45,7 +45,7 @@ The test name is `golden test for <TypeName>`, and the type name is taken from t
 
 ## Lifecycle of a Golden File
 
-The golden file is stored under `src/test/resources/golden/` in the module. The file name is the short type name with a JSON file extension, for example `src/test/resources/golden/Banana.json`. A golden file contains a JSON array with the encoded samples, and the default number of samples is 20.
+The golden file is stored under `src/test/resources/golden/` in the module. The file name is the short type name with a JSON file extension, for example `src/test/resources/golden/Banana.json`. A golden file contains a JSON object with a `samples` field. That field is an array of the encoded samples, and the default number of samples is 20.
 
 The test behaves differently depending on which files exist:
 

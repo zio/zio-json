@@ -47,7 +47,7 @@ ShirtSize.Small.toJson
 // Right(Large)
 
 """"XLarge"""".fromJson[ShirtSize]
-// Left('XLarge' is not a member of enum ShirtSize)
+// Left("('XLarge' is not a member of enum ShirtSize)")
 ```
 
 Lowercase/uppercase encoders and decoders are also available:
@@ -92,9 +92,9 @@ case object LibraryItem extends IntEnum[LibraryItem] with IntZioJsonEnum[Library
 LibraryItem.Book.toJson
 // 1
 
-"3".fromJson[LibraryItem]
+3.fromJson[LibraryItem]
 // Right(Magazine)
 
-"999".fromJson[LibraryItem]
-// Left('999' is not a member of enum LibraryItem)
+999.fromJson[LibraryItem]
+// Left("('999' is not a member of enum LibraryItem)")
 ```
