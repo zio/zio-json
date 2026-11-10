@@ -276,7 +276,7 @@ object BuildHelper {
     }
   )
 
-  val scalaJavaTimeVersion = "2.8.0"
+  val scalaJavaTimeVersion = "2.9.0"
 
   def nativeSettings = Seq(
     nativeConfig ~= { cfg => cfg.withMode(scala.scalanative.build.Mode.releaseFast) },
