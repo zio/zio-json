@@ -7,7 +7,7 @@ title: "Refined Interop"
 
 ```scala
 libraryDependencies ++= Seq(
-  "dev.zio" % "zio-json-interop-refined" % "@VERSION@"
+  "dev.zio" %% "zio-json-interop-refined" % "@VERSION@"
 )
 ```
 
