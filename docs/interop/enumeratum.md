@@ -47,7 +47,7 @@ ShirtSize.Small.toJson
 // Right(Large)
 
 """"XLarge"""".fromJson[ShirtSize]
-// Left('XLarge' is not a member of enum ShirtSize)
+// Left("('XLarge' is not a member of enum ShirtSize)")
 ```
 
 Lowercase/uppercase encoders and decoders are also available:
