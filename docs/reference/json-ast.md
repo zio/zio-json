@@ -125,7 +125,7 @@ user.relocate(JsonCursor.field("tags"), JsonCursor.field("avatar"))
 
 ## Combining Documents
 
-The `merge` method combines two values. When both values are objects, the result contains the fields of both, and the right-hand side wins when a key appears on both sides. When both values are arrays, their elements are merged. For any other combination, the right-hand side replaces the left:
+The `merge` method combines two values. When both values are objects, the result contains the fields of both. A key that appears on both sides is merged recursively, so nested objects are merged, and for scalar values the right-hand side wins. When both values are arrays, their elements are merged. For any other combination, the right-hand side replaces the left:
 
 ```scala mdoc
 val defaults: Json = Json.Obj("admin" -> Json.Bool(false), "locale" -> Json.Str("en"))
