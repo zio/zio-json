@@ -480,6 +480,26 @@ lazy val docs = project
       zioJsonGolden
     ),
     mimaPreviousArtifacts := Set(),
+    readmeBanner := {
+      val logoBase = "https://raw.githubusercontent.com/zio/zio-json/series/2.x/brand/svg"
+      // <picture> lets GitHub swap the lockup per theme: the light lockup's wordmark is near-black
+      // ink, which would be invisible on GitHub's dark canvas without the dark variant.
+      s"""|
+          |<picture>
+          |  <source media="(prefers-color-scheme: dark)" srcset="$logoBase/zio-json-lockup-dark.svg">
+          |  <img alt="ZIO JSON" src="$logoBase/zio-json-lockup-light.svg" width="520">
+          |</picture>
+          |""".stripMargin
+    },
+    // The banner is the logo lockup, which already spells "ZIO JSON", so drop the "# ZIO JSON"
+    // heading the plugin puts after it; otherwise the name renders twice in a row. The image's
+    // alt text keeps the accessible name.
+    generateReadme := {
+      val _      = generateReadme.value
+      val readme = (ThisBuild / baseDirectory).value / "README.md"
+      val title  = "\n# " + projectName.value + "\n"
+      IO.write(readme, IO.read(readme).replaceFirst(java.util.regex.Pattern.quote(title), ""))
+    },
     readmeAcknowledgement :=
       """|- Uses [JsonTestSuite](https://github.com/nst/JSONTestSuite) to test parsing. (c) 2016 Nicolas Seriot)
          |
