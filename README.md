@@ -2,7 +2,10 @@
 [//]: # (So please do not edit it manually. Instead, change "docs/index.md" file or sbt setting keys)
 [//]: # (e.g. "readmeDocumentation" and "readmeSupport".)
 
-# ZIO JSON
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/zio/zio-json/series/2.x/brand/svg/zio-json-lockup-dark.svg">
+  <img alt="ZIO JSON" src="https://raw.githubusercontent.com/zio/zio-json/series/2.x/brand/svg/zio-json-lockup-light.svg" width="520">
+</picture>
 
 [ZIO Json](https://github.com/zio/zio-json) is a fast and secure JSON library with tight ZIO integration.
 
