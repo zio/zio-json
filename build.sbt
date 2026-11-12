@@ -480,7 +480,7 @@ lazy val docs = project
       zioJsonGolden
     ),
     mimaPreviousArtifacts := Set(),
-    readmeBanner := {
+    readmeBanner          := {
       val logoBase = "https://raw.githubusercontent.com/zio/zio-json/series/2.x/brand/svg"
       // <picture> lets GitHub swap the lockup per theme: the light lockup's wordmark is near-black
       // ink, which would be invisible on GitHub's dark canvas without the dark variant.
