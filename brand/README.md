@@ -8,11 +8,11 @@ Exported from the ZIO JSON brand sheet. All text is converted to outlines (Sora 
 | --- | --- |
 | Logo on a light page (README, docs header) | `svg/zio-json-lockup-light.svg` |
 | Logo on a dark page | `svg/zio-json-lockup-dark.svg` |
-| Square logo, app icon | `svg/zio-json-symbol.svg` (violet tile) |
-| Square logo on violet or busy grounds | `svg/zio-json-symbol-dark.svg` (ink tile) |
+| Square logo, app icon | `svg/zio-json-symbol.svg` (raspberry tile) |
+| Square logo on raspberry or busy grounds | `svg/zio-json-symbol-dark.svg` (ink tile) |
 | Avatar (GitHub, Slack, X, Discord) | `png/zio-json-avatar-1024.png` (full-bleed; sites crop it) |
 | The bare mark, no tile | `svg/zio-json-mark-light.svg`, `svg/zio-json-mark-dark.svg` |
-| One-colour print, stamps, engraving | `svg/zio-json-mark-mono-ink.svg`, `-mono-white.svg`, `-mono-violet.svg` |
+| One-colour print, stamps, engraving | `svg/zio-json-mark-mono-ink.svg`, `-mono-white.svg`, `-mono-raspberry.svg` |
 | README banner | `png/readme-banner-light.png`, `png/readme-banner-dark.png` |
 | Link previews | `png/social-og-*.png` (1200 × 630), `png/social-x-*.png` (1200 × 600), `png/social-github-*.png` (1280 × 640) |
 
@@ -43,9 +43,9 @@ For a web app manifest, use `icon-192.png` and `icon-512.png` (purpose `any`) an
 
 | Name | Hex | Use |
 | --- | --- | --- |
-| Violet | `#6B4FD8` | The tile, values in the mark, links, primary buttons |
-| Lilac | `#C4B9EF` | Values on the violet tile only |
-| Violet 400 | `#9784E4` | Violet on dark grounds |
+| Raspberry | `#C2185B` | The tile, values in the mark, links, primary buttons |
+| Blush | `#E8AAC2` | Values on the raspberry tile only |
+| Raspberry 400 | `#D45D8C` | Raspberry on dark grounds |
 | Ink | `#101521` | Text, keys in the lockup, dark surfaces |
 | Snow | `#F4F5F8` | Panels on light, text on dark |
 
