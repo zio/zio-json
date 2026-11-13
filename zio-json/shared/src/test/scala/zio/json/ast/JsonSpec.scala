@@ -169,6 +169,14 @@ object JsonSpec extends ZIOSpecDefault {
 
           assertTrue(obj1 != obj2 && obj2 != obj1)
         },
+        test("equality fails when duplicate keys mask distinct key sets") {
+          val obj1 = Json.Obj(Chunk("a" -> Json.Str("x"), "b" -> Json.Str("x")))
+          val obj2 = Json.Obj(Chunk("a" -> Json.Str("x"), "a" -> Json.Str("x")))
+          val obj3 = Json.Obj(Chunk("x" -> Json.Num(1), "y" -> Json.Num(2)))
+          val obj4 = Json.Obj(Chunk("x" -> Json.Num(1), "x" -> Json.Num(1)))
+
+          assertTrue(obj1 != obj2 && obj2 != obj1 && obj3 != obj4 && obj4 != obj3)
+        },
         test("equality fails for different objects of different sizes") {
           val obj1 = Json.Obj(
             "quux" -> Json.Str("1"),
@@ -200,6 +208,16 @@ object JsonSpec extends ZIOSpecDefault {
 
           assertTrue(obj1.hashCode == obj2.hashCode)
           assertTrue(Json.Obj.empty.hashCode == Json.Obj(Chunk.empty).hashCode)
+        },
+        test("duplicate keys collapse consistently for equals and hashCode") {
+          val single = Json.Obj(Chunk("a" -> Json.Str("x")))
+          val dup    = Json.Obj(Chunk("a" -> Json.Str("x"), "a" -> Json.Str("x")))
+
+          assertTrue(single == dup && single.hashCode == dup.hashCode)
+
+          val distinct1 = Json.Obj(Chunk("a" -> Json.Str("x"), "b" -> Json.Str("x")))
+          val distinct2 = Json.Obj(Chunk("a" -> Json.Str("x"), "a" -> Json.Str("x")))
+          assertTrue(distinct1 != distinct2 && distinct1.hashCode != distinct2.hashCode)
         }
       ),
       suite("foldUp")(
