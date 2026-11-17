@@ -1,6 +1,6 @@
 ---
 id: validate-on-decode
-title: "Validate data while decoding"
+title: "Validate Data While Decoding"
 description: "Reject bad values during decoding with mapOrFail and transformOrFail, read the error paths, and use refined types or strict objects."
 keywords:
   - "JSON Validation"

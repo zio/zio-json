@@ -1,6 +1,6 @@
 ---
 id: sealed-traits
-title: "Sealed traits"
+title: "Sealed Traits"
 description: "Control how ZIO JSON encodes sealed traits: type hints, hint name formats, a discriminator field, and enums as strings."
 keywords:
   - "Sealed Trait Encoding"

@@ -1,6 +1,6 @@
 ---
 id: optional-and-default-fields
-title: "Optional, default and null fields"
+title: "Optional, Default and Null Fields"
 description: "Decide how ZIO JSON treats missing, null and empty fields: Option, default values, explicit nulls, empty collections and extra fields."
 keywords:
   - "Optional Fields"

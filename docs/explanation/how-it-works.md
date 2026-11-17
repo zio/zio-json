@@ -1,6 +1,6 @@
 ---
 id: how-it-works
-title: "How ZIO JSON works"
+title: "How ZIO JSON Works"
 description: "Why ZIO JSON is fast and safe: a reader-based decoder, compile-time derivation without runtime reflection, and early exit on bad input."
 keywords:
   - "JSON Decoder Design"

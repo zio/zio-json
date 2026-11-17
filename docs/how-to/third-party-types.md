@@ -1,6 +1,6 @@
 ---
 id: third-party-types
-title: "Encode a type you do not own"
+title: "Encode a Type You Do Not Own"
 description: "Write a JSON encoder, decoder, or codec for a class from a library you cannot change, and place it where the compiler finds it."
 keywords:
   - "Custom Codec"

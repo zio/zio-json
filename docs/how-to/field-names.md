@@ -1,6 +1,6 @@
 ---
 id: field-names
-title: "Field names"
+title: "Field Names"
 description: "Rename JSON fields with jsonField, rename all fields with jsonMemberNames, and read old names with jsonAliases in ZIO JSON."
 keywords:
   - "JSON Field Names"
