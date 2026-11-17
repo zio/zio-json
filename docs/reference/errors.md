@@ -117,11 +117,9 @@ A message you return from `mapOrFail` ends up in the same position, in parenthes
 
 Decoding from a `Json` value with `fromJsonAST` or `Json#as` uses slightly different wording for some types: `expected a Int` instead of `expected an Int`, and `expected boolean` instead of `expected a Boolean`.
 
-## Why the Path Matters
+## Error Paths
 
-A message alone is rarely enough.
-`expected an Int` does not say which of a hundred fields was wrong.
-The path points at the exact value, so you can find it in the input without a debugger.
+Apart from the two fixed strings described in [Where Errors Appear](#where-errors-appear), an error string is the path to the value that failed, followed by the message in parentheses.
 The examples in this section decode an order with a list of items:
 
 ```scala mdoc:silent:reset
