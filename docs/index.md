@@ -56,7 +56,8 @@ libraryDependencies += "dev.zio" %% "zio-json-golden" % "@VERSION@" % Test
 The documentation is split by what you want to do:
 
 - **[Getting Started](getting-started.md)** installs ZIO JSON and walks through encoding and decoding your first types.
-- **[Reference](reference/index.md)** pages list every type, method, annotation and option. Its **Concepts** pages describe the design: [How ZIO JSON Works](explanation/how-it-works.md), [Scala 2 and Scala 3 Differences](explanation/scala-2-vs-scala-3.md), [How Strict Is the Decoder](explanation/decoder-strictness.md), [JSON Shapes and Round Trips](explanation/wire-format.md), [Performance](explanation/performance.md) and [Security](explanation/security.md).
+- **[Concepts](explanation/index.md)** explain the design and the trade-offs: how derivation and decoding work, Scala 2 and Scala 3 differences, decoder strictness, JSON shapes, performance and security.
+- **[Reference](reference/index.md)** pages list every type, method, annotation and option.
 - **[Integrations](interop/index.md)** connect ZIO JSON to http4s, refined, Scalaz 7 and enumeratum.
 - **Tutorials** teach a larger example step by step: [Model a Real API Payload](tutorial/model-an-api-payload.md).
 - **[How-to Guides](how-to/index.md)** solve one task each, such as renaming fields, encoding sealed traits or streaming large JSON documents.

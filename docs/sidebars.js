@@ -4,6 +4,20 @@ const sidebars = {
     "getting-started",
     {
       type: "category",
+      label: "Concepts",
+      collapsed: false,
+      link: { type: "doc", id: "explanation/index" },
+      items: [
+        "explanation/how-it-works",
+        "explanation/scala-2-vs-scala-3",
+        "explanation/decoder-strictness",
+        "explanation/wire-format",
+        "explanation/performance",
+        "explanation/security"
+      ]
+    },
+    {
+      type: "category",
       label: "Reference",
       collapsed: false,
       link: { type: "doc", id: "reference/index" },
@@ -35,20 +49,7 @@ const sidebars = {
         "reference/json-ast",
         "reference/yaml",
         "reference/streaming",
-        "reference/golden-testing",
-        {
-          type: "category",
-          label: "Concepts",
-          collapsed: false,
-          items: [
-            "explanation/how-it-works",
-            "explanation/scala-2-vs-scala-3",
-            "explanation/decoder-strictness",
-            "explanation/wire-format",
-            "explanation/performance",
-            "explanation/security"
-          ]
-        }
+        "reference/golden-testing"
       ]
     },
     {
