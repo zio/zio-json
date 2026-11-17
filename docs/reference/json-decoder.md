@@ -14,7 +14,7 @@ Use it directly when you write a decoder by hand or build one from another decod
 Most code calls `fromJson` and lets the compiler find the decoder in the implicit scope.
 Instances for the standard types live in the `JsonDecoder` companion object, and `JsonDecoder.apply[A]` returns the one in scope.
 The full list of types that have one is in [Built-in Instances](built-in-instances.md).
-Derived instances for your own types are covered in [Decoding](../how-to/decoding.md).
+Deriving an instance for your own type is covered in [Getting Started](../getting-started.md), and decoding JSON whose keys do not match your fields in [Decode JSON Whose Shape Differs from Your Case Class](../how-to/decoding.md).
 
 | Method                                                        | What it does                                             | Details                                                 |
 |---------------------------------------------------------------|----------------------------------------------------------|---------------------------------------------------------|
@@ -84,6 +84,26 @@ A function passed to `JsonDecoder#map` that throws makes `JsonDecoder#decodeJson
 ```scala mdoc
 scala.util.Try(JsonDecoder[Int].map(n => 10 / n).decodeJson("0"))
 ```
+
+### Decoding from Bytes
+
+JSON usually arrives as bytes: an HTTP response body, a file, a Kafka record.
+The `Chunk[Byte]` and `Array[Byte]` overloads of `decodeJson`, and the `fromJson` extensions on those types, turn bytes into characters as the parser consumes them, so peak memory is the input plus a constant.
+Converting to a `String` first, with `new String(chunk.toArray, UTF_8)`, holds the chunk, an array copy of it and the `String` at the same time.
+
+A chunk backed by a single array, which is what `Chunk.fromArray` produces, is read in place with no copy at all.
+An `Array[Byte]` is wrapped this way, so it is not copied either.
+A chunk of any other shape, such as one concatenated from several network reads, is copied through a fixed window of 8 KiB at a time.
+
+The input must be UTF-8, as [RFC 8259](https://www.rfc-editor.org/rfc/rfc8259#section-8.1) requires for JSON exchanged between systems.
+A malformed UTF-8 sequence decodes to the replacement character U+FFFD on every platform, matching what `new String(bytes, UTF_8)` produces on the JVM, and is not an error:
+
+```scala mdoc
+Array[Byte]('"', 'a', 0xff.toByte, 'b', '"').fromJson[String].map(_.map(c => f"U+${c.toInt}%04X").mkString(" "))
+```
+
+Errors are reported in the same format as for a `CharSequence`.
+For input that does not fit in memory, decode from a `ZStream` of bytes instead (JVM only, see [Streaming](#streaming)).
 
 ### Trailing Input Is Ignored
 
@@ -363,6 +383,15 @@ Collection decoders (`List`, `Map`, `Chunk`, ...) return an empty collection her
 By default a missing collection field is an error.
 `map`, `mapOrFail`, `orElse` and `suspend` forward this call to the decoder they wrap.
 `zip`, the `both` family and `peekChar` do not, so they fail with `missing`.
+
+A field with a default value never reaches `JsonDecoder#unsafeDecodeMissing`: the derived decoder uses the default when the field is absent or its value is `null`.
+The default expression is evaluated again on every decode, so a default such as `java.util.UUID.randomUUID()` gives a fresh value each time.
+This holds on Scala 2 and Scala 3.
+
+A derived decoder recognizes a collection field by its decoder, looking through `JsonDecoder#map` and `JsonDecoder#mapOrFail` to the decoder they wrap.
+A collection decoder combined with `JsonDecoder#orElse` is not recognized, so an absent field calls `JsonDecoder#unsafeDecodeMissing`, which `JsonDecoder#orElse` forwards to the collection decoder, and the field decodes to an empty collection even with the default settings.
+[Accept a Field That Arrives in Two Shapes](../how-to/decoding.md#accept-a-field-that-arrives-in-two-shapes) shows this case.
+
 See [Optional and Default Fields](../how-to/optional-and-default-fields.md) for the user-facing rules, and [Annotations](annotations.md) and [JsonCodecConfiguration](json-codec-configuration.md) for field defaults and null handling.
 
 To make a field decode as `0` when it is absent, override `unsafeDecodeMissing` in a decoder that otherwise delegates to the `Int` decoder:
@@ -729,7 +758,7 @@ On Scala.js and Scala Native, decoding `ZoneId` and `ZonedDateTime` needs the ti
 ## See Also
 
 - [Write a Fast Encoder or Decoder by Hand](../how-to/low-level-codecs.md) for a worked hand-written codec
-- [Decoding](../how-to/decoding.md) for derivation, ADTs and custom JSON shapes
+- [Decode JSON Whose Shape Differs from Your Case Class](../how-to/decoding.md) for JSON whose keys or layout do not match your fields
 - [Manual Instances](../how-to/manual-instances.md) for `map` and `mapOrFail` in practice
 - [JsonEncoder](json-encoder.md) and [JsonCodec](json-codec.md)
 - [JsonFieldEncoder and JsonFieldDecoder](json-field-codecs.md) for map keys
