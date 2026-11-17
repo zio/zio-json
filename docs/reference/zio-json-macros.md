@@ -50,7 +50,7 @@ For Scala.js or Scala Native, use `%%%` instead of `%%`.
 
 With no argument, `@jsonDerive` generates a `JsonCodec`, so the class can be encoded and decoded right away:
 
-```scala mdoc
+```scala mdoc:reset-object
 import zio.json._
 
 @jsonDerive final case class Watermelon(pips: Int)

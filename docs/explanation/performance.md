@@ -114,7 +114,7 @@ Inside a hand-written encoder, write to the `Write` that `JsonEncoder#unsafeEnco
 
 `toJson` always builds the whole document as a `String`. When the output goes to a `java.io.Writer`, such as a file or a servlet response, `zio.json.internal.WriteWriter` adapts the writer to the `Write` interface, so `JsonEncoder#unsafeEncode` can write into it directly. The JVM streaming encoders use it internally:
 
-```scala mdoc:silent
+```scala mdoc:silent:reset-object
 import java.io.StringWriter
 
 import zio.json._

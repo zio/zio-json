@@ -28,7 +28,7 @@ We can use `JsonDecoder#map` on another `JsonDecoder` in cases where the convers
 
 For example, say we want to model the count of fruit with a `case class` to provide us with additional type safety in our business logic (this pattern is known as a *newtype*):
 
-```scala mdoc:silent
+```scala mdoc:silent:reset-object
 import zio.json._
 
 case class FruitCount(value: Int)

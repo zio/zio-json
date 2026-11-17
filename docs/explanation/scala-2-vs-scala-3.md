@@ -51,7 +51,7 @@ The sections below show each difference with code. Scala 2 code is compiled and 
 
 A derived codec needs an instance for the type of every field. On Scala 2, Magnolia looks the instance up in implicit scope and stops with a compile error when there is none. Here `Address` has no codec:
 
-```scala mdoc:fail
+```scala mdoc:fail:reset-object
 import zio.json._
 
 final case class Address(street: String)

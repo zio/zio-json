@@ -16,7 +16,7 @@ Every table below has the same columns. **JSON shape** is what the encoder write
 
 A few of the shapes, written by the built-in encoders:
 
-```scala mdoc
+```scala mdoc:reset-object
 import zio.json._
 import java.time.Instant
 

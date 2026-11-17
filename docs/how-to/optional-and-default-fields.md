@@ -14,7 +14,7 @@ Goal: control what happens when a JSON field is missing, `null`, empty or unexpe
 
 ## What you need
 
-```scala mdoc:silent
+```scala mdoc:silent:reset-object
 import zio.json._
 ```
 

@@ -14,7 +14,7 @@ Goal: use a class from another library as a field in your case class, even thoug
 
 ZIO JSON already covers common library types such as `java.util.UUID`, `java.time.Instant`, and `BigDecimal` (see [Built-in Instances](../reference/built-in-instances.md)). For anything else you supply the instances yourself. The example below uses a `Money` class that stands in for a type from a library. The `vendor` object plays the role of that library.
 
-```scala mdoc:silent
+```scala mdoc:silent:reset-object
 import zio.json._
 
 object vendor {

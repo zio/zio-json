@@ -29,7 +29,7 @@ libraryDependencies += "dev.zio" %% "zio-json" % "@VERSION@"
 
 The steps use these imports and this type:
 
-```scala mdoc:silent
+```scala mdoc:silent:reset-object
 import zio.json._
 import zio.json.ast.Json
 import zio.json.internal.{ Lexer, RetractReader, Write }
@@ -242,7 +242,7 @@ Keep the text methods and the tree methods consistent: both must describe the sa
 
 A `JsonCodec` pairs an encoder with a decoder, and putting it in the companion object of `Position` lets the compiler find it everywhere without an import. The complete codec below combines the previous steps, with each half written as one class instead of delegating:
 
-```scala mdoc:silent:reset
+```scala mdoc:silent:reset-object
 import zio.json._
 import zio.json.ast.Json
 import zio.json.internal.{ Lexer, RetractReader, Write }

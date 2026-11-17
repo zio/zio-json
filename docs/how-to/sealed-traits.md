@@ -21,7 +21,7 @@ This page shows how to change the key (the type hint), how to use a discriminato
 
 ## What you need
 
-```scala mdoc:silent
+```scala mdoc:silent:reset-object
 import zio.json._
 ```
 
@@ -74,7 +74,7 @@ The codec of `FruitKind` expects the hint. You cannot decode a bare `{"good":tru
 
 To read one subtype without a hint, give that subtype its own codec in its companion. A case class does not need a discriminator to be decoded on its own:
 
-```scala mdoc:silent:reset
+```scala mdoc:silent:reset-object
 import zio.json._
 
 @jsonHintNames(SnakeCase)
@@ -152,7 +152,7 @@ A discriminator is slower, uses more memory, and is more exposed to denial-of-se
 
 The configuration form of the same options is `JsonCodecConfiguration`. Use `SumTypeHandling.DiscriminatorField` for `sumTypeHandling`, and `sumTypeMapping` for the hint format:
 
-```scala mdoc:silent:reset
+```scala mdoc:silent:reset-object
 import zio.json._
 import zio.json.JsonCodecConfiguration.SumTypeHandling
 
@@ -197,7 +197,7 @@ On Scala 3, a sealed family of case objects and an `enum` with only parameterles
 
 On Scala 2 the default is the single-key object, `{"Red":{}}`. Turn the setting on with an implicit configuration:
 
-```scala mdoc:silent:reset
+```scala mdoc:silent:reset-object
 import zio.json._
 
 implicit val config: JsonCodecConfiguration =
@@ -258,7 +258,7 @@ docs.Scala3Source.print("zio-json-docs-scala3/src/main/scala-3/zio/json/docs/sea
 
 A sealed trait can extend another one. The codec of the outer trait sees only the leaf cases, the case classes and case objects at the bottom of the hierarchy. An intermediate sealed trait gets no hint of its own, so the JSON is the same as for a flat family. This holds on Scala 2 and on Scala 3:
 
-```scala mdoc:silent:reset
+```scala mdoc:silent:reset-object
 import zio.json._
 
 sealed trait Animal

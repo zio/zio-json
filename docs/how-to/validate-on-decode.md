@@ -14,7 +14,7 @@ Goal: make decoding fail when a value is well-formed JSON but is not acceptable 
 
 The tool is `mapOrFail`. It runs a function on a decoded value. The function returns `Right` to accept or `Left` with a message to reject. The failure is part of decoding, so the bad value never reaches your code.
 
-```scala mdoc:silent
+```scala mdoc:silent:reset-object
 import zio.json._
 ```
 

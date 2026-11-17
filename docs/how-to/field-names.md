@@ -21,7 +21,7 @@ By default, the JSON field names are the case class field names. This page shows
 
 Only `zio-json` and one import:
 
-```scala mdoc:silent
+```scala mdoc:silent:reset-object
 import zio.json._
 ```
 

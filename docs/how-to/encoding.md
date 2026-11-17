@@ -7,7 +7,7 @@ title: "Encoding"
 
 Assume we want to encode this case class
 
-```scala mdoc
+```scala mdoc:reset-object
 case class Banana(curvature: Double)
 ```
 
@@ -30,7 +30,7 @@ Banana(0.5).toJson
 
 Say we extend our data model to include more data types
 
-```scala mdoc:reset
+```scala mdoc:reset-object
 sealed trait Fruit
 
 case class Banana(curvature: Double) extends Fruit

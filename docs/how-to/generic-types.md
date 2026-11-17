@@ -30,7 +30,7 @@ libraryDependencies += "dev.zio" %% "zio-json" % "@VERSION@"
 
 The Scala 2 examples on this page use this import:
 
-```scala mdoc:silent
+```scala mdoc:silent:reset-object
 import zio.json._
 ```
 

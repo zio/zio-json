@@ -24,7 +24,7 @@ libraryDependencies += "dev.zio" %% "zio-json" % "@VERSION@"
 
 All code on this page uses these imports:
 
-```scala mdoc:silent
+```scala mdoc:silent:reset-object
 import zio.json._
 
 import java.time.LocalDate

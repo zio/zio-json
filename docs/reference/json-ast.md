@@ -43,7 +43,7 @@ Objects keep their fields in insertion order as a `Chunk` of key-value pairs. Th
 
 The cases can be constructed directly:
 
-```scala mdoc
+```scala mdoc:reset-object
 import zio.json._
 import zio.json.ast.{ Json, JsonCursor, JsonType }
 

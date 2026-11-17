@@ -34,7 +34,7 @@ The decoders use refined's `refineV`, so the error message is the one refined pr
 
 With the import in place, a case class whose fields are refined types derives a full codec like any other case class:
 
-```scala mdoc:silent
+```scala mdoc:silent:reset-object
 import zio.json._
 import zio.json.interop.refined._
 

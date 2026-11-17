@@ -25,7 +25,7 @@ ZIO JSON works on Scala 2.12, 2.13 and 3, on the JVM, Scala.js and Scala Native.
 
 Every snippet below assumes this import:
 
-```scala mdoc:silent
+```scala mdoc:silent:reset-object
 import zio.json._
 ```
 

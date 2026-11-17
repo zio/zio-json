@@ -53,7 +53,7 @@ The last two rules are the reason the same model can produce different JSON on t
 
 The wrapper column is the Scala 2 default. We define one family with a field, one of case objects only, and one that mixes a case object with an empty case class:
 
-```scala mdoc:silent
+```scala mdoc:silent:reset-object
 import zio.json._
 
 sealed trait Shape
@@ -92,7 +92,7 @@ println((Off(): Signal).toJson)
 
 With `enumValuesAsStrings = true`, the families without fields become strings. On Scala 2 that includes the family with the empty case class:
 
-```scala mdoc:silent:reset
+```scala mdoc:silent:reset-object
 import zio.json._
 
 implicit val config: JsonCodecConfiguration =
@@ -125,7 +125,7 @@ println((Off(): Signal).toJson)
 
 A discriminator turns every case into an object again, even with `enumValuesAsStrings = true` in scope:
 
-```scala mdoc:silent:reset
+```scala mdoc:silent:reset-object
 import zio.json._
 
 implicit val config: JsonCodecConfiguration =
@@ -203,7 +203,7 @@ Each codec in the table above reads back what it writes. The pitfalls below are 
 
 An encoder leaves a `None` field out of the JSON. A decoder fills a missing field with its default value, and only falls back to `None` when there is no default. So when the default is not `None`, a `None` comes back as the default:
 
-```scala mdoc:silent:reset
+```scala mdoc:silent:reset-object
 import zio.json._
 import zio.json.ast.Json
 

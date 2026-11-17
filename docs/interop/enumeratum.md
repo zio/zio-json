@@ -32,7 +32,7 @@ Both packages contain an object named `ZioJson`. When you import both packages i
 
 The quickest way to give a string enum its codecs is to mix traits into its companion object. `ZioJsonEnum` adds an implicit `JsonEncoder` and `JsonDecoder`, and `ZioJsonKeyEnum` adds an implicit `JsonFieldEncoder` and `JsonFieldDecoder` for map keys:
 
-```scala mdoc:silent
+```scala mdoc:silent:reset-object
 import enumeratum._
 import zio.json._
 

@@ -35,7 +35,7 @@ libraryDependencies += "dev.zio" %% "zio-json" % "@VERSION@"
 
 The model at the end of this guide uses the usual import for codecs:
 
-```scala mdoc:silent
+```scala mdoc:silent:reset-object
 import zio.json._
 ```
 

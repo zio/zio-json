@@ -32,7 +32,7 @@ Both convert through `List`: the encoder writes `IList#toList`, and the decoder 
 
 Encoding an `IList` produces a JSON array:
 
-```scala mdoc
+```scala mdoc:reset-object
 import zio.json._
 import zio.json.interop.scalaz7x._
 

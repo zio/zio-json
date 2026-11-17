@@ -38,7 +38,7 @@ libraryDependencies += "dev.zio" %% "zio-json" % "@VERSION@"
 
 All examples use these imports:
 
-```scala mdoc:silent
+```scala mdoc:silent:reset-object
 import zio.json._
 import zio.json.ast.{ Json, JsonCursor }
 ```

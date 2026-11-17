@@ -15,7 +15,7 @@ ZIO JSON decoders check everything they need to build your value, and little els
 
 All examples on this page use these imports and types:
 
-```scala mdoc:silent
+```scala mdoc:silent:reset-object
 import zio.json._
 import zio.json.ast.Json
 

@@ -43,7 +43,7 @@ The companion has codec instances for the primitive types, `Option`, `Either`, t
 A few types have an encoder and a decoder but no codec: `Unit`, `IndexedSeq`, `LinearSeq`, `ListSet`, `TreeSet` and `mutable.Map`. Build those with `JsonCodec(JsonEncoder[T], JsonDecoder[T])`.
 [Built-in Instances](built-in-instances.md) lists every type with its JSON shape and says which of the three instances it has.
 
-```scala mdoc:silent
+```scala mdoc:silent:reset-object
 import zio.json._
 
 final case class Person(name: String, age: Int)

@@ -61,7 +61,7 @@ A product ID is a string, but not every string is a product ID. Let's give it a 
 
 The `items` object uses product IDs as keys. A JSON key is always a string, and ZIO JSON reads and writes keys with two small type classes, `JsonFieldEncoder` and `JsonFieldDecoder`. We define both in the companion object of `ProductId`:
 
-```scala mdoc:silent
+```scala mdoc:silent:reset-object
 import zio.json._
 import java.time.Instant
 

@@ -38,7 +38,7 @@ Both live in the `zio.json` package.
 
 Built-in key types need nothing extra, and a key of your own type needs one `JsonFieldEncoder` and one `JsonFieldDecoder`, usually built from the `String` instances:
 
-```scala mdoc:reset
+```scala mdoc:reset-object
 import zio.json._
 
 final case class ProductId(value: String)
@@ -134,7 +134,7 @@ object JsonFieldEncoder {
 
 `JsonFieldEncoder#contramap` is the usual way to build one, and calling `JsonFieldEncoder#unsafeEncodeField` directly shows the string it produces:
 
-```scala mdoc:silent:reset
+```scala mdoc:silent:reset-object
 import zio.json._
 
 final case class Sku(code: String)
@@ -196,7 +196,7 @@ The sections below show the three common cases.
 
 For a sealed trait of case objects, encode each case by name and look the name up when decoding:
 
-```scala mdoc:silent:reset
+```scala mdoc:silent:reset-object
 import zio.json._
 
 sealed trait Currency

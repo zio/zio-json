@@ -28,7 +28,7 @@ libraryDependencies += "dev.zio" %% "zio-json-yaml" % "@VERSION@"
 Importing `zio.json.yaml._` adds the `toYaml` extension method to any value that has a `JsonEncoder` in scope.
 We define a case class with a derived codec first:
 
-```scala mdoc:silent
+```scala mdoc:silent:reset-object
 import zio.json._
 import zio.json.ast.Json
 import zio.json.yaml._

@@ -36,7 +36,7 @@ The library provides `JsonCodecConfiguration.default` in the companion object.
 To use your own, put an implicit value in scope before the `DeriveJsonCodec.gen` call.
 A value in scope wins over the companion default. Here the companion of `User` holds a configuration that writes field names in snake case:
 
-```scala mdoc:silent:reset
+```scala mdoc:silent:reset-object
 import zio.json._
 
 case class User(firstName: String, lastName: String)
@@ -107,7 +107,7 @@ Use it only to match an external schema.
 
 The following configuration writes the case name into a `type` field:
 
-```scala mdoc:silent:reset
+```scala mdoc:silent:reset-object
 import zio.json._
 import zio.json.JsonCodecConfiguration.SumTypeHandling.DiscriminatorField
 
@@ -153,7 +153,7 @@ It breaks decoding of sum types that use a discriminator; see [sumTypeHandling](
 
 The configuration below makes a plain case class strict:
 
-```scala mdoc:silent:reset
+```scala mdoc:silent:reset-object
 import zio.json._
 
 case class Point(x: Int, y: Int)
@@ -177,7 +177,7 @@ Type: `JsonMemberFormat`. It rewrites the case names of a sealed trait, for both
 
 With `KebabCase`, a case named `RoundCircle` is tagged `round-circle`:
 
-```scala mdoc:silent:reset
+```scala mdoc:silent:reset-object
 import zio.json._
 
 sealed trait Shape
@@ -204,7 +204,7 @@ This option only affects encoding.
 
 The configuration below writes `None` as `null`:
 
-```scala mdoc:silent:reset
+```scala mdoc:silent:reset-object
 import zio.json._
 
 case class Profile(name: String, nickname: Option[String])
@@ -233,7 +233,7 @@ With the defaults, empty collections are written, and a missing collection field
 
 The configuration below turns off both directions:
 
-```scala mdoc:silent:reset
+```scala mdoc:silent:reset-object
 import zio.json._
 
 case class Basket(items: List[String])
@@ -264,7 +264,7 @@ The how-to side is in [Write case objects as strings](../how-to/sealed-traits.md
 
 With all cases as case objects, the cases become strings:
 
-```scala mdoc:silent:reset
+```scala mdoc:silent:reset-object
 import zio.json._
 
 sealed trait Color
@@ -289,7 +289,7 @@ With `enumValuesAsStrings = false`, `Red` encodes as `{"Red":{}}`.
 
 A case class with an empty parameter list counts as an enum value on Scala 2 only. On Scala 2, this family is written as strings:
 
-```scala mdoc:silent:reset
+```scala mdoc:silent:reset-object
 import zio.json._
 
 sealed trait Signal

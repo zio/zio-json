@@ -52,7 +52,7 @@ play   2350 ( 3589)  1854 (1344)
 
 ZIO JSON is not as badly affected because a derived decoder skips the values of fields it does not know. Skipping does not build anything, and it is not recursive, so even an unknown field nested 100,000 levels deep is skipped without trouble. Skipping also does not validate the skipped value fully, so some malformed values inside unknown fields are accepted. We define a small type to show it:
 
-```scala mdoc:silent
+```scala mdoc:silent:reset-object
 import zio.json._
 import zio.json.ast.Json
 
