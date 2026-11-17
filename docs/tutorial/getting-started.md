@@ -193,7 +193,7 @@ Because the result is an ordinary `Either`, you handle it with `fold`, `map`, or
 
 ## 8. Where next
 
-You can now encode, decode, nest, extend, and debug. Pick the guide that matches your next task:
+You can now encode, decode, nest, extend, and debug. To practise on a larger example, continue with the next tutorial, [Model a Real API Payload](model-an-api-payload.md). Or pick the guide that matches your next task:
 
 - [Encode values to JSON](../how-to/encoding.md) covers every way to produce JSON, including streams.
 - [Decode JSON into values](../how-to/decoding.md) covers strings, bytes, and streams as input.
