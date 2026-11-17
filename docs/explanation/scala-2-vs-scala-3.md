@@ -324,7 +324,7 @@ Scala 3 adds:
 
 Opaque types are Scala 3 only, but ZIO JSON has no automatic support for them. Each one needs a hand-written codec, usually `JsonCodec.string.transform(...)` on the underlying type.
 
-Scala 2 has `@jsonDerive` from the `zio-json-macros` module, which generates the companion codec for you. Scala 3 has no macro annotations, so the module is not published for Scala 3. A `derives` clause replaces it. See [zio-json-macros](../reference/zio-json-macros.md#scala-3-alternative).
+Scala 2 has `@jsonDerive` from the `zio-json-macros` module, which generates the companion codec for you. Scala 3 has no macro annotations, so the module is not published for Scala 3. A `derives` clause replaces it. See [@jsonDerive Macro Annotation](../reference/zio-json-macros.md#scala-3-alternative).
 
 ## Migrating From Scala 2 to Scala 3
 
