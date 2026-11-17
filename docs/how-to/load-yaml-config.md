@@ -24,7 +24,7 @@ libraryDependencies += "dev.zio" %% "zio-json-yaml" % "@VERSION@"
 
 All code on this page uses these imports. `zio.json.yaml._` adds the `String#fromYaml` extension method, and a `toYaml` method to every value that has a `JsonEncoder`:
 
-```scala mdoc:silent
+```scala mdoc:silent:reset-object
 import zio.json._
 import zio.json.yaml._
 ```

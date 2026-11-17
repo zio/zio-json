@@ -24,7 +24,7 @@ The running example is a stock quote from a third-party API. Its keys are not va
 
 The case class we want to fill uses plain names:
 
-```scala mdoc:reset
+```scala mdoc:reset-object
 import zio.json._
 
 final case class Quote(symbol: String, open: String, high: String)
@@ -55,7 +55,7 @@ Options 1 and 2 decode in one pass, straight from the text. Options 3 and 4 firs
 
 `@jsonField` on a field gives the key the derived decoder looks for. This works only when you can change the case class:
 
-```scala mdoc:reset
+```scala mdoc:reset-object
 import zio.json._
 
 final case class Quote(
@@ -83,7 +83,7 @@ The annotation also renames the key on encoding. When many keys follow one patte
 
 A private case class can mirror the JSON exactly, and `JsonDecoder#map` converts it into the domain class. Keys that are not valid Scala identifiers go in backticks:
 
-```scala mdoc:reset
+```scala mdoc:reset-object
 import zio.json._
 
 final case class Quote(symbol: String, open: String, high: String)
@@ -116,7 +116,7 @@ Use `JsonDecoder#mapOrFail` instead of `JsonDecoder#map` when the conversion can
 
 `JsonDecoder[Json]` reads any valid JSON into a `Json` tree, and `JsonDecoder#mapOrFail` turns that tree into a `Quote` or an error message. `Json#asString` returns the text of a `Json.Str` and `None` for any other case, so a field that holds a number or an object is rejected. Do not use `toString` here: it renders the node as JSON, so a string would keep its quotes:
 
-```scala mdoc:reset
+```scala mdoc:reset-object
 import zio.json._
 import zio.json.ast.Json
 
@@ -155,7 +155,7 @@ The input decodes, and a failure carries the message you wrote, at the position 
 
 A [cursor](../reference/json-ast.md#cursors) is a path into a `Json` tree, built once and applied with `Json#get`. `JsonCursor.field` selects a key, `>>>` continues the path, and `JsonCursor.isString` rejects a value that is not a string, as `Json#asString` does in option 3:
 
-```scala mdoc:reset
+```scala mdoc:reset-object
 import zio.json._
 import zio.json.ast.{Json, JsonCursor}
 
@@ -193,7 +193,7 @@ For values deeper in the document, extend the path, adding a `JsonCursor#isObjec
 
 Sometimes only one field is irregular. Here some producers send `categories` as a JSON array, and others as one comma-separated string. Keep the derived decoder and give that field a decoder that tries both shapes with `JsonDecoder#orElse` (`<>`):
 
-```scala mdoc:reset
+```scala mdoc:reset-object
 import zio.json._
 
 final case class Animal(name: String, categories: List[String])
