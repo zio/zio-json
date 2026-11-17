@@ -30,18 +30,25 @@ On the JVM, add the core module and any add-on modules you need to `build.sbt`:
 libraryDependencies ++= Seq(
   // Core: codecs, derivation, the Json AST and, on the JVM, streaming (JVM, Scala.js, Scala Native)
   "dev.zio" %% "zio-json"                    % "@VERSION@",
+
   // Read and write YAML with your JSON codecs, through SnakeYAML (JVM)
   "dev.zio" %% "zio-json-yaml"               % "@VERSION@",
+
   // The @jsonDerive annotation, which writes codec instances for you (JVM, Scala.js, Scala Native; Scala 2 only)
   "dev.zio" %% "zio-json-macros"             % "@VERSION@",
+
   // http4s 0.23 entity encoders and decoders built from ZIO JSON codecs (JVM)
   "dev.zio" %% "zio-json-interop-http4s"     % "@VERSION@",
+
   // Codecs and map-key codecs for refined types (JVM, Scala.js, Scala Native)
   "dev.zio" %% "zio-json-interop-refined"    % "@VERSION@",
+
   // Codecs for Scalaz 7 IList (JVM, Scala.js, Scala Native; Scala 2 only)
   "dev.zio" %% "zio-json-interop-scalaz7x"   % "@VERSION@",
+
   // Codecs and map-key codecs for enumeratum enums (JVM, Scala.js, Scala Native)
   "dev.zio" %% "zio-json-interop-enumeratum" % "@VERSION@",
+
   // Golden (snapshot) tests that catch unintended changes to encoded JSON (JVM, tests only)
   "dev.zio" %% "zio-json-golden"             % "@VERSION@" % Test
 )
@@ -53,12 +60,16 @@ In a Scala.js or Scala Native project, use `%%%`. Only these modules are built f
 libraryDependencies ++= Seq(
   // Core: codecs, derivation and the Json AST
   "dev.zio" %%% "zio-json"                    % "@VERSION@",
+
   // The @jsonDerive annotation (Scala 2 only)
   "dev.zio" %%% "zio-json-macros"             % "@VERSION@",
+
   // Codecs and map-key codecs for refined types
   "dev.zio" %%% "zio-json-interop-refined"    % "@VERSION@",
+
   // Codecs for Scalaz 7 IList (Scala 2 only)
   "dev.zio" %%% "zio-json-interop-scalaz7x"   % "@VERSION@",
+
   // Codecs and map-key codecs for enumeratum enums
   "dev.zio" %%% "zio-json-interop-enumeratum" % "@VERSION@"
 )
