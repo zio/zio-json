@@ -1,10 +1,10 @@
 ---
 id: streaming
 title: "Streaming"
+description: "Encode and decode JSON with ZIO Streams on the JVM: single values, JSON Lines, JSON arrays, files, and errors in the middle of a stream."
 ---
 
-ZIO JSON can encode and decode values as [ZIO Streams](https://zio.dev/reference/stream/), so you can process large JSON documents, or many small documents, without loading everything into memory at once.
-The streaming API has three main forms: a single value as a stream of characters, a JSON array as a pipeline, and [JSON Lines](https://jsonlines.org/) (one value per line) as a pipeline.
+ZIO JSON can encode and decode values as [ZIO Streams](https://zio.dev/reference/stream/), so you can process large JSON documents, or many small documents, without loading everything into memory at once. The streaming API has three main forms: a single value as a stream of characters, a JSON array as a pipeline, and [JSON Lines](https://jsonlines.org/) (one value per line) as a pipeline.
 
 The streaming API is available for the JVM only. This covers every method on this page: `encodeJsonStream`, both encoder pipelines, `decodeJsonStream`, `decodeJsonStreamInput`, `decodeJsonPipeline` and the file helpers. The Scala.js and Scala Native builds do not include them. `JsonStreamDelimiter` exists on every platform, but only the JVM `decodeJsonPipeline` uses it.
 
@@ -49,7 +49,7 @@ val decodedSingle: Event =
 decodedSingle
 ```
 
-Both methods expect exactly one value in the stream, and they may not consume the whole stream.
+Both methods read the first value in the stream and stop there. They do not check what follows it, so the rest of the stream may be left unread, and trailing text, even a second value, is not an error.
 
 To decode from bytes, such as a file or an HTTP body, pass a byte stream to `decodeJsonStreamInput`:
 
@@ -66,8 +66,7 @@ fromBytes
 
 ## JSON Lines
 
-Use the JSON Lines format, one value per line, when you have a sequence of values that you want to process one at a time.
-`JsonEncoder#encodeJsonLinesPipeline` writes each value followed by a newline, and `JsonDecoder#decodeJsonPipeline` with `JsonStreamDelimiter.Newline` reads them back:
+Use the JSON Lines format, one value per line, when you have a sequence of values that you want to process one at a time. `JsonEncoder#encodeJsonLinesPipeline` writes each value followed by a newline, and `JsonDecoder#decodeJsonPipeline` with `JsonStreamDelimiter.Newline` reads them back:
 
 ```scala mdoc:silent
 val events: ZStream[Any, Nothing, Event] =
@@ -77,7 +76,6 @@ val events: ZStream[Any, Nothing, Event] =
 The stream is encoded with the line-delimited pipeline:
 
 ```scala mdoc
-
 val lines: String =
   runSync(events.via(JsonEncoder[Event].encodeJsonLinesPipeline).runCollect.map(_.mkString))
 
@@ -133,7 +131,7 @@ The encoder pipelines and `encodeJsonStream` behave the same way in three respec
 - The JSON Lines output ends with a newline after the last value, as the `lines` example above shows.
 - The characters are buffered and emitted in blocks of about 4096 characters (`ZStream.DefaultChunkSize`), not one value at a time. A block is released when the buffer fills or when the input stream ends.
 
-The buffering matters for slow or infinite sources, such as server-sent events or a log tail. A small value can sit in the buffer until about 4 KB more output arrives, so the consumer sees it late. For example, a source that produces one short `Event` every 10 milliseconds delivers its first character only after about 2.4 seconds. When each value must go out as soon as it is produced, encode the values one by one with `toJson` instead, for example `events.map(_.toJson + "\n")`.
+The buffering matters for slow or infinite sources, such as server-sent events or a log tail. A small value can sit in the buffer until about 4 KB more output arrives, so the consumer sees it late. For example, an `Event` such as `{"id":1,"kind":"created"}` takes about 27 characters with its newline, so about 150 of them fill the buffer. A source that produces one every 10 milliseconds delivers its first character only after roughly 1.5 to 2 seconds. When each value must go out as soon as it is produced, encode the values one by one with `toJson` instead, for example `events.map(_.toJson + "\n")`.
 
 ## Reading and Writing Files
 

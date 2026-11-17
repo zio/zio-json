@@ -117,13 +117,15 @@ object Lemon {
 }
 ```
 
+The field name is written in upper case:
+
 ```scala mdoc
 println(Lemon(7).toJson)
 ```
 
 ## 4. Set the format for the whole program
 
-Instead of annotating each class, set `fieldNameMapping` in an implicit `JsonCodecConfiguration`. It applies to every codec derived while the configuration is in scope. The `@jsonMemberNames` annotation on a class takes priority over it.
+Instead of annotating each class, set `fieldNameMapping` in an implicit `JsonCodecConfiguration`. It applies to every codec derived while the configuration is in scope. The `@jsonMemberNames` annotation on a class takes priority over it. To write every field in snake_case without annotating each class:
 
 ```scala mdoc:compile-only
 implicit val config: JsonCodecConfiguration =
@@ -136,7 +138,7 @@ implicit val cherryCodec: JsonCodec[Cherry] = DeriveJsonCodec.gen[Cherry]
 
 ## 5. Read old names with `@jsonAliases`
 
-After a field has been renamed, you may still receive JSON that uses the old name. `@jsonAliases` lists extra names that the decoder accepts for that field. It was added in zio-json 0.5.0.
+After a field has been renamed, you may still receive JSON that uses the old name. `@jsonAliases` lists extra names that the decoder accepts for that field. It was added in zio-json 0.5.0. To accept two old names for `seedCount`:
 
 ```scala mdoc:silent
 case class Strawberry(@jsonAliases("seeds", "pips") seedCount: Int)

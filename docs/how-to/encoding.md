@@ -1,11 +1,12 @@
 ---
 id: encoding
 title: "Encoding"
+description: "Turn Scala values into JSON with ZIO JSON: derive a JsonEncoder for case classes and sealed traits, or build one from an existing encoder."
 ---
 
 ## Automatic Derivation
 
-Assume we want to encode this case class
+Assume we want to encode this case class:
 
 ```scala mdoc:reset-object
 case class Banana(curvature: Double)
@@ -22,13 +23,15 @@ object Banana {
 }
 ```
 
+With the encoder in the companion, `toJson` turns a `Banana` into JSON:
+
 ```scala mdoc
 Banana(0.5).toJson
 ```
 
 ### ADTs
 
-Say we extend our data model to include more data types
+Say we extend our data model to include more data types:
 
 ```scala mdoc:reset-object
 sealed trait Fruit
@@ -37,7 +40,7 @@ case class Banana(curvature: Double) extends Fruit
 case class Apple (poison: Boolean)   extends Fruit
 ```
 
-we can generate the encoder for the entire `sealed` family
+We can generate the encoder for the entire `sealed` family:
 
 ```scala mdoc
 import zio.json._
@@ -48,6 +51,8 @@ object Fruit {
 }
 ```
 
+A value typed as `Fruit` is written as an object whose only key names the subtype:
+
 ```scala mdoc
 val apple: Fruit = Apple(poison = false)
 apple.toJson
@@ -57,9 +62,9 @@ Almost all of the standard library data types are supported as fields on the cas
 
 For encoding sealed families and enums of parameterless cases as plain strings, see [Sealed Traits](./sealed-traits.md).
 
-## Manual instances
+## Manual Instances
 
-Sometimes it is easier to reuse an existing `JsonEncoder` rather than generate a new one. This can be accomplished using convenience methods on the `JsonEncoder` typeclass to *derive* new encoders:
+Sometimes it is easier to reuse an existing `JsonEncoder` rather than generate a new one. This can be accomplished using convenience methods on the `JsonEncoder` type class to *derive* new encoders:
 
 ```scala
 trait JsonEncoder[A] {

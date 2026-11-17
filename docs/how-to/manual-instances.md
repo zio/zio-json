@@ -1,9 +1,10 @@
 ---
 id: manual-instances
 title: "Manual Instances"
+description: "Build a JsonEncoder or JsonDecoder from an existing one with contramap, map and mapOrFail: newtypes, case classes as arrays, and validated types."
 ---
 
-Sometimes it is easier to reuse an existing `JsonDecoder` rather than generate a new one. This can be accomplished using convenience methods on the `JsonDecoder` typeclass to *derive* new decoders:
+Sometimes it is easier to reuse an existing `JsonDecoder` rather than generate a new one. This can be accomplished using convenience methods on the `JsonDecoder` type class to *derive* new decoders:
 
 ```scala
 trait JsonDecoder[A] {
@@ -56,7 +57,7 @@ Now the `JsonDecoder` for `FruitCount` just expects a raw `Int`, and the encoder
 FruitCount(3).toJson
 ```
 
-Another use case is if we want to encode a `case class` as an array of values, rather than an object with named fields. Such an encoding is very efficient because the messages are smaller and require less processing, but are very strict schemas that cannot be upgraded. Both halves go through the tuple instances:
+Another use case is if we want to encode a `case class` as an array of values, rather than an object with named fields. Such an encoding is very efficient because the messages are smaller and require less processing, but it is a strict schema that cannot be extended without breaking existing readers. Both halves go through the tuple instances:
 
 ```scala mdoc:silent
 case class Things(s: String, i: Int, b: Boolean)
@@ -94,7 +95,7 @@ object Person {
 }
 ```
 
-However, we can derive one by requesting the `JsonDecoder[String]` and calling `mapOrFail`, supplying the constructor for our special `String Refined NonEmpty` type. With that instance in scope, the code compiles:
+However, we can derive one by requesting the `JsonDecoder[String]` and calling `JsonDecoder#mapOrFail`, supplying the constructor for our special `String Refined NonEmpty` type. With that instance in scope, the code compiles:
 
 ```scala mdoc:silent
 import eu.timepit.refined
@@ -118,11 +119,11 @@ An empty name is now rejected while decoding:
 """{"name":"Ann"}""".fromJson[Person]
 ```
 
-In fact, we do not need to provide `decodeName` for each `Refined` data type; `zio-json` comes with support out of the box, see [Refined Interop](../interop/refined.md).
+In fact, we do not need to write `decodeName` for each `Refined` type: the `zio-json-interop-refined` module provides encoders and decoders for any `A Refined P` whose `A` has one, see [Refined Interop](../interop/refined.md).
 
 ## Map Keys
 
-A type used as a `Map` key needs a `JsonFieldEncoder` and a `JsonFieldDecoder` rather than a `JsonEncoder` and a `JsonDecoder`, because JSON object keys are always strings. They have the same `contramap`, `map` and `mapOrFail` methods. See [JsonFieldEncoder and JsonFieldDecoder](../reference/json-field-codecs.md), and [Use Your Own Type as a Map Key](custom-map-keys.md) for a step-by-step guide.
+A type used as a `Map` key needs a `JsonFieldEncoder` and a `JsonFieldDecoder` rather than a `JsonEncoder` and a `JsonDecoder`, because JSON object keys are always strings. `JsonFieldEncoder#contramap`, `JsonFieldDecoder#map` and `JsonFieldDecoder#mapOrFail` work the same way as the methods above. See [JsonFieldEncoder and JsonFieldDecoder](../reference/json-field-codecs.md), and [Use Your Own Type as a Map Key](custom-map-keys.md) for a step-by-step guide.
 
 ## Writing Instances by Hand
 

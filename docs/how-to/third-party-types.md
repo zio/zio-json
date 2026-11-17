@@ -12,7 +12,7 @@ keywords:
 
 Goal: use a class from another library as a field in your case class, even though that library gives it no JSON support and you cannot edit its source.
 
-ZIO JSON already covers common library types such as `java.util.UUID`, `java.time.Instant`, and `BigDecimal` (see [Built-in Instances](../reference/built-in-instances.md)). For anything else you supply the instances yourself. The example below uses a `Money` class that stands in for a type from a library. The `vendor` object plays the role of that library.
+ZIO JSON already covers common library types such as `java.util.UUID`, `java.time.Instant`, and `BigDecimal` (see [Built-in Instances](../reference/built-in-instances.md)). For anything else you supply the instances yourself. The example below uses a `Money` class that stands in for a type from a library. The `vendor` object plays the role of that library:
 
 ```scala mdoc:silent:reset-object
 import zio.json._
@@ -34,7 +34,7 @@ import vendor.Money
 
 ## 1. Write the conversion functions
 
-Two small functions turn a `Money` into text and back. The parser returns an `Either`, so it can say why the text is bad.
+Two small functions turn a `Money` into text and back. The parser returns an `Either`, so it can say why the text is bad:
 
 ```scala mdoc:silent
 def formatMoney(m: Money): String = s"${m.cents} ${m.currency}"
@@ -50,7 +50,7 @@ def parseMoney(s: String): Either[String, Money] =
 
 ## 2. Build the encoder with contramap
 
-`contramap` adapts an existing encoder to a new type. You give it a function from your type to a type that already has an encoder. Here that is `Money` to `String`.
+`JsonEncoder#contramap` adapts an existing encoder to a new type. You give it a function from your type to a type that already has an encoder. Here that is `Money` to `String`:
 
 ```scala mdoc:silent
 val moneyEncoder: JsonEncoder[Money] = JsonEncoder[String].contramap(formatMoney)
@@ -58,7 +58,7 @@ val moneyEncoder: JsonEncoder[Money] = JsonEncoder[String].contramap(formatMoney
 
 ## 3. Build the decoder with mapOrFail
 
-`mapOrFail` adapts an existing decoder. The function may fail with a message, which becomes a decode error.
+`JsonDecoder#mapOrFail` adapts an existing decoder. The function may fail with a message, which becomes a decode error:
 
 ```scala mdoc:silent
 val moneyDecoder: JsonDecoder[Money] = JsonDecoder[String].mapOrFail(parseMoney)
@@ -78,7 +78,7 @@ moneyDecoder.decodeJson("\"12x USD\"")
 
 The compiler looks for an implicit `JsonEncoder[Money]` in two places: the scope around the call, and the companions of the types involved. The companion of `Money` belongs to the other library, so you cannot add anything there. You have two options.
 
-The first is the companion of a type you own. Put the instances next to the case class that uses `Money`, and define them before the derived codec.
+The first is the companion of a type you own. Put the instances next to the case class that uses `Money`, and define them before the derived codec:
 
 ```scala mdoc:silent
 final case class Invoice(id: String, total: Money)
@@ -90,6 +90,8 @@ object Invoice {
   implicit val codec: JsonCodec[Invoice] = DeriveJsonCodec.gen[Invoice]
 }
 ```
+
+The derived `Invoice` codec now writes `total` as one string, and a bad amount fails the decode:
 
 ```scala mdoc
 val invoice = Invoice("A-1", Money(1250, "USD"))
@@ -107,7 +109,7 @@ The second option is a shared object that other files import. Use it when many o
 
 ## 5. Bundle both halves into a codec
 
-A `JsonCodec[A]` is one value holding an encoder and a decoder. Make one with `JsonCodec(encoder, decoder)`, or start from a codec that exists and call `transformOrFail`. Its two functions are the parse step, which may fail, and the format step, which cannot.
+A `JsonCodec[A]` is one value holding an encoder and a decoder. Make one with `JsonCodec(encoder, decoder)`, or start from a codec that exists and call `JsonCodec#transformOrFail`. Its two functions are the parse step, which may fail, and the format step, which cannot. Here the codec goes in a `MoneyCodecs` object that other files can import:
 
 ```scala mdoc:silent
 object MoneyCodecs {
@@ -116,7 +118,7 @@ object MoneyCodecs {
 }
 ```
 
-`JsonCodec(moneyEncoder, moneyDecoder)` gives an equivalent result. Importing the codec makes both the encoder and the decoder available, because a codec in scope also serves as an encoder and a decoder.
+`JsonCodec(moneyEncoder, moneyDecoder)` gives an equivalent result. Importing the codec makes both the encoder and the decoder available, because a codec in scope also serves as an encoder and a decoder:
 
 ```scala mdoc:silent
 final case class Receipt(number: Int, paid: Money)
@@ -127,6 +129,8 @@ object Receipt {
   implicit val codec: JsonCodec[Receipt] = DeriveJsonCodec.gen[Receipt]
 }
 ```
+
+The `Receipt` codec writes `paid` with the imported codec:
 
 ```scala mdoc
 println(Receipt(7, Money(300, "EUR")).toJson)
@@ -172,6 +176,6 @@ See [JsonFieldEncoder and JsonFieldDecoder](../reference/json-field-codecs.md) f
 
 ## See also
 
-- [Manual instances](./manual-instances.md) shows more ways to build instances, such as `map` and tuple encodings.
-- [JsonEncoder reference](../reference/json-encoder.md) and [JsonDecoder reference](../reference/json-decoder.md) describe `contramap`, `map` and `mapOrFail` in full.
+- [Manual instances](./manual-instances.md) shows more ways to build instances, such as `JsonDecoder#map` and tuple encodings.
+- [JsonEncoder reference](../reference/json-encoder.md) and [JsonDecoder reference](../reference/json-decoder.md) describe `JsonEncoder#contramap`, `JsonDecoder#map` and `JsonDecoder#mapOrFail` in full.
 - [JsonCodec reference](../reference/json-codec.md) lists the combinators on `JsonCodec`.

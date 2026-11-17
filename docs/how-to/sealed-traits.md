@@ -21,6 +21,8 @@ This page shows how to change the key (the type hint), how to use a discriminato
 
 ## What you need
 
+Every example on this page uses one import:
+
 ```scala mdoc:silent:reset-object
 import zio.json._
 ```
@@ -49,7 +51,7 @@ println((Apple(false): Fruit).toJson)
 
 ## 2. Transform all hints with `@jsonHintNames`
 
-`@jsonHintNames` goes on the sealed trait and applies a `JsonMemberFormat` to every hint in the family. It accepts the same formats as `@jsonMemberNames`, which are listed in [Field names](field-names.md). A `@jsonHint` on a subtype wins over the format.
+`@jsonHintNames` goes on the sealed trait and applies a `JsonMemberFormat` to every hint in the family. It accepts the same formats as `@jsonMemberNames`, which are listed in [Field names](field-names.md). A `@jsonHint` on a subtype wins over the format. To write every hint of a family in snake_case:
 
 ```scala mdoc:silent
 @jsonHintNames(SnakeCase)
@@ -62,6 +64,8 @@ object FruitKind {
   implicit val codec: JsonCodec[FruitKind] = DeriveJsonCodec.gen[FruitKind]
 }
 ```
+
+Each hint is the class name in snake_case:
 
 ```scala mdoc
 println((GoodFruit(true): FruitKind).toJson)
@@ -92,6 +96,8 @@ object Nut {
 }
 ```
 
+The codec of `Almond` reads the bare object:
+
 ```scala mdoc
 """{"salted":true}""".fromJson[Almond]
 ```
@@ -106,6 +112,8 @@ val cashewDecoder: JsonDecoder[Cashew] =
   }
 ```
 
+The decoder accepts a cashew and rejects any other member of the family:
+
 ```scala mdoc
 """{"cashew":{"roasted":true}}""".fromJson[Cashew](cashewDecoder)
 """{"almond":{"salted":true}}""".fromJson[Cashew](cashewDecoder)
@@ -119,7 +127,7 @@ Some schemas put the type name inside the object:
 {"type":"banaani","curvature":0.5}
 ```
 
-Use `@jsonDiscriminator` on the sealed trait to get this shape. The value of the field is still the hint, so `@jsonHint` and `@jsonHintNames` work as before.
+Use `@jsonDiscriminator` on the sealed trait to get this shape. The value of the field is still the hint, so `@jsonHint` and `@jsonHintNames` work as before. The family from section 1, with a discriminator named `type`:
 
 ```scala mdoc:silent
 @jsonDiscriminator("type")
@@ -133,6 +141,8 @@ object Tropical {
 }
 ```
 
+The encoder writes the hint into the `type` field, and the decoder reads it from there:
+
 ```scala mdoc
 println((TropicalBanana(0.5): Tropical).toJson)
 """{"type":"omena","poison":false}""".fromJson[Tropical]
@@ -145,7 +155,7 @@ The encoder always writes the discriminator as the first field. The decoder acce
 ```
 
 :::warning[Use it only when you must]
-A discriminator is slower, uses more memory, and is more exposed to denial-of-service input than the default wrapper object. Use it only to match a schema that you do not control. Do not combine it with `@jsonNoExtraFields` or with `JsonCodecConfiguration(allowExtraFields = false)`, because the discriminator counts as an extra field of the subtype: decoding then fails with `(invalid extra field)`.
+A discriminator is slower, uses more memory, and is more exposed to denial-of-service input than the default wrapper object. Use it only to match a schema that you do not control. Do not combine it with `@jsonNoExtraFields` or with `JsonCodecConfiguration(allowExtraFields = false)`, because the discriminator counts as an extra field of the subtype: decoding then fails with an `(invalid extra field)` error.
 :::
 
 ## 4. Set it for the whole program
@@ -169,6 +179,8 @@ object Berry {
   implicit val codec: JsonCodec[Berry] = DeriveJsonCodec.gen[Berry]
 }
 ```
+
+The hint goes into the `type` field, in snake_case:
 
 ```scala mdoc
 println((BlueBerry(true): Berry).toJson)
@@ -212,14 +224,12 @@ object Color {
 }
 ```
 
+The case objects are now written and read as strings:
+
 ```scala mdoc
 println((Red: Color).toJson)
 """"Green"""".fromJson[Color]
 ```
-
-:::note[Scala 2 caveat]
-On Scala 2 the string form is off unless you set `enumValuesAsStrings = true`. Turn the setting on yourself on Scala 2, or the JSON will differ between the two Scala versions.
-:::
 
 The two Scala versions disagree on what counts as an enumeration value. On Scala 2, a case class with an empty parameter list counts, like a case object. With the setting on, this family is written as strings:
 
@@ -285,13 +295,13 @@ Because the leaf names share one namespace, two leaves in different branches mus
 
 ## 7. Keep hint names unique
 
-Every case of a family must end up with a distinct hint after `@jsonHint` and `@jsonHintNames` are applied. A clash is not a compile error. The code compiles, and the codec throws an `AssertionError` at runtime when it is first initialised, on Scala 2 and Scala 3 alike. For a family `Dup` where two cases both carry `@jsonHint("x")`, the message reads:
+Every case of a family must end up with a distinct hint after `@jsonHint` and `@jsonHintNames` are applied. A clash is not a compile error. The code compiles, and the derived decoder, and with it a derived `JsonCodec`, throws an `AssertionError` at runtime when it is first initialised, on Scala 2 and Scala 3 alike. The message names the family by its fully qualified name. For a family `com.example.Dup` where two cases both carry `@jsonHint("x")`, it reads:
 
 ```text
-java.lang.AssertionError: Case names in ADT Dup must be distinct, name(s) x are duplicated
+java.lang.AssertionError: Case names in ADT com.example.Dup must be distinct, name(s) x are duplicated
 ```
 
-A test that encodes or decodes one value of each family is enough to catch this early.
+An encoder derived on its own with `DeriveJsonEncoder.gen` does not check, and writes the same hint for both cases. A test that decodes one value of each family is enough to catch the clash early.
 
 ## See also
 

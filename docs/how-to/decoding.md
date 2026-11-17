@@ -1,23 +1,24 @@
 ---
 id: decoding
 title: "Decoding"
+description: "Read JSON text or bytes into Scala values with ZIO JSON: derived decoders, sealed traits, defaults, and decoding JSON whose keys do not match your fields."
 ---
 
 ## Automatic Derivation
 
-Say we want to be able to read some JSON like
+Say we want to be able to read some JSON like this:
 
 ```json
 { "curvature": 0.5 }
 ```
 
-into a Scala `case class`
+into a Scala `case class`:
 
 ```scala mdoc
 case class Banana(curvature: Double)
 ```
 
-To do this, we create an *instance* of the `JsonDecoder` typeclass for `Banana` using the `zio-json` code generator. It is best practice to put it on the companion of `Banana`, like so
+To do this, we create an *instance* of the `JsonDecoder` type class for `Banana` with `DeriveJsonDecoder.gen`. It is best practice to put it on the companion of `Banana`:
 
 ```scala mdoc
 import zio.json._
@@ -28,21 +29,25 @@ object Banana {
 }
 ```
 
-Now we can parse JSON into our object
+Now we can parse JSON into our object:
 
 ```scala mdoc
 """{ "curvature": 0.5 }""".fromJson[Banana]
 ```
 
-### Decoding from bytes
+### Decoding from Bytes
 
 JSON usually arrives as bytes rather than as text: an HTTP response body, a file, a Kafka record. A `Chunk[Byte]` can be decoded directly, without being copied into a `String` first (see [`decodeJson`](../reference/json-decoder.md#decodejson) for the full list of inputs):
 
-```scala mdoc
+```scala mdoc:silent
 import zio.Chunk
 
 val bytes: Chunk[Byte] = Chunk.fromArray("""{ "curvature": 0.5 }""".getBytes("UTF-8"))
+```
 
+The chunk has the same `fromJson` method as a string:
+
+```scala mdoc
 bytes.fromJson[Banana]
 ```
 
@@ -60,13 +65,13 @@ The input is expected to be UTF-8, as [RFC 8259](https://www.rfc-editor.org/rfc/
 
 For payloads that do not fit in memory at all, use `JsonDecoder[A].decodeJsonStreamInput(stream)` on the JVM to decode straight from a `ZStream[R, Throwable, Byte]`. The streaming methods are JVM only; see [Streaming](./streaming.md).
 
-### Automatic Derivation and case class default field values
+### Default Field Values
 
-If a case class field is defined with a default value and the field is not present or `null`, the default value will be used (or evaluated when it is a method).
+If a case class field is defined with a default value and the field is not present or `null`, the default value is used. A default is evaluated again on each decode, so a default such as `java.util.UUID.randomUUID()` gives a fresh value every time.
 
-Say we have a Scala `case class`
+Say we have a Scala `case class` with a derived decoder:
 
-```scala mdoc
+```scala mdoc:silent
 case class Entity(id: Long, description: String = "", related: Seq[Entity] = Seq())
 
 implicit val decoder: JsonDecoder[Entity] =
@@ -83,7 +88,7 @@ Defaults work the same way on Scala 2 and Scala 3, with no extra compiler option
 
 ## ADTs
 
-Say we extend our data model to include more data types
+Say we extend our data model to include more data types:
 
 ```scala mdoc:reset
 sealed trait Fruit
@@ -92,7 +97,7 @@ case class Banana(curvature: Double) extends Fruit
 case class Apple (poison: Boolean)   extends Fruit
 ```
 
-we can generate the decoder for the entire `sealed` family:
+We can generate the decoder for the entire `sealed` family:
 
 ```scala mdoc
 import zio.json._
@@ -103,9 +108,13 @@ object Fruit {
 }
 ```
 
+The key of the wrapping object names the subtype to decode:
+
 ```scala mdoc
 """{ "Banana":{ "curvature":0.5 }}""".fromJson[Fruit]
 ```
+
+The same decoder reads the other subtype:
 
 ```scala mdoc
 """{ "Apple": { "poison": false }}""".fromJson[Fruit]
@@ -135,7 +144,7 @@ Almost all of the standard library data types are supported as fields on the cas
 
 For decoding sealed families and enums of parameterless cases as plain strings, see [Sealed Traits](./sealed-traits.md).
 
-## Manual instances
+## Manual Instances
 
 Sometimes it is easier to reuse an existing `JsonDecoder` than to generate a new one: `JsonDecoder#map` and `JsonDecoder#mapOrFail` derive a decoder from another one. See [Manual Instances](./manual-instances.md) for newtypes, array-encoded case classes and validated types such as `refined`.
 
@@ -175,10 +184,9 @@ With a derived decoder and no customization, decoding fails because the JSON key
 
 Each approach below makes this input decode to `Right(Quote(IBM,182.4300,182.8000))`.
 
-### Approach 1: use annotation hints
+### Approach 1: Use Annotations
 
-In this approach we enrich the case class with annotations to tell the derived decoder which field names to use.
-Obviously, this approach only works if we can/want to change the case class.
+In this approach we enrich the case class with `@jsonField` annotations to tell the derived decoder which field names to use. This approach only works if we can change the case class:
 
 ```scala mdoc:reset
 import zio.json._
@@ -194,10 +202,9 @@ object Quote {
 }
 ```
 
-### Approach 2: use an intermediate case class
+### Approach 2: Use an Intermediate Case Class
 
-Instead of hints, we can also put the actual field names in an intermediate case class. In our example the field names
-are not valid scala identifiers. We fix this by putting the names in backticks:
+Instead of annotations, we can also put the actual field names in an intermediate case class. In our example the field names are not valid Scala identifiers. We fix this by putting the names in backticks:
 
 ```scala mdoc:reset
 import zio.json._
@@ -218,12 +225,11 @@ object Quote {
 }
 ```
 
-### Approach 3: decode to JSON
+### Approach 3: Decode to `Json`
 
-In this approach we first decode to the generic `Json` data structure. This approach is very flexible because it can
-extract data from any valid JSON.
+In this approach we first decode to the generic `Json` data structure. This approach is very flexible because it can extract data from any valid JSON.
 
-`Json#asString` returns the text of a `Json.Str` and `None` for any other JSON type, so a field that holds a number or an object is rejected. Do not use `toString` here: it renders the node as JSON, so a string would keep its quotes.
+`Json#asString` returns the text of a `Json.Str` and `None` for any other JSON type, so a field that holds a number or an object is rejected. Do not use `toString` here: it renders the node as JSON, so a string would keep its quotes:
 
 ```scala mdoc:reset
 import zio.json._
@@ -252,10 +258,9 @@ object Quote {
 }
 ```
 
-### Approach 4: decode to JSON, use cursors
+### Approach 4: Decode to `Json` and Use Cursors
 
-Here we also first decode to `Json`, but now we use cursors to find the data we need. Here we do check that the fields
-are actually strings.
+Here we also first decode to `Json`, but now we use cursors to find the data we need. `JsonCursor.isString` rejects a field that is not a string, as `Json#asString` does in approach 3:
 
 ```scala mdoc:reset
 import zio.json._
@@ -281,9 +286,7 @@ object Quote {
 
 ## More Custom Decoder Examples
 
-Let's consider an `Animal` case class with a `categories` field that should be a list of strings. However, some
-producers accidentally represent the categories as a comma-separated string instead of a proper list. We want to parse
-both cases.
+Let's consider an `Animal` case class with a `categories` field that should be a list of strings. However, some producers accidentally represent the categories as a comma-separated string instead of a proper list. We want to parse both cases.
 
 Here is a custom decoder for our `Animal` case class:
 
@@ -332,14 +335,9 @@ And now, the JSON decoder for `Animal` can handle both formats:
 
 ## JSON AST and Cursors
 
-In most cases it is not necessary to work with the JSON AST directly,
-instead it is more convenient to decode directly to domain objects.
-However, sometimes it is handy to work with a lower level representation of JSON.
-This may for example be the case when you need to work with deeply nested JSON structures 
-that would result in deeply nested case classes,
-or when you expect a lot of variation in the JSON structure, which would result in nasty decoders.
+In most cases it is not necessary to work with the JSON AST directly; it is more convenient to decode directly to domain objects. However, sometimes it is handy to work with a lower level representation of JSON. This may for example be the case when you need to work with deeply nested JSON structures that would result in deeply nested case classes, or when you expect a lot of variation in the JSON structure, which would result in complicated decoders.
 
-To get the AST representation of a JSON string, use the `fromJson[Json]` method.
+To get the AST representation of a JSON string, decode it as `Json` with `fromJson[Json]`:
 
 ```scala mdoc
 import zio.json._
@@ -349,7 +347,7 @@ val jsonString: String            = """{"name": "John Doe"}"""
 val jsonAst: Either[String, Json] = jsonString.fromJson[Json]
 ```
 
-The `Json` type is a recursive data structure that can be navigated in a fairly straightforward way.
+The `Json` type is a recursive data structure that can be navigated with pattern matching on its six cases:
 
 ```scala mdoc:reset
 

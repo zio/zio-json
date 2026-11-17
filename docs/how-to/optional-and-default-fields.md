@@ -14,6 +14,8 @@ Goal: control what happens when a JSON field is missing, `null`, empty or unexpe
 
 ## What you need
 
+Every example on this page uses one import:
+
 ```scala mdoc:silent:reset-object
 import zio.json._
 ```
@@ -58,7 +60,7 @@ println(Profile("Ann", None).toJson)
 
 ## 2. Write nulls with `@jsonExplicitNull`
 
-Put `@jsonExplicitNull` on a case class to write `None` as `null`. Put it on a single field to do that for that field only. When decoding, an `Option` field accepts both `null` and a missing key, whether or not the annotation is present.
+Put `@jsonExplicitNull` on a case class to write `None` as `null`. Put it on a single field to do that for that field only. When decoding, an `Option` field accepts both `null` and a missing key, whether or not the annotation is present. `Mango` writes `null` for all its `Option` fields, and `Papaya` only for `ripeness`:
 
 ```scala mdoc:silent
 @jsonExplicitNull
@@ -74,6 +76,8 @@ object Papaya {
   implicit val codec: JsonCodec[Papaya] = DeriveJsonCodec.gen[Papaya]
 }
 ```
+
+A `None` with the annotation becomes `null`, one without it is left out, and a missing key still decodes to `None`:
 
 ```scala mdoc
 println(Mango(None).toJson)
@@ -120,12 +124,14 @@ object Watermelon {
 }
 ```
 
+A known field decodes, and an unknown one is rejected:
+
 ```scala mdoc
 """{"pips":32}""".fromJson[Watermelon]
 """{"pips":32,"color":"yellow"}""".fromJson[Watermelon]
 ```
 
-The program-wide form is `JsonCodecConfiguration(allowExtraFields = false)`. The annotation does not combine with `@jsonDiscriminator`, see [Sealed traits](sealed-traits.md).
+The program-wide form is `JsonCodecConfiguration(allowExtraFields = false)`. The annotation does not combine with `@jsonDiscriminator`; see [Sealed traits](sealed-traits.md).
 
 A case class with no fields, or a case object, is a special case. Its decoder accepts any JSON value, not only an object, and skips it. With `@jsonNoExtraFields`, it accepts only `{}`:
 
@@ -151,7 +157,7 @@ A number decodes to `Ping()`, while `StrictPing` rejects it:
 
 ## 5. Keep a field out of the JSON with `@jsonExclude`
 
-Put `@jsonExclude` on a field to leave it out of the encoded JSON. Use it for values that stay in memory, such as secrets or cached data.
+Put `@jsonExclude` on a field to leave it out of the encoded JSON. Use it for values that stay in memory, such as secrets or cached data. To keep a session token out of the JSON:
 
 ```scala mdoc:silent
 case class Session(user: String, @jsonExclude token: String)
@@ -182,6 +188,8 @@ case class SessionWithDefault(user: String, @jsonExclude token: String = "")
 implicit val sessionWithDefaultCodec: JsonCodec[SessionWithDefault] =
   DeriveJsonCodec.gen[SessionWithDefault]
 ```
+
+A missing token now takes the default:
 
 ```scala mdoc
 """{"user":"alice"}""".fromJson[SessionWithDefault]

@@ -1,10 +1,10 @@
 ---
 id: golden-testing
 title: "Golden Testing"
+description: "Catch unintended changes to encoded JSON with zio-json-golden snapshot tests, and update the stored golden files when a change is intended."
 ---
 
-Golden testing (snapshot testing) checks that the JSON produced by your encoder does not change unexpectedly.
-The first time a golden test runs, it generates sample values, encodes them, and stores the JSON in a file. Later runs generate new samples and compare them with the stored file. If the output differs, the test fails and writes the new output next to the stored file, so you can review the change.
+Golden testing (snapshot testing) checks that the JSON produced by your encoder does not change unexpectedly. The first time a golden test runs, it generates sample values, encodes them, and stores the JSON in a file. Later runs generate new samples and compare them with the stored file. If the output differs, the test fails and writes the new output next to the stored file, so you can review the change.
 
 The `zio-json-golden` module provides the `goldenTest` function for [ZIO Test](https://zio.dev/reference/test/). It removes the need to write a hand-made expected string for each type.
 
@@ -16,8 +16,7 @@ libraryDependencies += "dev.zio" %% "zio-json-golden" % "@VERSION@" % Test
 
 ## Writing a Golden Test
 
-A golden test is a ZIO Test spec. The `goldenTest` function takes a `Gen` from ZIO Test for the type under test, and the type needs a `JsonEncoder` in scope.
-`DeriveGen` from `zio.test.magnolia` creates a generator for a case class automatically.
+A golden test is a ZIO Test spec. The `goldenTest` function takes a `Gen` from ZIO Test for the type under test, and the type needs a `JsonEncoder` in scope. `DeriveGen` from `zio.test.magnolia` creates a generator for a case class automatically.
 
 We define the type with a codec in its companion object, and then write the spec:
 
@@ -91,7 +90,7 @@ Set `relativePath` when two types have the same short name, because both golden 
 
 Golden tests compare the output of your encoder with samples from the generator, so the generator must return the same values on each run. Avoid generators that depend on the clock, the file system or other external state.
 
-Generators with a fixed range or a small set of cases are easier to review than generators with large ranges, because the golden file grows with `sampleSize`.
+Generators with a fixed range or a small set of cases give samples that are easier to review than generators with large ranges. Keep `sampleSize` small as well, because the golden file holds one encoded value per sample.
 
 ## Locating the Module Root
 
