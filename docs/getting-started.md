@@ -30,7 +30,7 @@ On those two platforms the `java.time` types come from the `scala-java-time` lib
 libraryDependencies += "io.github.cquiroz" %%% "scala-java-time-tzdb" % "2.10.0"
 ```
 
-The add-on modules (YAML, golden testing, `@jsonDerive` macros and the integrations) are listed in the [Modules](index.md#modules) table.
+The add-on modules (YAML, golden testing, `@jsonDerive` macros and the integrations) are listed in the [Installation](index.md#installation) section of the Introduction page, with their platforms.
 :::
 
 The code on this page uses Scala 2.13 syntax. Where Scala 3 is shorter, a Scala 3 tip follows the example.

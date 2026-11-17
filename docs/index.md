@@ -22,34 +22,58 @@ The goal of this project is to create the best all-round JSON library for Scala:
 
 ## Installation
 
-In order to use this library, we need to add the following line in our `build.sbt` file:
+ZIO JSON is published as the core `zio-json` artifact plus add-on modules, all with the same version number. Every module is published for Scala 2.12, 2.13 and 3, except `zio-json-macros` and `zio-json-interop-scalaz7x`, which are published for Scala 2.12 and 2.13 only.
+
+On the JVM, add the core module and any add-on modules you need to `build.sbt`:
 
 ```scala
-libraryDependencies += "dev.zio" %% "zio-json" % "@VERSION@"
+libraryDependencies ++= Seq(
+  // Core: codecs, derivation, the Json AST and, on the JVM, streaming (JVM, Scala.js, Scala Native)
+  "dev.zio" %% "zio-json"                    % "@VERSION@",
+  // Read and write YAML with your JSON codecs, through SnakeYAML (JVM)
+  "dev.zio" %% "zio-json-yaml"               % "@VERSION@",
+  // The @jsonDerive annotation, which writes codec instances for you (JVM, Scala.js, Scala Native; Scala 2 only)
+  "dev.zio" %% "zio-json-macros"             % "@VERSION@",
+  // http4s 0.23 entity encoders and decoders built from ZIO JSON codecs (JVM)
+  "dev.zio" %% "zio-json-interop-http4s"     % "@VERSION@",
+  // Codecs and map-key codecs for refined types (JVM, Scala.js, Scala Native)
+  "dev.zio" %% "zio-json-interop-refined"    % "@VERSION@",
+  // Codecs for Scalaz 7 IList (JVM, Scala.js, Scala Native; Scala 2 only)
+  "dev.zio" %% "zio-json-interop-scalaz7x"   % "@VERSION@",
+  // Codecs and map-key codecs for enumeratum enums (JVM, Scala.js, Scala Native)
+  "dev.zio" %% "zio-json-interop-enumeratum" % "@VERSION@",
+  // Golden (snapshot) tests that catch unintended changes to encoded JSON (JVM, tests only)
+  "dev.zio" %% "zio-json-golden"             % "@VERSION@" % Test
+)
 ```
 
-It is published for the JVM, Scala.js and Scala Native, for Scala 2.12, 2.13 and 3. [Getting Started](getting-started.md) covers the platforms, the add-on modules and a first program.
-
-## Modules
-
-ZIO JSON is published as the core `zio-json` artifact plus add-on modules. Each one is a separate dependency with the same version number, and not every module is available on every platform or Scala version:
-
-| Artifact                      | What it is for                                                        | Platforms             | Scala versions | Documentation                                   |
-| ----------------------------- | --------------------------------------------------------------------- | --------------------- | -------------- | ----------------------------------------------- |
-| `zio-json`                    | Codecs, derivation, the `Json` AST and, on the JVM, streaming         | JVM, Scala.js, Native | 2.12, 2.13, 3  | [Getting Started](getting-started.md) |
-| `zio-json-yaml`               | Reading and writing YAML with your JSON codecs (through SnakeYAML)    | JVM                   | 2.12, 2.13, 3  | [YAML](reference/yaml.md)                       |
-| `zio-json-golden`             | Golden (snapshot) tests that catch unintended changes to encoded JSON | JVM                   | 2.12, 2.13, 3  | [Golden Testing API](reference/golden-testing.md)          |
-| `zio-json-macros`             | The `@jsonDerive` annotation, which writes codec instances for you    | JVM, Scala.js, Native | 2.12, 2.13     | [@jsonDerive Macro Annotation](reference/zio-json-macros.md) |
-| `zio-json-interop-http4s`     | http4s 0.23 entity encoders and decoders built from ZIO JSON codecs   | JVM                   | 2.12, 2.13, 3  | [HTTP4s Interop](interop/http4s.md)             |
-| `zio-json-interop-refined`    | Codecs and map-key codecs for refined types                           | JVM, Scala.js, Native | 2.12, 2.13, 3  | [Refined Interop](interop/refined.md)           |
-| `zio-json-interop-scalaz7x`   | Codecs for Scalaz 7 `IList`                                           | JVM, Scala.js, Native | 2.12, 2.13     | [Scalaz 7.x Interop](interop/scalaz-7x.md)      |
-| `zio-json-interop-enumeratum` | Codecs and map-key codecs for enumeratum enums                        | JVM, Scala.js, Native | 2.12, 2.13, 3  | [Enumeratum Interop](interop/enumeratum.md)     |
-
-Add a module the same way as the core artifact, using `%%%` for a cross-built module in a Scala.js or Scala Native project. Golden tests only run in tests, so that module usually goes in the `Test` configuration:
+In a Scala.js or Scala Native project, use `%%%`. Only these modules are built for those platforms:
 
 ```scala
-libraryDependencies += "dev.zio" %% "zio-json-golden" % "@VERSION@" % Test
+libraryDependencies ++= Seq(
+  // Core: codecs, derivation and the Json AST
+  "dev.zio" %%% "zio-json"                    % "@VERSION@",
+  // The @jsonDerive annotation (Scala 2 only)
+  "dev.zio" %%% "zio-json-macros"             % "@VERSION@",
+  // Codecs and map-key codecs for refined types
+  "dev.zio" %%% "zio-json-interop-refined"    % "@VERSION@",
+  // Codecs for Scalaz 7 IList (Scala 2 only)
+  "dev.zio" %%% "zio-json-interop-scalaz7x"   % "@VERSION@",
+  // Codecs and map-key codecs for enumeratum enums
+  "dev.zio" %%% "zio-json-interop-enumeratum" % "@VERSION@"
+)
 ```
+
+Each module is documented on its own page:
+
+- `zio-json`: [Getting Started](getting-started.md) and the [Reference](reference/index.md)
+- `zio-json-yaml`: [YAML](reference/yaml.md)
+- `zio-json-macros`: [@jsonDerive Macro Annotation](reference/zio-json-macros.md)
+- `zio-json-interop-http4s`: [HTTP4s Interop](interop/http4s.md)
+- `zio-json-interop-refined`: [Refined Interop](interop/refined.md)
+- `zio-json-interop-scalaz7x`: [Scalaz 7.x Interop](interop/scalaz-7x.md)
+- `zio-json-interop-enumeratum`: [Enumeratum Interop](interop/enumeratum.md)
+- `zio-json-golden`: [Golden Testing API](reference/golden-testing.md)
 
 ## Documentation
 
