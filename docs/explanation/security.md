@@ -1,23 +1,32 @@
 ---
 id: security
 title: "Security"
+description: "How ZIO JSON behaves under hostile input: large payloads, redundant data, hash collisions, expensive numbers, deep nesting and huge strings, and the mitigations available to you."
+keywords: ["security", "denial of service", "DoS", "hash collision", "BigDecimal", "nesting depth", "jsonNoExtraFields", "untrusted input"]
 ---
 
-A [Denial of Service](https://en.wikipedia.org/wiki/Denial-of-service_attack) (DOS) attack is a cyber-attack in which the perpetrator seeks to make a machine or network resource unavailable to its intended users by temporarily or indefinitely disrupting services. The vast majority of public-facing servers written in Scala are vulnerable to DOS attack.
+A [Denial of Service](https://en.wikipedia.org/wiki/Denial-of-service_attack) (DoS) attack is a cyber-attack in which the perpetrator seeks to make a machine or network resource unavailable to its intended users by temporarily or indefinitely disrupting services. Any public-facing server that decodes JSON from its clients is a potential target.
 
-Attacks that are in the form of a valid payload are designed to be stealthy and will produce the same end-result as a legitimate payload, but will consume more resources along the way. In this section we investigate specific attacks and how `zio-json` mitigates against them.
+Attacks that are in the form of a valid payload are designed to be stealthy and produce the same end result as a legitimate payload, but consume more resources along the way. This page goes through specific attacks, how ZIO JSON behaves under each one, and what you can do about it. The last section, [Mitigations](#mitigations), sums up the defences.
 
-### Resource Attack: Larger Payload
+:::note
+The benchmark tables on this page come from the first version of ZIO JSON, published in July 2020. They compare ZIO JSON with Circe and Play JSON on the hardware and library versions of that time. The Play JSON benchmarks have since been removed from the suite, so the tables cannot be reproduced as they are. The `…Attack…` benchmarks in `GoogleMapsAPIBenchmarks` still exist for ZIO JSON, Circe and jsoniter-scala; see [Performance](performance.md#the-benchmark-suite) for how to run them.
+:::
 
-An obvious way to slow down a server is to give it more data to read. JSON is particularly susceptible to this kind of attack because it has an in-built mechanism to expand the size of the message without altering the contents: pad with whitespace.
+## Resource Attack: Larger Payload
 
-Many web frameworks will fully consume the contents of a payload into a `String` before handing it off to the JSON library, so if we receive a JSON message consisting of 1GB of whitespace, we will consume 1GB of heap on that server.
+An obvious way to slow down a server is to give it more data to read. JSON is particularly susceptible to this kind of attack because it has a built-in mechanism to expand the size of the message without altering the contents: pad with whitespace. ZIO JSON skips whitespace without any limit. In our test, 20 million spaces followed by `1` decode as the `Int` `1`.
 
-The best way to mitigate against message size attacks is to cap the `Content-Length` to a reasonable size for the use case. A further mitigation is to use a streaming parser that does not require the entire message to be read into memory before parsing begins.
+Many web frameworks fully consume the payload into a `String` before handing it to the JSON library, so a JSON message consisting of 1 GB of whitespace takes 1 GB of heap on that server, plus a copy if the body was read as bytes first.
 
-For all the remaining attacks, we will cap the malicious message size to 100KB (the original message is 25KB) and compare the attacks against this baseline. The benchmark results for the original (unedited) payload are given in parentheses, and we can immediately see a reduction in the ops/sec for all frameworks, accompanied by a reduction in memory usage.
+The best way to mitigate message size attacks is to cap the request size (the `Content-Length`) at a reasonable value for the use case, in the HTTP server or proxy. Two further mitigations come from ZIO JSON itself:
 
-<!-- zioJsonJVM/jmh:run -prof gc GoogleMaps.*Attack0 -->
+- Decode the body from bytes. `JsonDecoder#decodeJson` and `fromJson` accept a `Chunk[Byte]` or an `Array[Byte]` and decode the UTF-8 while parsing, so the payload is not copied into a `String` first. See [`decodeJson`](../reference/json-decoder.md#decodejson).
+- On the JVM, decode from a stream with `JsonDecoder#decodeJsonStreamInput`, which reads the input incrementally instead of loading the whole message into memory. See [Streaming](../how-to/streaming.md).
+
+<!-- zioJsonJVM/Jmh/run -prof gc GoogleMaps.*Attack0 -->
+
+For all the remaining attacks, we cap the malicious message size to 100 KB (the original message is 25 KB) and compare the attacks against this baseline. The benchmark results for the original (unedited) payload are given in parentheses. The ops/sec drop for all libraries, along with the memory usage:
 
 ```
        ops/sec        MB/sec
@@ -26,13 +35,13 @@ circe   7456 ( 8832)  1533 (1816)
 play    3589 ( 5756)  1344 (2260)
 ```
 
-### Redundant Data
+## Redundant Data
 
-Most JSON libraries (but not `zio-json`) first create a representation of the JSON message in an Abstract Syntax Tree (AST) that represents all the objects, arrays and values in a generic way. Their decoders typically read what they need from the AST.
+Most JSON libraries (but not ZIO JSON) first create a representation of the JSON message in an Abstract Syntax Tree (AST) that represents all the objects, arrays and values in a generic way. Their decoders typically read what they need from the AST.
 
-An intermediate AST enables attack vectors that insert redundant data, for example in our Google Maps dataset we can add a new field called `redundant` at top-level containing a 60K `String`. If we do this, and run the benchmarks, we see that Circe is heavily impacted, with a 75% reduction in capacity and an increase in memory usage. Play is also impacted, although not as severely. `zio-json`'s ops/sec are reduced but the memory usage is in line which means that throughput is unlikely to be affected by this kind of attack.
+<!-- zioJsonJVM/Jmh/run -prof gc GoogleMaps.*Attack1 -->
 
-<!-- zioJsonJVM/jmh:run -prof gc GoogleMaps.*Attack1 -->
+An intermediate AST enables attack vectors that insert redundant data. For example, in our Google Maps dataset we can add a new field called `redundant` at the top level, containing a 60K `String`. With this payload, Circe is heavily impacted, with a 75% reduction in capacity and an increase in memory usage. Play is also impacted, although not as severely. ZIO JSON's ops/sec are reduced, but its memory usage stays in line, so throughput is unlikely to be affected by this kind of attack:
 
 ```
        ops/sec       MB/sec
@@ -41,21 +50,51 @@ circe  2224 ( 7456)  1655 (1533)
 play   2350 ( 3589)  1854 (1344)
 ```
 
-The reason why `zio-json` is not as badly affected is because it skips values that are unexpected. We can completely mitigate this kind of attack by using the `@jsonNoExtraFields` annotation which results in the payload being rejected at a rate of 5.5 million ops/sec.
+ZIO JSON is not as badly affected because a derived decoder skips the values of fields it does not know. Skipping does not build anything, and it is not recursive, so even an unknown field nested 100,000 levels deep is skipped without trouble. Skipping also does not validate the skipped value fully, so some malformed values inside unknown fields are accepted. We define a small type to show it:
 
-Other kinds of redundant values attacks are also possible, such as using an array of 60K full of high precision decimal numbers that require slow parsing (also known as ["near halfway numbers"](https://www.exploringbinary.com/17-digits-gets-you-there-once-youve-found-your-way/)), attacking the CPU. However, the memory attack afforded to us by a redundant `String` is already quite effective.
+```scala mdoc:silent
+import zio.json._
+import zio.json.ast.Json
 
-### `hashCode` Collisions
+final case class Name(name: String)
+
+object Name {
+  implicit val decoder: JsonDecoder[Name] = DeriveJsonDecoder.gen[Name]
+}
+```
+
+The value `tzzz` is not valid JSON, but it sits in an unknown field, so decoding succeeds:
+
+```scala mdoc
+"""{"name":"Ada","x":tzzz}""".fromJson[Name]
+```
+
+We can completely mitigate this kind of attack with the `@jsonNoExtraFields` annotation, or with `allowExtraFields = false` in a [`JsonCodecConfiguration`](../reference/json-codec-configuration.md#allowextrafields). The decoder then rejects the payload at the first unknown field, at a rate of 5.5 million ops/sec in the 2020 benchmarks:
+
+```scala mdoc
+@jsonNoExtraFields
+final case class StrictName(name: String)
+
+object StrictName {
+  implicit val decoder: JsonDecoder[StrictName] = DeriveJsonDecoder.gen[StrictName]
+}
+
+"""{"name":"Ada","x":1}""".fromJson[StrictName]
+```
+
+Other kinds of redundant values attacks are also possible, such as an array of 60K full of high-precision decimal numbers that require slow parsing (also known as ["near halfway numbers"](https://www.exploringbinary.com/17-digits-gets-you-there-once-youve-found-your-way/)), attacking the CPU. However, the memory attack afforded by a redundant `String` is already quite effective.
+
+## `hashCode` Collisions
 
 Following on from the redundant data attack, we can place redundant data in the location of object fields.
 
-JSON libraries that use an intermediate AST often store JSON objects as a stringy `HashMap` (circe uses a [`java.util.LinkedHashMap`](https://docs.oracle.com/en/java/javase/14/docs/api/java.base/java/util/LinkedHashMap.html)). If we insert redundant fields that have hashcode collisions with legitimate fields, we can successfully attack both memory and CPU. We need to know the hashing algorithm that is being used, which often falls down to some version of the default Java `String.hashCode` [which is very easy to exploit](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/jsoniter-scala-benchmark/shared/src/main/scala/com/github/plokhotnyuk/jsoniter_scala/benchmark/HashCodeCollider.scala).
+JSON libraries that use an intermediate AST often store JSON objects as a `HashMap` keyed by string (Circe uses a [`java.util.LinkedHashMap`](https://docs.oracle.com/en/java/javase/14/docs/api/java.base/java/util/LinkedHashMap.html)). If we insert redundant fields that have hash code collisions with legitimate fields, we can successfully attack both memory and CPU. We need to know the hashing algorithm that is being used, which often comes down to some version of the default Java `String.hashCode`, [which is very easy to exploit](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/jsoniter-scala-benchmark/shared/src/main/scala/com/github/plokhotnyuk/jsoniter_scala/benchmark/HashCodeCollider.scala).
 
-In this malicious payload, we add redundant fields that have hashcode collisions, up to 4 collisions per field; we could add more if we used a bruteforce search.
+In this malicious payload, we add redundant fields that have hash code collisions, up to 4 collisions per field; we could add more with a brute-force search.
 
-<!-- zioJsonJVM/jmh:run -prof gc GoogleMaps.*Attack2 -->
+<!-- zioJsonJVM/Jmh/run -prof gc GoogleMaps.*Attack2 -->
 
-Again, `zio-json` completely mitigates this attack if the `@jsonNoExtraFields` annotation is used. Note that even if Circe and Play rejected payloads of this nature, it would be too late because the attack happens at the AST layer, not the decoders. However, for the sake of comparison, let's turn off the `zio-json` mitigation:
+ZIO JSON completely mitigates this attack if the `@jsonNoExtraFields` annotation is used. Even if Circe and Play rejected payloads of this nature, it would be too late, because the attack happens at the AST layer, not in the decoders. For the sake of comparison, here are the results with the ZIO JSON mitigation turned off:
 
 ```
        ops/sec       MB/sec
@@ -64,20 +103,30 @@ circe  1992 ( 7456)  1162 (1533)
 play   1312 ( 3589)  1636 (1344)
 ```
 
-ops/sec is down for all decoders relative to the baseline, but since `zio-json` and Circe memory usage is also reduced the throughput on a server might not be impacted as badly as it sounds.
+ops/sec is down for all decoders relative to the baseline, but since ZIO JSON and Circe memory usage is also reduced, the throughput on a server might not be impacted as badly as it sounds. This attack hurts Play very badly: memory usage is up compared to the baseline, with throughput reduced to 40% of the baseline (22% of the original).
 
-However, this attack hurts Play very badly; memory usage is up compared to the baseline with throughput reduced to 40% of the baseline (22% of the original).
+There is a variant of this attack that can be devastating for libraries that rely on `HashMap`. In this attack, [developed by plokhotnyuk to DoS ujson](https://github.com/plokhotnyuk/jsoniter-scala/pull/325), an object is filled with many fields whose `String#hashCode` is zero. This exploits two facts:
 
-There is a variant of this attack that can be devastating for libraries that rely on `HashMap`. In this attack, [developed by plokhotnyuk to DOS ujson](https://github.com/plokhotnyuk/jsoniter-scala/pull/325), an object is filled with many fields that have a `hashCode` of zero. This exploits two facts:
+- Java `String` does not cache a `String#hashCode` of zero, recomputing it every time it is requested.
+- Many `HashMap` implementations re-request the hashes of all objects as the number of entries grows during construction.
 
-- Java `String` does not cache `hashCode` of zero, recomputing every time it is requested
-- many `HashMap` implementations re-request the hashes of all objects as the number of entries increases during construction.
+### Decoding Into a `Map`
 
-### Death by a Thousand Zeros
+Derived case class decoders match field names without hashing, and the `Json` AST keeps an object's fields in a `Chunk`, so neither builds a hash map from the payload's keys. Decoding into `Map[String, V]` (or `HashMap`, `mutable.Map` and the other map types) does build a hash map from attacker-chosen keys, so it is open to the same collision attack.
 
-Another kind of attack is to provide data that will cause the decoder for a specific value to do more work than it needs to. Numbers are always a great example of this.
+In our test, a 540 KB object with 16,384 keys that all share one `String.hashCode` took about 3 seconds to decode as a `Map[String, Int]`. The same object decoded as `Json` in about 5 ms, and an object of the same size with ordinary keys decoded as a `Map[String, Int]` in about 15 ms.
 
-The most brutal attack of this nature is to trick a deserialization library into constructing a gigantic number as a `BigDecimal` and then to downcast to a `BigInteger`. The JVM will happily attempt to reserve GBs of heap for the conversion. Try this in your REPL:
+When the keys of an object come from untrusted input, decode it into a case class if the keys are known in advance. Otherwise decode it into `Json` or with `JsonDecoder.keyValueChunk`, which keeps the key-value pairs in a `Chunk` without hashing (duplicate keys stay as separate entries):
+
+```scala mdoc
+"""{"a":1,"b":2,"a":3}""".fromJson(JsonDecoder.keyValueChunk[String, Int])
+```
+
+## Death by a Thousand Zeros
+
+Another kind of attack is to provide data that makes the decoder for a specific value do more work than it needs to. Numbers are always a great example of this.
+
+The most brutal attack of this nature is to trick a deserialization library into constructing a gigantic number as a `BigDecimal` and then to convert it to a `BigInteger`. The JVM will happily attempt to reserve gigabytes of heap for the conversion. This expression, which is not run here, does exactly that:
 
 ```scala
 new java.math.BigDecimal("1e214748364").toBigInteger
@@ -85,7 +134,7 @@ new java.math.BigDecimal("1e214748364").toBigInteger
 
 Fortunately, this kind of attack is prevented by all the mainstream libraries. But it is possible to perform a much weaker form of the attack on Circe, which (to its credit) goes to great effort to pre-validate numbers.
 
-The Google Maps schema has fields of type `Int` and Circe supports the conversion of floating point numbers to integers if the fractional part is zero: so we can pad an integer with as many zeros as possible.
+The Google Maps schema has fields of type `Int`, and Circe supports the conversion of floating point numbers to integers if the fractional part is zero, so we can pad an integer with as many zeros as possible:
 
 ```
        ops/sec       MB/sec
@@ -94,4 +143,57 @@ circe  4529 ( 7456)  2037 (1533)
 
 This attack is very effective in schemas with lots of numbers, causing ops/sec to be halved with a 33% increase in memory usage.
 
-`zio-json` is resistant to a wide range of number based attacks because it uses a from-scratch number parser that will exit early when the number of bits of any number exceeds 256 bits.
+ZIO JSON is resistant to a wide range of number-based attacks because it uses a from-scratch number parser that exits early. `Int` and `Long` fail as soon as the value overflows. A `BigInt` or `BigInteger` fails when it needs more than 256 bits, and a `BigDecimal` (or a `Json.Num`) fails when its mantissa, the digits without the exponent, needs more than 256 bits. The limit is the constant `Lexer.NumberMaxBits`:
+
+```scala mdoc
+("1" + "0" * 100).fromJson[BigInt]
+
+("1." + "1" * 100).fromJson[BigDecimal]
+```
+
+The exponent of a `BigDecimal` is not capped by that limit, only by the range of `Int`. A number such as `1e2000000000` is accepted as a `BigDecimal` or a `Json.Num`, because it is stored as a small mantissa and a scale:
+
+```scala mdoc
+"1e2000000000".fromJson[BigDecimal]
+```
+
+ZIO JSON's own conversions from such a value are safe. Converting the `Json.Num` to a `BigInt` with `Json#as` fails at once:
+
+```scala mdoc
+"1e2000000000".fromJson[Json].flatMap(_.as[BigInt])
+```
+
+Your own code is not protected in the same way. Calling `toBigInt` or `toBigInteger` (or anything that expands the number to all its digits) on a decoded `BigDecimal` from untrusted input reproduces the attack above. Check the size first, for example with `scale` and `precision`, or decode into a bounded type such as `Long` or `Double` when the domain allows it.
+
+## Deeply Nested Input
+
+The decoders are recursive: decoding an array inside an array calls the array decoder again, one level of the JVM call stack per level of nesting. ZIO JSON has no explicit limit on nesting depth. Instead, `JsonDecoder#decodeJson`, `fromJson` and `JsonDecoder#fromJsonAST` catch the `StackOverflowError` that very deep input causes and return the error `Unexpected structure`:
+
+```scala mdoc
+("[" * 1000000).fromJson[Json]
+```
+
+How deep a document can be before this happens depends on the stack size of the thread that decodes it. In our test on a JVM with default settings, 1,000 nested arrays decoded into `Json` and 10,000 failed with `Unexpected structure`.
+
+Deep nesting only matters where the target type allows it. A case class decoder only descends as deep as the type itself is nested, and unknown fields are skipped without recursion. `Json`, recursive types such as trees, and nested collections follow the input as deep as it goes.
+
+:::warning
+The JVM streaming decoders `JsonDecoder#decodeJsonStream` and `JsonDecoder#decodeJsonStreamInput` do not catch `StackOverflowError`. ZIO treats that error as fatal, so it is not a normal failure of the effect. In our test, decoding 100,000 opening brackets into `Json` with `JsonDecoder#decodeJsonStream` stopped a `ZIOAppDefault` application with a "Catastrophic error encountered" report. Do not decode untrusted input into recursive types such as `Json` with these methods.
+:::
+
+## Huge Strings
+
+There is no limit on the length of a JSON string or on the number of elements in an array or object. In our test, a single string of 20 million characters decoded successfully. The only bound is the size of the input, which is why a request size limit in the HTTP server matters more than any check in your decoders: a `JsonDecoder#mapOrFail` that rejects long values runs only after the value has been read into memory.
+
+## Mitigations
+
+ZIO JSON avoids many of these attacks by design, but the following choices are yours:
+
+| Risk                                     | Mitigation                                                                                                                   |
+| ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| Large payloads, whitespace, huge strings | Cap the request size in the HTTP server or proxy.                                                                            |
+| Copying the body into a `String`         | Decode from `Chunk[Byte]` or `Array[Byte]`, or, on the JVM, from a stream with `JsonDecoder#decodeJsonStreamInput`.          |
+| Redundant data in unknown fields         | Use `@jsonNoExtraFields` or `allowExtraFields = false`.                                                                      |
+| Hash collisions in object keys           | Decode into case classes, `Json` or `JsonDecoder.keyValueChunk` instead of `Map[String, V]` when keys come from the client.  |
+| Huge `BigDecimal` exponents              | Do not expand untrusted `BigDecimal` values to `BigInt`; check `scale` and `precision`, or use bounded number types.         |
+| Deep nesting                             | Prefer non-recursive target types; avoid the JVM streaming decoders for untrusted input into recursive types such as `Json`. |
