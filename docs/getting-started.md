@@ -206,7 +206,7 @@ Because the result is an ordinary `Either`, you handle it with `fold`, `map`, or
 You can now encode, decode, nest, extend, and debug. To practise on a larger example, continue with the next tutorial, [Model a Real API Payload](tutorial/model-an-api-payload.md). Or pick the guide that matches your next task:
 
 - [Encode values to JSON](how-to/encoding.md) covers derived encoders and encoders built from existing ones.
-- [Decode JSON into values](how-to/decoding.md) covers strings and bytes as input, and several ways to decode JSON whose keys do not match your fields.
+- [Decode JSON whose shape differs from your case class](how-to/decoding.md) when the JSON keys or nesting do not match your fields.
 - [Streaming](how-to/streaming.md) reads and writes JSON as a stream, on the JVM.
 - [Rename fields](how-to/field-names.md) when the JSON names differ from your Scala names.
 - [Optional, default and null fields](how-to/optional-and-default-fields.md) covers missing, `null` and empty fields.

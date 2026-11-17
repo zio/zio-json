@@ -8,7 +8,7 @@ How-to guides answer one question each: "How do I do X?" Each guide starts from 
 ## Encoding and decoding
 
 - [Encoding](encoding.md): turn Scala values into JSON, with derived and manual encoders.
-- [Decoding](decoding.md): read JSON into Scala values, and handle the most common decoding cases.
+- [Decode JSON whose shape differs from your case class](decoding.md): rename keys, decode through an intermediate class, or read a `Json` tree when the JSON does not match your fields.
 - [Manual instances](manual-instances.md): write encoders and decoders by hand and reuse existing ones.
 - [Encode a type you do not own](third-party-types.md): write a codec for a class from a library you cannot change.
 - [Use your own type as a Map key](custom-map-keys.md): write `JsonFieldEncoder` and `JsonFieldDecoder` instances for dates, wrapper types and enumerations used as map keys.

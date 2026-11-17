@@ -33,7 +33,7 @@ When the decoder does not find a field, it picks the result by the type of the f
 | Collection such as `List` or `Map`  | An error, unless `decoding = false` (section 3) |
 | Anything else                       | An error: `missing`                             |
 
-A field with a default value also takes its default when the JSON value is `null`. Defaults work the same way on Scala 2 and Scala 3, with no extra compiler options:
+A field with a default value also takes its default when the JSON value is `null`. The default expression is evaluated again on every decode, so a default such as `UUID.randomUUID()` gives a fresh value each time. Defaults work the same way on Scala 2 and Scala 3, with no extra compiler options:
 
 ```scala mdoc:silent
 case class Profile(name: String, nickname: Option[String], age: Int = 18)
@@ -239,5 +239,5 @@ To tell "absent", "null" and "set" apart, decode the object to the [`Json` AST](
 ## See also
 
 - [Annotations](../reference/annotations.md) lists every derivation annotation in one table.
-- [Decoding](decoding.md) shows default values in a recursive case class.
+- [JsonDecoder: Missing Fields](../reference/json-decoder.md#missing-fields) describes how each decoder handles a missing field.
 - [Field names](field-names.md) covers `@jsonField` and `@jsonAliases`.
