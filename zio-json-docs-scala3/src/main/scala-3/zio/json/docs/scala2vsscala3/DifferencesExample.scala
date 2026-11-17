@@ -72,6 +72,7 @@ object DifferencesExample {
     println("Stop(): " + (strings.Stop(): strings.Signal).toJson)
     println("Amber: " + (handwritten.Amber: handwritten.Light).toJson)
     println("Blue: " + (handwritten.Blue: handwritten.Light).toJson)
+    println("Amber decoded: " + "\"Amber\"".fromJson[handwritten.Light])
     println("empty field: " + emptyfield.Holder("a", emptyfield.Marker()).toJson)
     println("empty field round trip: " + emptyfield.Holder("a", emptyfield.Marker()).toJson.fromJson[emptyfield.Holder])
     println("recursive: " + Node("root", List(Node("leaf", Nil))).toJson)

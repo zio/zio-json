@@ -27,21 +27,21 @@ The rest of the library, the parser, the built-in instances for standard types a
 
 The Scala 2 column is for Scala 2.13 (most rows also apply to 2.12):
 
-| Behaviour                                                                | Scala 2                                                   | Scala 3                                                |
-|--------------------------------------------------------------------------|-----------------------------------------------------------|--------------------------------------------------------|
-| Field type without a codec                                               | Compile error                                             | Derived with the outer configuration                   |
-| Default of `enumValuesAsStrings`                                         | `false`: case objects are written as `{"Red":{}}`         | `true`: case objects are written as `"Red"`            |
-| Case class with no fields in a family of case objects                    | Counts as an enum value, written as `"Stop"`              | Does not count, the whole family is written as objects |
-| Case object with a hand-written codec, family as strings                 | String form is turned off, the hand-written codec is used | String form is used, the hand-written codec is ignored |
-| Empty case class field with `ExplicitEmptyCollections(encoding = false)` | Field is left out of the JSON                             | Field is written as `{}`                               |
-| Recursive type with a plain `implicit val` or `implicit def`             | Fails at runtime, needs `lazy val`                        | Works, with `derives` or a plain `given`               |
-| Generic sealed trait with a case class extending `T[Nothing]`            | Works                                                     | Compiler crash, give the case class the type parameter |
-| Compile error for a missing instance                                     | `magnolia: could not find ... Typeclass[...]`             | `Cannot find or derive JsonEncoder for ...`            |
-| Sum type read from a `Json.Obj` with several keys                        | `expected single field object`                            | `expected object with a single field`                  |
-| How a configuration is passed                                            | `implicit val`                                            | `given`, also picked up by `derives`                   |
-| `derives JsonCodec`, Scala 3 `enum`, opaque types                        | Not available                                             | Available                                              |
-| String-literal union types, `IArray`, `T <: String` map keys             | Not available                                             | Built-in instances                                     |
-| `@jsonDerive` from `zio-json-macros`                                     | Available                                                 | Not published                                          |
+| Behaviour                                                                | Scala 2                                                   | Scala 3                                                                                            |
+|--------------------------------------------------------------------------|-----------------------------------------------------------|----------------------------------------------------------------------------------------------------|
+| Field type without a codec                                               | Compile error                                             | Derived with the outer configuration                                                               |
+| Default of `enumValuesAsStrings`                                         | `false`: case objects are written as `{"Red":{}}`         | `true`: case objects are written as `"Red"`                                                        |
+| Case class with no fields in a family of case objects                    | Counts as an enum value, written as `"Stop"`              | Does not count, the whole family is written as objects                                             |
+| Case object with a hand-written codec, family as strings                 | String form is turned off, the hand-written codec is used | String form is used; the encoder ignores the hand-written codec, and the decoder passes `{}` to it |
+| Empty case class field with `ExplicitEmptyCollections(encoding = false)` | Field is left out of the JSON                             | Field is written as `{}`                                                                           |
+| Recursive type with a plain `implicit val` or `implicit def`             | Fails at runtime, needs `lazy val`                        | Works, with `derives` or a plain `given`                                                           |
+| Generic sealed trait with a case class extending `T[Nothing]`            | Works                                                     | Compiler crash, give the case class the type parameter                                             |
+| Compile error for a missing instance                                     | `magnolia: could not find ... Typeclass[...]`             | `Cannot find or derive JsonEncoder for ...`                                                        |
+| Sum type read from a `Json.Obj` with several keys                        | `expected single field object`                            | `expected object with a single field`                                                              |
+| How a configuration is passed                                            | `implicit val`                                            | `given`, also picked up by `derives`                                                               |
+| `derives JsonCodec`, Scala 3 `enum`, opaque types                        | Not available                                             | Available                                                                                          |
+| String-literal union types, `IArray`, `T <: String` map keys             | Not available                                             | Built-in instances                                                                                 |
+| `@jsonDerive` from `zio-json-macros`                                     | Available                                                 | Not published                                                                                      |
 
 These behaviours are the same on both versions: the subtypes of a sealed trait are derived together with the trait, a nested sealed trait is flattened to its leaf cases, default values of fields are used when a field is missing (Scala 3 does not need the `-Yretain-trees` option for this), and every alias in `@jsonAliases` is accepted.
 
@@ -151,7 +151,7 @@ Go: {"Go":{}}
 Stop(): {"Stop":{}}
 ```
 
-The two versions also disagree when one case object has a codec of its own. Scala 2 then turns the string form off for the whole family and wraps the hand-written JSON in the usual object. Scala 3 keeps the string form and ignores the hand-written codec. On Scala 2:
+The two versions also disagree when one case object has a codec of its own. Scala 2 then turns the string form off for the whole family and wraps the hand-written JSON in the usual object. Scala 3 keeps the string form: the encoder ignores the hand-written codec, and the decoder passes `{}` to it, so a hand-written decoder that expects anything else fails. On Scala 2:
 
 ```scala mdoc:silent
 object handwritten {
@@ -182,11 +182,12 @@ The same code on Scala 3:
 docs.Scala3Source.print("zio-json-docs-scala3/src/main/scala-3/zio/json/docs/scala2vsscala3/DifferencesExample.scala", "handwritten")
 ```
 
-Running it on Scala 3 prints:
+Running it on Scala 3 prints the encoded cases, then the result of decoding `"Amber"`. The decoder passes `{}` to the string codec of `Amber`, which rejects it:
 
 ```text
 Amber: "Amber"
 Blue: "Blue"
+Amber decoded: Left((expected string))
 ```
 
 To get the same JSON on both versions, use only case objects in a family that should be written as strings, and change a string with `@jsonHint` rather than with a hand-written codec.
@@ -332,7 +333,7 @@ Most of a migration is mechanical: the code compiles, and derived codecs keep wo
 1. Write [golden tests](../how-to/golden-testing.md) for every type that crosses a process boundary (HTTP payloads, messages, stored documents) while the project is still on Scala 2. They record the current JSON, so any change on Scala 3 fails a test instead of reaching production.
 2. Decide on `enumValuesAsStrings`. To keep the Scala 2 JSON, put `JsonCodecConfiguration(enumValuesAsStrings = false)` in scope for every derivation. To switch to strings, change both sides of every integration at the same time.
 3. Search for case classes with an empty parameter list, `final case class Stop()`, in sealed families written as strings. Replace them with case objects, or accept that Scala 3 writes the family as objects.
-4. Search for hand-written codecs of case objects that belong to a derived family. Scala 3 ignores them when the family is written as strings. Use `@jsonHint` to change the string instead.
+4. Search for hand-written codecs of case objects that belong to a derived family. When the family is written as strings, the Scala 3 encoder ignores them and the decoder passes `{}` to them. Use `@jsonHint` to change the string instead.
 5. If you use `ExplicitEmptyCollections(encoding = false)`, check fields whose type is a case class with no fields: Scala 3 starts writing them as `{}`.
 6. Replace `@jsonDerive` with a `derives` clause, or with an explicit companion codec if the code must still compile on Scala 2.
 7. Move each `implicit val` configuration next to the types it should affect. A `given` at the top level of a file applies to every `derives` clause in the whole package.

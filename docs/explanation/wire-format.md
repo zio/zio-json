@@ -356,7 +356,7 @@ The round trip works within ZIO JSON, but another program that reads the JSON fi
 
 A change to a type or a setting can change the wire format without breaking any compile or any round-trip test: renaming a case renames its hint, adding a case with fields switches a whole family out of the string form, and moving to Scala 3 flips the `enumValuesAsStrings` default. A round-trip test still passes in all these cases, because the codec reads its own new output. Only the clients that depend on the old JSON break.
 
-A *golden test* catches this. It stores the encoder's output for a set of sample values in a file the first time it runs, and fails whenever the output changes later. The `zio-json-golden` module provides `goldenTest` for ZIO Test, and the [golden testing guide](../how-to/golden-testing.md) shows how to set it up. Add one for every type whose JSON leaves your program, and review a changed golden file as you would review a change to a public API.
+A *golden test* catches this. On its first run it writes the encoder's output for a set of generated sample values to a file for you to review and accept. From then on it fails whenever the output differs from the accepted file. The `zio-json-golden` module provides `goldenTest` for ZIO Test, and the [golden testing guide](../how-to/golden-testing.md) shows how to set it up. Add one for every type whose JSON leaves your program, and review a changed golden file as you would review a change to a public API.
 
 ## See Also
 

@@ -163,7 +163,7 @@ Map[LibraryItem, String](LibraryItem.CD -> "shelf 4").toJson
 """{"2":"shelf 9"}""".fromJson[Map[LibraryItem, String]]
 ```
 
-### Value Enum Builders
+## Value Enum Builders
 
 To create the instances without a trait, for example to give only some of them to an enum, use the builders in `enumeratum.values.ZioJson`:
 
@@ -208,4 +208,4 @@ On Scala 3, enumeratum's `findValues` macro for value enums reads the arguments 
 scalacOptions += "-Yretain-trees"
 ```
 
-In our tests on Scala 3.9.0, string enums (`Enum[A]`) compile without the option. The module's own build sets it for Scala 3, so setting it in your build as well is the safe choice whenever you use enumeratum on Scala 3.
+On Scala 3.9.0, string enums (`Enum[A]`) compile without the option. The module's own build sets it for Scala 3, so setting it in your build as well is the safe choice whenever you use enumeratum on Scala 3.

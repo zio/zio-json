@@ -42,7 +42,7 @@ That design makes decoding fast and keeps memory use low, but it means no step l
 - Values of fields the decoder does not know are skipped with a quick scan that does not validate them.
 - Some built-in decoders accept common non-standard forms, such as numbers in quotes, so that JSON written by other tools still decodes.
 
-None of these leniencies lets a wrongly typed value into your program. They decide only which *extra* text is tolerated around and between the values you asked for. When you need the input itself to be valid JSON, for example because you store it or pass it on, add one of the checks in [Getting Stricter Checks](#getting-stricter-checks).
+None of these leniencies lets a wrongly typed value into your program. They decide only which *extra* text is tolerated around and between the values you asked for. That extra text can still change the meaning of a top-level number, as the next section shows: `1e3` decodes as the `Int` `1`. When you need the input itself to be valid JSON, for example because you store it or pass it on, add one of the checks in [Getting Stricter Checks](#getting-stricter-checks).
 
 ## Input After the First Value Is Ignored
 

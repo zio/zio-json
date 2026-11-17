@@ -56,6 +56,10 @@ Encoding writes the plain values. The `eu.timepit.refined.auto._` import lets us
 Person("Aurora", 32).toJson
 ```
 
+:::note
+On Scala 3, refined's `auto` conversion of literals is not available, so `Person("Aurora", 32)` does not compile there. Build the refined values with `refineV` instead, for example `refineV[NonEmpty]("Aurora")`, which returns an `Either`. The ZIO JSON instances from this module work the same on both versions.
+:::
+
 Decoding valid input succeeds:
 
 ```scala mdoc

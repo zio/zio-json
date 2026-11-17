@@ -17,7 +17,7 @@ Add the module to your `build.sbt`:
 libraryDependencies += "dev.zio" %% "zio-json-interop-http4s" % "@VERSION@"
 ```
 
-The module depends on `http4s-dsl` and `cats-effect`, so those come in transitively. There is no Scala.js or Scala Native artifact, so always use `%%`.
+The module depends on `http4s-dsl`, `cats-effect` and `zio`, so those come in transitively. There is no Scala.js or Scala Native artifact, so always use `%%`.
 
 ## What the Module Provides
 
@@ -87,11 +87,15 @@ def jsonRequest(body: String): Request[IO] =
     .withContentType(`Content-Type`(MediaType.application.json))
 ```
 
-Sending a valid body returns `200 OK` with a JSON response:
+Sending a valid body runs the route and gives back the response:
+
+```scala mdoc:silent
+val response = routes.orNotFound.run(jsonRequest("""{"name":"Ada"}""")).unsafeRunSync()
+```
+
+The response has the status `200 OK`, the JSON content type and a JSON body:
 
 ```scala mdoc
-val response = routes.orNotFound.run(jsonRequest("""{"name":"Ada"}""")).unsafeRunSync()
-
 println(response.status)
 println(response.headers.get[`Content-Type`])
 println(response.bodyText.compile.string.unsafeRunSync())
@@ -157,11 +161,15 @@ val orderRoutes: HttpRoutes[IO] = HttpRoutes.of[IO] { case req @ POST -> Root / 
 }
 ```
 
-The imported encoder also works for building requests, so `Request#withEntity` accepts an `Order` and writes it as JSON. The route decodes the `Order` and encodes the `Receipt` with the imported instances:
+The imported encoder also works for building requests, so `Request#withEntity` accepts an `Order` and writes it as JSON:
+
+```scala mdoc:silent
+val orderRequest = Request[IO](Method.POST, uri"/orders").withEntity(Order("tea", 4))
+```
+
+The request carries the JSON content type, and the route decodes the `Order` and encodes the `Receipt` with the imported instances:
 
 ```scala mdoc
-val orderRequest = Request[IO](Method.POST, uri"/orders").withEntity(Order("tea", 4))
-
 println(orderRequest.headers.get[`Content-Type`])
 println(orderRoutes.orNotFound.run(orderRequest).unsafeRunSync().bodyText.compile.string.unsafeRunSync())
 ```
