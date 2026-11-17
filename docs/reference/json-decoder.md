@@ -728,6 +728,7 @@ On Scala.js and Scala Native, decoding `ZoneId` and `ZonedDateTime` needs the ti
 
 ## See Also
 
+- [Write a Fast Encoder or Decoder by Hand](../how-to/low-level-codecs.md) for a worked hand-written codec
 - [Decoding](../how-to/decoding.md) for derivation, ADTs and custom JSON shapes
 - [Manual Instances](../how-to/manual-instances.md) for `map` and `mapOrFail` in practice
 - [JsonEncoder](json-encoder.md) and [JsonCodec](json-codec.md)

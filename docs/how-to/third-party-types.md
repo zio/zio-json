@@ -168,7 +168,7 @@ println(Map(Money(500, "USD") -> 3).toJson)
 """{"5x USD":3}""".fromJson[Map[Money, Int]]
 ```
 
-See [JsonFieldEncoder and JsonFieldDecoder](../reference/json-field-codecs.md) for the built-in key types.
+See [JsonFieldEncoder and JsonFieldDecoder](../reference/json-field-codecs.md) for the built-in key types, and [Use Your Own Type as a Map Key](custom-map-keys.md) for more key types.
 
 ## See also
 

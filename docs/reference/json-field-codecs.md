@@ -311,6 +311,7 @@ Two interop modules provide key instances:
 
 ## See Also
 
+- [Use Your Own Type as a Map Key](../how-to/custom-map-keys.md) for a step-by-step guide
 - [JsonEncoder](json-encoder.md) and [JsonDecoder](json-decoder.md) for the value type classes
 - [JsonCodec](json-codec.md) for the codec instances of the map types
 - [Errors](errors.md) for how key errors are rendered

@@ -122,11 +122,11 @@ In fact, we do not need to provide `decodeName` for each `Refined` data type; `z
 
 ## Map Keys
 
-A type used as a `Map` key needs a `JsonFieldEncoder` and a `JsonFieldDecoder` rather than a `JsonEncoder` and a `JsonDecoder`, because JSON object keys are always strings. They have the same `contramap`, `map` and `mapOrFail` methods. See [JsonFieldEncoder and JsonFieldDecoder](../reference/json-field-codecs.md).
+A type used as a `Map` key needs a `JsonFieldEncoder` and a `JsonFieldDecoder` rather than a `JsonEncoder` and a `JsonDecoder`, because JSON object keys are always strings. They have the same `contramap`, `map` and `mapOrFail` methods. See [JsonFieldEncoder and JsonFieldDecoder](../reference/json-field-codecs.md), and [Use Your Own Type as a Map Key](custom-map-keys.md) for a step-by-step guide.
 
 ## Writing Instances by Hand
 
-When no existing instance fits, you can implement the encoder or decoder directly against the low-level writer and reader. See [Writing an Encoder by Hand](../reference/json-encoder.md#writing-an-encoder-by-hand) and [Writing a Decoder by Hand](../reference/json-decoder.md#writing-a-decoder-by-hand).
+When no existing instance fits, you can implement the encoder or decoder directly against the low-level writer and reader. See [Writing an Encoder by Hand](../reference/json-encoder.md#writing-an-encoder-by-hand) and [Writing a Decoder by Hand](../reference/json-decoder.md#writing-a-decoder-by-hand), or follow [Write a Fast Encoder or Decoder by Hand](low-level-codecs.md).
 
 ## See Also
 

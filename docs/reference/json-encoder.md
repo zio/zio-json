@@ -528,6 +528,7 @@ See [Streaming](../how-to/streaming.md).
 
 ## See Also
 
+- [Write a Fast Encoder or Decoder by Hand](../how-to/low-level-codecs.md) for a worked hand-written codec
 - [Built-in Instances](built-in-instances.md) for every type that has an encoder out of the box
 - [JsonFieldEncoder and JsonFieldDecoder](json-field-codecs.md) for map keys
 - [Encoding](../how-to/encoding.md) for derivation, ADTs and manual instances
