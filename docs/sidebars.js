@@ -2,35 +2,70 @@ const sidebars = {
   sidebar: [
     {
       type: "category",
-      label: "Getting Started",
+      label: "ZIO JSON",
       collapsed: false,
       link: { type: "doc", id: "index" },
       items: [
+        "getting-started",
         {
           type: "category",
           label: "Reference",
           collapsed: false,
           link: { type: "doc", id: "reference/index" },
           items: [
-            "reference/json-encoder",
-            "reference/json-decoder",
-            "reference/json-codec",
-            "reference/json-field-codecs",
-            "reference/built-in-instances",
-            "reference/json-codec-configuration",
-            "reference/annotations",
-            "reference/zio-json-macros",
-            "reference/errors",
+            {
+              type: "category",
+              label: "Type Classes",
+              collapsed: false,
+              items: [
+                "reference/json-encoder",
+                "reference/json-decoder",
+                "reference/json-codec",
+                "reference/json-field-codecs",
+                "reference/built-in-instances",
+                "reference/errors"
+              ]
+            },
+            {
+              type: "category",
+              label: "Derivation",
+              collapsed: false,
+              items: [
+                "reference/json-codec-configuration",
+                "reference/annotations",
+                "reference/zio-json-macros"
+              ]
+            },
             "reference/json-ast",
-            "reference/yaml"
+            "reference/yaml",
+            {
+              type: "category",
+              label: "Concepts",
+              collapsed: false,
+              items: [
+                "explanation/how-it-works",
+                "explanation/scala-2-vs-scala-3",
+                "explanation/decoder-strictness",
+                "explanation/wire-format",
+                "explanation/performance",
+                "explanation/security"
+              ]
+            }
           ]
         },
         {
           type: "category",
-          label: "Tutorial",
+          label: "Integrations",
           collapsed: false,
-          items: ["tutorial/getting-started", "tutorial/model-an-api-payload"]
+          link: { type: "doc", id: "interop/index" },
+          items: [
+            "interop/enumeratum",
+            "interop/http4s",
+            "interop/refined",
+            "interop/scalaz-7x"
+          ]
         },
+        "tutorial/model-an-api-payload",
         {
           type: "category",
           label: "How-to Guides",
@@ -54,31 +89,6 @@ const sidebars = {
             "how-to/streaming",
             "how-to/golden-testing",
             "how-to/generate-case-classes"
-          ]
-        },
-        {
-          type: "category",
-          label: "Explanation",
-          collapsed: false,
-          items: [
-            "explanation/how-it-works",
-            "explanation/scala-2-vs-scala-3",
-            "explanation/decoder-strictness",
-            "explanation/wire-format",
-            "explanation/performance",
-            "explanation/security"
-          ]
-        },
-        {
-          type: "category",
-          label: "Interop",
-          collapsed: true,
-          link: { type: "doc", id: "interop/index" },
-          items: [
-            "interop/enumeratum",
-            "interop/http4s",
-            "interop/refined",
-            "interop/scalaz-7x"
           ]
         }
       ]

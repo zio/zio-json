@@ -24,3 +24,14 @@ Reference pages list every type, method, annotation and option in ZIO JSON. Use 
 
 - [JSON AST](json-ast.md): the `Json` value type, cursors and tree transforms.
 - [YAML](yaml.md): the optional YAML module.
+
+## Concepts
+
+These pages explain how ZIO JSON works and why it behaves the way it does:
+
+- [How ZIO JSON Works](../explanation/how-it-works.md): the design that makes it fast and safe, and how derivation finds instances.
+- [Scala 2 and Scala 3 Differences](../explanation/scala-2-vs-scala-3.md): every behaviour that differs between the two versions, and a migration checklist.
+- [How Strict Is the Decoder](../explanation/decoder-strictness.md): what the decoders accept beyond strict JSON, and how to add stricter checks.
+- [JSON Shapes and Round Trips](../explanation/wire-format.md): how each kind of sum-type case is written, and which values do not survive an encode then decode.
+- [Performance](../explanation/performance.md): benchmarks and tips for fast encoding and decoding.
+- [Security](../explanation/security.md): how ZIO JSON handles hostile input, and what you still need to limit yourself.
