@@ -1,7 +1,7 @@
 ---
 id: errors
 title: "Errors"
-description: "Reference for zio-json decoding errors: JsonError variants, the path render format, common messages and JVM streaming behavior."
+description: "Reference for ZIO JSON decoding errors: JsonError variants, the path render format, common messages and JVM streaming behavior."
 keywords:
   - "Decoding Errors"
   - "Error Path"
@@ -10,7 +10,7 @@ keywords:
 ---
 
 A failed decode returns a `String` that says what went wrong and where.
-zio-json builds it from a list of `JsonError` values called the trace.
+ZIO JSON builds it from a list of `JsonError` values called the trace.
 This page lists the error types, the string format, and the messages you will meet most often.
 
 ## JsonError
@@ -39,17 +39,14 @@ JsonError.render(
 
 No decoder in the library adds a `SumType` step today.
 Errors inside a sum type case show the case name as an ordinary `.Name` object key, because the default encoding wraps the case in an object.
-With a discriminator field, the case name is added as a message step instead, so the path reads `(Banana).curvature(expected a Double)`.
+With a discriminator field, the case name is added as a message step instead, so the path reads `(Circle).radius(expected a Double)`.
 [Sum Types](#sum-types) shows both.
 
-## Where errors appear
+## Where Errors Appear
 
 `decodeJson`, `fromJson` and `fromJsonAST` return `Either[String, A]`.
 The string is the rendered trace.
-Two failures are not part of the trace and return a fixed string.
-
-- `Unexpected end of input` when the input stops in the middle of a value.
-- `Unexpected structure` when the decoder runs out of stack on deeply nested input.
+Two failures are not part of the trace and return a fixed string: `Unexpected end of input` when the input stops in the middle of a value, and `Unexpected structure` when the decoder runs out of stack on deeply nested input.
 
 Code that implements `JsonDecoder#unsafeDecode` by hand reports an error with `Lexer.error(msg, trace)`.
 It throws `JsonDecoder.UnsafeJson` with `Message(msg)` added to the front of the trace, and the public methods catch it and render it.
@@ -67,9 +64,9 @@ The exception message is the rendered trace, so it looks the same as the string 
 - `decodeJsonPipeline` fails the stream with the same exception at the first element that does not decode. Elements after it are not emitted.
 - When `decodeJsonStream` or `decodeJsonStreamInput` hits the end of the input, the message is `unexpected end of input` in lower case, unlike `Unexpected end of input` from `decodeJson`.
 
-See [streaming](../how-to/streaming.md) for how to decode streams.
+See [Streaming](../how-to/streaming.md) for how to decode streams.
 
-## Common messages
+## Common Messages
 
 The table lists the messages in the order a decoder tends to meet them.
 Each one is shown in the parentheses of a full error, for example `.age(expected an Int)`.
@@ -93,7 +90,7 @@ When the failure is at the top level, the path is empty and only the parentheses
 | `expected a Boolean`                          | The value is not `true` or `false`.                                                                                                                                                                                                                                |
 | `expected a 256-bit BigInt`                   | An integer needs more than 256 bits. `BigInteger` says `expected a 256-bit BigInteger`.                                                                                                                                                                            |
 | `expected a BigDecimal with 256-bit mantissa` | A decimal's digits need more than 256 bits.                                                                                                                                                                                                                        |
-| `expected string`                             | A string was needed and something else arrived.                                                                                                                                                                                                                    |
+| `expected string`                             | A string is expected and another kind of value arrives.                                                                                                                                                                                                            |
 | `expected single character string`            | A `Char` is read from a string that does not hold exactly one character.                                                                                                                                                                                           |
 | `expected a UUID`                             | A string is not a valid `UUID`. Same shape for `Instant`, `LocalDate`, and so on, and for a `UUID` map key.                                                                                                                                                        |
 | `Invalid Int: k`                              | A map key `k` is not an `Int`. `Long` keys say `Invalid Long: k`. Keys longer than 50 characters are cut off with `...`.                                                                                                                                           |
@@ -120,7 +117,7 @@ A message you return from `mapOrFail` ends up in the same position, in parenthes
 
 Decoding from a `Json` value with `fromJsonAST` or `Json#as` uses slightly different wording for some types: `expected a Int` instead of `expected an Int`, and `expected boolean` instead of `expected a Boolean`.
 
-## Why the path matters
+## Why the Path Matters
 
 A message alone is rarely enough.
 `expected an Int` does not say which of a hundred fields was wrong.

@@ -100,7 +100,7 @@ The `Invalid Int` and `Invalid Long` messages cut keys longer than 50 characters
 ## Scala 3: Keys That Are Subtypes of `String`
 
 On Scala 3, `JsonFieldDecoder` has one more, low-priority instance: any type `T <: String` that has a `JsonDecoder[T]` gets a `JsonFieldDecoder[T]`.
-It decodes the key with that `JsonDecoder`, as if the key were a JSON string value.
+It puts the key between quotes and decodes the result with that `JsonDecoder`, as if the key were a JSON string value. The key is not escaped again first, so a key that contains `"` or `\` does not decode correctly.
 The encoding side needs nothing extra, because `JsonFieldEncoder[String]` already serves every subtype of `String`.
 A union of string literals, which has a built-in `JsonDecoder` on Scala 3, therefore works as a key type with no extra code:
 

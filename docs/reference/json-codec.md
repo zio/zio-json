@@ -26,6 +26,8 @@ Unlike `JsonEncoder` and `JsonDecoder`, `JsonCodec` is a `final case class`, not
 
 ## Construction
 
+`JsonCodec` is a case class with one field for each half:
+
 ```scala
 final case class JsonCodec[A](encoder: JsonEncoder[A], decoder: JsonDecoder[A])
 ```
@@ -43,6 +45,8 @@ The companion has codec instances for the primitive types, `Option`, `Either`, t
 A few types have an encoder and a decoder but no codec: `Unit`, `IndexedSeq`, `LinearSeq`, `ListSet`, `TreeSet` and `mutable.Map`. Build those with `JsonCodec(JsonEncoder[T], JsonDecoder[T])`.
 [Built-in Instances](built-in-instances.md) lists every type with its JSON shape and says which of the three instances it has.
 
+The examples on this page use a `Person` type with a derived codec:
+
 ```scala mdoc:silent:reset-object
 import zio.json._
 
@@ -54,7 +58,7 @@ object Person {
 ```
 
 A `JsonCodec[A]` in implicit scope also supplies a `JsonEncoder[A]` and a `JsonDecoder[A]`.
-Both companions define `fromCodec` for this, so `toJson` and `fromJson` work with only the codec defined.
+Both companions define `fromCodec` for this, so `toJson` and `fromJson` work with only the codec defined:
 
 ```scala mdoc
 Person("Ada", 36).toJson
@@ -64,17 +68,21 @@ Person("Ada", 36).toJson
 
 ## Encoding and Decoding
 
+The codec's own `encodeJson` and `decodeJson` delegate to its encoder and decoder:
+
 ```scala
 final def encodeJson(a: A, indent: Option[Int]): CharSequence
 final def decodeJson(str: CharSequence): Either[String, A]
 ```
 
-Both delegate to the encoder and decoder. See [JsonEncoder](json-encoder.md#encodejson) and [JsonDecoder](json-decoder.md#decodejson) for the behavior of `indent` and for the `Left(String)` errors.
+See [JsonEncoder](json-encoder.md#encodejson) and [JsonDecoder](json-decoder.md#decodejson) for the behavior of `indent` and for the `Left(String)` errors.
 
 :::note[No default for indent]
 `JsonEncoder#encodeJson` defaults `indent` to `None`. `JsonCodec#encodeJson` has no default, so you must pass it.
 The codec has only the `CharSequence` overload of `decodeJson`. To decode bytes, use `codec.decoder.decodeJson(bytes)` or `fromJson`.
 :::
+
+Calling both methods on the `Person` codec, with `None` for compact output:
 
 ```scala mdoc
 Person.codec.encodeJson(Person("Ada", 36), None)
@@ -83,6 +91,8 @@ Person.codec.decodeJson("""{"name":"Ada","age":36}""")
 ```
 
 ## Transforming a Codec
+
+`transform` and `transformOrFail` turn a codec for `A` into a codec for `B`:
 
 ```scala
 final def transform[B](f: A => B, g: B => A): JsonCodec[B]
@@ -94,6 +104,8 @@ final def transformOrFail[B](f: A => Either[String, B], g: B => A): JsonCodec[B]
 `g` cannot fail: the type `B` must always be encodable.
 Internally they are `JsonCodec(encoder.contramap(g), decoder.map(f))` and `JsonCodec(encoder.contramap(g), decoder.mapOrFail(f))`.
 
+To decode only strings that contain `@` into an `Email`, and to write an `Email` back as its string:
+
 ```scala mdoc:silent
 final case class Email(value: String)
 
@@ -103,6 +115,8 @@ val emailCodec: JsonCodec[Email] =
     _.value
   )
 ```
+
+The encoder writes the plain string, and the decoder rejects a string without `@`:
 
 ```scala mdoc
 emailCodec.encodeJson(Email("ada@example.com"), None)
@@ -116,6 +130,8 @@ Two codecs combine either as alternatives, where decoding falls back from one to
 
 ### `orElse` and `orElseEither`
 
+Both methods take the fallback codec by name:
+
 ```scala
 final def orElse(that: => JsonCodec[A]): JsonCodec[A]
 final def orElseEither[B](that: => JsonCodec[B]): JsonCodec[Either[A, B]]
@@ -126,6 +142,8 @@ The decoder tries this codec first and falls back to `that` if it fails.
 For `orElseEither`, the encoder writes a `Left` with this codec's encoder and a `Right` with the other, with no tag in the JSON.
 `orElse` is `orElseEither` followed by `transform`. It decodes with either codec, but its transform encodes every value as a `Right`, so it always writes with `that`, not with this codec.
 The fallback rewinds the input, so it has the same memory caveat as [`JsonDecoder#orElse`](json-decoder.md#orelse-and-orelseeither).
+
+To accept either a number or a string:
 
 ```scala mdoc:silent
 val intOrString: JsonCodec[Either[Int, String]] = JsonCodec[Int] <+> JsonCodec[String]
@@ -157,6 +175,8 @@ primaryFirst.encodeJson(5, None)
 
 ### `zip`, `zipLeft` and `zipRight`
 
+The three methods pair this codec with another one:
+
 ```scala
 final def zip[B](that: => JsonCodec[B]): JsonCodec[(A, B)]
 final def zipLeft(that: => JsonCodec[Unit]): JsonCodec[A]
@@ -169,6 +189,8 @@ final def zipRight[B](that: => JsonCodec[B])(implicit ev: Unit <:< A): JsonCodec
 `zipRight` is only available when `Unit` is a subtype of `A` (usually `A` is `Unit`), because it encodes `()` for the dropped side.
 There is no implicit `JsonCodec[Unit]`, so you build one from `JsonEncoder.unit` and `JsonDecoder.unit`.
 
+A codec for a pair, and one that keeps only the count of a `[unit, count]` array:
+
 ```scala mdoc:silent
 val pair: JsonCodec[(String, Int)] = JsonCodec[String] <*> JsonCodec[Int]
 
@@ -176,6 +198,8 @@ val unitCodec: JsonCodec[Unit] = JsonCodec(JsonEncoder.unit, JsonDecoder.unit)
 
 val countOnly: JsonCodec[Int] = unitCodec *> JsonCodec[Int]
 ```
+
+`pair` writes a two-element array, and `countOnly` writes `{}` in the `Unit` slot and skips that slot when decoding:
 
 ```scala mdoc
 pair.encodeJson(("apples", 3), None)

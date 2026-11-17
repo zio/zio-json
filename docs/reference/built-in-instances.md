@@ -49,7 +49,7 @@ All number types encode as JSON numbers and accept the same number text when dec
 |--------------------------------------|------------|---------|---------|-------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `Byte`, `Short`, `Int`, `Long`       | number     | yes     | yes     | yes   | Out-of-range values fail. Quoted numbers and leading zeros are accepted; a leading `+` is not                                                                                                            |
 | `Float`, `Double`                    | number     | yes     | yes     | yes   | `NaN` and the infinities are written as the strings `"NaN"`, `"Infinity"`, `"-Infinity"` ([Non-Finite Numbers](json-encoder.md#non-finite-numbers)). Values too large for the type decode as an infinity |
-| `BigInt`, `java.math.BigInteger`     | number     | yes     | yes     | yes   | The decoder rejects values larger than 256 bits with `expected a 256-bit BigInt`. The encoder has no limit                                                                                               |
+| `BigInt`, `java.math.BigInteger`     | number     | yes     | yes     | yes   | The decoder rejects values larger than 256 bits with `expected a 256-bit BigInt` (`expected a 256-bit BigInteger` for `BigInteger`). The encoder has no limit                                            |
 | `BigDecimal`, `java.math.BigDecimal` | number     | yes     | yes     | yes   | The decoder limits the unscaled value (mantissa) to 256 bits; the exponent may be any `Int`. The encoder keeps the scale, so `1.50` stays `1.50`                                                         |
 
 ## Option and Either
@@ -143,10 +143,10 @@ All 16 `java.time` types are written as ISO-8601 strings. The examples in the ta
 | `DayOfWeek`      | `"MONDAY"`                                  | yes     | yes     | yes   | The decoder ignores case: `"monday"` works. Abbreviations do not                                 |
 | `Month`          | `"JANUARY"`                                 | yes     | yes     | yes   | The decoder ignores case                                                                         |
 
-On Scala.js and Scala Native, `ZoneId` and `ZonedDateTime` with region ids need the time-zone database as an extra dependency:
+On Scala.js and Scala Native, `ZoneId` and `ZonedDateTime` with region ids need the time-zone database, `scala-java-time-tzdb`, as an extra dependency. Use the same version as the `scala-java-time` in your dependency tree, as described in the [installation notes](../index.md). For example, when that version is 2.10.0:
 
 ```scala
-libraryDependencies += "io.github.cquiroz" %%% "scala-java-time-tzdb" % "latest.integration"
+libraryDependencies += "io.github.cquiroz" %%% "scala-java-time-tzdb" % "2.10.0"
 ```
 
 ## UUID and Currency

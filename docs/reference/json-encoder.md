@@ -41,6 +41,8 @@ Derived instances for your own types are covered in [Encoding](../how-to/encodin
 
 ### `encodeJson`
 
+`JsonEncoder#encodeJson` takes the value and an optional indent:
+
 ```scala
 final def encodeJson(a: A, indent: Option[Int] = None): CharSequence
 ```
@@ -50,6 +52,8 @@ final def encodeJson(a: A, indent: Option[Int] = None): CharSequence
 `Some(n)` produces pretty output that starts at nesting level `n`, with two spaces per level, so `Some(0)` is the usual choice.
 In pretty output, object fields are written as `"name" : value`, with a space on each side of the colon, and tuples stay on one line with `", "` between their elements.
 The result is a `CharSequence`. Call `toString` to get a `String`.
+
+The examples in this section use a `Person` type with a derived encoder:
 
 ```scala mdoc:silent
 import zio.json._
@@ -106,6 +110,8 @@ These two methods give an existing encoder a new input type without writing any 
 
 ### `contramap`
 
+`JsonEncoder#contramap` takes a function from the new input type to the old one:
+
 ```scala
 final def contramap[B](f: B => A): JsonEncoder[B]
 ```
@@ -113,6 +119,8 @@ final def contramap[B](f: B => A): JsonEncoder[B]
 Builds an encoder for `B` from an encoder for `A` and a function from `B` to `A`.
 `isNothing`, `isEmpty` and `toJsonAST` of the new encoder defer to the original one.
 The walkthrough is in [Manual Instances](../how-to/manual-instances.md).
+
+To write a `UserId` with the `Int` encoder:
 
 ```scala mdoc:silent
 final case class UserId(value: Int)
@@ -128,12 +136,16 @@ UserId(7).toJson
 
 ### `narrow`
 
+`JsonEncoder#narrow` takes only a type parameter:
+
 ```scala
 final def narrow[B <: A]: JsonEncoder[B]
 ```
 
 Returns the same encoder typed for a subtype `B` of `A`.
 It is an unchecked cast: it does not create a new encoder.
+
+An encoder for `CharSequence` narrowed to `String`:
 
 ```scala mdoc:compile-only
 val chars: JsonEncoder[CharSequence] = JsonEncoder[String].contramap(_.toString)
@@ -159,6 +171,8 @@ All five are `final`, and `that` is passed by name.
 It returns `JsonEncoder.tuple2`; the companion has implicit encoders for tuples of 1 to 22 elements, all written as JSON arrays.
 `zipWith` first converts your own type to a tuple with `f`.
 
+An encoder for a pair, and one for an `Entry` that goes through a pair:
+
 ```scala mdoc:silent
 val pair = JsonEncoder[String].zip(JsonEncoder[Int])
 
@@ -181,6 +195,8 @@ entry.encodeJson(Entry("apples", 3))
 `orElseEither` writes the value without a tag, so the JSON carries no trace of which side it came from.
 The companion has the same untagged encoder as `JsonEncoder.orElseEither[A, B]`, which takes both encoders implicitly. It is not implicit itself, so it is never picked for an `Either` by accident.
 `eitherWith` is `either` preceded by `contramap`: you supply `f` to split your own type into `Either[A, B]`.
+
+The three combinators side by side, with `byShape` sending numeric strings to the `Int` side:
 
 ```scala mdoc:silent
 val tagged = JsonEncoder[Int].either(JsonEncoder[String])
@@ -205,6 +221,8 @@ See `orElseEither` in [JsonDecoder](json-decoder.md#orelse-and-orelseeither).
 
 ## Missing and Empty Values
 
+Two methods on the trait report whether a value counts as missing or empty:
+
 ```scala
 trait JsonEncoder[A] {
   def isNothing(a: A): Boolean = false
@@ -225,6 +243,8 @@ Override these methods only when you write an encoder class by hand and want it 
 
 ## Recursive Encoders
 
+`JsonEncoder.suspend` takes the encoder by name:
+
 ```scala
 object JsonEncoder {
   def suspend[A](encoder0: => JsonEncoder[A]): JsonEncoder[A]
@@ -234,6 +254,8 @@ object JsonEncoder {
 `JsonEncoder.suspend` defers building an encoder until it is first used.
 It lets an encoder refer to itself, for example for a tree type.
 It is on the companion object, not on the trait.
+
+A tree type whose derived encoder refers to itself through `List[Tree]`:
 
 ```scala mdoc:silent
 final case class Tree(value: Int, children: List[Tree])

@@ -19,7 +19,7 @@ Derived instances for your own types are covered in [Decoding](../how-to/decodin
 | Method                                                        | What it does                                             | Details                                                 |
 |---------------------------------------------------------------|----------------------------------------------------------|---------------------------------------------------------|
 | `decodeJson(...)`                                             | Decodes a `CharSequence`, `Chunk[Byte]` or `Array[Byte]` | [decodeJson](#decodejson)                               |
-| `fromJson`                                                    | Extension: decodes a string or bytes                     | [Extension methods](#extension-methods)                 |
+| `fromJson`                                                    | Extension: decodes a string or bytes                     | [Extension Methods](#extension-methods)                 |
 | `fromJsonAST`                                                 | Decodes from a `Json` tree                               | [fromJsonAST](#fromjsonast)                             |
 | `map`, `mapOrFail`                                            | Transforms a decoded value, optionally failing           | [map and mapOrFail](#map-and-maporfail)                 |
 | `widen`                                                       | Retypes a decoder for a supertype                        | [widen](#widen)                                         |
@@ -109,7 +109,7 @@ Inside an object or an array the same input fails, because the decoder then expe
 
 [How Strict Is the Decoder](../explanation/decoder-strictness.md) explains this and the other leniencies, and how to get stricter checks.
 
-### Extension methods
+### Extension Methods
 
 `import zio.json._` adds `fromJson[A]` to `CharSequence`, `Chunk[Byte]` and `Array[Byte]`.
 They are defined in `DecoderOps`, `DecoderBytesOps` and `DecoderByteArrayOps` in the package object, and each delegates to the matching `decodeJson` overload:
@@ -422,7 +422,7 @@ object Tree {
 ## Map Keys
 
 A JSON object decodes into a `Map[K, V]`, `HashMap`, `mutable.Map`, `SortedMap` or `ListMap` when `V` has a `JsonDecoder` and `K` has a `JsonFieldDecoder`.
-Built-in key decoders exist only for `String`, `Int`, `Long` and `UUID`.
+Built-in key decoders exist for `String`, `Int`, `Long` and `UUID`, and on Scala 3 also for any subtype of `String` that has a `JsonDecoder`, such as a string-literal union.
 When the same key appears twice, the last value wins and no error is reported.
 [JsonFieldEncoder and JsonFieldDecoder](json-field-codecs.md) covers key types in full, including how to make one for your own type.
 
