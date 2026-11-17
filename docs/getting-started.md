@@ -11,9 +11,9 @@ keywords:
 
 On this page you will install ZIO JSON, turn Scala values into JSON, read JSON back into Scala values, and handle bad input. Every step builds on the one before it, so run the steps in order.
 
-By the end you will have a small `Person` model that you can encode, decode, and extend with optional fields, lists, and a sealed trait.
+By the end you will have a small user-profile model: a `Profile` that holds a `Person` with an `Address`, an optional nickname, a list of tags, and a list of contacts of different kinds. You will encode it, decode it, and read the errors it reports for bad input.
 
-## 1. Install and choose a Scala version
+## 1. Install
 
 Add the library to your `build.sbt`:
 
@@ -21,17 +21,19 @@ Add the library to your `build.sbt`:
 libraryDependencies += "dev.zio" %% "zio-json" % "@VERSION@"
 ```
 
-ZIO JSON is published for the JVM, Scala.js and Scala Native, for Scala 2.12, 2.13 and 3. In a Scala.js or Scala Native project, replace the `%%` operator with `%%%`.
+:::note[Scala.js and Scala Native]
+ZIO JSON is published for the JVM, Scala.js and Scala Native, for Scala 2.12, 2.13 and 3. In a Scala.js or Scala Native project, use `%%%` instead of `%%`.
 
-On Scala.js and Scala Native, the `java.time` types come from the `scala-java-time` library, which ZIO JSON depends on. If you use `java.time.ZoneId` or `java.time.ZonedDateTime` there, also add the time-zone database, `scala-java-time-tzdb`, in the same version as the `scala-java-time` in your dependency tree (`sbt dependencyTree` shows it). For example, when that version is 2.10.0:
+On those two platforms the `java.time` types come from the `scala-java-time` library. If you use `java.time.ZoneId` or `java.time.ZonedDateTime` there, also add the time-zone database in the same version as the `scala-java-time` in your dependency tree (`sbt dependencyTree` shows it), for example:
 
 ```scala
 libraryDependencies += "io.github.cquiroz" %%% "scala-java-time-tzdb" % "2.10.0"
 ```
 
-ZIO JSON also has add-on modules (YAML, golden testing, `@jsonDerive` macros and integrations with http4s, refined, Scalaz 7 and enumeratum). The [Modules](reference/index.md#modules) table lists each one with its platforms and Scala versions.
+The add-on modules (YAML, golden testing, `@jsonDerive` macros and the integrations) are listed in the [Modules](reference/index.md#modules) table.
+:::
 
-The code on this page uses Scala 2.13 syntax. Where Scala 3 differs, a short Scala 3 note follows the example.
+The code on this page uses Scala 2.13 syntax. Where Scala 3 is shorter, a Scala 3 tip follows the example.
 
 Every snippet below assumes this import:
 
@@ -41,7 +43,7 @@ import zio.json._
 
 The import brings in the type classes `JsonEncoder` and `JsonDecoder`, the derivation helpers, and the extension methods `toJson` and `fromJson`.
 
-## 2. Encode your first value
+## 2. Encode Your First Value
 
 A *codec* is a pair of one encoder (Scala to JSON) and one decoder (JSON to Scala). The easiest way to get one for a case class is to let the compiler derive it. Put the codec on the companion object so Scala finds it without any import:
 
@@ -67,13 +69,15 @@ Use `toJsonPretty` when you want indented output for people to read:
 println(home.toJsonPretty)
 ```
 
+:::tip[Scala 3]
 On Scala 3 you can skip the companion and write `derives JsonCodec` on the class instead:
 
 ```scala mdoc:passthrough
 docs.Scala3Source.print("zio-json-docs-scala3/src/main/scala-3/zio/json/docs/gettingstarted/DerivesExample.scala", "address")
 ```
+:::
 
-## 3. Decode your first value
+## 3. Decode Your First Value
 
 `fromJson` goes the other way. It does not throw. It returns an `Either[String, A]`: a `Right` with the value, or a `Left` with an error message:
 
@@ -81,11 +85,11 @@ docs.Scala3Source.print("zio-json-docs-scala3/src/main/scala-3/zio/json/docs/get
 """{"street":"1 Main St","city":"Springfield"}""".fromJson[Address]
 ```
 
-The same codec supplies the decoder, because a `JsonCodec` holds both halves. If you only need one direction, derive just that half with `DeriveJsonEncoder.gen` or `DeriveJsonDecoder.gen`.
+The same codec supplies the decoder, because a `JsonCodec` holds both halves.
 
-## 4. Nest one case class in another
+## 4. Nest One Case Class in Another
 
-A case class field can be any type that has a codec. Here a `Person` holds an `Address`, which got its codec in the previous step. On Scala 2 every field type needs a codec like this. On Scala 3, a field type without one is derived along with the outer class:
+A `Person` holds the `Address` from step 2. A case class field can be any type that has a codec, and `Address` got its codec in step 2:
 
 ```scala mdoc:silent
 final case class Person(name: String, age: Int, address: Address)
@@ -109,29 +113,9 @@ Decoding the same text gives the original value back:
 alice.toJson.fromJson[Person]
 ```
 
-## 5. Add optional and list fields
+## 5. Model Alternatives with a Sealed Trait
 
-Standard types such as `Option`, `List`, `Map`, `String`, and the numeric types already have codecs. A case class made of them needs nothing extra:
-
-```scala mdoc:silent
-final case class Profile(name: String, nickname: Option[String], tags: List[String])
-
-object Profile {
-  implicit val codec: JsonCodec[Profile] = DeriveJsonCodec.gen[Profile]
-}
-```
-
-A `None` is left out of the JSON, and a missing field decodes as `None`. A `List` is a JSON array:
-
-```scala mdoc
-println(Profile("Bob", None, List("admin", "dev")).toJson)
-
-"""{"name":"Bob","tags":["admin","dev"]}""".fromJson[Profile]
-```
-
-## 6. Model alternatives with a sealed trait
-
-A `sealed trait` lets one field hold one of several shapes. Derive the codec on the trait itself. Subtypes that have no codec of their own are derived along with it, so you only need a separate subtype codec when you also encode or decode that subtype on its own:
+A person can be reached by email or by phone. A `sealed trait` models "one of several shapes". Derive the codec on the trait itself, and its subtypes are derived along with it:
 
 ```scala mdoc:silent
 sealed trait Contact
@@ -147,24 +131,55 @@ object Contact {
 By default the JSON names the subtype in a single wrapper key. This key is the *tag* that tells the decoder which subtype to build:
 
 ```scala mdoc
-val contacts: List[Contact] = List(Contact.Email("a@example.com"), Contact.Phone("555-0100"))
+val contacts: List[Contact] = List(Contact.Email("alice@example.com"), Contact.Phone("555-0100"))
 
 println(contacts.toJson)
 
 """[{"Phone":{"number":"555-0100"}}]""".fromJson[List[Contact]]
 ```
 
-You can swap the wrapper key for a field inside the object. That is a *discriminator*, and the [Sealed traits](how-to/sealed-traits.md) how-to guide covers it.
-
-On Scala 3 an `enum` or a sealed trait can use `derives JsonCodec` directly:
+:::tip[Scala 3]
+On Scala 3 the same alternatives can be an `enum` with `derives JsonCodec`:
 
 ```scala mdoc:passthrough
 docs.Scala3Source.print("zio-json-docs-scala3/src/main/scala-3/zio/json/docs/gettingstarted/DerivesExample.scala", "enum")
 ```
 
-An enum case is written like a case class of a sealed trait, so `Fruit.Banana(0.5)` encodes as `{"Banana":{"curvature":0.5}}`.
+An enum case is written the same way, so `Contact.Phone("555-0100")` encodes as `{"Phone":{"number":"555-0100"}}`.
+:::
 
-## 7. Handle a decode error
+## 6. Put It Together with Optional and List Fields
+
+Now combine everything into a `Profile`. It holds the `Person` from step 4, the `Contact` list from step 5, a nickname that may be missing, and a list of tags. `Option` and `List` already have codecs, so the derived codec needs nothing extra:
+
+```scala mdoc:silent
+final case class Profile(
+  person: Person,
+  nickname: Option[String],
+  tags: List[String],
+  contacts: List[Contact]
+)
+
+object Profile {
+  implicit val codec: JsonCodec[Profile] = DeriveJsonCodec.gen[Profile]
+}
+```
+
+A `None` is left out of the JSON, and a `List` becomes a JSON array:
+
+```scala mdoc
+val profile = Profile(alice, None, List("admin", "dev"), contacts)
+
+println(profile.toJsonPretty)
+```
+
+A missing `nickname` field decodes as `None`, so the encoded text decodes back to the same value:
+
+```scala mdoc
+profile.toJson.fromJson[Profile]
+```
+
+## 7. Handle a Decode Error
 
 Bad input never throws. It comes back as a `Left` holding a message. The message is a path in `jq` style, followed by a note in parentheses that says what went wrong.
 
@@ -186,10 +201,10 @@ Text that is not JSON at all:
 """{"street": womp}""".fromJson[Address]
 ```
 
-A nested failure keeps the whole path, so you can see exactly where the problem sits:
+In the full `Profile`, a failure deep inside the model keeps the whole path, so you can see exactly where the problem sits:
 
 ```scala mdoc
-"""{"name":"Alice","age":30,"address":{"street":"1 Main St","city":false}}""".fromJson[Person]
+"""{"person":{"name":"Alice","age":30,"address":{"street":"1 Main St","city":false}},"tags":[],"contacts":[]}""".fromJson[Profile]
 ```
 
 Because the result is an ordinary `Either`, you handle it with `fold`, `map`, or a `match`, as with any other `Either`:
@@ -201,17 +216,15 @@ Because the result is an ordinary `Either`, you handle it with `fold`, `map`, or
 }
 ```
 
-## 8. Where next
+## 8. Where Next
 
-You can now encode, decode, nest, extend, and debug. To practise on a larger example, continue with the next tutorial, [Model a Real API Payload](tutorial/model-an-api-payload.md). Or pick the guide that matches your next task:
+You can now encode, decode, nest, model alternatives, and read errors. To practise on a larger example, continue with the next tutorial, [Model a Real API Payload](tutorial/model-an-api-payload.md). Or pick the guide that matches your next task:
 
 - [Control the JSON a type encodes to](how-to/encoding.md) when the default JSON shape is not the one you need.
 - [Decode JSON whose shape differs from your case class](how-to/decoding.md) when the JSON keys or nesting do not match your fields.
-- [Streaming](how-to/streaming.md) reads and writes JSON as a stream, on the JVM.
 - [Rename fields](how-to/field-names.md) when the JSON names differ from your Scala names.
-- [Optional, default and null fields](how-to/optional-and-default-fields.md) covers missing, `null` and empty fields.
-- [JsonCodecConfiguration](reference/json-codec-configuration.md) sets derivation options for a whole program.
-- [Work with sealed traits](how-to/sealed-traits.md) to change the tag or use a discriminator.
-- [Annotations reference](reference/annotations.md) lists every `@json...` annotation.
-- [JsonCodec reference](reference/json-codec.md) lists the codec combinators.
-- [How ZIO JSON works](explanation/how-it-works.md) explains why it is fast and secure.
+- [Change how sealed traits look in JSON](how-to/sealed-traits.md), for example with a discriminator field instead of the wrapper key.
+- [Optional, default and null fields](how-to/optional-and-default-fields.md) for missing, `null` and empty fields.
+- [Process large JSON as a stream](how-to/streaming.md) on the JVM.
+
+For every option and method, see the [Reference](reference/index.md). For why ZIO JSON works the way it does, see [How ZIO JSON Works](explanation/how-it-works.md).

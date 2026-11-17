@@ -12,15 +12,15 @@ object DerivesExample {
   // #endregion
 
   // #region enum
-  enum Fruit derives JsonCodec {
-    case Banana(curvature: Double)
-    case Apple(poison: Boolean)
+  enum Contact derives JsonCodec {
+    case Email(address: String)
+    case Phone(number: String)
   }
   // #endregion
 
   def main(args: Array[String]): Unit = {
     println("address: " + Address("1 Main St", "Springfield").toJson)
-    println("enum: " + (Fruit.Banana(0.5): Fruit).toJson)
-    println("decoded: " + """{"Apple":{"poison":false}}""".fromJson[Fruit])
+    println("enum: " + (Contact.Phone("555-0100"): Contact).toJson)
+    println("decoded: " + """{"Email":{"address":"a@example.com"}}""".fromJson[Contact])
   }
 }
