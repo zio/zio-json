@@ -95,6 +95,8 @@ A stream with more than one document (separated by `---`) fails, so split such i
 "a: 1\n---\na: 2\n".fromYaml[Json].isLeft
 ```
 
+An empty input, or one that holds only comments, has no document at all. `fromYaml` then returns a `Left` whose message comes from a `NullPointerException` (`Cannot invoke "org.yaml.snakeyaml.nodes.Node.getClass()" because "node" is null` on current JDKs) rather than a clear "empty document" error. Check for blank input yourself if you need a better message, as [Load a YAML Configuration File](../how-to/load-yaml-config.md) does.
+
 ## Options
 
 `YamlOptions` controls how YAML is rendered. `YamlOptions.default` is used when no options are given, and you can change individual settings with `copy`:
