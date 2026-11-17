@@ -33,10 +33,15 @@ final case class JsonCodec[A](encoder: JsonEncoder[A], decoder: JsonDecoder[A])
 The companion object offers three ways to get a codec:
 
 - `JsonCodec(encoder, decoder)` builds one from two existing instances.
-- `JsonCodec[A]` summons the implicit instance. The companion has instances for the standard types.
+- `JsonCodec[A]` summons the implicit instance.
 - `DeriveJsonCodec.gen[A]` derives both halves together (Scala 2 and Scala 3). Scala 3 also has `JsonCodec.derived`, used by `derives JsonCodec`.
 
 The companion also declares `implicit def fromEncoderDecoder[A](encoder: JsonEncoder[A], decoder: JsonDecoder[A]): JsonCodec[A]`, which is the same as `JsonCodec(encoder, decoder)`.
+Its two parameters are ordinary, not implicit, so implicit search never uses it to assemble a codec from an encoder and a decoder in scope. Call it, or `JsonCodec(encoder, decoder)`, explicitly.
+
+The companion has codec instances for the primitive types, `Option`, `Either`, tuples of 1 to 22 elements, the common collections (`List`, `Vector`, `Seq`, `Set`, `Chunk`, `NonEmptyChunk`, `Array`, `Map` and others), `java.time` types, `UUID` and `Currency`.
+A few types have an encoder and a decoder but no codec: `Unit`, `IndexedSeq`, `LinearSeq`, `ListSet`, `TreeSet` and `mutable.Map`. Build those with `JsonCodec(JsonEncoder[T], JsonDecoder[T])`.
+[Built-in Instances](built-in-instances.md) lists every type with its JSON shape and says which of the three instances it has.
 
 ```scala mdoc:silent
 import zio.json._
@@ -107,6 +112,8 @@ emailCodec.decodeJson("\"ada\"")
 
 ## Combining Codecs
 
+Two codecs combine either as alternatives, where decoding falls back from one to the other, or as the elements of a JSON array.
+
 ### `orElse` and `orElseEither`
 
 ```scala
@@ -124,10 +131,28 @@ The fallback rewinds the input, so it has the same memory caveat as [`JsonDecode
 val intOrString: JsonCodec[Either[Int, String]] = JsonCodec[Int] <+> JsonCodec[String]
 ```
 
+The `Left` is written with the `Int` codec and carries no tag, and a string falls through to the second decoder:
+
 ```scala mdoc
 intOrString.encodeJson(Left(1), None)
 
 intOrString.decodeJson("\"one\"")
+```
+
+To see which codec `orElse` writes with, we pair the plain `Int` codec with a fallback whose encoder doubles the number:
+
+```scala mdoc:silent
+val doubling: JsonCodec[Int] = JsonCodec(JsonEncoder[Int].contramap[Int](_ * 2), JsonDecoder[Int])
+
+val primaryFirst: JsonCodec[Int] = JsonCodec[Int] <> doubling
+```
+
+Decoding succeeds with the first codec, but encoding uses the fallback's encoder:
+
+```scala mdoc
+primaryFirst.decodeJson("5")
+
+primaryFirst.encodeJson(5, None)
 ```
 
 ### `zip`, `zipLeft` and `zipRight`
@@ -141,7 +166,7 @@ final def zipRight[B](that: => JsonCodec[B])(implicit ev: Unit <:< A): JsonCodec
 `<*>` is `zip`, `<*` is `zipLeft`, and `*>` is `zipRight`.
 `zip` pairs two codecs as a two-element JSON array.
 `zipLeft` and `zipRight` drop the `Unit` side, which still takes up a slot in the array.
-`zipRight` is only available when `A` is `Unit`, because it encodes `()` for the dropped side.
+`zipRight` is only available when `Unit` is a subtype of `A` (usually `A` is `Unit`), because it encodes `()` for the dropped side.
 There is no implicit `JsonCodec[Unit]`, so you build one from `JsonEncoder.unit` and `JsonDecoder.unit`.
 
 ```scala mdoc:silent
@@ -169,15 +194,29 @@ You can also build a codec from two different halves with `JsonCodec(encoder, de
 
 ## Scala 2 vs Scala 3
 
-In Scala 2, derive with `DeriveJsonCodec.gen`, as above.
-In Scala 3, `derives JsonCodec` calls `JsonCodec.derived`, which needs a given `JsonCodecConfiguration`.
+In Scala 2, derive with `DeriveJsonCodec.gen`, as above. It works on Scala 3 too.
+In Scala 3, `derives JsonCodec` calls `JsonCodec.derived`.
+It takes a `JsonCodecConfiguration` as a `using` parameter. The default configuration is found automatically, so a `derives` clause is all that is needed:
 
-```scala
-// Scala 3 only
-import zio.json.*
-
-final case class Person(name: String, age: Int) derives JsonCodec
+```scala mdoc:passthrough
+docs.Scala3Source.print("zio-json-docs-scala3/src/main/scala-3/zio/json/docs/jsoncodec/Scala3CodecExample.scala", "derives")
 ```
+
+Define a given of your own only to change the defaults. A given in the enclosing scope is used by every `derives` clause that can see it:
+
+```scala mdoc:passthrough
+docs.Scala3Source.print("zio-json-docs-scala3/src/main/scala-3/zio/json/docs/jsoncodec/Scala3CodecExample.scala", "config")
+```
+
+Running the example file on Scala 3 prints:
+
+```text
+default configuration: {"name":"Ada","age":36}
+decoded: Right(Person(Ada,36))
+snake_case given: {"account_id":1,"display_name":"Ada"}
+```
+
+Scala 2.13 and Scala 3 also have a codec for `immutable.ArraySeq`, and Scala 3 has one for `IArray`. A union of string literal types has an encoder and a decoder on Scala 3, but no `JsonCodec`. See [JsonEncoder](json-encoder.md#scala-2-vs-scala-3).
 
 ## See Also
 
@@ -185,3 +224,4 @@ final case class Person(name: String, age: Int) derives JsonCodec
 - [Encoding](../how-to/encoding.md) and [Decoding](../how-to/decoding.md) for derivation
 - [Manual Instances](../how-to/manual-instances.md) for `contramap`, `map` and `mapOrFail`
 - [JsonCodecConfiguration](json-codec-configuration.md) and [Annotations](annotations.md) for the derivation options
+- [Built-in Instances](built-in-instances.md) for every type that has a codec out of the box
