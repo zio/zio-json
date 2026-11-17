@@ -6,7 +6,7 @@ title: "Streaming"
 ZIO JSON can encode and decode values as [ZIO Streams](https://zio.dev/reference/stream/), so you can process large JSON documents, or many small documents, without loading everything into memory at once.
 The streaming API has three main forms: a single value as a stream of characters, a JSON array as a pipeline, and [JSON Lines](https://jsonlines.org/) (one value per line) as a pipeline.
 
-The streaming API is available for the JVM only. The JavaScript and Native platforms do not include these methods.
+The streaming API is available for the JVM only. This covers every method on this page: `encodeJsonStream`, both encoder pipelines, `decodeJsonStream`, `decodeJsonStreamInput`, `decodeJsonPipeline` and the file helpers. The Scala.js and Scala Native builds do not include them. `JsonStreamDelimiter` exists on every platform, but only the JVM `decodeJsonPipeline` uses it.
 
 ## Encoding a Single Value as a Stream
 
@@ -50,6 +50,19 @@ decodedSingle
 ```
 
 Both methods expect exactly one value in the stream, and they may not consume the whole stream.
+
+To decode from bytes, such as a file or an HTTP body, pass a byte stream to `decodeJsonStreamInput`:
+
+```scala mdoc
+val fromBytes: Event =
+  runSync(
+    JsonDecoder[Event].decodeJsonStreamInput(
+      ZStream.fromChunk(Chunk.fromArray("""{"id": 3, "kind": "archived"}""".getBytes("UTF-8")))
+    )
+  )
+
+fromBytes
+```
 
 ## JSON Lines
 
@@ -112,6 +125,16 @@ fromArray.toList
 
 Choose JSON Lines for logs and exported data that are written and read incrementally, because each line is a complete value. Choose the array form when the consumer expects a single JSON document.
 
+## How the Encoders Emit Output
+
+The encoder pipelines and `encodeJsonStream` behave the same way in three respects:
+
+- The output is always compact. There is no pretty-printed streaming form.
+- The JSON Lines output ends with a newline after the last value, as the `lines` example above shows.
+- The characters are buffered and emitted in blocks of about 4096 characters (`ZStream.DefaultChunkSize`), not one value at a time. A block is released when the buffer fills or when the input stream ends.
+
+The buffering matters for slow or infinite sources, such as server-sent events or a log tail. A small value can sit in the buffer until about 4 KB more output arrives, so the consumer sees it late. For example, a source that produces one short `Event` every 10 milliseconds delivers its first character only after about 2.4 seconds. When each value must go out as soon as it is produced, encode the values one by one with `toJson` instead, for example `events.map(_.toJson + "\n")`.
+
 ## Reading and Writing Files
 
 The `zio.json` package object provides helpers that combine these pipelines with file streams. They are available on the JVM only.
@@ -137,4 +160,49 @@ val read: ZStream[Any, Throwable, Event] =
 
 ## Errors
 
-Stream operations report failures in the error channel as a `Throwable`. A malformed value in the middle of a stream fails the stream at that point, and the values before it have already been emitted. If you want to skip malformed lines instead, handle the error in the stream, for example with `ZStream#catchAll`.
+Stream operations report failures in the error channel as a `Throwable`. A malformed value in the middle of a stream fails the stream at that point. Here the second line is cut short:
+
+```scala mdoc
+val withBadLine: String =
+  """{"id":1,"kind":"created"}
+    |{"id":2,"kind":
+    |{"id":3,"kind":"deleted"}
+    |""".stripMargin
+
+runSync(
+  ZStream
+    .fromIterable(withBadLine)
+    .via(JsonDecoder[Event].decodeJsonPipeline(JsonStreamDelimiter.Newline))
+    .either
+    .runCollect
+)
+```
+
+Values decoded before the bad one are not guaranteed to arrive either: `decodeJsonPipeline` passes values downstream in batches, and the batch that holds the failure is dropped. A failed stream cannot resume, so `ZStream#catchAll` can only replace the rest of the stream (for example with `ZStream.empty`). The lines after the bad one are lost.
+
+To skip malformed lines and keep going, split the text into lines with `ZPipeline.splitLines` and decode each line on its own with `fromJson`. Every line then gives an `Either`, and a bad line does not affect the others:
+
+```scala mdoc
+val perLine: Chunk[Either[String, Event]] =
+  runSync(ZStream(withBadLine).via(ZPipeline.splitLines).map(_.fromJson[Event]).runCollect)
+```
+
+Keep only the `Right` results to drop the bad lines, or log the `Left` results first if you need to know about them:
+
+```scala mdoc
+val validEvents: Chunk[Event] =
+  runSync(
+    ZStream(withBadLine)
+      .via(ZPipeline.splitLines)
+      .map(_.fromJson[Event])
+      .collect { case Right(event) => event }
+      .runCollect
+  )
+```
+
+For a byte source, put `ZPipeline.utf8Decode` before `ZPipeline.splitLines`. Unlike the pipelines on this page, this approach also works on Scala.js and Scala Native, because it uses only `fromJson`.
+
+## See Also
+
+- [JsonEncoder streaming](../reference/json-encoder.md#streaming) and [JsonDecoder streaming](../reference/json-decoder.md#streaming) list the streaming methods on each type class.
+- [Errors](../reference/errors.md) describes the error messages that the streaming methods carry.
