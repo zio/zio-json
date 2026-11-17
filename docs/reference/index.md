@@ -23,7 +23,7 @@ Reference pages list every type, method, annotation and option in ZIO JSON. Use 
 
 ## Data and modules
 
-The [Installation](../index.md#installation) section of the Introduction page lists every published artifact with its platforms and Scala versions.
+The [Installation](../index.md#installation) and [Modules](../index.md#modules) sections of the Introduction page list every published artifact with its platforms and Scala versions.
 
 
 - [JSON AST](json-ast.md): the `Json` value type, cursors and tree transforms.

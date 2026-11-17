@@ -22,21 +22,62 @@ The goal of this project is to create the best all-round JSON library for Scala:
 
 ## Installation
 
-ZIO JSON is published as the core `zio-json` artifact plus add-on modules, all with the same version number. Every module is published for Scala 2.12, 2.13 and 3, except `zio-json-macros` and `zio-json-interop-scalaz7x`, which are published for Scala 2.12 and 2.13 only.
-
-On the JVM, add the core module and any add-on modules you need to `build.sbt`:
+Add the core module to your `build.sbt`. It is published for Scala 2.12, 2.13 and 3:
 
 ```scala
 libraryDependencies ++= Seq(
-  // Core: codecs, derivation, the Json AST and, on the JVM, streaming (JVM, Scala.js, Scala Native)
-  "dev.zio" %% "zio-json"                    % "@VERSION@",
+  // Codecs, derivation, the Json AST and, on the JVM, streaming (JVM, Scala.js, Scala Native)
+  "dev.zio" %% "zio-json" % "@VERSION@"
+)
+```
 
+In a Scala.js or Scala Native project, use `%%%`:
+
+```scala
+libraryDependencies ++= Seq(
+  // Codecs, derivation and the Json AST
+  "dev.zio" %%% "zio-json" % "@VERSION@"
+)
+```
+
+[Getting Started](getting-started.md) continues from here with a first program.
+
+## Modules
+
+The optional modules below have the same version number as `zio-json` and depend on it, so adding one also brings in the core module. Add only the lines you need.
+
+### Formats
+
+Read and write YAML with your JSON codecs. This module is JVM only:
+
+```scala
+libraryDependencies ++= Seq(
   // Read and write YAML with your JSON codecs, through SnakeYAML (JVM)
-  "dev.zio" %% "zio-json-yaml"               % "@VERSION@",
+  "dev.zio" %% "zio-json-yaml" % "@VERSION@"
+)
+```
 
+See [YAML](reference/yaml.md).
+
+### Derivation
+
+Generate codec instances with the `@jsonDerive` annotation. This module is published for Scala 2.12 and 2.13 only, and needs macro annotations turned on: the `-Ymacro-annotations` compiler option on Scala 2.13, or the macro paradise plugin on Scala 2.12 (the [@jsonDerive page](reference/zio-json-macros.md#installation) has both settings). Use `%%%` on Scala.js and Scala Native:
+
+```scala
+libraryDependencies ++= Seq(
   // The @jsonDerive annotation, which writes codec instances for you (JVM, Scala.js, Scala Native; Scala 2 only)
-  "dev.zio" %% "zio-json-macros"             % "@VERSION@",
+  "dev.zio" %% "zio-json-macros" % "@VERSION@"
+)
+```
 
+See [@jsonDerive Macro Annotation](reference/zio-json-macros.md).
+
+### Integrations
+
+Codecs for types from other libraries:
+
+```scala
+libraryDependencies ++= Seq(
   // http4s 0.23 entity encoders and decoders built from ZIO JSON codecs (JVM)
   "dev.zio" %% "zio-json-interop-http4s"     % "@VERSION@",
 
@@ -47,23 +88,14 @@ libraryDependencies ++= Seq(
   "dev.zio" %% "zio-json-interop-scalaz7x"   % "@VERSION@",
 
   // Codecs and map-key codecs for enumeratum enums (JVM, Scala.js, Scala Native)
-  "dev.zio" %% "zio-json-interop-enumeratum" % "@VERSION@",
-
-  // Golden (snapshot) tests that catch unintended changes to encoded JSON (JVM, tests only)
-  "dev.zio" %% "zio-json-golden"             % "@VERSION@" % Test
+  "dev.zio" %% "zio-json-interop-enumeratum" % "@VERSION@"
 )
 ```
 
-In a Scala.js or Scala Native project, use `%%%`. Only these modules are built for those platforms:
+The http4s module is JVM only. The others are also built for Scala.js and Scala Native:
 
 ```scala
 libraryDependencies ++= Seq(
-  // Core: codecs, derivation and the Json AST
-  "dev.zio" %%% "zio-json"                    % "@VERSION@",
-
-  // The @jsonDerive annotation (Scala 2 only)
-  "dev.zio" %%% "zio-json-macros"             % "@VERSION@",
-
   // Codecs and map-key codecs for refined types
   "dev.zio" %%% "zio-json-interop-refined"    % "@VERSION@",
 
@@ -75,16 +107,20 @@ libraryDependencies ++= Seq(
 )
 ```
 
-Each module is documented on its own page:
+See [HTTP4s Interop](interop/http4s.md), [Refined Interop](interop/refined.md), [Scalaz 7.x Interop](interop/scalaz-7x.md) and [Enumeratum Interop](interop/enumeratum.md).
 
-- `zio-json`: [Getting Started](getting-started.md) and the [Reference](reference/index.md)
-- `zio-json-yaml`: [YAML](reference/yaml.md)
-- `zio-json-macros`: [@jsonDerive Macro Annotation](reference/zio-json-macros.md)
-- `zio-json-interop-http4s`: [HTTP4s Interop](interop/http4s.md)
-- `zio-json-interop-refined`: [Refined Interop](interop/refined.md)
-- `zio-json-interop-scalaz7x`: [Scalaz 7.x Interop](interop/scalaz-7x.md)
-- `zio-json-interop-enumeratum`: [Enumeratum Interop](interop/enumeratum.md)
-- `zio-json-golden`: [Golden Testing API](reference/golden-testing.md)
+### Testing
+
+Golden (snapshot) tests that catch unintended changes to encoded JSON. This module is JVM only and belongs in the `Test` configuration:
+
+```scala
+libraryDependencies ++= Seq(
+  // Golden tests for JSON codecs, built on ZIO Test (JVM)
+  "dev.zio" %% "zio-json-golden" % "@VERSION@" % Test
+)
+```
+
+See [Golden Testing API](reference/golden-testing.md) and [Catch Unintended Changes to Your JSON with Golden Tests](how-to/golden-testing.md).
 
 ## Documentation
 
