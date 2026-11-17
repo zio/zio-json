@@ -245,7 +245,7 @@ Scala 2.13 and Scala 3 also have a codec for `immutable.ArraySeq`, and Scala 3 h
 ## See Also
 
 - [JsonEncoder](json-encoder.md) and [JsonDecoder](json-decoder.md), the two halves of a codec
-- [Encoding](../how-to/encoding.md) and [Decoding](../how-to/decoding.md) for derivation
-- [Manual Instances](../how-to/manual-instances.md) for `contramap`, `map` and `mapOrFail`
+- [Control the JSON a Type Encodes To](../how-to/encoding.md) and [Decoding](../how-to/decoding.md) for derivation options
+- [Build an Encoder or Decoder from an Existing One](../how-to/manual-instances.md) for `contramap`, `map`, `mapOrFail`, `transform` and `transformOrFail`
 - [JsonCodecConfiguration](json-codec-configuration.md) and [Annotations](annotations.md) for the derivation options
 - [Built-in Instances](built-in-instances.md) for every type that has a codec out of the box

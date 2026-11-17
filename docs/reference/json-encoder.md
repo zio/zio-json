@@ -14,7 +14,7 @@ keywords:
 Use it directly when you write an encoder by hand or build one from another encoder.
 Most code never calls it directly: it calls `toJson` or `toJsonPretty`, and the compiler finds the encoder in the implicit scope.
 Instances for the standard types live in the `JsonEncoder` companion object, so no import is needed to find them. [Built-in Instances](built-in-instances.md) lists every one of them.
-Derived instances for your own types are covered in [Encoding](../how-to/encoding.md).
+To get a particular JSON shape from your own types, see [Control the JSON a Type Encodes To](../how-to/encoding.md).
 
 | Method                                                | What it does                                                    | Details                                                       |
 |-------------------------------------------------------|-----------------------------------------------------------------|---------------------------------------------------------------|
@@ -118,7 +118,7 @@ final def contramap[B](f: B => A): JsonEncoder[B]
 
 Builds an encoder for `B` from an encoder for `A` and a function from `B` to `A`.
 `isNothing`, `isEmpty` and `toJsonAST` of the new encoder defer to the original one.
-The walkthrough is in [Manual Instances](../how-to/manual-instances.md).
+The walkthrough is in [Build an Encoder or Decoder from an Existing One](../how-to/manual-instances.md).
 
 To write a `UserId` with the `Int` encoder:
 
@@ -553,8 +553,8 @@ See [Streaming](../how-to/streaming.md).
 - [Write a Fast Encoder or Decoder by Hand](../how-to/low-level-codecs.md) for a worked hand-written codec
 - [Built-in Instances](built-in-instances.md) for every type that has an encoder out of the box
 - [JsonFieldEncoder and JsonFieldDecoder](json-field-codecs.md) for map keys
-- [Encoding](../how-to/encoding.md) for derivation, ADTs and manual instances
-- [Manual Instances](../how-to/manual-instances.md) for `contramap` in practice
+- [Control the JSON a Type Encodes To](../how-to/encoding.md) for annotations, `contramap` and sealed-trait tags in practice
+- [Build an Encoder or Decoder from an Existing One](../how-to/manual-instances.md) for `contramap` together with the decoder side
 - [JsonDecoder](json-decoder.md) and [JsonCodec](json-codec.md)
 - [JSON AST](json-ast.md) for the `Json` type returned by `toJsonAST`
 - [Streaming](../how-to/streaming.md) for the JVM-only stream encoders
