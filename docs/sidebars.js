@@ -25,6 +25,7 @@ const sidebars = {
           type: "category",
           label: "Derivation",
           collapsed: false,
+          link: { type: "doc", id: "reference/derivation/index" },
           items: [
             "reference/json-codec-configuration",
             "reference/annotations",

@@ -17,6 +17,7 @@ Reference pages list every type, method, annotation and option in ZIO JSON. Use 
 
 ## Derivation
 
+- [Derivation](derivation/index.md): how codecs are derived, and the three ways to change what derivation produces.
 - [Annotations](annotations.md): every annotation used to change derived codecs.
 - [zio-json-macros (@jsonDerive)](zio-json-macros.md): the Scala 2 macro annotation that writes codecs into companion objects.
 
