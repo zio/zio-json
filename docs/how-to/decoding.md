@@ -36,7 +36,7 @@ Now we can parse JSON into our object
 
 ### Decoding from bytes
 
-JSON usually arrives as bytes rather than as text: an HTTP response body, a file, a Kafka record. A `Chunk[Byte]` can be decoded directly, without being copied into a `String` first.
+JSON usually arrives as bytes rather than as text: an HTTP response body, a file, a Kafka record. A `Chunk[Byte]` can be decoded directly, without being copied into a `String` first (see [`decodeJson`](../reference/json-decoder.md#decodejson) for the full list of inputs):
 
 ```scala mdoc
 import zio.Chunk
@@ -46,7 +46,7 @@ val bytes: Chunk[Byte] = Chunk.fromArray("""{ "curvature": 0.5 }""".getBytes("UT
 bytes.fromJson[Banana]
 ```
 
-A bare `Array[Byte]` works the same way, and is not copied either.
+A bare `Array[Byte]` works the same way, and is not copied either:
 
 ```scala mdoc
 """{ "curvature": 0.5 }""".getBytes("UTF-8").fromJson[Banana]
@@ -56,9 +56,9 @@ The bytes are turned into characters as the parser consumes them, so peak memory
 
 A chunk that is already backed by a single array — what `Chunk.fromArray` produces, and what an HTTP body handed over from Netty looks like — is read in place, with no copy at all. Other shapes, such as a body assembled from several network reads, are pulled through a small fixed window.
 
-The input is expected to be UTF-8, as [RFC 8259](https://www.rfc-editor.org/rfc/rfc8259#section-8.1) requires for JSON interchange. On the JVM, malformed input decodes to the replacement character, as `new String(bytes, UTF_8)` does. Errors are reported exactly as for the `CharSequence` variant.
+The input is expected to be UTF-8, as [RFC 8259](https://www.rfc-editor.org/rfc/rfc8259#section-8.1) requires for JSON interchange. Malformed UTF-8 decodes to the replacement character U+FFFD on every platform, matching what `new String(bytes, UTF_8)` produces on the JVM. Errors are reported exactly as for the `CharSequence` variant.
 
-For payloads that do not fit in memory at all, use `JsonDecoder[A].decodeJsonStreamInput(stream)` to decode straight from a `ZStream[R, Throwable, Byte]`.
+For payloads that do not fit in memory at all, use `JsonDecoder[A].decodeJsonStreamInput(stream)` on the JVM to decode straight from a `ZStream[R, Throwable, Byte]`. The streaming methods are JVM only; see [Streaming](./streaming.md).
 
 ### Automatic Derivation and case class default field values
 
@@ -73,11 +73,13 @@ implicit val decoder: JsonDecoder[Entity] =
   DeriveJsonDecoder.gen[Entity]
 ```
 
+The missing `description` and the `null` `related` both take their defaults:
+
 ```scala mdoc
 """{ "id": 42, "related": null }""".fromJson[Entity]
 ```
 
-_Note: If you’re using Scala 3 and your case class is defining default parameters, `-Yretain-trees` needs to be added to `scalacOptions`._
+Defaults work the same way on Scala 2 and Scala 3, with no extra compiler options. [Optional, default and null fields](./optional-and-default-fields.md) covers missing and `null` fields in detail.
 
 ## ADTs
 
@@ -109,23 +111,27 @@ object Fruit {
 """{ "Apple": { "poison": false }}""".fromJson[Fruit]
 ```
 
-### String-based union types (Scala 3 only)
-The codecs support string-based union types (enums) out of the box. This is useful when the overhead of a Enum is not desired.
+### String-Based Union Types (Scala 3 Only)
 
-```scala
-val appleOrBanana: "Apple" | "Banana" = "Apple"
-```
-Decoding succeeds because 'Apple' is a valid value
-```scala
-appleOrBanana.toJson
-"Apple".fromJson["Apple" | "Banana"]
-```
-Decoding fail because 'Pear' is not a valid value
-```scala
-"Peer".fromJson["Apple" | "Banana"]
+On Scala 3, a union of string literal types, such as `"Apple" | "Banana"`, has a codec out of the box. It is useful when a full `enum` is more than you need. The value is written as a plain JSON string, and decoding accepts only the listed strings. Only unions of `String` literals are supported.
+
+The input of `fromJson` must be JSON text, so the string being decoded carries its own JSON quotes:
+
+```scala mdoc:passthrough
+docs.Scala3Source.print("zio-json-docs-scala3/src/main/scala-3/zio/json/docs/decoding/UnionTypesExample.scala", "union")
 ```
 
-Almost all of the standard library data types are supported as fields on the case class, and it is easy to add support if one is missing.
+Running the example file on Scala 3 prints:
+
+```text
+encoded: "Apple"
+valid: Right(Apple)
+invalid: Left((expected one of: Apple, Banana))
+```
+
+Decoding `Pear` fails because it is not one of the listed values. The message format is described in [Errors](../reference/errors.md).
+
+Almost all of the standard library data types are supported as fields on the case class (see [Built-in Instances](../reference/built-in-instances.md)), and it is easy to add support if one is missing.
 
 For decoding sealed families and enums of parameterless cases as plain strings, see [Sealed Traits](./sealed-traits.md).
 
@@ -133,7 +139,7 @@ For decoding sealed families and enums of parameterless cases as plain strings, 
 
 Sometimes it is easier to reuse an existing `JsonDecoder` than to generate a new one: `JsonDecoder#map` and `JsonDecoder#mapOrFail` derive a decoder from another one. See [Manual Instances](./manual-instances.md) for newtypes, array-encoded case classes and validated types such as `refined`.
 
-# Parsing custom JSON
+## Parsing Custom JSON
 
 In this section we show several approaches for decoding JSON that looks like:
 
@@ -147,23 +153,29 @@ In this section we show several approaches for decoding JSON that looks like:
 
 Which we want to decode into the following case class:
 
-```scala mdoc
+```scala mdoc:reset
+import zio.json._
+
 final case class Quote(
   symbol: String,
   open: String,
   high: String
 )
+
+object Quote {
+  implicit val decoder: JsonDecoder[Quote] = DeriveJsonDecoder.gen[Quote]
+}
 ```
 
-Without any customization, decoding this input fails because the field names do not match the case class:
+With a derived decoder and no customization, decoding fails because the JSON keys do not match the field names:
 
-```scala mdoc:fail
+```scala mdoc
 """{"01. symbol":"IBM","02. open": "182.4300","03. high": "182.8000"}""".fromJson[Quote]
 ```
 
 Each approach below makes this input decode to `Right(Quote(IBM,182.4300,182.8000))`.
 
-## Approach 1: use annotation hints
+### Approach 1: use annotation hints
 
 In this approach we enrich the case class with annotations to tell the derived decoder which field names to use.
 Obviously, this approach only works if we can/want to change the case class.
@@ -182,7 +194,7 @@ object Quote {
 }
 ```
 
-## Approach 2: use an intermediate case class
+### Approach 2: use an intermediate case class
 
 Instead of hints, we can also put the actual field names in an intermediate case class. In our example the field names
 are not valid scala identifiers. We fix this by putting the names in backticks:
@@ -206,13 +218,12 @@ object Quote {
 }
 ```
 
-## Approach 3: decode to JSON
+### Approach 3: decode to JSON
 
 In this approach we first decode to the generic `Json` data structure. This approach is very flexible because it can
 extract data from any valid JSON.
 
-Note that this implementation is a bit sloppy. It uses `toString` on a JSON node. The node is not necessarily a
-String, it can be of any JSON type! So this might happily process JSON that doesn't match your expectations.
+`Json#asString` returns the text of a `Json.Str` and `None` for any other JSON type, so a field that holds a number or an object is rejected. Do not use `toString` here: it renders the node as JSON, so a string would keep its quotes.
 
 ```scala mdoc:reset
 import zio.json._
@@ -227,8 +238,8 @@ object Quote {
         def findField(name: String): Either[String, String] =
           fields
             .find(_._1 == name)
-            .map(_._2.toString())  // ⚠️ .toString on any JSON type
-            .toRight(left = s"Field '$name' is missing")
+            .flatMap(_._2.asString)
+            .toRight(left = s"Field '$name' is missing or not a string")
   
         for {
           symbol <- findField("01. symbol")
@@ -241,7 +252,7 @@ object Quote {
 }
 ```
 
-## Approach 4: decode to JSON, use cursors
+### Approach 4: decode to JSON, use cursors
 
 Here we also first decode to `Json`, but now we use cursors to find the data we need. Here we do check that the fields
 are actually strings.
@@ -268,13 +279,13 @@ object Quote {
 }
 ```
 
-# More custom decoder examples
+## More Custom Decoder Examples
 
 Let's consider an `Animal` case class with a `categories` field that should be a list of strings. However, some
 producers accidentally represent the categories as a comma-separated string instead of a proper list. We want to parse
 both cases.
 
-Here's a custom decode for our Animal case class:
+Here is a custom decoder for our `Animal` case class:
 
 ```scala mdoc:reset
 import zio.Chunk
@@ -312,15 +323,14 @@ object Animal {
 }
 ```
 
-And now, the Json decoder for Animal can handle both formats:
+And now, the JSON decoder for `Animal` can handle both formats:
+
 ```scala mdoc
 """{"name": "Dog", "categories": "Warm-blooded, Mammal"}""".fromJson[Animal]
-// >> Right(Animal(Dog,List(Warm-blooded, Mammal)))
 """{"name": "Snake", "categories": [ "Cold-blooded", "Reptile"]}""".fromJson[Animal]
-// >>  Right(Animal(Snake,List(Cold-blooded, Reptile)))
 ```
 
-# JSON AST and Cursors
+## JSON AST and Cursors
 
 In most cases it is not necessary to work with the JSON AST directly,
 instead it is more convenient to decode directly to domain objects.
@@ -328,9 +338,6 @@ However, sometimes it is handy to work with a lower level representation of JSON
 This may for example be the case when you need to work with deeply nested JSON structures 
 that would result in deeply nested case classes,
 or when you expect a lot of variation in the JSON structure, which would result in nasty decoders.
-
-
-## JSON AST
 
 To get the AST representation of a JSON string, use the `fromJson[Json]` method.
 
