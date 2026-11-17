@@ -241,6 +241,8 @@ opaque bad key: Left(.bySku.abc(not a SKU: abc))
 
 This instance is Scala 3 only. On Scala 2, every key type other than `String`, `Int`, `Long` and `UUID` needs the instances shown in the steps above, and a Scala 3 `enum` or an opaque type without the `<: String` bound needs them too.
 
+This instance does not escape the key again before decoding it, so a key that contains `"` or `\` is not read correctly. For example, the key `a"b` is cut to `a`. If your keys can contain these characters, write a `JsonFieldDecoder` with `mapOrFail` as in the steps above. See [Scala 3: Keys That Are Subtypes of `String`](../reference/json-field-codecs.md#scala-3-keys-that-are-subtypes-of-string).
+
 ## See Also
 
 - [JsonFieldEncoder and JsonFieldDecoder](../reference/json-field-codecs.md) for the full API, the built-in key types and the map types that use key instances.
