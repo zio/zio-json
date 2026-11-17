@@ -37,4 +37,4 @@ libraryDependencies += "dev.zio" %%% "zio-json-interop-refined" % "@VERSION@"
 
 The Scalaz module has no Scala 3 artifact. The enumeratum module works on Scala 3, but enumeratum's own `findValues` macro needs the `-Yretain-trees` compiler option there for value enums, see [enumeratum on Scala 3](enumeratum.md#scala-3).
 
-The other add-on modules (YAML, golden testing and `@jsonDerive` macros) are listed with their platforms on the [Modules](../reference/index.md#modules) table on the Reference page.
+The other add-on modules (YAML, golden testing and `@jsonDerive` macros) are listed with their platforms on the [Modules](../index.md#modules) table on the Introduction page.

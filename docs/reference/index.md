@@ -19,35 +19,17 @@ Reference pages list every type, method, annotation and option in ZIO JSON. Use 
 
 - [Derivation](derivation/index.md): how codecs are derived, and the three ways to change what derivation produces.
 - [Annotations](annotations.md): every annotation used to change derived codecs.
-- [zio-json-macros (@jsonDerive)](zio-json-macros.md): the Scala 2 macro annotation that writes codecs into companion objects.
+- [@jsonDerive Macro Annotation](zio-json-macros.md): the Scala 2 macro annotation that writes codecs into companion objects.
 
 ## Data and modules
+
+The [Modules](../index.md#modules) table on the Introduction page lists every published artifact with its platforms and Scala versions.
+
 
 - [JSON AST](json-ast.md): the `Json` value type, cursors and tree transforms.
 - [YAML](yaml.md): the optional YAML module.
 - [Streaming API](streaming.md): the JVM-only ZIO Streams encoders, decoders, pipelines, file helpers and their error behaviour.
 - [Golden Testing API](golden-testing.md): `goldenTest`, `GoldenConfiguration`, the golden file lifecycle and format, and module root lookup.
-
-## Modules
-
-Besides the core `zio-json` artifact, the project publishes add-on modules. Each one is a separate dependency with the same version number, and not every module is available on every platform or Scala version:
-
-| Artifact                      | What it is for                                                        | Platforms             | Scala versions | Documentation                                   |
-| ----------------------------- | --------------------------------------------------------------------- | --------------------- | -------------- | ----------------------------------------------- |
-| `zio-json`                    | Codecs, derivation, the `Json` AST and, on the JVM, streaming         | JVM, Scala.js, Native | 2.12, 2.13, 3  | [Getting Started](../getting-started.md) |
-| `zio-json-yaml`               | Reading and writing YAML with your JSON codecs (through SnakeYAML)    | JVM                   | 2.12, 2.13, 3  | [YAML](yaml.md)                       |
-| `zio-json-golden`             | Golden (snapshot) tests that catch unintended changes to encoded JSON | JVM                   | 2.12, 2.13, 3  | [Golden Testing API](golden-testing.md)          |
-| `zio-json-macros`             | The `@jsonDerive` annotation, which writes codec instances for you    | JVM, Scala.js, Native | 2.12, 2.13     | [zio-json-macros](zio-json-macros.md) |
-| `zio-json-interop-http4s`     | http4s 0.23 entity encoders and decoders built from ZIO JSON codecs   | JVM                   | 2.12, 2.13, 3  | [HTTP4s Interop](../interop/http4s.md)             |
-| `zio-json-interop-refined`    | Codecs and map-key codecs for refined types                           | JVM, Scala.js, Native | 2.12, 2.13, 3  | [Refined Interop](../interop/refined.md)           |
-| `zio-json-interop-scalaz7x`   | Codecs for Scalaz 7 `IList`                                           | JVM, Scala.js, Native | 2.12, 2.13     | [Scalaz 7.x Interop](../interop/scalaz-7x.md)      |
-| `zio-json-interop-enumeratum` | Codecs and map-key codecs for enumeratum enums                        | JVM, Scala.js, Native | 2.12, 2.13, 3  | [Enumeratum Interop](../interop/enumeratum.md)     |
-
-Add a module the same way as the core artifact, using `%%%` for a cross-built module in a Scala.js or Scala Native project. Golden tests only run in tests, so that module usually goes in the `Test` configuration:
-
-```scala
-libraryDependencies += "dev.zio" %% "zio-json-golden" % "@VERSION@" % Test
-```
 
 ## Concepts
 
