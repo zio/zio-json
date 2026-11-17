@@ -16,10 +16,13 @@ This works whenever your type's JSON is the JSON of a type that already has an i
 
 ## What You Need
 
-The core module. Step 2 also uses the [refined](https://github.com/fthomas/refined) library for its validation function, but any function that returns an `Either[String, A]` works the same way:
+The core module. Steps 2, 4 and 5 also use the [refined](https://github.com/fthomas/refined) library for a validation function, but any function that returns an `Either[String, A]` works the same way:
 
 ```scala
-libraryDependencies += "dev.zio" %% "zio-json" % "@VERSION@"
+libraryDependencies ++= Seq(
+  "dev.zio"    %% "zio-json" % "@VERSION@",
+  "eu.timepit" %% "refined"  % "0.11.4" // only for the validation in steps 2, 4 and 5
+)
 ```
 
 The examples model a fruit stock. A `FruitCount` wraps an `Int`, and a `FruitName` is a string that must not be empty:
@@ -50,7 +53,7 @@ The decoder now reads a plain number:
 countDecoder.decodeJson("3")
 ```
 
-Use `JsonDecoder#map` only when the conversion cannot fail. A function that throws is not turned into a decode error: the exception escapes from `decodeJson`.
+Use `JsonDecoder#map` only when the conversion cannot fail. A function that throws is not turned into a decode error: the exception escapes from `JsonDecoder#decodeJson`.
 
 ## 2. Reject Bad Values with `JsonDecoder#mapOrFail`
 

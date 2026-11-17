@@ -151,7 +151,7 @@ The three encoders share one implementation, so they format and emit output the 
 - The characters go through a `java.io.BufferedWriter` with a buffer of `ZStream.DefaultChunkSize` (4096) characters. Characters reach the output stream only when the buffer fills, in whole 4096-character blocks, or when the input stream ends and the rest is flushed. The pipelines can also emit empty chunks in between.
 - Writing happens inside `ZIO.attemptBlocking`, on ZIO's blocking thread pool.
 
-The buffering affects slow or never-ending sources, such as server-sent events or a log tail: a value can wait in the buffer until about 4 KB of later output arrives. An event such as `{"id":1,"kind":"created"}` takes about 27 characters with its newline, so about 150 events fill one block. To send each value as soon as it is produced, encode the values one at a time instead, for example with `events.map(_.toJson + "\n")`.
+The buffering affects slow or never-ending sources, such as server-sent events or a log tail: a value can wait in the buffer until about 4 KB of later output arrives. An event such as `{"id":1,"kind":"created"}` takes 26 characters with its newline, so about 150 events fill one block. To send each value as soon as it is produced, encode the values one at a time instead, for example with `events.map(_.toJson + "\n")`.
 
 ## Decoding
 
@@ -201,7 +201,7 @@ trait JsonDecoder[A] {
 }
 ```
 
-The `delimiter` argument selects how the values are laid out in the input. The decoding runs in a background fiber on ZIO's blocking thread pool, and the pipeline collects the decoded values in batches of up to `ZStream.DefaultChunkSize` (4096) values.
+The `delimiter` argument selects how the values are laid out in the input. The decoding runs in a background fiber on ZIO's blocking thread pool, and the pipeline passes the decoded values on in batches: up to `ZStream.DefaultChunkSize` (4096) values for each chunk of input, and all remaining values when the input ends.
 
 The pipeline takes characters. For a byte source, such as a file, put a character decoder in front of it, for example `ZPipeline.utf8Decode` followed by a step that splits the strings into characters, or `ZPipeline.decodeCharsWith(StandardCharsets.UTF_8)`.
 

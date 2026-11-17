@@ -113,7 +113,7 @@ runSync(readJsonLinesAs[Event](linesFile).runCollect)
 
 ## 4. Skip Bad Lines Instead of Failing
 
-Log files and exports from other systems sometimes contain a damaged line. Here the second line has lost its `kind` field and the fourth line is cut short:
+Log files and exports from other systems sometimes contain a damaged line. Here the line for event 2 has lost its `kind` field, the line for event 4 is cut short, and one line is blank:
 
 ```scala mdoc:silent
 Files.write(

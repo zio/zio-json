@@ -49,7 +49,7 @@ Each step below is a separate option, and each one makes this input decode to `Q
 | 3. Decode to `Json` and match on it | The layout differs, not only the names, or you compute values from several fields              | The messages you write                                             |
 | 4. Decode to `Json` with cursors    | As option 3, but the paths are reusable values and reach into nested objects in one line       | The cursor's, which name a missing key but not a wrongly typed one |
 
-Options 1 and 2 decode in one pass, straight from the text. Options 3 and 4 first build the whole document as a [`Json`](../reference/json-ast.md) tree and then read from it, which costs more time and memory.
+Options 1 and 2 decode in one pass, straight from the text. Options 3 and 4 first build the whole document as a [`Json`](../reference/json-ast.md) tree and then read from it, which costs more time and memory. When only one field differs, because it arrives in two shapes, see [Accept a Field That Arrives in Two Shapes](#accept-a-field-that-arrives-in-two-shapes) instead.
 
 ## 1. Rename Fields with `@jsonField`
 
