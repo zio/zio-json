@@ -137,7 +137,7 @@ The `StringWriter` now holds the encoded JSON:
 writer.toString
 ```
 
-`WriteWriter` passes a `String` to the underlying writer in one call, but every other character in a separate call, so wrap an unbuffered writer in a `java.io.BufferedWriter`. Everything in `zio.json.internal` is a low-level API without a compatibility guarantee. For ZIO streams, prefer the streaming encoders described in [Streaming](../how-to/streaming.md).
+`WriteWriter` passes a `String` to the underlying writer in one call, but every other character in a separate call, so wrap an unbuffered writer in a `java.io.BufferedWriter`. Everything in `zio.json.internal` is a low-level API without a compatibility guarantee. For ZIO streams, prefer the streaming encoders described in [Streaming API](../reference/streaming.md).
 
 ## Decoding Faster
 
@@ -167,7 +167,7 @@ When you do decode into `Json` first and convert it with `Json#as` or `JsonDecod
 
 ### Large Payloads
 
-`Chunk[Byte]`, `Array[Byte]` and `String` inputs all hold the whole payload in memory. On the JVM, the streaming decoders (`JsonDecoder#decodeJsonStreamInput` for bytes and `JsonDecoder#decodeJsonStream` for characters) read the input incrementally instead, and the pipelines decode a stream of many values. See [Streaming](../how-to/streaming.md).
+`Chunk[Byte]`, `Array[Byte]` and `String` inputs all hold the whole payload in memory. On the JVM, the streaming decoders (`JsonDecoder#decodeJsonStreamInput` for bytes and `JsonDecoder#decodeJsonStream` for characters) read the input incrementally instead, and the pipelines decode a stream of many values. See [Streaming API](../reference/streaming.md).
 
 ## Even More Performance
 

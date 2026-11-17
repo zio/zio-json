@@ -33,6 +33,8 @@ const sidebars = {
         },
         "reference/json-ast",
         "reference/yaml",
+        "reference/streaming",
+        "reference/golden-testing",
         {
           type: "category",
           label: "Concepts",

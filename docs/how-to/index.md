@@ -33,8 +33,8 @@ How-to guides answer one question each: "How do I do X?" Each guide starts from 
 
 ## Working with data at scale
 
-- [Streaming](streaming.md): read and write large JSON without loading it all into memory.
-- [Golden testing](golden-testing.md): check that your JSON output does not change by accident.
+- [Process large JSON as a stream](streaming.md): read and write large JSON arrays and JSON Lines files without loading them into memory.
+- [Catch unintended changes to your JSON with golden tests](golden-testing.md): pin the encoded format in a test and review every change.
 
 ## Developer tools
 

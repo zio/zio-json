@@ -593,4 +593,4 @@ Parsing a string into the AST uses the same `fromJson` method as domain types, w
 """{"id": 7, "ok": true}""".fromJson[Json]
 ```
 
-For encoding and decoding in streams, see [Streaming](../how-to/streaming.md). For YAML, the AST is the intermediate form, as described in [YAML](./yaml.md).
+For encoding and decoding in streams, see [Streaming API](streaming.md). For YAML, the AST is the intermediate form, as described in [YAML](./yaml.md).

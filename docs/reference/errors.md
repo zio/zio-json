@@ -61,10 +61,10 @@ They fail the `ZIO` or `ZStream` with a plain `java.lang.Exception` instead of r
 The exception message is the rendered trace, so it looks the same as the string from `decodeJson`.
 
 - `decodeJsonStream` and `decodeJsonStreamInput` fail with `new Exception(JsonError.render(trace))`.
-- `decodeJsonPipeline` fails the stream with the same exception at the first element that does not decode. Elements after it are not emitted.
+- `decodeJsonPipeline` fails the stream with the same exception at the first element that does not decode. Elements after it are not emitted, and values decoded in the same batch before it can be lost as well. See [Errors in a Decoding Pipeline](streaming.md#errors-in-a-decoding-pipeline).
 - When `decodeJsonStream` or `decodeJsonStreamInput` hits the end of the input, the message is `unexpected end of input` in lower case, unlike `Unexpected end of input` from `decodeJson`.
 
-See [Streaming](../how-to/streaming.md) for how to decode streams.
+See [Streaming API](streaming.md) for how to decode streams.
 
 ## Common Messages
 

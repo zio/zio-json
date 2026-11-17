@@ -546,7 +546,7 @@ union in a case class: {"color":"green","stock":{"red":1,"blue":2}}
 
 `encodeJsonStream`, which returns a `ZStream[Any, Throwable, Char]`, and the other streaming encoders exist only on the JVM.
 They are on the `JsonEncoderPlatformSpecific` trait that `JsonEncoder` extends. The JS and Native builds do not have them.
-See [Streaming](../how-to/streaming.md).
+See [Streaming API](streaming.md).
 
 ## See Also
 
@@ -557,4 +557,4 @@ See [Streaming](../how-to/streaming.md).
 - [Build an Encoder or Decoder from an Existing One](../how-to/manual-instances.md) for `contramap` together with the decoder side
 - [JsonDecoder](json-decoder.md) and [JsonCodec](json-codec.md)
 - [JSON AST](json-ast.md) for the `Json` type returned by `toJsonAST`
-- [Streaming](../how-to/streaming.md) for the JVM-only stream encoders
+- [Streaming API](streaming.md) for the JVM-only stream encoders

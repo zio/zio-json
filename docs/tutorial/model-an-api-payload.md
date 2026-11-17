@@ -357,6 +357,6 @@ You can now model a third-party JSON format end to end and keep it stable as you
 - **Need other names or rules?** [Field Names](../how-to/field-names.md) covers single renames and old names with `@jsonAliases`, and [Work With Sealed Traits](../how-to/sealed-traits.md) covers other hint formats.
 - **Fields that can be `null` or empty?** [Optional, Default and Null Fields](../how-to/optional-and-default-fields.md) explains every rule for missing, `null` and empty values.
 - **Rules beyond types?** [Validate on Decode](../how-to/validate-on-decode.md) shows how to check values and fields while decoding.
-- **More about golden tests?** [Golden Testing](../how-to/golden-testing.md) covers the configuration and the file lifecycle.
+- **More about golden tests?** [Golden Testing API](../reference/golden-testing.md) covers the configuration and the file lifecycle.
 - **Want to see every shape a sum type can take?** [JSON Shapes and Round Trips](../explanation/wire-format.md) has the full table and the values that do not survive a round trip.
 - **Looking for an API?** [JsonCodecConfiguration](../reference/json-codec-configuration.md) lists every derivation option, and [Built-in Instances](../reference/built-in-instances.md) lists every type that has a codec out of the box.

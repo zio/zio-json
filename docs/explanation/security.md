@@ -22,7 +22,7 @@ Many web frameworks fully consume the payload into a `String` before handing it 
 The best way to mitigate message size attacks is to cap the request size (the `Content-Length`) at a reasonable value for the use case, in the HTTP server or proxy. Two further mitigations come from ZIO JSON itself:
 
 - Decode the body from bytes. `JsonDecoder#decodeJson` and `fromJson` accept a `Chunk[Byte]` or an `Array[Byte]` and decode the UTF-8 while parsing, so the payload is not copied into a `String` first. See [`decodeJson`](../reference/json-decoder.md#decodejson).
-- On the JVM, decode from a stream with `JsonDecoder#decodeJsonStreamInput`, which reads the input incrementally instead of loading the whole message into memory. See [Streaming](../how-to/streaming.md).
+- On the JVM, decode from a stream with `JsonDecoder#decodeJsonStreamInput`, which reads the input incrementally instead of loading the whole message into memory. See [Streaming API](../reference/streaming.md).
 
 <!-- zioJsonJVM/Jmh/run -prof gc GoogleMaps.*Attack0 -->
 

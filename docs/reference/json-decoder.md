@@ -748,7 +748,7 @@ The decoding methods and instances on this page are available on the JVM, Scala.
 
 `decodeJsonStream`, `decodeJsonStreamInput` and `decodeJsonPipeline` exist only on the JVM, on the `JsonDecoderPlatformSpecific` trait.
 On Scala.js and Scala Native that trait is empty.
-See [Streaming](../how-to/streaming.md).
+See [Streaming API](streaming.md).
 
 ### Files and Other Platform Differences
 

@@ -24,6 +24,8 @@ Reference pages list every type, method, annotation and option in ZIO JSON. Use 
 
 - [JSON AST](json-ast.md): the `Json` value type, cursors and tree transforms.
 - [YAML](yaml.md): the optional YAML module.
+- [Streaming API](streaming.md): the JVM-only ZIO Streams encoders, decoders, pipelines, file helpers and their error behaviour.
+- [Golden Testing API](golden-testing.md): `goldenTest`, `GoldenConfiguration`, the golden file lifecycle and format, and module root lookup.
 
 ## Modules
 
@@ -33,7 +35,7 @@ Besides the core `zio-json` artifact, the project publishes add-on modules. Each
 | ----------------------------- | --------------------------------------------------------------------- | --------------------- | -------------- | ----------------------------------------------- |
 | `zio-json`                    | Codecs, derivation, the `Json` AST and, on the JVM, streaming         | JVM, Scala.js, Native | 2.12, 2.13, 3  | [Getting Started](../getting-started.md) |
 | `zio-json-yaml`               | Reading and writing YAML with your JSON codecs (through SnakeYAML)    | JVM                   | 2.12, 2.13, 3  | [YAML](yaml.md)                       |
-| `zio-json-golden`             | Golden (snapshot) tests that catch unintended changes to encoded JSON | JVM                   | 2.12, 2.13, 3  | [Golden Testing](../how-to/golden-testing.md)      |
+| `zio-json-golden`             | Golden (snapshot) tests that catch unintended changes to encoded JSON | JVM                   | 2.12, 2.13, 3  | [Golden Testing API](golden-testing.md)          |
 | `zio-json-macros`             | The `@jsonDerive` annotation, which writes codec instances for you    | JVM, Scala.js, Native | 2.12, 2.13     | [zio-json-macros](zio-json-macros.md) |
 | `zio-json-interop-http4s`     | http4s 0.23 entity encoders and decoders built from ZIO JSON codecs   | JVM                   | 2.12, 2.13, 3  | [HTTP4s Interop](../interop/http4s.md)             |
 | `zio-json-interop-refined`    | Codecs and map-key codecs for refined types                           | JVM, Scala.js, Native | 2.12, 2.13, 3  | [Refined Interop](../interop/refined.md)           |
