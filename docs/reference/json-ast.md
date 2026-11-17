@@ -310,6 +310,8 @@ object JsonCursor {
 }
 ```
 
+For a step-by-step guide to reading and editing a document with cursors, see [Read and Edit JSON of Unknown Shape](../how-to/edit-json-with-cursors.md).
+
 ### Building Cursors
 
 The `JsonCursor` companion starts a path:
@@ -405,45 +407,6 @@ profile.get(JsonCursor.field("email"))
 profile.get(JsonCursor.field("user").isObject.field("langs").isArray.element(5))
 
 profile.get(JsonCursor.field("visits").isString)
-```
-
-### Cursors in Practice
-
-To read a field from a parsed document, combine a cursor with `Json#get` inside the `Either` returned by parsing:
-
-```scala mdoc
-import zio.json.ast.Json.Str
-
-val nameJson: Either[String, Json] = """{"name": "John Doe"}""".fromJson[Json]
-val nameCursor: JsonCursor[Json, Str] = JsonCursor.field("name").isString
-val nameValue: Either[String, String] = nameJson.flatMap(_.get(nameCursor).map(_.value))
-```
-
-Cursors can be composed to navigate more complex JSON structures. The following reads the title of the first post from two documents that store the posts under different keys:
-
-```scala mdoc
-val json1: Either[String, Json] = """{"posts": [{"id": 0, "title": "foo"}]}""".fromJson[Json]
-val json2: Either[String, Json] = """{"userPosts": [{"id": 1, "title": "bar"}]}""".fromJson[Json]
-
-val commonCursor = 
-  JsonCursor.isArray >>> 
-    JsonCursor.element(0) >>> 
-    JsonCursor.isObject >>> 
-    JsonCursor.field("title") >>> 
-    JsonCursor.isString
-
-val cursor1 = JsonCursor.field("posts")
-val cursor2 = JsonCursor.field("userPosts")
-
-def getTitle(json: Either[String, Json]) =
-  for {
-    ast   <- json
-    posts <- ast.get(cursor1).orElse(ast.get(cursor2))
-    title <- posts.get(commonCursor).map(_.value)
-  } yield title
-
-val title1 = getTitle(json1)
-val title2 = getTitle(json2)
 ```
 
 ## Transforming Values
