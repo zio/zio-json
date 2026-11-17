@@ -28,12 +28,33 @@ In order to use this library, we need to add the following line in our `build.sb
 libraryDependencies += "dev.zio" %% "zio-json" % "@VERSION@"
 ```
 
-For cross-platform projects with Scala.js and Scala Native need to replace `%%` operator by `%%%`, 
-and optionally when using `java.time.ZoneId` and `java.time.ZonedDateTime` types need to add 
-the dependency on the latest version of Timezone DB:
+ZIO JSON is published for the JVM, Scala.js and Scala Native, for Scala 2.12, 2.13 and 3. In a Scala.js or Scala Native project, replace the `%%` operator with `%%%`.
+
+On Scala.js and Scala Native, the `java.time` types come from the `scala-java-time` library, which ZIO JSON depends on. If you use `java.time.ZoneId` or `java.time.ZonedDateTime` there, also add the time-zone database, `scala-java-time-tzdb`, in the same version as the `scala-java-time` in your dependency tree (`sbt dependencyTree` shows it). For example, when that version is 2.8.0:
 
 ```scala
-libraryDependencies += "io.github.cquiroz" %%% "scala-java-time-tzdb" % "latest.integration"
+libraryDependencies += "io.github.cquiroz" %%% "scala-java-time-tzdb" % "2.8.0"
 ```
 
 Continue with the [Getting Started](tutorial/getting-started.md) guide for a walkthrough of encoding and decoding JSON with ZIO JSON.
+
+## Modules
+
+Besides the core `zio-json` artifact, the project publishes add-on modules. Each one is a separate dependency with the same version number, and not every module is available on every platform or Scala version:
+
+| Artifact                      | What it is for                                                        | Platforms             | Scala versions | Documentation                                   |
+| ----------------------------- | --------------------------------------------------------------------- | --------------------- | -------------- | ----------------------------------------------- |
+| `zio-json`                    | Codecs, derivation, the `Json` AST and, on the JVM, streaming         | JVM, Scala.js, Native | 2.12, 2.13, 3  | [Reference](reference/index.md)                 |
+| `zio-json-yaml`               | Reading and writing YAML with your JSON codecs (through SnakeYAML)    | JVM                   | 2.12, 2.13, 3  | [YAML](reference/yaml.md)                       |
+| `zio-json-golden`             | Golden (snapshot) tests that catch unintended changes to encoded JSON | JVM                   | 2.12, 2.13, 3  | [Golden Testing](how-to/golden-testing.md)      |
+| `zio-json-macros`             | The `@jsonDerive` annotation, which writes codec instances for you    | JVM, Scala.js, Native | 2.12, 2.13     | [zio-json-macros](reference/zio-json-macros.md) |
+| `zio-json-interop-http4s`     | http4s 0.23 entity encoders and decoders built from ZIO JSON codecs   | JVM                   | 2.12, 2.13, 3  | [HTTP4s Interop](interop/http4s.md)             |
+| `zio-json-interop-refined`    | Codecs and map-key codecs for refined types                           | JVM, Scala.js, Native | 2.12, 2.13, 3  | [Refined Interop](interop/refined.md)           |
+| `zio-json-interop-scalaz7x`   | Codecs for Scalaz 7 `IList`                                           | JVM, Scala.js, Native | 2.12, 2.13     | [Scalaz 7.x Interop](interop/scalaz-7x.md)      |
+| `zio-json-interop-enumeratum` | Codecs and map-key codecs for enumeratum enums                        | JVM, Scala.js, Native | 2.12, 2.13, 3  | [Enumeratum Interop](interop/enumeratum.md)     |
+
+Add a module the same way as the core artifact, using `%%%` for a cross-built module in a Scala.js or Scala Native project. Golden tests only run in tests, so that module usually goes in the `Test` configuration:
+
+```scala
+libraryDependencies += "dev.zio" %% "zio-json-golden" % "@VERSION@" % Test
+```
