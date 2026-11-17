@@ -39,7 +39,7 @@ object Email {
 
 `JsonEncoder#contramap` is the encoder side. It turns an `Email` back into a `String` so the JSON stays a plain string.
 
-The same pattern validates `Map` keys: build a `JsonFieldDecoder` with `JsonFieldDecoder[String].mapOrFail`. See [Keys of Your Own Type](../reference/json-field-codecs.md#keys-of-your-own-type).
+The same pattern validates `Map` keys: build a `JsonFieldDecoder` with `JsonFieldDecoder[String].mapOrFail`. See [Use Your Own Type as a Map Key](custom-map-keys.md).
 
 ## 2. Validate both directions with transformOrFail
 

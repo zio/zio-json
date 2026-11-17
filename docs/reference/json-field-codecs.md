@@ -1,7 +1,7 @@
 ---
 id: json-field-codecs
 title: "JsonFieldEncoder and JsonFieldDecoder"
-description: "Reference for the map-key type classes JsonFieldEncoder and JsonFieldDecoder: built-in key types, contramap, map and mapOrFail, and keys of your own type."
+description: "Reference for the map-key type classes JsonFieldEncoder and JsonFieldDecoder: built-in key types, contramap, map and mapOrFail, and how map keys behave."
 keywords:
   - "JSON Object Keys"
   - "Map Keys"
@@ -81,7 +81,7 @@ import java.time.LocalDate
 Map(LocalDate.of(2024, 1, 1) -> 1).toJson
 ```
 
-The fix is to provide a `JsonFieldEncoder[LocalDate]`, as shown in [Keys of Your Own Type](#keys-of-your-own-type).
+The fix is to provide a `JsonFieldEncoder[LocalDate]`, as shown in [Use Your Own Type as a Map Key](../how-to/custom-map-keys.md).
 
 ## Predefined Instances
 
@@ -187,103 +187,7 @@ The `Left` becomes the error at the key's path:
 """{"2":"a","3":"b"}""".fromJson[Map[Int, String]](JsonDecoder.map(evenKey, JsonDecoder[String]))
 ```
 
-## Keys of Your Own Type
-
-To use your own type as a key, put a `JsonFieldEncoder` and a `JsonFieldDecoder` for it in its companion object, or anywhere else the compiler searches for implicits.
-The sections below show the three common cases.
-
-### Enumerations
-
-For a sealed trait of case objects, encode each case by name and look the name up when decoding:
-
-```scala mdoc:silent:reset-object
-import zio.json._
-
-sealed trait Currency
-object Currency {
-  case object EUR extends Currency
-  case object USD extends Currency
-
-  val all: List[Currency] = List(EUR, USD)
-
-  implicit val fieldEncoder: JsonFieldEncoder[Currency] =
-    JsonFieldEncoder[String].contramap(_.toString)
-
-  implicit val fieldDecoder: JsonFieldDecoder[Currency] =
-    JsonFieldDecoder[String].mapOrFail(s => all.find(_.toString == s).toRight(s"unknown currency: $s"))
-}
-
-final case class Prices(byCurrency: Map[Currency, BigDecimal])
-
-object Prices {
-  implicit val codec: JsonCodec[Prices] = DeriveJsonCodec.gen[Prices]
-}
-```
-
-The derived `Prices` codec uses the key instances for its `Map` field:
-
-```scala mdoc
-Prices(Map(Currency.EUR -> BigDecimal("9.50"))).toJson
-
-"""{"byCurrency":{"GBP":1}}""".fromJson[Prices]
-```
-
-A Scala 3 `enum` works the same way:
-
-```scala mdoc:passthrough
-docs.Scala3Source.print("zio-json-docs-scala3/src/main/scala-3/zio/json/docs/jsonfieldcodecs/StringLikeKeysExample.scala", "enum-keys")
-```
-
-With these givens, `Map(Region.Eu -> 2).toJson` is `{"eu":2}`, and `{"asia":5}` fails with `.asia(unknown region: asia)`.
-
-### Wrapper Types
-
-A wrapper around a `String`, `Int`, `Long` or `UUID` reuses the instance for the wrapped type, with `JsonFieldEncoder#contramap` on the encoder and `JsonFieldDecoder#map` on the decoder:
-
-```scala mdoc:silent
-import java.util.UUID
-
-final case class AccountId(value: UUID)
-
-object AccountId {
-  implicit val fieldEncoder: JsonFieldEncoder[AccountId] = JsonFieldEncoder[UUID].contramap(_.value)
-  implicit val fieldDecoder: JsonFieldDecoder[AccountId] = JsonFieldDecoder[UUID].map(AccountId(_))
-}
-```
-
-The wrapped decoder still validates the key:
-
-```scala mdoc
-"""{"0d8e7a52-6c0a-4b9e-a5f4-0d1c3c6b8e21":100}""".fromJson[Map[AccountId, Int]]
-
-"""{"not-a-uuid":100}""".fromJson[Map[AccountId, Int]]
-```
-
-### Types with Their Own Text Format
-
-For a type such as `java.time.LocalDate`, convert to and from its text form, and turn a parse failure into a `Left`:
-
-```scala mdoc:silent
-import java.time.LocalDate
-import scala.collection.immutable.ListMap
-import scala.util.Try
-
-implicit val localDateKeyEncoder: JsonFieldEncoder[LocalDate] =
-  JsonFieldEncoder[String].contramap(_.toString)
-
-implicit val localDateKeyDecoder: JsonFieldDecoder[LocalDate] =
-  JsonFieldDecoder[String].mapOrFail(s => Try(LocalDate.parse(s)).toOption.toRight("expected a LocalDate key"))
-```
-
-A `ListMap` keeps the keys in the order they were added:
-
-```scala mdoc
-ListMap(LocalDate.of(2024, 1, 1) -> 10, LocalDate.of(2024, 1, 2) -> 12).toJson
-
-"""{"2024-01-01":10,"January 2nd":12}""".fromJson[ListMap[LocalDate, Int]]
-```
-
-If the type has a `JsonCodec` too, define the key instances from the same functions, so keys and values use one text format.
+To use a type of your own as a key, such as an enumeration, a wrapper type or `java.time.LocalDate`, see [Use Your Own Type as a Map Key](../how-to/custom-map-keys.md).
 
 ## Behaviour Notes
 
