@@ -27,14 +27,14 @@ All options have defaults, so you only name the ones you want to change.
 | `explicitEmptyCollections` | `ExplicitEmptyCollections` | `ExplicitEmptyCollections()` | `ExplicitEmptyCollections()` | Whether empty collections are written and required |
 | `enumValuesAsStrings`      | `Boolean`                  | `false`                      | `true`                       | Whether case objects are plain JSON strings        |
 
-The only difference between the two Scala versions is the default of `enumValuesAsStrings`.
+The only difference in defaults between the two Scala versions is `enumValuesAsStrings`. A few behaviours also differ; see [Scala 2 and Scala 3 differences](#scala-2-and-scala-3-differences).
 
-## Passing a custom configuration
+## Passing a Custom Configuration
 
 The derivation macros take the configuration as an implicit parameter.
 The library provides `JsonCodecConfiguration.default` in the companion object.
-To use your own, put an implicit value in scope before the `gen` call.
-A value in scope wins over the companion default.
+To use your own, put an implicit value in scope before the `DeriveJsonCodec.gen` call.
+A value in scope wins over the companion default. Here the companion of `User` holds a configuration that writes field names in snake case:
 
 ```scala mdoc:silent:reset
 import zio.json._
@@ -49,13 +49,15 @@ object User {
 }
 ```
 
+Encoding and decoding both use the snake-case names:
+
 ```scala mdoc
 User("Ada", "Lovelace").toJson
 
 """{"first_name":"Ada","last_name":"Lovelace"}""".fromJson[User]
 ```
 
-You can also start from the default and change one option with `copy`.
+You can also start from the default and change one option with `copy`:
 
 ```scala mdoc:compile-only
 import zio.json._
@@ -64,31 +66,46 @@ val strict: JsonCodecConfiguration =
   JsonCodecConfiguration.default.copy(allowExtraFields = false)
 ```
 
-In Scala 3, supply it as a `given`. The macros take it as a `using` parameter. This also applies to `derives JsonCodec`.
+In Scala 3, supply it as a `given`. The macros take it as a `using` parameter, and so do `JsonCodec.derived`, `JsonEncoder.derived` and `JsonDecoder.derived`, which a `derives` clause calls. The following Scala 3 code writes `{"first_name":"Ada","last_name":"Lovelace"}` for `User("Ada", "Lovelace")`:
 
-```scala
-// Scala 3 only
-import zio.json.*
+```scala mdoc:passthrough
+docs.Scala3Source.print("zio-json-docs-scala3/src/main/scala-3/zio/json/docs/jsoncodecconfiguration/GivenConfigurationExample.scala", "given")
+```
 
-given JsonCodecConfiguration = JsonCodecConfiguration(fieldNameMapping = SnakeCase)
+A `derives` clause does not need a given of your own. Without one, `JsonCodecConfiguration.default` from the companion object is used, so this Scala 3 class encodes as `{"accountId":7,"ownerName":"Ada"}`:
 
-case class User(firstName: String, lastName: String) derives JsonCodec
+```scala mdoc:passthrough
+docs.Scala3Source.print("zio-json-docs-scala3/src/main/scala-3/zio/json/docs/jsoncodecconfiguration/DefaultConfigurationExample.scala", "default")
 ```
 
 The configuration is read at derivation time.
 Changing it afterwards has no effect on codecs that already exist.
-Nested types are derived with the configuration in scope at the outer `gen` call.
+
+The subtypes of a sealed trait that have no codec of their own are derived together with the trait, using the configuration in scope at the outer `DeriveJsonCodec.gen` call. Field types are different on the two Scala versions:
+
+- On Scala 2, every field type needs a codec in implicit scope. A case class field whose type has none fails to compile with `magnolia: could not find zio.json.DeriveJsonEncoder.Typeclass[...]`.
+- On Scala 3, a field type that has no codec and can be derived is derived with the outer configuration.
+
+On Scala 3, the following writes `{"full_name":"Ada","home_address":{"street_name":"Main St"}}` for `Customer("Ada", Address("Main St"))`, although `Address` has no codec:
+
+```scala mdoc:passthrough
+docs.Scala3Source.print("zio-json-docs-scala3/src/main/scala-3/zio/json/docs/jsoncodecconfiguration/NestedDerivationExample.scala", "nested")
+```
 
 ## sumTypeHandling
 
-Type: `SumTypeHandling`. Two values exist.
+Type: `SumTypeHandling`, a sealed trait in `JsonCodecConfiguration.SumTypeHandling` with two values:
 
 - `WrapperWithClassNameField` (the default) wraps the case in an object with one key, the case name.
 - `DiscriminatorField(name)` writes the case name into a field called `name` inside the case object itself.
 
+`SumTypeHandling#discriminatorField` returns the field name as an `Option[String]`: `Some(name)` for `DiscriminatorField(name)` and `None` for `WrapperWithClassNameField`.
+
 `@jsonDiscriminator("name")` on a sealed trait does the same for that trait only.
 The scaladoc warns that a discriminator is slower, uses more memory, and is open to denial of service attacks that the wrapper form is not.
 Use it only to match an external schema.
+
+The following configuration writes the case name into a `type` field:
 
 ```scala mdoc:silent:reset
 import zio.json._
@@ -104,6 +121,8 @@ implicit val config: JsonCodecConfiguration =
 implicit val codec: JsonCodec[Shape] = DeriveJsonCodec.gen[Shape]
 ```
 
+The `type` field comes first in the output, and the decoder reads it to pick the case:
+
 ```scala mdoc
 (Circle(1.0): Shape).toJson
 
@@ -112,6 +131,10 @@ implicit val codec: JsonCodec[Shape] = DeriveJsonCodec.gen[Shape]
 
 With the default, the same value encodes as `{"Circle":{"radius":1.0}}`.
 See [sealed traits](../how-to/sealed-traits.md) for the how-to side.
+
+:::warning
+Do not combine a discriminator with `allowExtraFields = false`. The discriminator form passes the whole object, discriminator field included, to the decoder of the case class, and that decoder then rejects the discriminator as an unknown field. Every case of the family fails to decode with `(invalid extra field)`, and nothing warns at compile time. The same happens with `@jsonDiscriminator` on the trait and `@jsonNoExtraFields` on a case.
+:::
 
 ## fieldNameMapping
 
@@ -126,6 +149,9 @@ See [field names](../how-to/field-names.md) for the how-to side.
 
 Type: `Boolean`. When `false`, decoding fails if the JSON has a key that the case class does not declare.
 `@jsonNoExtraFields` sets it per type.
+It breaks decoding of sum types that use a discriminator; see [sumTypeHandling](#sumtypehandling).
+
+The configuration below makes a plain case class strict:
 
 ```scala mdoc:silent:reset
 import zio.json._
@@ -138,6 +164,8 @@ implicit val config: JsonCodecConfiguration =
 implicit val codec: JsonCodec[Point] = DeriveJsonCodec.gen[Point]
 ```
 
+The extra `z` key makes decoding fail:
+
 ```scala mdoc
 """{"x":1,"y":2,"z":3}""".fromJson[Point]
 ```
@@ -146,6 +174,8 @@ implicit val codec: JsonCodec[Point] = DeriveJsonCodec.gen[Point]
 
 Type: `JsonMemberFormat`. It rewrites the case names of a sealed trait, for both the wrapper key and the discriminator value.
 `@jsonHintNames` overrides it per trait, and `@jsonHint` overrides it per case.
+
+With `KebabCase`, a case named `RoundCircle` is tagged `round-circle`:
 
 ```scala mdoc:silent:reset
 import zio.json._
@@ -159,6 +189,8 @@ implicit val config: JsonCodecConfiguration =
 implicit val codec: JsonCodec[Shape] = DeriveJsonCodec.gen[Shape]
 ```
 
+The wrapper key uses the rewritten name:
+
 ```scala mdoc
 (RoundCircle(1.0): Shape).toJson
 ```
@@ -170,6 +202,8 @@ By default the key is left out.
 `@jsonExplicitNull` sets it per type or per field.
 This option only affects encoding.
 
+The configuration below writes `None` as `null`:
+
 ```scala mdoc:silent:reset
 import zio.json._
 
@@ -180,6 +214,8 @@ implicit val config: JsonCodecConfiguration =
 
 implicit val codec: JsonCodec[Profile] = DeriveJsonCodec.gen[Profile]
 ```
+
+The `nickname` key is now present with a `null` value:
 
 ```scala mdoc
 Profile("Ada", None).toJson
@@ -193,7 +229,9 @@ Type: `ExplicitEmptyCollections`, a case class `ExplicitEmptyCollections(encodin
 - `decoding = false` lets a missing collection field decode as an empty collection.
 
 With the defaults, empty collections are written, and a missing collection field is an error.
-`@jsonExplicitEmptyCollections(encoding, decoding)` sets it per type or per field.
+`@jsonExplicitEmptyCollections(encoding, decoding)` sets it per type. On a single field it changes encoding only; the `decoding` flag of a field annotation is ignored.
+
+The configuration below turns off both directions:
 
 ```scala mdoc:silent:reset
 import zio.json._
@@ -206,6 +244,8 @@ implicit val config: JsonCodecConfiguration =
 implicit val codec: JsonCodec[Basket] = DeriveJsonCodec.gen[Basket]
 ```
 
+The empty list is left out, and a missing `items` key decodes as an empty list:
+
 ```scala mdoc
 Basket(Nil).toJson
 
@@ -214,13 +254,15 @@ Basket(Nil).toJson
 
 ## enumValuesAsStrings
 
-Type: `Boolean`. It applies to a sealed trait whose cases are all case objects.
+Type: `Boolean`. It applies to a sealed trait whose cases all have no fields. On Scala 3 that means case objects and parameterless enum cases. On Scala 2 it also includes case classes with an empty parameter list, and it is skipped if any case has its own hand-written codec.
 When `true`, each case is a plain JSON string.
 When `false`, each case is a wrapper object with an empty body, as for any other sum type.
-On Scala 3 it also applies to enum cases without parameters.
 It has no effect when a discriminator is set, since the discriminator form always uses objects.
 
 This is the one option with a different default per Scala version, so set it explicitly if your JSON must be the same on both.
+The how-to side is in [Write case objects as strings](../how-to/sealed-traits.md#5-write-case-objects-as-strings).
+
+With all cases as case objects, the cases become strings:
 
 ```scala mdoc:silent:reset
 import zio.json._
@@ -235,6 +277,8 @@ implicit val config: JsonCodecConfiguration =
 implicit val codec: JsonCodec[Color] = DeriveJsonCodec.gen[Color]
 ```
 
+Each case is written and read as a JSON string:
+
 ```scala mdoc
 (Red: Color).toJson
 
@@ -242,3 +286,46 @@ implicit val codec: JsonCodec[Color] = DeriveJsonCodec.gen[Color]
 ```
 
 With `enumValuesAsStrings = false`, `Red` encodes as `{"Red":{}}`.
+
+A case class with an empty parameter list counts as an enum value on Scala 2 only. On Scala 2, this family is written as strings:
+
+```scala mdoc:silent:reset
+import zio.json._
+
+sealed trait Signal
+case class Stop() extends Signal
+case object Go    extends Signal
+
+implicit val config: JsonCodecConfiguration =
+  JsonCodecConfiguration(enumValuesAsStrings = true)
+
+implicit val codec: JsonCodec[Signal] = DeriveJsonCodec.gen[Signal]
+```
+
+Both cases encode as JSON strings:
+
+```scala mdoc
+(Stop(): Signal).toJson
+
+(Go: Signal).toJson
+```
+
+The same family on Scala 3 uses the wrapper form for every case, because `Stop()` is not an enum value there. It writes `{"Stop":{}}` and `{"Go":{}}`:
+
+```scala mdoc:passthrough
+docs.Scala3Source.print("zio-json-docs-scala3/src/main/scala-3/zio/json/docs/jsoncodecconfiguration/EmptyCaseClassEnumExample.scala", "empty-case-class")
+```
+
+To get the same JSON on both versions, use case objects (or, on Scala 3, parameterless enum cases) for the values.
+
+## Scala 2 and Scala 3 Differences
+
+The options and their meaning are the same on both versions. These behaviours differ:
+
+| Behaviour                                   | Scala 2                                     | Scala 3                                                |
+|---------------------------------------------|---------------------------------------------|--------------------------------------------------------|
+| Default of `enumValuesAsStrings`            | `false`                                     | `true`                                                 |
+| Case class with no fields, as an enum value | Counts, so it can be written as a string    | Does not count, so the family uses objects             |
+| Case object with a hand-written codec       | String form is skipped for the whole family | String form is used, the hand-written codec is ignored |
+| Field type without a codec                  | Compile error                               | Derived with the outer configuration                   |
+| Configuration parameter                     | `implicit` value                            | `given` value, also used by `derives`                  |
