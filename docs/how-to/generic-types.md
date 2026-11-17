@@ -91,7 +91,7 @@ Encoding a `Pair[String, Int]` uses both bounds:
 println(Pair("id", 7).toJson)
 ```
 
-A variance annotation such as `Box[+A]` is fine here, because the type parameter of the `implicit def` is a new, invariant one. The `@jsonDerive` annotation from `zio-json-macros` cannot do this: it copies the variance annotation into the generated method, and `@jsonDerive final case class Box[+A](value: A)` does not compile. [zio-json-macros](../reference/zio-json-macros.md#generic-classes) shows the error.
+A variance annotation such as `Box[+A]` is fine here, because the type parameter of the `implicit def` is a new, invariant one. The `@jsonDerive` annotation from `zio-json-macros` cannot do this: it copies the variance annotation into the generated method, and `@jsonDerive final case class Box[+A](value: A)` does not compile. [@jsonDerive Macro Annotation](../reference/zio-json-macros.md#generic-classes) shows the error.
 
 ## 2. Derive Only an Encoder or a Decoder
 
@@ -250,5 +250,5 @@ Deriving a generic sealed trait on Scala 3 also prints an unchecked warning (E09
 
 - [Derive Codecs on Scala 3](scala-3-derivation.md) covers `derives`, enums, union types and opaque types.
 - [Sealed traits](sealed-traits.md) covers type hints and discriminator fields for any sealed family.
-- [zio-json-macros](../reference/zio-json-macros.md#generic-classes) shows what `@jsonDerive` generates for a generic class on Scala 2.
+- [@jsonDerive Macro Annotation](../reference/zio-json-macros.md#generic-classes) shows what `@jsonDerive` generates for a generic class on Scala 2.
 - [Scala 2 and Scala 3 differences](../explanation/scala-2-vs-scala-3.md) lists the recursion and generic sealed trait differences together with the others.

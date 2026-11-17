@@ -37,12 +37,12 @@ Most of these annotations have a program-wide form in `JsonCodecConfiguration`. 
 
 `@jsonDerive` is different from the other annotations: it does not change how a codec behaves, it writes the codec for you. It is a Scala 2 macro annotation from the separate `zio-json-macros` module, and it needs `-Ymacro-annotations` on Scala 2.13 or the macro paradise plugin on Scala 2.12. Placed on a case class or a sealed trait, it adds an `implicit val codecFor<Type>` (or `encode<Type>` / `decode<Type>`, depending on its `JsonDeriveConfig` argument) to the companion object. The other annotations on the class still apply to the generated codec. On Scala 3, use a `derives` clause instead.
 
-See [zio-json-macros (@jsonDerive)](./zio-json-macros.md) for installation, the generated member names, generic classes and the limitations.
+See [@jsonDerive Macro Annotation](./zio-json-macros.md) for installation, the generated member names, generic classes and the limitations.
 
 ## See Also
 
 - [Field names](../how-to/field-names.md) covers `@jsonField`, `@jsonAliases` and `@jsonMemberNames`.
 - [Sealed traits](../how-to/sealed-traits.md) covers `@jsonHint`, `@jsonHintNames` and `@jsonDiscriminator`.
 - [Optional, default and null fields](../how-to/optional-and-default-fields.md) covers `@jsonNoExtraFields`, `@jsonExplicitNull`, `@jsonExplicitEmptyCollections` and `@jsonExclude`.
-- [zio-json-macros (@jsonDerive)](./zio-json-macros.md) covers `@jsonDerive`.
+- [@jsonDerive Macro Annotation](./zio-json-macros.md) covers `@jsonDerive`.
 - [JsonCodecConfiguration](./json-codec-configuration.md) sets the program-wide defaults that these annotations override per type.

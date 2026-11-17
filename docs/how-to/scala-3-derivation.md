@@ -364,4 +364,4 @@ The message names the field type, not the type you derive. For a `JsonCodec`, it
 - [JsonCodecConfiguration](../reference/json-codec-configuration.md) describes every configuration option.
 - [Sealed traits](sealed-traits.md) covers type hints, discriminators and enums as strings.
 - [Derive Codecs for Generic Types](generic-types.md) covers type parameters on Scala 2 and Scala 3.
-- [zio-json-macros](../reference/zio-json-macros.md) describes `@jsonDerive`, the Scala 2 annotation that `derives` replaces.
+- [@jsonDerive Macro Annotation](../reference/zio-json-macros.md) describes `@jsonDerive`, the Scala 2 annotation that `derives` replaces.

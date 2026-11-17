@@ -1,6 +1,7 @@
 ---
 id: zio-json-macros
-title: "zio-json-macros (@jsonDerive)"
+title: "@jsonDerive Macro Annotation"
+sidebar_label: "@jsonDerive"
 description: "Reference for the zio-json-macros module: installing it, what @jsonDerive generates, JsonDeriveConfig, generic classes and the Scala 3 alternative."
 keywords:
   - "Codec Derivation"

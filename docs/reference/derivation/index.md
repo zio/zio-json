@@ -14,7 +14,7 @@ keywords:
 
 - [JsonCodecConfiguration](../json-codec-configuration.md): the options that apply to every type derived where the configuration is in scope.
 - [Annotations](../annotations.md): the annotations that change one type or one field.
-- [zio-json-macros (@jsonDerive)](../zio-json-macros.md): a Scala 2 macro annotation that writes the derived codec into the companion object for you.
+- [@jsonDerive Macro Annotation](../zio-json-macros.md): a Scala 2 macro annotation that writes the derived codec into the companion object for you.
 
 ## Starting Derivation
 
