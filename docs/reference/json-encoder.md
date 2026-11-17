@@ -353,76 +353,17 @@ The built-in object encoders call `pad(bump(indent), out)` before each field, pa
 
 ### Overriding `toJsonAST`
 
-The default `JsonEncoder#toJsonAST` encodes to text and parses it again. A hand-written encoder can override it to build the `Json` tree directly, which avoids the round trip through text.
-Keep the two methods consistent: both should describe the same JSON.
+The default `JsonEncoder#toJsonAST` encodes to text and parses it again. A hand-written encoder can override it to build the `Json` tree directly, which avoids the round trip through text:
 
-### A Complete Hand-Written Encoder
-
-The encoder below writes a `Point` as a JSON object. It extends `AbstractJsonEncoder`, delegates numbers and strings to the built-in encoders, uses `JsonEncoder.bump` and `JsonEncoder.pad` for pretty output, and overrides `JsonEncoder#toJsonAST`:
-
-```scala mdoc:silent
-import zio.json.ast.Json
-import zio.json.internal.Write
-
-final case class Point(x: Int, y: Int, label: String)
-
-object Point {
-  implicit val encoder: JsonEncoder[Point] = new JsonEncoder.AbstractJsonEncoder[Point] {
-    def unsafeEncode(p: Point, indent: Option[Int], out: Write): Unit = {
-      val inner = JsonEncoder.bump(indent)
-      out.write('{')
-      field("x", inner, out)
-      JsonEncoder.int.unsafeEncode(p.x, inner, out)
-      out.write(',')
-      field("y", inner, out)
-      JsonEncoder.int.unsafeEncode(p.y, inner, out)
-      out.write(',')
-      field("label", inner, out)
-      JsonEncoder.string.unsafeEncode(p.label, inner, out)
-      JsonEncoder.pad(indent, out)
-      out.write('}')
-    }
-
-    // Starts a field: newline and indentation (pretty mode only), the quoted name, the colon.
-    private def field(name: String, indent: Option[Int], out: Write): Unit = {
-      JsonEncoder.pad(indent, out)
-      JsonEncoder.string.unsafeEncode(name, indent, out)
-      if (indent.isEmpty) out.write(':') else out.write(' ', ':', ' ')
-    }
-
-    override def toJsonAST(p: Point): Either[String, Json] =
-      Right(Json.Obj("x" -> Json.Num(p.x), "y" -> Json.Num(p.y), "label" -> Json.Str(p.label)))
-  }
+```scala
+trait JsonEncoder[A] {
+  def toJsonAST(a: A): Either[String, zio.json.ast.Json]
 }
 ```
 
-The label contains quotes, which `JsonEncoder.string` escapes. The same encoder produces compact output, pretty output and a `Json` tree:
+Keep the two methods consistent: both should describe the same JSON.
 
-```scala mdoc
-val point = Point(1, 2, "say \"hi\"")
-
-println(point.toJson)
-
-println(point.toJsonPretty)
-
-point.toJsonAST
-```
-
-Because it uses `JsonEncoder.pad` and `JsonEncoder.bump`, the encoder also indents correctly when it is nested inside another value:
-
-```scala mdoc
-println(List(point).toJsonPretty)
-```
-
-To write straight into a `java.io.Writer`, wrap it in a `WriteWriter` and call `unsafeEncode` with it:
-
-```scala mdoc
-val writer = new java.io.StringWriter()
-
-JsonEncoder[Point].unsafeEncode(point, None, new WriteWriter(writer))
-
-writer.toString
-```
+For a complete hand-written codec that uses `JsonEncoder.AbstractJsonEncoder`, the built-in encoders, `JsonEncoder.bump`, `JsonEncoder.pad` and an overridden `JsonEncoder#toJsonAST`, see [Write a Fast Encoder or Decoder by Hand](../how-to/low-level-codecs.md).
 
 ## Non-Finite Numbers
 

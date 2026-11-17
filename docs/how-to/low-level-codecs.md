@@ -351,7 +351,7 @@ samples.forall(p => p.toJsonAST.flatMap(_.as[Position]) == Right(p))
 samples.toJson.fromJson[List[Position]] == Right(samples)
 ```
 
-The last check decodes a list, which catches a decoder that leaves the reader in the wrong place: if it consumed too much or too little after a position, the list decoder would find no `,` or `]` where it expects one. To check where the reader stops directly, see [Testing a Decoder Directly](../reference/json-decoder.md#testing-a-decoder-directly).
+The last check decodes a list, which catches a decoder that leaves the reader in the wrong place: if it consumed too much or too little after a position, the list decoder would find no `,` or `]` where it expects one. To check where the reader stops directly, call `JsonDecoder#unsafeDecode` on a [`WithRetractReader`](../reference/json-decoder.md#withretractreader).
 
 Then pin the error messages, because the clients that send you JSON read them. An error inside a route carries the full path to the bad coordinate:
 
@@ -368,7 +368,7 @@ A test suite asserts these exact `Left` values, so a change to a message, whethe
 ## See Also
 
 - [Writing an Encoder by Hand](../reference/json-encoder.md#writing-an-encoder-by-hand) for the full `Write` interface, string escaping and `WriteWriter`.
-- [Writing a Decoder by Hand](../reference/json-decoder.md#writing-a-decoder-by-hand) for the decoding contract, every `Lexer` helper and a decoder for objects with `StringMatrix`.
+- [Writing a Decoder by Hand](../reference/json-decoder.md#writing-a-decoder-by-hand) for the decoding contract, every `Lexer` helper, `StringMatrix` and `WithRetractReader`.
 - [JsonCodec](../reference/json-codec.md) for `JsonCodec#transform` and the other combinators to try before writing a codec by hand.
 - [Errors](../reference/errors.md) for how `JsonError` paths are rendered.
 - [Built-in Instances](../reference/built-in-instances.md) for the instances a hand-written codec can delegate to.

@@ -476,6 +476,7 @@ JsonDecoder.keyValueChunk[String, Int].decodeJson("""{"b":1,"a":2,"b":3}""")
 You rarely need this: `map`, `mapOrFail` and derivation cover almost every type.
 It is an advanced API for decoders that must be as fast as the built-in ones, or that read a JSON shape no combinator can express.
 A hand-written decoder implements `JsonDecoder#unsafeDecode`, which reads straight from the input with the helpers in `zio.json.internal.Lexer`.
+For a complete worked codec, see [Write a Fast Encoder or Decoder by Hand](../how-to/low-level-codecs.md).
 
 :::warning[No compatibility guarantee]
 `JsonDecoder#unsafeDecode` is part of the public `JsonDecoder` trait, but `Lexer`, `RetractReader`, `StringMatrix` and the rest of the `zio.json.internal` package are internal.
@@ -558,6 +559,8 @@ object Lexer {
 | `nextArrayElement(trace, in)` | Call after an element. Returns `true` after a `,` and `false` after `]`, and fails on anything else.             |
 | `skipValue(trace, in)`        | Skips one value of any type, for example the value of an unknown field. It does not validate the value it skips. |
 
+To read an object, a decoder reads the `{` with `Lexer.char`, and when `Lexer.firstField` returns `true` it repeats three steps until `Lexer.nextField` returns `false`: `Lexer.field` to read the key, the field's decoder (or `Lexer.skipValue` for `-1`) to read the value, and `Lexer.nextField`. An array follows the same pattern with `Lexer.firstArrayElement` and `Lexer.nextArrayElement`. `Lexer` does not track which keys it has seen, so the decoder reports a missing key itself; derived decoders use the message `missing`, as in `Lexer.error("missing", JsonError.ObjectAccess(name) :: trace)`.
+
 `Lexer` also has readers for single values, such as `Lexer.boolean`, `Lexer.int`, `Lexer.long`, `Lexer.double`, `Lexer.bigDecimal`, `Lexer.uuid` and readers for the `java.time` types. Delegating to the built-in decoders (`JsonDecoder.int.unsafeDecode(...)`) is simpler, and accepts the same inputs as they do, such as quoted numbers.
 
 `StringMatrix` is the structure `Lexer.field` matches keys against.
@@ -565,87 +568,15 @@ object Lexer {
 The keys must be non-empty and there can be at most 64 of them, aliases included.
 Matching happens character by character as the key is read, without building a `String` or hashing it.
 
-### A Decoder for an Object
+### `WithRetractReader`
 
-This decoder reads `{"x": ..., "y": ...}` into a `Point`, in any key order, skipping unknown keys:
+`zio.json.internal.WithRetractReader(in: java.io.Reader)` wraps any `java.io.Reader` in a `RetractReader`, so a test can call `JsonDecoder#unsafeDecode` directly and then read from the same reader to see where the decoder stopped:
 
-```scala mdoc:silent
-import zio.json.internal.{ Lexer, StringMatrix }
-
-final case class Point(x: Int, y: Int)
-
-object Point {
-  implicit val decoder: JsonDecoder[Point] = new JsonDecoder.AbstractJsonDecoder[Point] {
-    private val keys = new StringMatrix(Array("x", "y"))
-
-    def unsafeDecode(trace: List[JsonError], in: RetractReader): Point = {
-      Lexer.char(trace, in, '{')
-      var x, y         = 0
-      var seenX, seenY = false
-      if (Lexer.firstField(in))
-        while ({
-          Lexer.field(trace, in, keys) match {
-            case 0 =>
-              x = JsonDecoder.int.unsafeDecode(JsonError.ObjectAccess("x") :: trace, in)
-              seenX = true
-            case 1 =>
-              y = JsonDecoder.int.unsafeDecode(JsonError.ObjectAccess("y") :: trace, in)
-              seenY = true
-            case _ =>
-              Lexer.skipValue(trace, in)
-          }
-          Lexer.nextField(trace, in)
-        }) ()
-      if (!seenX) Lexer.error("missing", JsonError.ObjectAccess("x") :: trace)
-      if (!seenY) Lexer.error("missing", JsonError.ObjectAccess("y") :: trace)
-      Point(x, y)
-    }
-  }
-}
+```scala
+final class WithRetractReader(in: java.io.Reader) extends RetractReader with AutoCloseable
 ```
 
-It decodes valid input, and its errors carry the same paths as a derived decoder's:
-
-```scala mdoc
-"""{"y":2,"note":[1,{"a":3}],"x":1}""".fromJson[Point]
-
-"""{"x":"one","y":2}""".fromJson[Point]
-
-"""{"x":1}""".fromJson[Point]
-
-"""[1,2]""".fromJson[Point]
-```
-
-An array decoder follows the same pattern with `Lexer.firstArrayElement` and `Lexer.nextArrayElement`, and prepends `JsonError.ArrayAccess(i)` to the trace for element `i`.
-
-### Testing a Decoder Directly
-
-`JsonDecoder#decodeJson` is the normal way to test a decoder.
-To call `JsonDecoder#unsafeDecode` itself, for example to check where the reader stops, wrap any `java.io.Reader` in `zio.json.internal.WithRetractReader`:
-
-```scala mdoc:silent
-import zio.json.internal.WithRetractReader
-
-val reader = new WithRetractReader(new java.io.StringReader("""{"x":1,"y":2} rest"""))
-```
-
-Decoding from the reader returns the value, and the next character read is the one after it:
-
-```scala mdoc
-Point.decoder.unsafeDecode(Nil, reader)
-
-reader.read().toChar
-```
-
-The decoder stopped right after the closing `}`, so the next character is the space before `rest`.
-An error thrown by `unsafeDecode` is a `JsonDecoder.UnsafeJson`, whose `trace` holds the path with the message first:
-
-```scala mdoc
-try Point.decoder.unsafeDecode(Nil, new WithRetractReader(new java.io.StringReader("""{"x":true}""")))
-catch { case e: JsonDecoder.UnsafeJson => e.trace }
-```
-
-Application code should not call `JsonDecoder#unsafeDecode`: it throws instead of returning an `Either`.
+Application code should not call `JsonDecoder#unsafeDecode`: it throws `JsonDecoder.UnsafeJson` instead of returning an `Either`.
 
 ### Decoding from the AST
 
@@ -662,51 +593,7 @@ That is correct for every decoder, including hand-written ones, but slower than 
 The decoders for primitives, `java.time` types, `UUID`, `Option`, `Chunk`, tuples and the `Json` types, derived decoders, and decoders built from them with `map`, `mapOrFail` or `orElse` read the tree directly.
 Others, including the `List`, `Vector`, `Set`, `Map` and `Either` decoders, `JsonDecoder.peekChar`, and your hand-written decoders, fall back to the default.
 
-The `Point` decoder above does not override it, so it still works on a `Json` value, through a round trip to text:
-
-```scala mdoc
-Json.Obj("x" -> Json.Num(1), "y" -> Json.Num(2)).as[Point]
-```
-
-To read the tree directly, override `unsafeFromJsonAST` and follow the same rules: throw with `Lexer.error`, and extend the trace for children.
-This decoder for a `Point2` reads both the text and the tree without the round trip:
-
-```scala mdoc:silent
-final case class Point2(x: Int, y: Int)
-
-object Point2 {
-  private val viaPoint: JsonDecoder[Point2] = Point.decoder.map(p => Point2(p.x, p.y))
-
-  implicit val decoder: JsonDecoder[Point2] = new JsonDecoder.AbstractJsonDecoder[Point2] {
-    def unsafeDecode(trace: List[JsonError], in: RetractReader): Point2 =
-      viaPoint.unsafeDecode(trace, in)
-
-    override def unsafeFromJsonAST(trace: List[JsonError], json: Json): Point2 =
-      json match {
-        case obj: Json.Obj =>
-          def int(key: String): Int = {
-            val trace_ = JsonError.ObjectAccess(key) :: trace
-            obj.get(key) match {
-              case Some(value) => JsonDecoder.int.unsafeFromJsonAST(trace_, value)
-              case None        => Lexer.error("missing", trace_)
-            }
-          }
-          Point2(int("x"), int("y"))
-        case _ => Lexer.error("expected object", trace)
-      }
-  }
-}
-```
-
-Both paths give the same result and the same error paths:
-
-```scala mdoc
-Json.Obj("x" -> Json.Num(1), "y" -> Json.Num(2)).as[Point2]
-
-Json.Obj("x" -> Json.Num(1)).as[Point2]
-
-"""{"x":1,"y":2}""".fromJson[Point2]
-```
+To read the tree directly, override `unsafeFromJsonAST` and follow the same rules as for `JsonDecoder#unsafeDecode`: throw with `Lexer.error`, and extend the trace for children. Step 4 of [Write a Fast Encoder or Decoder by Hand](../how-to/low-level-codecs.md#4-build-the-json-tree-directly) shows a decoder that overrides both methods.
 
 ## Scala 2 vs Scala 3
 
