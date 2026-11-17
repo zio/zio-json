@@ -17,6 +17,8 @@ By default, the JSON field names are the case class field names. This page shows
 - `@jsonMemberNames` renames every field with one rule.
 - `@jsonAliases` accepts extra names when decoding.
 
+Each step below is a separate option. Use the ones you need.
+
 ## What you need
 
 Only `zio-json` and one import:

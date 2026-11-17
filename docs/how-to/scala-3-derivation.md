@@ -13,7 +13,7 @@ keywords:
 
 Goal: get JSON codecs for your Scala 3 data types with as little code as possible, and know what to do when derivation needs help.
 
-By the end of this guide you will have codecs for case classes, enums, sealed traits, string-literal union types, generic case classes and opaque types, all on Scala 3, and you will recognise the compile errors derivation reports. We start with a single `derives` clause and add one Scala 3 feature per section.
+Each step covers one kind of type and stands on its own: case classes, a custom configuration, enums, sealed traits, string-literal union types, generic case classes, opaque types, and the compile errors derivation reports. Go straight to the step you need.
 
 ## The Problem
 

@@ -17,7 +17,7 @@ By default, a value of a sealed family is written as an object with one key, the
 {"Banana":{"curvature":0.5}}
 ```
 
-This page shows how to change the key (the type hint), how to use a discriminator field instead, and how case objects can become plain strings.
+This page shows how to change the key (the type hint), how to use a discriminator field instead, and how case objects can become plain strings. Each step is a separate option. Use the ones you need.
 
 ## What you need
 

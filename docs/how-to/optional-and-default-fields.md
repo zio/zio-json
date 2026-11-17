@@ -12,6 +12,8 @@ keywords:
 
 Goal: control what happens when a JSON field is missing, `null`, empty or unexpected.
 
+Step 1 describes the default behavior. Each later step is a separate option. Use the ones you need.
+
 ## What you need
 
 Every example on this page uses one import:

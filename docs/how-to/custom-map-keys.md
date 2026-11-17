@@ -14,6 +14,8 @@ Goal: write and read a `Map` whose keys are your own types, such as `java.time.L
 
 A JSON object key is always a string, so ZIO JSON writes a `Map[K, V]` as an object only when it knows how to turn a `K` into a `String` and back. Out of the box it knows this for `String`, `Int`, `Long` and `java.util.UUID` keys. For any other key type you write two small instances, a `JsonFieldEncoder[K]` and a `JsonFieldDecoder[K]`, usually in two lines each. In this guide we build a sales report with three maps, keyed by day, by store and by sales channel, and then check that it survives a round trip.
 
+Steps 2 to 4 are alternatives, one per kind of key. Follow the one that matches your key type, then continue with steps 5 and 6.
+
 ## What You Need
 
 Only the core module:
