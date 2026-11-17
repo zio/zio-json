@@ -21,7 +21,7 @@ Add the library to your `build.sbt`:
 libraryDependencies += "dev.zio" %% "zio-json" % "@VERSION@"
 ```
 
-ZIO JSON works on Scala 2.13 and Scala 3. The code in this tutorial uses Scala 2.13 syntax. Where Scala 3 differs, a short Scala 3 note follows the example.
+ZIO JSON works on Scala 2.12, 2.13 and 3, on the JVM, Scala.js and Scala Native. The code in this tutorial uses Scala 2.13 syntax. Where Scala 3 differs, a short Scala 3 note follows the example.
 
 Every snippet below assumes this import:
 
@@ -57,11 +57,10 @@ Use `toJsonPretty` when you want indented output for people to read:
 println(home.toJsonPretty)
 ```
 
-On Scala 3 you can skip the companion and write `derives JsonCodec` on the class instead.
+On Scala 3 you can skip the companion and write `derives JsonCodec` on the class instead:
 
-```scala
-// Scala 3 only
-final case class Address(street: String, city: String) derives JsonCodec
+```scala mdoc:passthrough
+docs.Scala3Source.print("zio-json-docs-scala3/src/main/scala-3/zio/json/docs/gettingstarted/DerivesExample.scala", "address")
 ```
 
 ## 3. Decode your first value
@@ -76,7 +75,7 @@ The same codec supplies the decoder, because a `JsonCodec` holds both halves. If
 
 ## 4. Nest one case class in another
 
-A case class field can be any type that has a codec. Here a `Person` holds an `Address`.
+A case class field can be any type that has a codec. Here a `Person` holds an `Address`, which got its codec in the previous step. On Scala 2 every field type needs a codec like this. On Scala 3, a field type without one is derived along with the outer class.
 
 ```scala mdoc:silent
 final case class Person(name: String, age: Int, address: Address)
@@ -122,7 +121,7 @@ println(Profile("Bob", None, List("admin", "dev")).toJson)
 
 ## 6. Model alternatives with a sealed trait
 
-A `sealed trait` lets one field hold one of several shapes. Derive the codec on the trait itself, and the subtypes need codecs too.
+A `sealed trait` lets one field hold one of several shapes. Derive the codec on the trait itself. Subtypes that have no codec of their own are derived along with it, so you only need a separate subtype codec when you also encode or decode that subtype on its own:
 
 ```scala mdoc:silent
 sealed trait Contact
@@ -131,9 +130,7 @@ object Contact {
   final case class Email(address: String) extends Contact
   final case class Phone(number: String)  extends Contact
 
-  implicit val emailCodec: JsonCodec[Email]  = DeriveJsonCodec.gen[Email]
-  implicit val phoneCodec: JsonCodec[Phone]  = DeriveJsonCodec.gen[Phone]
-  implicit val codec: JsonCodec[Contact]     = DeriveJsonCodec.gen[Contact]
+  implicit val codec: JsonCodec[Contact] = DeriveJsonCodec.gen[Contact]
 }
 ```
 
@@ -149,15 +146,13 @@ println(contacts.toJson)
 
 You can swap the wrapper key for a field inside the object. That is a *discriminator*, and the sealed-traits how-to guide covers it.
 
-On Scala 3 an `enum` or a sealed trait can use `derives JsonCodec` directly.
+On Scala 3 an `enum` or a sealed trait can use `derives JsonCodec` directly:
 
-```scala
-// Scala 3 only
-enum Fruit derives JsonCodec {
-  case Banana(curvature: Double)
-  case Apple(poison: Boolean)
-}
+```scala mdoc:passthrough
+docs.Scala3Source.print("zio-json-docs-scala3/src/main/scala-3/zio/json/docs/gettingstarted/DerivesExample.scala", "enum")
 ```
+
+An enum case is written like a case class of a sealed trait, so `Fruit.Banana(0.5)` encodes as `{"Banana":{"curvature":0.5}}`.
 
 ## 7. Handle a decode error
 
@@ -203,6 +198,8 @@ You can now encode, decode, nest, extend, and debug. Pick the guide that matches
 - [Encode values to JSON](../how-to/encoding.md) covers every way to produce JSON, including streams.
 - [Decode JSON into values](../how-to/decoding.md) covers strings, bytes, and streams as input.
 - [Rename fields](../how-to/field-names.md) when the JSON names differ from your Scala names.
+- [Optional, default and null fields](../how-to/optional-and-default-fields.md) covers missing, `null` and empty fields.
+- [JsonCodecConfiguration](../reference/json-codec-configuration.md) sets derivation options for a whole program.
 - [Work with sealed traits](../how-to/sealed-traits.md) to change the tag or use a discriminator.
 - [Annotations reference](../reference/annotations.md) lists every `@json...` annotation.
 - [JsonCodec reference](../reference/json-codec.md) lists the codec combinators.
