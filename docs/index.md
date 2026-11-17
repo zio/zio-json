@@ -4,7 +4,7 @@ title: "ZIO JSON"
 sidebar_label: "ZIO JSON"
 ---
 
-[ZIO Json](https://github.com/zio/zio-json) is a fast and secure JSON library with tight ZIO integration.
+[ZIO JSON](https://github.com/zio/zio-json) is a fast and secure JSON library with tight ZIO integration.
 
 @PROJECT_BADGES@
 
@@ -30,13 +30,13 @@ libraryDependencies += "dev.zio" %% "zio-json" % "@VERSION@"
 
 ZIO JSON is published for the JVM, Scala.js and Scala Native, for Scala 2.12, 2.13 and 3. In a Scala.js or Scala Native project, replace the `%%` operator with `%%%`.
 
-On Scala.js and Scala Native, the `java.time` types come from the `scala-java-time` library, which ZIO JSON depends on. If you use `java.time.ZoneId` or `java.time.ZonedDateTime` there, also add the time-zone database, `scala-java-time-tzdb`, in the same version as the `scala-java-time` in your dependency tree (`sbt dependencyTree` shows it). For example, when that version is 2.8.0:
+On Scala.js and Scala Native, the `java.time` types come from the `scala-java-time` library, which ZIO JSON depends on. If you use `java.time.ZoneId` or `java.time.ZonedDateTime` there, also add the time-zone database, `scala-java-time-tzdb`, in the same version as the `scala-java-time` in your dependency tree (`sbt dependencyTree` shows it). For example, when that version is 2.10.0:
 
 ```scala
-libraryDependencies += "io.github.cquiroz" %%% "scala-java-time-tzdb" % "2.8.0"
+libraryDependencies += "io.github.cquiroz" %%% "scala-java-time-tzdb" % "2.10.0"
 ```
 
-Continue with the [Getting Started](tutorial/getting-started.md) guide for a walkthrough of encoding and decoding JSON with ZIO JSON.
+Continue with the [Getting Started](tutorial/getting-started.md) tutorial for a walkthrough of encoding and decoding JSON with ZIO JSON.
 
 ## Modules
 
@@ -58,3 +58,13 @@ Add a module the same way as the core artifact, using `%%%` for a cross-built mo
 ```scala
 libraryDependencies += "dev.zio" %% "zio-json-golden" % "@VERSION@" % Test
 ```
+
+## Documentation
+
+The documentation is split by what you want to do:
+
+- **Tutorials** teach ZIO JSON step by step: [Getting Started](tutorial/getting-started.md), then [Model a Real API Payload](tutorial/model-an-api-payload.md).
+- **[How-to guides](how-to/index.md)** solve one task each, such as renaming fields, encoding sealed traits or streaming large JSON documents.
+- **[Reference](reference/index.md)** pages list every type, method, annotation and option.
+- **Explanation** pages describe the design: [How ZIO JSON works](explanation/how-it-works.md), [Scala 2 and Scala 3 Differences](explanation/scala-2-vs-scala-3.md), [How Strict Is the Decoder](explanation/decoder-strictness.md), [JSON Shapes and Round Trips](explanation/wire-format.md), [Performance](explanation/performance.md) and [Security](explanation/security.md).
+- **[Interop modules](interop/index.md)** connect ZIO JSON to http4s, refined, Scalaz 7 and enumeratum.

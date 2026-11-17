@@ -3,7 +3,7 @@ id: index
 title: "How-to guides"
 ---
 
-How-to guides answer one question each: "How do I do X?" Each guide starts with a goal and gives numbered steps. If you are new to ZIO JSON, start with the [Getting Started](../tutorial/getting-started.md) tutorial first.
+How-to guides answer one question each: "How do I do X?" Each guide starts from a goal and shows the code that reaches it. If you are new to ZIO JSON, start with the [Getting Started](../tutorial/getting-started.md) tutorial first.
 
 ## Encoding and decoding
 
@@ -40,4 +40,4 @@ How-to guides answer one question each: "How do I do X?" Each guide starts with 
 
 - [Generate case classes from sample JSON](generate-case-classes.md): print case class definitions and codecs inferred from a JSON sample.
 
-For every annotation and option, see the [Reference](../reference/annotations.md) section.
+For every annotation, see [Annotations](../reference/annotations.md); for every derivation option, see [JsonCodecConfiguration](../reference/json-codec-configuration.md). The [Reference](../reference/index.md) section covers the rest of the API.
