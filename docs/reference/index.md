@@ -10,12 +10,15 @@ Reference pages list every type, method, annotation and option in ZIO JSON. Use 
 - [JsonEncoder](json-encoder.md): turns a Scala value into JSON.
 - [JsonDecoder](json-decoder.md): reads JSON into a Scala value.
 - [JsonCodec](json-codec.md): an encoder and a decoder packed together.
+- [JsonFieldEncoder and JsonFieldDecoder](json-field-codecs.md): the map-key type classes, the built-in key types, and how to use your own type as a `Map` key.
+- [Built-in Instances](built-in-instances.md): every type ZIO JSON encodes and decodes out of the box, with its JSON shape and decoder leniencies.
 - [JsonCodecConfiguration](json-codec-configuration.md): options that change how derived codecs behave.
 - [Errors](errors.md): the error values and the error message format.
 
 ## Derivation
 
 - [Annotations](annotations.md): every annotation used to change derived codecs.
+- [zio-json-macros (@jsonDerive)](zio-json-macros.md): the Scala 2 macro annotation that writes codecs into companion objects.
 
 ## Data and modules
 

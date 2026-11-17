@@ -15,9 +15,12 @@ const sidebars = {
             "reference/json-encoder",
             "reference/json-decoder",
             "reference/json-codec",
+            "reference/json-field-codecs",
+            "reference/built-in-instances",
             "reference/json-codec-configuration",
-            "reference/errors",
             "reference/annotations",
+            "reference/zio-json-macros",
+            "reference/errors",
             "reference/json-ast",
             "reference/yaml"
           ]
@@ -26,7 +29,7 @@ const sidebars = {
           type: "category",
           label: "Tutorial",
           collapsed: false,
-          items: ["tutorial/getting-started"]
+          items: ["tutorial/getting-started", "tutorial/model-an-api-payload"]
         },
         {
           type: "category",
@@ -38,12 +41,19 @@ const sidebars = {
             "how-to/decoding",
             "how-to/manual-instances",
             "how-to/third-party-types",
+            "how-to/custom-map-keys",
+            "how-to/low-level-codecs",
             "how-to/validate-on-decode",
             "how-to/field-names",
             "how-to/sealed-traits",
             "how-to/optional-and-default-fields",
+            "how-to/scala-3-derivation",
+            "how-to/generic-types",
+            "how-to/edit-json-with-cursors",
+            "how-to/load-yaml-config",
             "how-to/streaming",
-            "how-to/golden-testing"
+            "how-to/golden-testing",
+            "how-to/generate-case-classes"
           ]
         },
         {
@@ -52,6 +62,9 @@ const sidebars = {
           collapsed: false,
           items: [
             "explanation/how-it-works",
+            "explanation/scala-2-vs-scala-3",
+            "explanation/decoder-strictness",
+            "explanation/wire-format",
             "explanation/performance",
             "explanation/security"
           ]
