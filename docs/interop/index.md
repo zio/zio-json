@@ -1,6 +1,6 @@
 ---
 id: index
-title: "Interop Modules"
+title: "Integrations"
 description: "The ZIO JSON interop modules for http4s, refined, Scalaz 7 and enumeratum: what each one provides, how to install it, and which platforms and Scala versions it supports."
 keywords: ["interop", "http4s", "refined", "scalaz", "enumeratum", "platforms", "scala 3"]
 ---
@@ -37,4 +37,4 @@ libraryDependencies += "dev.zio" %%% "zio-json-interop-refined" % "@VERSION@"
 
 The Scalaz module has no Scala 3 artifact. The enumeratum module works on Scala 3, but enumeratum's own `findValues` macro needs the `-Yretain-trees` compiler option there for value enums, see [enumeratum on Scala 3](enumeratum.md#scala-3).
 
-The other add-on modules (YAML, golden testing and `@jsonDerive` macros) are listed with their platforms on the [ZIO JSON home page](../index.md#modules).
+The other add-on modules (YAML, golden testing and `@jsonDerive` macros) are listed with their platforms on the [Getting Started](../getting-started.md#add-on-modules) page.

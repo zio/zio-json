@@ -31,7 +31,7 @@ import java.time.LocalDate
 import scala.util.Try
 ```
 
-The guide assumes you know how to derive a codec for a case class (see the [Getting Started](../tutorial/getting-started.md) tutorial). The [JsonFieldEncoder and JsonFieldDecoder](../reference/json-field-codecs.md) reference page describes both type classes in full.
+The guide assumes you know how to derive a codec for a case class (see the [Getting Started](../getting-started.md) tutorial). The [JsonFieldEncoder and JsonFieldDecoder](../reference/json-field-codecs.md) reference page describes both type classes in full.
 
 ## 1. Recognize the Missing Key Instance
 

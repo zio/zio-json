@@ -56,7 +56,7 @@ import zio.json._
 import zio.json.yaml._
 ```
 
-This guide assumes you know how to derive a codec for a case class, as shown in the [Getting Started](../tutorial/getting-started.md) tutorial. The [YAML](../reference/yaml.md) reference page documents every option of the module.
+This guide assumes you know how to derive a codec for a case class, as shown in the [Getting Started](../getting-started.md) tutorial. The [YAML](../reference/yaml.md) reference page documents every option of the module.
 
 ## Define the Configuration Type
 

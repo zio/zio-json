@@ -31,7 +31,7 @@ libraryDependencies += "dev.zio" %% "zio-json" % "@VERSION@"
 
 Every example file on this page starts with `import zio.json.*`, which brings in the type classes, the derivation macros and the `toJson` and `fromJson` extension methods.
 
-The guide assumes you know what `JsonEncoder`, `JsonDecoder` and `JsonCodec` are (see the [Getting Started](../tutorial/getting-started.md) tutorial). Default values of case class fields work on Scala 3 without the `-Yretain-trees` compiler option.
+The guide assumes you know what `JsonEncoder`, `JsonDecoder` and `JsonCodec` are (see the [Getting Started](../getting-started.md) tutorial). Default values of case class fields work on Scala 3 without the `-Yretain-trees` compiler option.
 
 ## 1. Derive a Codec with `derives`
 

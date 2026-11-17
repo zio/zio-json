@@ -11,7 +11,7 @@ keywords:
   - "ZIO JSON Tutorial"
 ---
 
-Welcome to the second ZIO JSON tutorial! It continues where [Getting Started](getting-started.md) ends. You already know how to derive a codec, encode a value with `toJson` and decode one with `fromJson`. Here we use those skills on a payload that looks like the ones real services send, and we make the model match the JSON exactly, instead of making the JSON match the model.
+Welcome to the second ZIO JSON tutorial! It continues where [Getting Started](../getting-started.md) ends. You already know how to derive a codec, encode a value with `toJson` and decode one with `fromJson`. Here we use those skills on a payload that looks like the ones real services send, and we make the model match the JSON exactly, instead of making the JSON match the model.
 
 Our example is an online shop that sends us webhook events about orders. A *webhook* is an HTTP request that another service sends to our server when something happens, with a JSON body describing the event. We do not control the format of that body, so our codecs must follow it.
 

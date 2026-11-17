@@ -1,6 +1,6 @@
 ---
 id: getting-started
-title: "Getting Started with ZIO JSON"
+title: "Getting Started"
 description: "Learn ZIO JSON step by step: install it, encode and decode case classes, handle optional fields and sealed traits, and read errors."
 keywords:
   - "JSON Encoding"
@@ -9,7 +9,7 @@ keywords:
   - "ZIO JSON Tutorial"
 ---
 
-In this tutorial you will install ZIO JSON, turn Scala values into JSON, read JSON back into Scala values, and handle bad input. Every step builds on the one before it, so run the steps in order.
+On this page you will install ZIO JSON, turn Scala values into JSON, read JSON back into Scala values, and handle bad input. Every step builds on the one before it, so run the steps in order.
 
 By the end you will have a small `Person` model that you can encode, decode, and extend with optional fields, lists, and a sealed trait.
 
@@ -21,7 +21,36 @@ Add the library to your `build.sbt`:
 libraryDependencies += "dev.zio" %% "zio-json" % "@VERSION@"
 ```
 
-ZIO JSON works on Scala 2.12, 2.13 and 3, on the JVM, Scala.js and Scala Native. The code in this tutorial uses Scala 2.13 syntax. Where Scala 3 differs, a short Scala 3 note follows the example.
+ZIO JSON is published for the JVM, Scala.js and Scala Native, for Scala 2.12, 2.13 and 3. In a Scala.js or Scala Native project, replace the `%%` operator with `%%%`.
+
+On Scala.js and Scala Native, the `java.time` types come from the `scala-java-time` library, which ZIO JSON depends on. If you use `java.time.ZoneId` or `java.time.ZonedDateTime` there, also add the time-zone database, `scala-java-time-tzdb`, in the same version as the `scala-java-time` in your dependency tree (`sbt dependencyTree` shows it). For example, when that version is 2.10.0:
+
+```scala
+libraryDependencies += "io.github.cquiroz" %%% "scala-java-time-tzdb" % "2.10.0"
+```
+
+### Add-on Modules
+
+Besides the core `zio-json` artifact, the project publishes add-on modules. Each one is a separate dependency with the same version number, and not every module is available on every platform or Scala version:
+
+| Artifact                      | What it is for                                                        | Platforms             | Scala versions | Documentation                                   |
+| ----------------------------- | --------------------------------------------------------------------- | --------------------- | -------------- | ----------------------------------------------- |
+| `zio-json`                    | Codecs, derivation, the `Json` AST and, on the JVM, streaming         | JVM, Scala.js, Native | 2.12, 2.13, 3  | [Reference](reference/index.md)                 |
+| `zio-json-yaml`               | Reading and writing YAML with your JSON codecs (through SnakeYAML)    | JVM                   | 2.12, 2.13, 3  | [YAML](reference/yaml.md)                       |
+| `zio-json-golden`             | Golden (snapshot) tests that catch unintended changes to encoded JSON | JVM                   | 2.12, 2.13, 3  | [Golden Testing](how-to/golden-testing.md)      |
+| `zio-json-macros`             | The `@jsonDerive` annotation, which writes codec instances for you    | JVM, Scala.js, Native | 2.12, 2.13     | [zio-json-macros](reference/zio-json-macros.md) |
+| `zio-json-interop-http4s`     | http4s 0.23 entity encoders and decoders built from ZIO JSON codecs   | JVM                   | 2.12, 2.13, 3  | [HTTP4s Interop](interop/http4s.md)             |
+| `zio-json-interop-refined`    | Codecs and map-key codecs for refined types                           | JVM, Scala.js, Native | 2.12, 2.13, 3  | [Refined Interop](interop/refined.md)           |
+| `zio-json-interop-scalaz7x`   | Codecs for Scalaz 7 `IList`                                           | JVM, Scala.js, Native | 2.12, 2.13     | [Scalaz 7.x Interop](interop/scalaz-7x.md)      |
+| `zio-json-interop-enumeratum` | Codecs and map-key codecs for enumeratum enums                        | JVM, Scala.js, Native | 2.12, 2.13, 3  | [Enumeratum Interop](interop/enumeratum.md)     |
+
+Add a module the same way as the core artifact, using `%%%` for a cross-built module in a Scala.js or Scala Native project. Golden tests only run in tests, so that module usually goes in the `Test` configuration:
+
+```scala
+libraryDependencies += "dev.zio" %% "zio-json-golden" % "@VERSION@" % Test
+```
+
+The code on this page uses Scala 2.13 syntax. Where Scala 3 differs, a short Scala 3 note follows the example.
 
 Every snippet below assumes this import:
 
@@ -144,7 +173,7 @@ println(contacts.toJson)
 """[{"Phone":{"number":"555-0100"}}]""".fromJson[List[Contact]]
 ```
 
-You can swap the wrapper key for a field inside the object. That is a *discriminator*, and the [Sealed traits](../how-to/sealed-traits.md) how-to guide covers it.
+You can swap the wrapper key for a field inside the object. That is a *discriminator*, and the [Sealed traits](how-to/sealed-traits.md) how-to guide covers it.
 
 On Scala 3 an `enum` or a sealed trait can use `derives JsonCodec` directly:
 
@@ -193,15 +222,15 @@ Because the result is an ordinary `Either`, you handle it with `fold`, `map`, or
 
 ## 8. Where next
 
-You can now encode, decode, nest, extend, and debug. To practise on a larger example, continue with the next tutorial, [Model a Real API Payload](model-an-api-payload.md). Or pick the guide that matches your next task:
+You can now encode, decode, nest, extend, and debug. To practise on a larger example, continue with the next tutorial, [Model a Real API Payload](tutorial/model-an-api-payload.md). Or pick the guide that matches your next task:
 
-- [Encode values to JSON](../how-to/encoding.md) covers derived encoders and encoders built from existing ones.
-- [Decode JSON into values](../how-to/decoding.md) covers strings and bytes as input, and several ways to decode JSON whose keys do not match your fields.
-- [Streaming](../how-to/streaming.md) reads and writes JSON as a stream, on the JVM.
-- [Rename fields](../how-to/field-names.md) when the JSON names differ from your Scala names.
-- [Optional, default and null fields](../how-to/optional-and-default-fields.md) covers missing, `null` and empty fields.
-- [JsonCodecConfiguration](../reference/json-codec-configuration.md) sets derivation options for a whole program.
-- [Work with sealed traits](../how-to/sealed-traits.md) to change the tag or use a discriminator.
-- [Annotations reference](../reference/annotations.md) lists every `@json...` annotation.
-- [JsonCodec reference](../reference/json-codec.md) lists the codec combinators.
-- [How ZIO JSON works](../explanation/how-it-works.md) explains why it is fast and secure.
+- [Encode values to JSON](how-to/encoding.md) covers derived encoders and encoders built from existing ones.
+- [Decode JSON into values](how-to/decoding.md) covers strings and bytes as input, and several ways to decode JSON whose keys do not match your fields.
+- [Streaming](how-to/streaming.md) reads and writes JSON as a stream, on the JVM.
+- [Rename fields](how-to/field-names.md) when the JSON names differ from your Scala names.
+- [Optional, default and null fields](how-to/optional-and-default-fields.md) covers missing, `null` and empty fields.
+- [JsonCodecConfiguration](reference/json-codec-configuration.md) sets derivation options for a whole program.
+- [Work with sealed traits](how-to/sealed-traits.md) to change the tag or use a discriminator.
+- [Annotations reference](reference/annotations.md) lists every `@json...` annotation.
+- [JsonCodec reference](reference/json-codec.md) lists the codec combinators.
+- [How ZIO JSON works](explanation/how-it-works.md) explains why it is fast and secure.

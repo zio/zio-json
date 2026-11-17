@@ -34,7 +34,7 @@ The Scala 2 examples on this page use this import:
 import zio.json._
 ```
 
-The guide assumes you know how to derive a codec for a plain case class (see the [Getting Started](../tutorial/getting-started.md) tutorial). Higher-kinded types, such as a case class with a parameter `F[_]`, are not covered here.
+The guide assumes you know how to derive a codec for a plain case class (see the [Getting Started](../getting-started.md) tutorial). Higher-kinded types, such as a case class with a parameter `F[_]`, are not covered here.
 
 ## 1. Derive a Codec for a Generic Case Class
 
