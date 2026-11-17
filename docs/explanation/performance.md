@@ -20,7 +20,7 @@ The benchmarks are [JMH](https://github.com/openjdk/jmh) benchmarks in [`zio-jso
 
 Each class has `decode…` and `encode…` methods per library. `GoogleMapsAPIBenchmarks` also has `…Attack…` methods that decode the malicious payloads described on the [Security](security.md) page. Other classes measure single features: collections, decoding from bytes (`ChunkDecoderBenchmarks`), nesting depth, `UUID` parsing, `orElse` decoders and the number parser.
 
-The suite runs on the JVM with the [sbt-jmh](https://github.com/sbt/sbt-jmh) plugin. To run it on your own hardware, with the GC profiler that reports memory use:
+The suite runs on the JVM with `NeoJmhPlugin`, a rewrite of [sbt-jmh](https://github.com/sbt/sbt-jmh) defined in the build (`project/NeoJmhPlugin.scala`) that adds a `Jmh` configuration to the `zioJsonJVM` project. To run it on your own hardware, with the GC profiler that reports memory use:
 
 ```bash
 sbt "zioJsonJVM/Jmh/run -prof gc"
@@ -104,7 +104,7 @@ Inside a hand-written encoder, write to the `Write` that `JsonEncoder#unsafeEnco
 
 ### Compact Versus Pretty Output
 
-`toJsonPretty` writes a newline and indentation before every field and array element, and a space on each side of the `:`. The output is much larger than the compact form: for a list of small objects, it is about 2.4 times as many characters, and the encoder spends correspondingly longer writing them. Use `toJson` for data that machines read, and keep `toJsonPretty` for logs and files that people read.
+`toJsonPretty` writes a newline and indentation before every field and array element, and a space on each side of the `:`. The output is much larger than the compact form: for a list of small objects, it is roughly twice as many characters, and the encoder spends correspondingly longer writing them. Use `toJson` for data that machines read, and keep `toJsonPretty` for logs and files that people read.
 
 ### Converting to the AST Directly
 
@@ -137,7 +137,7 @@ The `StringWriter` now holds the encoded JSON:
 writer.toString
 ```
 
-`WriteWriter` passes every character to the underlying writer as a separate call, so wrap an unbuffered writer in a `java.io.BufferedWriter`. Everything in `zio.json.internal` is a low-level API without a compatibility guarantee. For ZIO streams, prefer the streaming encoders described in [Streaming](../how-to/streaming.md).
+`WriteWriter` passes a `String` to the underlying writer in one call, but every other character in a separate call, so wrap an unbuffered writer in a `java.io.BufferedWriter`. Everything in `zio.json.internal` is a low-level API without a compatibility guarantee. For ZIO streams, prefer the streaming encoders described in [Streaming](../how-to/streaming.md).
 
 ## Decoding Faster
 

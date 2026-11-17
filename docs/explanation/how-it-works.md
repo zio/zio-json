@@ -11,7 +11,7 @@ keywords:
 
 This page explains the ideas behind ZIO JSON. You do not need any of it to use the library. It helps when you wonder why the API looks the way it does, or why a decode failed the way it did.
 
-## Decoding reads straight into your types
+## Decoding Reads Straight Into Your Types
 
 Most JSON libraries parse the whole text into a tree of JSON nodes first, then convert the tree into your types. ZIO JSON skips the tree for normal decoding. A decoder reads characters from the input and builds your values as it goes.
 
@@ -27,7 +27,7 @@ They live in `zio.json.internal`, and you normally reach them through `fromJson`
 
 The `Json` tree type does exist, and you can decode to it. See the [JSON AST reference](../reference/json-ast.md). It is a choice you make, not a step the library forces on you.
 
-## No reflection at runtime
+## No Reflection at Runtime
 
 A `JsonEncoder` or `JsonDecoder` for a case class or sealed trait is plain code. That code is written for you at compile time, when you call `DeriveJsonCodec.gen` (or write `derives` on Scala 3). What the generated code does is controlled by [annotations](../reference/annotations.md) and by [`JsonCodecConfiguration`](../reference/json-codec-configuration.md), both read at compile time.
 
@@ -41,7 +41,7 @@ This has two visible effects:
 1. A type that has no codec and cannot be derived is a compile error. Duplicate field names, aliases or case names are the exception: they compile, and are reported with an `AssertionError` when the codec is first initialised.
 2. Derivation is done once when your code is compiled, not on every call.
 
-## Nested types and subtypes
+## Nested Types and Subtypes
 
 A derived codec needs a codec for every type it contains. When one is missing, derivation can often fill the gap itself:
 
@@ -50,7 +50,7 @@ A derived codec needs a codec for every type it contains. When one is missing, d
 
 A type derived this way is derived again at each place it is used, inside the outer codec, with the configuration in scope at the outer derivation call. Two outer codecs with different configurations can therefore write the same nested type differently. An instance that already exists in implicit scope is never re-derived: it is used as it is, with the configuration it was built with. Give a nested type its own codec when it must look the same everywhere, or when you also encode or decode it on its own. [JsonCodecConfiguration](../reference/json-codec-configuration.md#passing-a-custom-configuration) shows both cases.
 
-## Failing early
+## Failing Early
 
 A decoder reports a problem by throwing a small exception that has no stack trace. Building a stack trace is slow, and a flood of bad requests would make a server pay that cost again and again. The exception carries a short list of path steps instead, such as `.address.city`, followed by a message.
 
@@ -58,7 +58,7 @@ A decoder reports a problem by throwing a small exception that has no stack trac
 
 Decoding stops at the first problem. It does not collect a list of errors, and it does not read the rest of the payload. This is the *early exit* strategy: a malformed or hostile payload is rejected as soon as it is known to be bad.
 
-## Performance and security goals
+## Performance and Security Goals
 
 Reading directly into your types allocates less and does less work than building a tree first. Early exit keeps a bad payload from costing more than the part that was read. The two ideas support each other.
 
@@ -67,6 +67,6 @@ Measurements and attack scenarios are covered in their own pages:
 - [Performance](./performance.md) has the benchmarks.
 - [Security](./security.md) walks through denial-of-service attacks and how the library resists them.
 
-## Helpful errors and simple patterns
+## Helpful Errors and Simple Patterns
 
 The error path follows the `jq` query style, so you can paste a path into a JSON tool to find the spot. The design relies on the well-known typeclass pattern, where `JsonEncoder[A]` and `JsonDecoder[A]` are values you pass implicitly. To define your own, see [Manual instances](../how-to/manual-instances.md).

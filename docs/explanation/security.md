@@ -41,7 +41,7 @@ Most JSON libraries (but not ZIO JSON) first create a representation of the JSON
 
 <!-- zioJsonJVM/Jmh/run -prof gc GoogleMaps.*Attack1 -->
 
-An intermediate AST enables attack vectors that insert redundant data. For example, in our Google Maps dataset we can add a new field called `redundant` at the top level, containing a 60K `String`. With this payload, Circe is heavily impacted, with a 75% reduction in capacity and an increase in memory usage. Play is also impacted, although not as severely. ZIO JSON's ops/sec are reduced, but its memory usage stays in line, so throughput is unlikely to be affected by this kind of attack:
+An intermediate AST enables attack vectors that insert redundant data. For example, in our Google Maps dataset we can add a new field called `redundant` at the top level, containing a 60K `String`. With this payload, Circe is heavily impacted, with a 70% reduction in capacity and an increase in memory usage. Play is also impacted, although not as severely. ZIO JSON's ops/sec are reduced, but its memory usage stays in line, so throughput is unlikely to be affected by this kind of attack:
 
 ```
        ops/sec       MB/sec
@@ -103,11 +103,11 @@ circe  1992 ( 7456)  1162 (1533)
 play   1312 ( 3589)  1636 (1344)
 ```
 
-ops/sec is down for all decoders relative to the baseline, but since ZIO JSON and Circe memory usage is also reduced, the throughput on a server might not be impacted as badly as it sounds. This attack hurts Play very badly: memory usage is up compared to the baseline, with throughput reduced to 40% of the baseline (22% of the original).
+ops/sec is down for all decoders relative to the baseline, but since ZIO JSON and Circe memory usage is also reduced, the throughput on a server might not be impacted as badly as it sounds. This attack hurts Play very badly: memory usage is up compared to the baseline, with throughput reduced to about 37% of the baseline (23% of the original).
 
 There is a variant of this attack that can be devastating for libraries that rely on `HashMap`. In this attack, [developed by plokhotnyuk to DoS ujson](https://github.com/plokhotnyuk/jsoniter-scala/pull/325), an object is filled with many fields whose `String#hashCode` is zero. This exploits two facts:
 
-- Java `String` does not cache a `String#hashCode` of zero, recomputing it every time it is requested.
+- Before JDK 13, Java `String` did not cache a `String#hashCode` of zero, so it recomputed the hash every time it was requested.
 - Many `HashMap` implementations re-request the hashes of all objects as the number of entries grows during construction.
 
 ### Decoding Into a `Map`
@@ -141,7 +141,7 @@ The Google Maps schema has fields of type `Int`, and Circe supports the conversi
 circe  4529 ( 7456)  2037 (1533)
 ```
 
-This attack is very effective in schemas with lots of numbers, causing ops/sec to be halved with a 33% increase in memory usage.
+This attack is very effective in schemas with lots of numbers, causing a 39% drop in ops/sec with a 33% increase in memory usage.
 
 ZIO JSON is resistant to a wide range of number-based attacks because it uses a from-scratch number parser that exits early. `Int` and `Long` fail as soon as the value overflows. A `BigInt` or `BigInteger` fails when it needs more than 256 bits, and a `BigDecimal` (or a `Json.Num`) fails when its mantissa, the digits without the exponent, needs more than 256 bits. The limit is the constant `Lexer.NumberMaxBits`:
 
