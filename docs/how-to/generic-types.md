@@ -52,8 +52,8 @@ object Box {
 Any element type that has an encoder and a decoder now works, including another `Box`:
 
 ```scala mdoc
-Box(42).toJson
-Box(List("a", "b")).toJson
+println(Box(42).toJson)
+println(Box(List("a", "b")).toJson)
 """{"value":{"value":true}}""".fromJson[Box[Box[Boolean]]]
 ```
 
@@ -71,7 +71,7 @@ object Sku {
 `Box[Sku]` finds both instances of `Sku` through the bounds:
 
 ```scala mdoc
-Box(Sku("A-1")).toJson
+println(Box(Sku("A-1")).toJson)
 ```
 
 With more than one type parameter, add bounds for each of them:
@@ -88,7 +88,7 @@ object Pair {
 Encoding a `Pair[String, Int]` uses both bounds:
 
 ```scala mdoc
-Pair("id", 7).toJson
+println(Pair("id", 7).toJson)
 ```
 
 A variance annotation such as `Box[+A]` is fine here, because the type parameter of the `implicit def` is a new, invariant one. The `@jsonDerive` annotation from `zio-json-macros` cannot do this: it copies the variance annotation into the generated method, and `@jsonDerive final case class Box[+A](value: A)` does not compile. [zio-json-macros](../reference/zio-json-macros.md#generic-classes) shows the error.
@@ -119,7 +119,7 @@ object AuditEvent {
 A `Page[AuditEvent]` can still be encoded, and a `Page[Int]` can be decoded:
 
 ```scala mdoc
-Page(List(AuditEvent("login")), 1).toJson
+println(Page(List(AuditEvent("login")), 1).toJson)
 """{"items":[1,2],"total":2}""".fromJson[Page[Int]]
 ```
 
@@ -148,9 +148,9 @@ object Result {
 Each case is written with its name as the key, as for any sealed trait:
 
 ```scala mdoc
-(Ok(1): Result[Int]).toJson
-(Failed("timeout"): Result[Int]).toJson
-(Pending: Result[Int]).toJson
+println((Ok(1): Result[Int]).toJson)
+println((Failed("timeout"): Result[Int]).toJson)
+println((Pending: Result[Int]).toJson)
 """{"Ok":{"value":"done"}}""".fromJson[Result[String]]
 ```
 
@@ -191,7 +191,7 @@ object Tree {
 The tree now encodes and decodes at any depth:
 
 ```scala mdoc
-Tree(1, List(Tree(2, Nil))).toJson
+println(Tree(1, List(Tree(2, Nil))).toJson)
 """{"value":1,"children":[{"value":2,"children":[]}]}""".fromJson[Tree[Int]]
 ```
 
@@ -244,11 +244,11 @@ Tree: {"value":1,"children":[{"value":2,"children":[]}]}
 Tree decoded: Right(Tree(1,List(Tree(2,List()))))
 ```
 
-Deriving a generic sealed trait on Scala 3 also prints an unchecked warning (E092) for the generated code. For the example above it reads `the type test for ...GenericTypesExample.Ok[A] cannot be checked at runtime because its type arguments can't be determined from ...GenericTypesExample.Result[A]`, with the full package names in place of the dots. The warning is harmless, but it fails a build that turns warnings into errors (`-Werror`). [Derive codecs on Scala 3](scala-3-derivation.md#6-derive-codecs-for-generic-case-classes) shows the compile error you get when an element type has no `JsonCodec`.
+Deriving a generic sealed trait on Scala 3 also prints an unchecked warning (E092) for the generated code. For the example above it reads `the type test for ...GenericTypesExample.Ok[A] cannot be checked at runtime because its type arguments can't be determined from ...GenericTypesExample.Result[A]`, with the full package names in place of the dots. The warning is harmless, but it fails a build that turns warnings into errors (`-Werror`). [Derive Codecs on Scala 3](scala-3-derivation.md#6-derive-codecs-for-generic-case-classes) shows the compile error you get when an element type has no `JsonCodec`.
 
 ## See Also
 
-- [Derive codecs on Scala 3](scala-3-derivation.md) covers `derives`, enums, union types and opaque types.
+- [Derive Codecs on Scala 3](scala-3-derivation.md) covers `derives`, enums, union types and opaque types.
 - [Sealed traits](sealed-traits.md) covers type hints and discriminator fields for any sealed family.
 - [zio-json-macros](../reference/zio-json-macros.md#generic-classes) shows what `@jsonDerive` generates for a generic class on Scala 2.
 - [Scala 2 and Scala 3 differences](../explanation/scala-2-vs-scala-3.md) lists the recursion and generic sealed trait differences together with the others.

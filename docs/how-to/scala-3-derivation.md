@@ -33,7 +33,7 @@ Every example file on this page starts with `import zio.json.*`, which brings in
 
 The guide assumes you know what `JsonEncoder`, `JsonDecoder` and `JsonCodec` are (see the [Getting Started](../tutorial/getting-started.md) tutorial). Default values of case class fields work on Scala 3 without the `-Yretain-trees` compiler option.
 
-## 1. Derive a Codec With `derives`
+## 1. Derive a Codec with `derives`
 
 Add `derives JsonCodec` to a case class to get an encoder and a decoder for it:
 
@@ -67,7 +67,7 @@ Refund decoded: Right(Refund(1,damaged))
 docs.Scala3Source.print("zio-json-docs-scala3/src/main/scala-3/zio/json/docs/scala3derivation/Step1DerivesExample.scala", "explicit-given")
 ```
 
-## 2. Change the Configuration With a `given`
+## 2. Change the Configuration with a `given`
 
 A `derives` clause needs no configuration of its own. Without one, it uses `JsonCodecConfiguration.default` from the companion object of `JsonCodecConfiguration`:
 
@@ -256,7 +256,7 @@ Currency encoded: "GBP"
 Currency decoded: Right(USD)
 ```
 
-Only unions of string literals are supported. A union has a `JsonEncoder` and a `JsonDecoder`, but no `JsonCodec`, so ask for the encoder or the decoder when you need one directly, for example `summon[JsonDecoder[Currency]]`. A derived codec of a case class with a union field works, because derivation looks up the encoder and decoder of each field separately. [Use your own type as a Map key](custom-map-keys.md#scala-3-string-subtypes-need-no-key-decoder) explains why union keys need no key instances.
+Only unions of string literals are supported. A union has a `JsonEncoder` and a `JsonDecoder`, but no `JsonCodec`, so ask for the encoder or the decoder when you need one directly, for example `summon[JsonDecoder[Currency]]`. A derived codec of a case class with a union field works, because derivation looks up the encoder and decoder of each field separately. [Use Your Own Type as a Map Key](custom-map-keys.md#scala-3-string-subtypes-need-no-key-decoder) explains why union keys need no key instances.
 
 ## 6. Derive Codecs for Generic Case Classes
 
@@ -303,7 +303,7 @@ I found:
 But macro expansion was stopped.
 ```
 
-[Derive codecs for generic types](generic-types.md) covers generic sealed traits, recursive generic types and the Scala 2 form.
+[Derive Codecs for Generic Types](generic-types.md) covers generic sealed traits, recursive generic types and the Scala 2 form.
 
 ## 7. Encode Opaque Types
 
@@ -333,7 +333,7 @@ OrderLine decoded: Right(OrderLine(A1,3))
 OrderLine invalid: Left(.quantity(quantity must be positive, got 0))
 ```
 
-An opaque type declared with an upper bound, such as `opaque type Sku <: String = String`, can also be a `Map` key once it has a decoder. [Use your own type as a Map key](custom-map-keys.md#scala-3-string-subtypes-need-no-key-decoder) shows it. [Validate data while decoding](validate-on-decode.md) has more ways to reject bad values.
+An opaque type declared with an upper bound, such as `opaque type Sku <: String = String`, can also be a `Map` key once it has a decoder. [Use Your Own Type as a Map Key](custom-map-keys.md#scala-3-string-subtypes-need-no-key-decoder) shows it. [Validate data while decoding](validate-on-decode.md) has more ways to reject bad values.
 
 ## 8. Read the Compile Errors
 
@@ -363,5 +363,5 @@ The message names the field type, not the type you derive. For a `JsonCodec`, it
 - [Scala 2 and Scala 3 differences](../explanation/scala-2-vs-scala-3.md) lists every behaviour that changes between the two versions, with a migration checklist.
 - [JsonCodecConfiguration](../reference/json-codec-configuration.md) describes every configuration option.
 - [Sealed traits](sealed-traits.md) covers type hints, discriminators and enums as strings.
-- [Derive codecs for generic types](generic-types.md) covers type parameters on Scala 2 and Scala 3.
+- [Derive Codecs for Generic Types](generic-types.md) covers type parameters on Scala 2 and Scala 3.
 - [zio-json-macros](../reference/zio-json-macros.md) describes `@jsonDerive`, the Scala 2 annotation that `derives` replaces.

@@ -43,7 +43,7 @@ The generated code uses `DeriveJsonCodec`, described in [JsonCodec](../reference
 
 ## Run the Generator
 
-`Generator.printCaseClasses(json: String): Unit` parses its argument and prints the generated code to standard output. It returns nothing, so call it where you can read the output: a REPL, a worksheet, or a small `main` method. With [Scala CLI](https://scala-cli.virtuslab.org/), start a REPL that has `zio-json` on the classpath:
+`Generator.printCaseClasses(input: String): Unit` parses its argument and prints the generated code to standard output. It returns nothing, so call it where you can read the output: a REPL, a worksheet, or a small `main` method. With [Scala CLI](https://scala-cli.virtuslab.org/), start a REPL that has `zio-json` on the classpath:
 
 ```bash
 scala-cli repl --dep dev.zio::zio-json:@VERSION@
