@@ -12,8 +12,8 @@ object UnionTypesExample {
 
   val appleOrBanana: AppleOrBanana = "Apple"
 
-  val encoded = appleOrBanana.toJson                    // "Apple", with JSON quotes
-  val valid   = """"Apple"""".fromJson[AppleOrBanana]   // the input is the JSON string "Apple"
+  val encoded = appleOrBanana.toJson                  // "Apple", with JSON quotes
+  val valid   = """"Apple"""".fromJson[AppleOrBanana] // the input is the JSON string "Apple"
   val invalid = """"Pear"""".fromJson[AppleOrBanana]
   // #endregion
 

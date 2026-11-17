@@ -11,8 +11,8 @@ object EmptyCaseClassEnumExample {
   given JsonCodecConfiguration = JsonCodecConfiguration(enumValuesAsStrings = true)
 
   sealed trait Signal derives JsonCodec
-  case class Stop()  extends Signal
-  case object Go     extends Signal
+  case class Stop() extends Signal
+  case object Go    extends Signal
   // #endregion
 
   def main(args: Array[String]): Unit = {

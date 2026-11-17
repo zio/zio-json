@@ -23,7 +23,7 @@ object Step2ConfigurationExample {
   object billing {
     given JsonCodecConfiguration = JsonCodecConfiguration(fieldNameMapping = KebabCase)
 
-    final case class Invoice(invoiceNumber: Long, dueDate: String)     derives JsonCodec
+    final case class Invoice(invoiceNumber: Long, dueDate: String) derives JsonCodec
     final case class Payment(invoiceNumber: Long, amountPaid: BigDecimal) derives JsonCodec
   }
   // #endregion

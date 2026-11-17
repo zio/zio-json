@@ -30,9 +30,9 @@ object GenericTypesExample {
 
   // #region sealed
   sealed trait Result[+A] derives JsonCodec
-  final case class Ok[A](value: A)             extends Result[A]
-  final case class Failed[A](reason: String)   extends Result[A]
-  case object Pending                          extends Result[Nothing]
+  final case class Ok[A](value: A)           extends Result[A]
+  final case class Failed[A](reason: String) extends Result[A]
+  case object Pending                        extends Result[Nothing]
   // #endregion
 
   // #region recursive

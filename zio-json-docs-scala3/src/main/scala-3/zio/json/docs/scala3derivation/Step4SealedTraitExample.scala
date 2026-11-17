@@ -9,16 +9,16 @@ object Step4SealedTraitExample {
 
   // #region sealed-trait
   sealed trait Shape derives JsonCodec
-  final case class Circle(radius: Double)                 extends Shape
+  final case class Circle(radius: Double)                   extends Shape
   final case class Rectangle(width: Double, height: Double) extends Shape
   // #endregion
 
   // #region nested
   sealed trait Vehicle derives JsonCodec
-  sealed trait Motorized                 extends Vehicle
-  final case class Car(seats: Int)       extends Motorized
+  sealed trait Motorized                  extends Vehicle
+  final case class Car(seats: Int)        extends Motorized
   final case class Truck(payload: Double) extends Motorized
-  final case class Bicycle(gears: Int)   extends Vehicle
+  final case class Bicycle(gears: Int)    extends Vehicle
   // #endregion
 
   def main(args: Array[String]): Unit = {

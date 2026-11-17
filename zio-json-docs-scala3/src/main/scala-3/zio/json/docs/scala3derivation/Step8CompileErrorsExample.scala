@@ -5,8 +5,8 @@ import scala.compiletime.testing.typeCheckErrors
 import zio.json.*
 
 /**
- * Derive codecs on Scala 3 — the compile errors derivation reports. The failing code is checked with
- * `typeCheckErrors`, so this file compiles and prints the messages.
+ * Derive codecs on Scala 3 — the compile errors derivation reports. The failing code is checked with `typeCheckErrors`,
+ * so this file compiles and prints the messages.
  */
 object Step8CompileErrorsExample {
 
