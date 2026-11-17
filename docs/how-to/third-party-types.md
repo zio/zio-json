@@ -12,7 +12,7 @@ keywords:
 
 Goal: use a class from another library as a field in your case class, even though that library gives it no JSON support and you cannot edit its source.
 
-ZIO JSON already covers common library types such as `java.util.UUID`, `java.time.Instant`, and `BigDecimal`. For anything else you supply the instances yourself. The example below uses a `Money` class that stands in for a type from a library. The `vendor` object plays the role of that library.
+ZIO JSON already covers common library types such as `java.util.UUID`, `java.time.Instant`, and `BigDecimal` (see [Built-in Instances](../reference/built-in-instances.md)). For anything else you supply the instances yourself. The example below uses a `Money` class that stands in for a type from a library. The `vendor` object plays the role of that library.
 
 ```scala mdoc:silent
 import zio.json._
@@ -142,7 +142,36 @@ println(Receipt(7, Money(300, "EUR")).toJson)
 
 A codec keeps the two halves side by side, so a change to the format is made in one place. Separate instances let you supply only the direction you need. Pick one style per type, so that only one instance of each type is in scope.
 
+## 7. Use the type as a map key
+
+A `Map[Money, Int]` needs different instances. JSON object keys are always strings, so a key is written by a `JsonFieldEncoder` and read by a `JsonFieldDecoder`, not by `JsonEncoder` and `JsonDecoder`. They are built the same way, from the `String` instances, with `JsonFieldEncoder#contramap` and `JsonFieldDecoder#mapOrFail`:
+
+```scala mdoc:silent
+object MoneyKeys {
+  implicit val moneyKeyEncoder: JsonFieldEncoder[Money] =
+    JsonFieldEncoder[String].contramap(formatMoney)
+
+  implicit val moneyKeyDecoder: JsonFieldDecoder[Money] =
+    JsonFieldDecoder[String].mapOrFail(parseMoney)
+}
+```
+
+With the key instances imported, maps keyed by `Money` encode and decode, and a bad key fails with your message:
+
+```scala mdoc
+import MoneyKeys._
+
+println(Map(Money(500, "USD") -> 3).toJson)
+
+"""{"500 USD":3}""".fromJson[Map[Money, Int]]
+
+"""{"5x USD":3}""".fromJson[Map[Money, Int]]
+```
+
+See [JsonFieldEncoder and JsonFieldDecoder](../reference/json-field-codecs.md) for the built-in key types.
+
 ## See also
 
 - [Manual instances](./manual-instances.md) shows more ways to build instances, such as `map` and tuple encodings.
+- [JsonEncoder reference](../reference/json-encoder.md) and [JsonDecoder reference](../reference/json-decoder.md) describe `contramap`, `map` and `mapOrFail` in full.
 - [JsonCodec reference](../reference/json-codec.md) lists the combinators on `JsonCodec`.
