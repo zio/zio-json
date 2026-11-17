@@ -198,7 +198,7 @@ trait JsonDecoder[A] {
 
 Use `map` when the conversion cannot fail and `mapOrFail` when it can.
 A `Left` from `mapOrFail` becomes the decode error at the position of the value.
-The walkthrough is in [Manual Instances](../how-to/manual-instances.md).
+The walkthrough is in [Build an Encoder or Decoder from an Existing One](../how-to/manual-instances.md).
 
 To wrap an `Int` in a type and to reject non-positive numbers:
 
@@ -759,7 +759,7 @@ On Scala.js and Scala Native, decoding `ZoneId` and `ZonedDateTime` needs the ti
 
 - [Write a Fast Encoder or Decoder by Hand](../how-to/low-level-codecs.md) for a worked hand-written codec
 - [Decode JSON Whose Shape Differs from Your Case Class](../how-to/decoding.md) for JSON whose keys or layout do not match your fields
-- [Manual Instances](../how-to/manual-instances.md) for `map` and `mapOrFail` in practice
+- [Build an Encoder or Decoder from an Existing One](../how-to/manual-instances.md) for `map` and `mapOrFail` in practice
 - [JsonEncoder](json-encoder.md) and [JsonCodec](json-codec.md)
 - [JsonFieldEncoder and JsonFieldDecoder](json-field-codecs.md) for map keys
 - [Built-in Instances](built-in-instances.md) for every type that has a decoder

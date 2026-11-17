@@ -176,6 +176,6 @@ See [JsonFieldEncoder and JsonFieldDecoder](../reference/json-field-codecs.md) f
 
 ## See also
 
-- [Manual instances](./manual-instances.md) shows more ways to build instances, such as `JsonDecoder#map` and tuple encodings.
+- [Build an encoder or decoder from an existing one](./manual-instances.md) shows more ways to build instances, such as `JsonDecoder#map` and tuple encodings.
 - [JsonEncoder reference](../reference/json-encoder.md) and [JsonDecoder reference](../reference/json-decoder.md) describe `JsonEncoder#contramap`, `JsonDecoder#map` and `JsonDecoder#mapOrFail` in full.
 - [JsonCodec reference](../reference/json-codec.md) lists the combinators on `JsonCodec`.

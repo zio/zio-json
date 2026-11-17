@@ -69,4 +69,4 @@ Measurements and attack scenarios are covered in their own pages:
 
 ## Helpful Errors and Simple Patterns
 
-The error path follows the `jq` query style, so you can paste a path into a JSON tool to find the spot. The design relies on the well-known typeclass pattern, where `JsonEncoder[A]` and `JsonDecoder[A]` are values you pass implicitly. To define your own, see [Manual instances](../how-to/manual-instances.md).
+The error path follows the `jq` query style, so you can paste a path into a JSON tool to find the spot. The design relies on the well-known typeclass pattern, where `JsonEncoder[A]` and `JsonDecoder[A]` are values you pass implicitly. To define your own, see [Build an Encoder or Decoder from an Existing One](../how-to/manual-instances.md).

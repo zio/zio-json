@@ -168,4 +168,4 @@ Keep these points in mind:
 
 - [Annotations](../reference/annotations.md) lists every derivation annotation in one table.
 - [Sealed traits](sealed-traits.md) shows how to rename the type hints of a sealed family.
-- [Encoding](encoding.md) and [Decoding](decoding.md) cover the basics of derived codecs.
+- [Getting Started](../getting-started.md) covers the basics of derived codecs.
