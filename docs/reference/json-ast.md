@@ -10,9 +10,7 @@ keywords:
   - "Json"
 ---
 
-The JSON AST is a tree of values that represents any JSON document, using the `zio.json.ast.Json` type.
-Most code decodes JSON straight into domain types, but the AST is useful when the shape of the document is not known in advance, when you need to edit a document, when you want to combine several documents, or when a case class has a field that holds arbitrary JSON.
-For navigating the AST with cursors, see [Cursors](#cursors).
+The JSON AST is a tree of values that represents any JSON document, using the `zio.json.ast.Json` type. Most code decodes JSON straight into domain types, but the AST is useful when the shape of the document is not known in advance, when you need to edit a document, when you want to combine several documents, or when a case class has a field that holds arbitrary JSON. For navigating the AST with cursors, see [Cursors](#cursors).
 
 `Json` is a sealed class with one case class per kind of JSON value:
 
@@ -36,8 +34,7 @@ object Json {
 
 ## The Json Type
 
-`Json` has six cases: `Json.Obj`, `Json.Arr`, `Json.Str`, `Json.Num`, `Json.Bool`, and `Json.Null`.
-Objects keep their fields in insertion order as a `Chunk` of key-value pairs. This section shows how to build values and how they compare.
+`Json` has six cases: `Json.Obj`, `Json.Arr`, `Json.Str`, `Json.Num`, `Json.Bool`, and `Json.Null`. Objects keep their fields in insertion order as a `Chunk` of key-value pairs. This section shows how to build values and how they compare.
 
 ### Creating Values
 
@@ -112,7 +109,7 @@ Json.Num(1) == Json.Num(1.0)
 "1".fromJson[Json] == "1.0".fromJson[Json]
 ```
 
-Keep this in mind when you compare documents in tests, and when you use `intersect`, which relies on the same equality.
+Keep this in mind when you compare documents in tests, and when you use `Json#intersect`, which relies on the same equality.
 
 ## Converting Between Types and the AST
 
@@ -281,7 +278,7 @@ println(("id" -> Json.Num(1)) +: server)
 ```
 
 :::warning
-`Obj#add` is implemented as `merge(Json.Obj(key -> value))`. When the key already exists and both the old and the new value are objects, the two objects are deep-merged instead of the new one replacing the old one.
+`Obj#add` is implemented as `merge(Json.Obj(key -> value))`. When the key already exists and the old and the new value are both objects or both arrays, they are merged as `Json#merge` does (objects deep-merged, arrays element by element) instead of the new value replacing the old one.
 :::
 
 Adding a `tls` object to `server` merges it into the existing `tls` object. To replace the object, remove the key first:
@@ -291,7 +288,7 @@ println(server.add("tls", Json.Obj("port" -> Json.Num(8443))))
 println(server.remove("tls").add("tls", Json.Obj("port" -> Json.Num(8443))))
 ```
 
-For other values, `Obj#add` replaces the existing value in place:
+For other combinations of values, `Obj#add` replaces the existing value in place:
 
 ```scala mdoc
 println(server.add("debug", Json.Bool(false)))
@@ -480,8 +477,7 @@ println(user.mapObjectValues {
 })
 ```
 
-The `Json#transformDown` method walks the whole tree from the top and applies a function to every node. The `Json#transformUp` method works from the bottom, so the function sees each node after its children were transformed.
-Use the `transformDownSome` and `transformUpSome` variants when the function only applies to some nodes. The following replaces every string with its upper-case form and leaves other values unchanged:
+The `Json#transformDown` method walks the whole tree from the top and applies a function to every node. The `Json#transformUp` method works from the bottom, so the function sees each node after its children were transformed. Use the `transformDownSome` and `transformUpSome` variants when the function only applies to some nodes. The following replaces every string with its upper-case form and leaves other values unchanged:
 
 ```scala mdoc
 println(user.transformDownSome { case Json.Str(value) => Json.Str(value.toUpperCase) })

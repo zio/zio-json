@@ -9,9 +9,7 @@ keywords:
   - "JsonCodecConfiguration"
 ---
 
-`JsonCodecConfiguration` is a case class that sets the defaults for derived codecs.
-`DeriveJsonCodec.gen`, `DeriveJsonEncoder.gen` and `DeriveJsonDecoder.gen` read it when they derive an instance.
-Annotations on a single type, such as `@jsonDiscriminator` or `@jsonMemberNames`, override the configuration for that type.
+`JsonCodecConfiguration` is a case class that sets the defaults for derived codecs. `DeriveJsonCodec.gen`, `DeriveJsonEncoder.gen` and `DeriveJsonDecoder.gen` read it when they derive an instance. Annotations on a single type, such as `@jsonDiscriminator` or `@jsonMemberNames`, override the configuration for that type.
 
 ## Options
 
@@ -31,10 +29,7 @@ The only difference in defaults between the two Scala versions is `enumValuesAsS
 
 ## Passing a Custom Configuration
 
-The derivation macros take the configuration as an implicit parameter.
-The library provides `JsonCodecConfiguration.default` in the companion object.
-To use your own, put an implicit value in scope before the `DeriveJsonCodec.gen` call.
-A value in scope wins over the companion default. Here the companion of `User` holds a configuration that writes field names in snake case:
+The derivation macros take the configuration as an implicit parameter. The library provides `JsonCodecConfiguration.default` in the companion object. To use your own, put an implicit value in scope before the `DeriveJsonCodec.gen` call. A value in scope wins over the companion default. Here the companion of `User` holds a configuration that writes field names in snake case:
 
 ```scala mdoc:silent:reset-object
 import zio.json._
@@ -66,6 +61,10 @@ val strict: JsonCodecConfiguration =
   JsonCodecConfiguration.default.copy(allowExtraFields = false)
 ```
 
+:::warning
+`JsonCodecConfiguration#copy` is hand-written, and each of its parameters defaults to the library default, not to the current value. Call it only on `JsonCodecConfiguration.default`. On any other configuration, every option you do not name is reset: `JsonCodecConfiguration(fieldNameMapping = SnakeCase).copy(allowExtraFields = false)` loses the `SnakeCase` mapping. To set several options, name them all in one `JsonCodecConfiguration(...)` call.
+:::
+
 In Scala 3, supply it as a `given`. The macros take it as a `using` parameter, and so do `JsonCodec.derived`, `JsonEncoder.derived` and `JsonDecoder.derived`, which a `derives` clause calls. The following Scala 3 code writes `{"first_name":"Ada","last_name":"Lovelace"}` for `User("Ada", "Lovelace")`:
 
 ```scala mdoc:passthrough
@@ -78,8 +77,7 @@ A `derives` clause does not need a given of your own. Without one, `JsonCodecCon
 docs.Scala3Source.print("zio-json-docs-scala3/src/main/scala-3/zio/json/docs/jsoncodecconfiguration/DefaultConfigurationExample.scala", "default")
 ```
 
-The configuration is read at derivation time.
-Changing it afterwards has no effect on codecs that already exist.
+The configuration is read at derivation time. Changing it afterwards has no effect on codecs that already exist.
 
 The subtypes of a sealed trait that have no codec of their own are derived together with the trait, using the configuration in scope at the outer `DeriveJsonCodec.gen` call. Field types are different on the two Scala versions:
 
@@ -101,9 +99,7 @@ Type: `SumTypeHandling`, a sealed trait in `JsonCodecConfiguration.SumTypeHandli
 
 `SumTypeHandling#discriminatorField` returns the field name as an `Option[String]`: `Some(name)` for `DiscriminatorField(name)` and `None` for `WrapperWithClassNameField`.
 
-`@jsonDiscriminator("name")` on a sealed trait does the same for that trait only.
-The scaladoc warns that a discriminator is slower, uses more memory, and is open to denial of service attacks that the wrapper form is not.
-Use it only to match an external schema.
+`@jsonDiscriminator("name")` on a sealed trait does the same for that trait only. The scaladoc warns that a discriminator is slower, uses more memory, and is open to denial of service attacks that the wrapper form is not. Use it only to match an external schema.
 
 The following configuration writes the case name into a `type` field:
 
@@ -129,8 +125,7 @@ The `type` field comes first in the output, and the decoder reads it to pick the
 """{"type":"Square","side":2.0}""".fromJson[Shape]
 ```
 
-With the default, the same value encodes as `{"Circle":{"radius":1.0}}`.
-See [sealed traits](../how-to/sealed-traits.md) for the how-to side.
+With the default, the same value encodes as `{"Circle":{"radius":1.0}}`. See [sealed traits](../how-to/sealed-traits.md) for the how-to side.
 
 :::warning
 Do not combine a discriminator with `allowExtraFields = false`. The discriminator form passes the whole object, discriminator field included, to the decoder of the case class, and that decoder then rejects the discriminator as an unknown field. Every case of the family fails to decode with `(invalid extra field)`, and nothing warns at compile time. The same happens with `@jsonDiscriminator` on the trait and `@jsonNoExtraFields` on a case.
@@ -138,18 +133,11 @@ Do not combine a discriminator with `allowExtraFields = false`. The discriminato
 
 ## fieldNameMapping
 
-Type: `JsonMemberFormat`. It rewrites every case class field name.
-`@jsonMemberNames` overrides it per type, and `@jsonField` overrides it per field.
-The available formats are `IdentityFormat`, `SnakeCase`, `KebabCase`, `CamelCase`, `PascalCase`, and `CustomCase(f: String => String)`.
-The `ziojson_03` object holds the `SnakeCase` and `KebabCase` variants from zio-json 0.3.0, which put a separator before digits.
-The example under [Passing a custom configuration](#passing-a-custom-configuration) uses `SnakeCase`.
-See [field names](../how-to/field-names.md) for the how-to side.
+Type: `JsonMemberFormat`. It rewrites every case class field name. `@jsonMemberNames` overrides it per type, and `@jsonField` overrides it per field. The available formats are `IdentityFormat`, `SnakeCase`, `KebabCase`, `CamelCase`, `PascalCase`, and `CustomCase(f: String => String)`. The `ziojson_03` object holds the `SnakeCase` and `KebabCase` variants from zio-json 0.3.0, which put a separator before digits. The example under [Passing a custom configuration](#passing-a-custom-configuration) uses `SnakeCase`. See [field names](../how-to/field-names.md) for the how-to side.
 
 ## allowExtraFields
 
-Type: `Boolean`. When `false`, decoding fails if the JSON has a key that the case class does not declare.
-`@jsonNoExtraFields` sets it per type.
-It breaks decoding of sum types that use a discriminator; see [sumTypeHandling](#sumtypehandling).
+Type: `Boolean`. When `false`, decoding fails if the JSON has a key that the case class does not declare. `@jsonNoExtraFields` sets it per type. It breaks decoding of sum types that use a discriminator; see [sumTypeHandling](#sumtypehandling).
 
 The configuration below makes a plain case class strict:
 
@@ -172,8 +160,7 @@ The extra `z` key makes decoding fail:
 
 ## sumTypeMapping
 
-Type: `JsonMemberFormat`. It rewrites the case names of a sealed trait, for both the wrapper key and the discriminator value.
-`@jsonHintNames` overrides it per trait, and `@jsonHint` overrides it per case.
+Type: `JsonMemberFormat`. It rewrites the case names of a sealed trait, for both the wrapper key and the discriminator value. `@jsonHintNames` overrides it per trait, and `@jsonHint` overrides it per case.
 
 With `KebabCase`, a case named `RoundCircle` is tagged `round-circle`:
 
@@ -197,10 +184,7 @@ The wrapper key uses the rewritten name:
 
 ## explicitNulls
 
-Type: `Boolean`. When `true`, an `Option` field that is `None` is written as `null`.
-By default the key is left out.
-`@jsonExplicitNull` sets it per type or per field.
-This option only affects encoding.
+Type: `Boolean`. When `true`, an `Option` field that is `None` is written as `null`. By default the key is left out. `@jsonExplicitNull` sets it per type or per field. This option only affects encoding.
 
 The configuration below writes `None` as `null`:
 
@@ -228,8 +212,7 @@ Type: `ExplicitEmptyCollections`, a case class `ExplicitEmptyCollections(encodin
 - `encoding = false` leaves out fields whose collection is empty.
 - `decoding = false` lets a missing collection field decode as an empty collection.
 
-With the defaults, empty collections are written, and a missing collection field is an error.
-`@jsonExplicitEmptyCollections(encoding, decoding)` sets it per type. On a single field it changes encoding only; the `decoding` flag of a field annotation is ignored.
+With the defaults, empty collections are written, and a missing collection field is an error. `@jsonExplicitEmptyCollections(encoding, decoding)` sets it per type. On a single field it changes encoding only; the `decoding` flag of a field annotation is ignored.
 
 The configuration below turns off both directions:
 
@@ -254,13 +237,9 @@ Basket(Nil).toJson
 
 ## enumValuesAsStrings
 
-Type: `Boolean`. It applies to a sealed trait whose cases all have no fields. On Scala 3 that means case objects and parameterless enum cases. On Scala 2 it also includes case classes with an empty parameter list, and it is skipped if any case has its own hand-written codec.
-When `true`, each case is a plain JSON string.
-When `false`, each case is a wrapper object with an empty body, as for any other sum type.
-It has no effect when a discriminator is set, since the discriminator form always uses objects.
+Type: `Boolean`. It applies to a sealed trait whose cases all have no fields. On Scala 3 that means case objects and parameterless enum cases. On Scala 2 it also includes case classes with an empty parameter list, and it is skipped if any case has its own hand-written codec. When `true`, each case is a plain JSON string. When `false`, each case is a wrapper object with an empty body, as for any other sum type. It has no effect when a discriminator is set, since the discriminator form always uses objects.
 
-This is the one option with a different default per Scala version, so set it explicitly if your JSON must be the same on both.
-The how-to side is in [Write case objects as strings](../how-to/sealed-traits.md#5-write-case-objects-as-strings).
+This is the one option with a different default per Scala version, so set it explicitly if your JSON must be the same on both. The how-to side is in [Write case objects as strings](../how-to/sealed-traits.md#5-write-case-objects-as-strings).
 
 With all cases as case objects, the cases become strings:
 
@@ -322,10 +301,10 @@ To get the same JSON on both versions, use case objects (or, on Scala 3, paramet
 
 The options and their meaning are the same on both versions. These behaviours differ:
 
-| Behaviour                                   | Scala 2                                     | Scala 3                                                |
-|---------------------------------------------|---------------------------------------------|--------------------------------------------------------|
-| Default of `enumValuesAsStrings`            | `false`                                     | `true`                                                 |
-| Case class with no fields, as an enum value | Counts, so it can be written as a string    | Does not count, so the family uses objects             |
-| Case object with a hand-written codec       | String form is skipped for the whole family | String form is used, the hand-written codec is ignored |
-| Field type without a codec                  | Compile error                               | Derived with the outer configuration                   |
-| Configuration parameter                     | `implicit` value                            | `given` value, also used by `derives`                  |
+| Behaviour                                   | Scala 2                                     | Scala 3                                                                                            |
+|---------------------------------------------|---------------------------------------------|----------------------------------------------------------------------------------------------------|
+| Default of `enumValuesAsStrings`            | `false`                                     | `true`                                                                                             |
+| Case class with no fields, as an enum value | Counts, so it can be written as a string    | Does not count, so the family uses objects                                                         |
+| Case object with a hand-written codec       | String form is skipped for the whole family | String form is used; the encoder ignores the hand-written codec, and the decoder passes `{}` to it |
+| Field type without a codec                  | Compile error                               | Derived with the outer configuration                                                               |
+| Configuration parameter                     | `implicit` value                            | `given` value, also used by `derives`                                                              |

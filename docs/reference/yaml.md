@@ -9,9 +9,7 @@ keywords:
   - "YamlOptions"
 ---
 
-The `zio-json-yaml` module converts between YAML and any type that has a `JsonEncoder` or `JsonDecoder`.
-It goes through the [JSON AST](./json-ast.md): values are encoded to a `Json` value and then rendered as YAML, and YAML is parsed into a `Json` value before decoding.
-Because of this, the same codec that you use for JSON also works for YAML, and there is no separate YAML codec to write.
+The `zio-json-yaml` module converts between YAML and any type that has a `JsonEncoder` or `JsonDecoder`. It goes through the [JSON AST](./json-ast.md): values are encoded to a `Json` value and then rendered as YAML, and YAML is parsed into a `Json` value before decoding. Because of this, the same codec that you use for JSON also works for YAML, and there is no separate YAML codec to write.
 
 The module is available for the JVM only, since it depends on [SnakeYAML](https://bitbucket.org/snakeyaml/snakeyaml).
 
@@ -25,8 +23,7 @@ libraryDependencies += "dev.zio" %% "zio-json-yaml" % "@VERSION@"
 
 ## Encoding to YAML
 
-Importing `zio.json.yaml._` adds the `toYaml` extension method to any value that has a `JsonEncoder` in scope.
-We define a case class with a derived codec first:
+Importing `zio.json.yaml._` adds the `toYaml` extension method to any value that has a `JsonEncoder` in scope. We define a case class with a derived codec first:
 
 ```scala mdoc:silent:reset-object
 import zio.json._

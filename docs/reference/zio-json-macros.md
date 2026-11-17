@@ -184,7 +184,7 @@ Crate(List(1, 2)).toJson
 
 ## Limitations
 
-The macro checks its target and its own name, and stops compilation with an error in these cases:
+Compilation stops with an error in these cases. The macro reports the first two itself, after checking its target and its own name; the compiler reports the third:
 
 | Situation                                                          | Compile error                                                             |
 |--------------------------------------------------------------------|---------------------------------------------------------------------------|
