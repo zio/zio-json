@@ -262,10 +262,14 @@ Notice that `order_id` is in `snake_case`, and that the `None` fields are left o
 
 Our codecs now match the shop's format. The danger is a later change that alters the JSON by accident: renaming a case class renames its `type` value, and removing an annotation changes every field name. The code still compiles, and decoding our own output still works, so ordinary tests stay green while the shop's requests start to fail.
 
-A *golden test* guards against this. It encodes a set of sample values, stores the JSON in a file the first time it runs, and fails whenever the output differs from the stored file later. The `zio-json-golden` module provides it for [ZIO Test](https://zio.dev/reference/test/), so the project needs ZIO Test set up as its test framework. Add the module as a test dependency in `build.sbt`:
+A *golden test* guards against this. It encodes a set of sample values, stores the JSON in a file the first time it runs, and fails whenever the output differs from the stored file later. The `zio-json-golden` module provides it for [ZIO Test](https://zio.dev/reference/test/).
+
+Add the module to `build.sbt`. It brings ZIO Test with it, so the only other line tells sbt to run ZIO Test specs:
 
 ```sbt
 libraryDependencies += "dev.zio" %% "zio-json-golden" % "@VERSION@" % Test
+
+testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework")
 ```
 
 Then write the test in `src/test/scala`. We list one sample of each event, so the stored file is small and easy to review:
