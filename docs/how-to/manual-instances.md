@@ -107,6 +107,8 @@ object StockCodecs {
 
 When you already have both halves, as after steps 1 and 3, `JsonCodec(countEncoder, countDecoder)` builds the same codec from them.
 
+Keep the encoder and the decoder as separate instances instead when the two directions differ, for example when the decoder accepts several input shapes but the encoder always writes one, or when a type is only ever encoded or only ever decoded.
+
 ## 5. Use the Instances in a Derived Codec
 
 A case class whose fields have these types derives its codec as usual, once the instances are in scope:

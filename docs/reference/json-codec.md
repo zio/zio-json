@@ -209,13 +209,6 @@ countOnly.encodeJson(3, None)
 countOnly.decodeJson("""[{},3]""")
 ```
 
-## Codec or Separate Instances
-
-Use a `JsonCodec` when the type has one JSON shape in both directions.
-It is the least code, and one definition cannot drift out of step with the other.
-Use a separate `JsonEncoder` and `JsonDecoder` when the two directions differ, for example when you accept several input shapes but always write one, or when a type only ever goes one way.
-You can also build a codec from two different halves with `JsonCodec(encoder, decoder)`.
-
 ## Scala 2 vs Scala 3
 
 In Scala 2, derive with `DeriveJsonCodec.gen`, as above. It works on Scala 3 too.
