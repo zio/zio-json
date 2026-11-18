@@ -12,6 +12,7 @@ The other sections answer other questions. [Getting Started](../getting-started.
 
 The core of the library. An encoder turns a value into JSON, a decoder reads it back, and a codec is both.
 
+- [Type Classes](type-classes/index.md): how the type classes relate, and where instances come from.
 - [JsonEncoder](json-encoder.md): turns a Scala value into JSON. Covers `toJson`, `contramap`, the combinators and writing an encoder by hand.
 - [JsonDecoder](json-decoder.md): reads JSON into a Scala value. Covers `fromJson`, `map`, `mapOrFail`, the combinators, missing fields and writing a decoder by hand.
 - [JsonCodec](json-codec.md): an encoder and a decoder packed together, and how to transform and combine codecs.

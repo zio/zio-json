@@ -26,6 +26,7 @@ const sidebars = {
           type: "category",
           label: "Type Classes",
           collapsed: false,
+          link: { type: "doc", id: "reference/type-classes/index" },
           items: [
             "reference/json-encoder",
             "reference/json-decoder",
