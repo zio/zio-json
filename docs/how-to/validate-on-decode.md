@@ -1,6 +1,6 @@
 ---
 id: validate-on-decode
-title: "Validate data while decoding"
+title: "Validate Data While Decoding"
 description: "Reject bad values during decoding with mapOrFail and transformOrFail, read the error paths, and use refined types or strict objects."
 keywords:
   - "JSON Validation"
@@ -10,17 +10,17 @@ keywords:
   - "Refined Types"
 ---
 
-Goal: make decoding fail when a value is well-formed JSON but is not acceptable to your program, for example an age below zero or an email with no `@`.
+Goal: make decoding fail when a value is well-formed JSON but is not acceptable to your program, for example an age of zero or less, or an email with no `@`.
 
-The tool is `mapOrFail`. It runs a function on a decoded value. The function returns `Right` to accept or `Left` with a message to reject. The failure is part of decoding, so the bad value never reaches your code.
+The tool is `JsonDecoder#mapOrFail`. It runs a function on a decoded value. The function returns `Right` to accept or `Left` with a message to reject. The failure is part of decoding, so the bad value never reaches your code. Every example below uses this import:
 
-```scala mdoc:silent
+```scala mdoc:silent:reset-object
 import zio.json._
 ```
 
 ## 1. Validate one value type
 
-Wrap the raw type in a small case class, then build its decoder from an existing decoder with `mapOrFail`.
+Wrap the raw type in a small case class, then build its decoder from an existing decoder with `mapOrFail`:
 
 ```scala mdoc:silent
 final case class Email(value: String)
@@ -37,11 +37,13 @@ object Email {
 }
 ```
 
-`contramap` is the encoder side. It turns an `Email` back into a `String` so the JSON stays a plain string.
+`JsonEncoder#contramap` is the encoder side. It turns an `Email` back into a `String` so the JSON stays a plain string.
+
+The same pattern validates `Map` keys: build a `JsonFieldDecoder` with `JsonFieldDecoder[String].mapOrFail`. See [Use Your Own Type as a Map Key](custom-map-keys.md).
 
 ## 2. Validate both directions with transformOrFail
 
-When you want encoder and decoder together, use a `JsonCodec` and `transformOrFail`. Its first function can fail. Its second function cannot.
+When you want encoder and decoder together, use a `JsonCodec` and `transformOrFail`. Its first function can fail. Its second function cannot:
 
 ```scala mdoc:silent
 final case class Age(value: Int)
@@ -57,7 +59,7 @@ object Age {
 
 ## 3. Use the types in a case class
 
-Fields of these types are checked as the case class is decoded.
+Fields of these types are checked as the case class is decoded:
 
 ```scala mdoc:silent
 final case class Signup(name: String, age: Age, email: Email)
@@ -75,7 +77,7 @@ Valid input decodes as normal:
 
 ## 4. Read the error
 
-A rejected value produces a `Left`. The string starts with the path to the field, written as `.fieldName`, then your message in parentheses.
+A rejected value produces a `Left`. The string starts with the path to the field, written as `.fieldName`, then your message in parentheses:
 
 ```scala mdoc
 """{"name":"Ada","age":-1,"email":"ada@example.com"}""".fromJson[Signup]
@@ -83,7 +85,7 @@ A rejected value produces a `Left`. The string starts with the path to the field
 """{"name":"Ada","age":36,"email":"ada.example.com"}""".fromJson[Signup]
 ```
 
-When the value is not nested in a field, such as decoding an `Age` alone, the path is empty and only the parenthesised message remains.
+When the value is not nested in a field, such as decoding an `Age` alone, the path is empty and only the parenthesised message remains:
 
 ```scala mdoc
 "0".fromJson[Age]
@@ -91,7 +93,7 @@ When the value is not nested in a field, such as decoding an `Age` alone, the pa
 
 ## 5. Know that the first failure wins
 
-Decoding stops at the first bad value. It does not collect a list of errors. Fields are read in the order they appear in the JSON text, so when two fields are bad, only the first one in the text is reported.
+Decoding stops at the first bad value. It does not collect a list of errors. Fields are read in the order they appear in the JSON text, so when two fields are bad, only the first one in the text is reported:
 
 ```scala mdoc
 """{"name":"Ada","age":-1,"email":"nope"}""".fromJson[Signup]
@@ -103,7 +105,7 @@ If you need every error at once, decode to the [`Json` AST](../reference/json-as
 
 ## 6. Check a rule across fields
 
-`mapOrFail` also works on a whole object. Use it for a rule that involves more than one field.
+`mapOrFail` also works on a whole object. Use it for a rule that involves more than one field:
 
 ```scala mdoc:silent
 final case class Window(from: Int, to: Int)
@@ -116,11 +118,13 @@ object Window {
 }
 ```
 
+An object whose fields are each valid but break the rule fails as a whole:
+
 ```scala mdoc
 """{"from":5,"to":1}""".fromJson[Window]
 ```
 
-Because the check runs after the object is built, the error has no field path.
+Because the check runs after the object is built, the error has no path below the object: here it is empty, and inside another case class it would be the path of the field that holds the `Window`.
 
 ## 7. Use refined types
 
@@ -129,6 +133,8 @@ The `zio-json-interop-refined` module gives you encoders and decoders for [refin
 ```sbt
 libraryDependencies += "dev.zio" %% "zio-json-interop-refined" % "@VERSION@"
 ```
+
+With the module on the classpath, import its instances and use a refined type as a field type:
 
 ```scala mdoc:compile-only
 import zio.json._
@@ -148,7 +154,7 @@ A failed predicate shows up as a `Left` such as `.owner(Predicate isEmpty() did 
 
 ## 8. Reject unknown fields
 
-Validation can also mean refusing JSON that has extra keys. Put `@jsonNoExtraFields` on the case class, and any field not in the class makes decoding fail.
+Validation can also mean refusing JSON that has extra keys. Put `@jsonNoExtraFields` on the case class, and any field not in the class makes decoding fail:
 
 ```scala mdoc:silent
 @jsonNoExtraFields
@@ -159,8 +165,10 @@ object Login {
 }
 ```
 
+An unknown `admin` key is now an error:
+
 ```scala mdoc
 """{"user":"ada","admin":true}""".fromJson[Login]
 ```
 
-Without the annotation, extra fields are skipped. See [Optional and default fields](../how-to/optional-and-default-fields.md) for how missing fields are handled, and the [Annotations reference](../reference/annotations.md) for every annotation.
+Without the annotation, extra fields are skipped. See [Optional, default and null fields](./optional-and-default-fields.md) for how missing fields are handled, and the [Annotations reference](../reference/annotations.md) for every annotation.

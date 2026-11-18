@@ -1,6 +1,6 @@
 ---
 id: field-names
-title: "Field names"
+title: "Field Names"
 description: "Rename JSON fields with jsonField, rename all fields with jsonMemberNames, and read old names with jsonAliases in ZIO JSON."
 keywords:
   - "JSON Field Names"
@@ -17,11 +17,13 @@ By default, the JSON field names are the case class field names. This page shows
 - `@jsonMemberNames` renames every field with one rule.
 - `@jsonAliases` accepts extra names when decoding.
 
+Each step below is a separate option. Use the ones you need.
+
 ## What you need
 
 Only `zio-json` and one import:
 
-```scala mdoc:silent
+```scala mdoc:silent:reset-object
 import zio.json._
 ```
 
@@ -117,13 +119,15 @@ object Lemon {
 }
 ```
 
+The field name is written in upper case:
+
 ```scala mdoc
 println(Lemon(7).toJson)
 ```
 
 ## 4. Set the format for the whole program
 
-Instead of annotating each class, set `fieldNameMapping` in an implicit `JsonCodecConfiguration`. It applies to every codec derived while the configuration is in scope. The `@jsonMemberNames` annotation on a class takes priority over it.
+Instead of annotating each class, set `fieldNameMapping` in an implicit `JsonCodecConfiguration`. It applies to every codec derived while the configuration is in scope. The `@jsonMemberNames` annotation on a class takes priority over it. To write every field in snake_case without annotating each class:
 
 ```scala mdoc:compile-only
 implicit val config: JsonCodecConfiguration =
@@ -136,7 +140,7 @@ implicit val cherryCodec: JsonCodec[Cherry] = DeriveJsonCodec.gen[Cherry]
 
 ## 5. Read old names with `@jsonAliases`
 
-After a field has been renamed, you may still receive JSON that uses the old name. `@jsonAliases` lists extra names that the decoder accepts for that field. It was added in zio-json 0.5.0.
+After a field has been renamed, you may still receive JSON that uses the old name. `@jsonAliases` lists extra names that the decoder accepts for that field. It was added in zio-json 0.5.0. To accept two old names for `seedCount`:
 
 ```scala mdoc:silent
 case class Strawberry(@jsonAliases("seeds", "pips") seedCount: Int)
@@ -158,10 +162,10 @@ Keep these points in mind:
 
 - The annotation has no effect on encoding. The encoder always writes the main name.
 - An alias is matched exactly as you wrote it. A `@jsonMemberNames` format is not applied to aliases.
-- A field name and its aliases must not collide with another field or alias of the same class. On Scala 2 and Scala 3, deriving the decoder fails with an `AssertionError` if they do.
+- A field name and its aliases must not collide with another field or alias of the same class. If they do, the code still compiles, but on Scala 2 and Scala 3 the decoder throws an `AssertionError` at runtime when the codec is first initialised.
 
 ## See also
 
 - [Annotations](../reference/annotations.md) lists every derivation annotation in one table.
 - [Sealed traits](sealed-traits.md) shows how to rename the type hints of a sealed family.
-- [Encoding](encoding.md) and [Decoding](decoding.md) cover the basics of derived codecs.
+- [Getting Started](../getting-started.md) covers the basics of derived codecs.

@@ -1,140 +1,189 @@
 ---
 id: streaming
-title: "Streaming"
+title: "Process Large JSON as a Stream"
+description: "Read a large JSON array or JSON Lines file one value at a time, skip bad lines, and write streams of values back to files, with ZIO Streams on the JVM."
+keywords:
+  - "Streaming"
+  - "ZIO Streams"
+  - "JSON Lines"
+  - "Large Files"
+  - "decodeJsonPipeline"
 ---
 
-ZIO JSON can encode and decode values as [ZIO Streams](https://zio.dev/reference/stream/), so you can process large JSON documents, or many small documents, without loading everything into memory at once.
-The streaming API has three main forms: a single value as a stream of characters, a JSON array as a pipeline, and [JSON Lines](https://jsonlines.org/) (one value per line) as a pipeline.
+Goal: read and write JSON files that are too large to load into memory, one value at a time, with [ZIO Streams](https://zio.dev/reference/stream/).
 
-The streaming API is available for the JVM only. The JavaScript and Native platforms do not include these methods.
+The steps follow one data set through a round trip: a large JSON array export is read element by element, written out as [JSON Lines](https://jsonlines.org/) (one value per line), read back while skipping damaged lines, and written as a JSON array again. Each step also works on its own. The [Streaming API](../reference/streaming.md) reference lists every method used here, with its exact output and error behaviour.
 
-## Encoding a Single Value as a Stream
+## What You Need
 
-`JsonEncoder#encodeJsonStream` returns a `ZStream` of characters for one value:
+The streaming API is part of the core module, but it exists on the JVM only:
+
+```scala
+libraryDependencies += "dev.zio" %% "zio-json" % "@VERSION@"
+```
+
+The guide assumes you know how to derive a codec for a case class (see [Getting Started](../getting-started.md)) and how to run a `ZStream`. All steps use these imports, an `Event` type with a codec, and a small helper that runs an effect so this page can show results:
 
 ```scala mdoc:silent
 import zio._
 import zio.stream._
 import zio.json._
 
-case class Event(id: Int, kind: String)
+import java.nio.charset.StandardCharsets
+import java.nio.file.{ Files, Path }
+
+final case class Event(id: Int, kind: String)
 
 object Event {
   implicit val codec: JsonCodec[Event] = DeriveJsonCodec.gen[Event]
 }
 
-def runSync[A](zio: ZIO[Any, Throwable, A]): A =
+def runSync[A](effect: ZIO[Any, Throwable, A]): A =
   Unsafe.unsafe { implicit unsafe =>
-    Runtime.default.unsafe.run(zio).getOrThrowFiberFailure()
+    Runtime.default.unsafe.run(effect).getOrThrowFiberFailure()
   }
+
+def readText(path: Path): String =
+  new String(Files.readAllBytes(path), StandardCharsets.UTF_8)
 ```
 
-To collect the characters into a `String`, run the stream:
-
-```scala mdoc
-val single: String =
-  runSync(JsonEncoder[Event].encodeJsonStream(Event(1, "created")).runCollect.map(_.mkString))
-
-single
-```
-
-## Decoding a Single Value from a Stream
-
-`JsonDecoder#decodeJsonStream` reads one value from a stream of characters, and `JsonDecoder#decodeJsonStreamInput` reads one value from a stream of bytes with a charset (UTF-8 by default):
-
-```scala mdoc
-val decodedSingle: Event =
-  runSync(JsonDecoder[Event].decodeJsonStream(ZStream.fromIterable("""{"id": 2, "kind": "deleted"}""")))
-
-decodedSingle
-```
-
-Both methods expect exactly one value in the stream, and they may not consume the whole stream.
-
-## JSON Lines
-
-Use the JSON Lines format, one value per line, when you have a sequence of values that you want to process one at a time.
-`JsonEncoder#encodeJsonLinesPipeline` writes each value followed by a newline, and `JsonDecoder#decodeJsonPipeline` with `JsonStreamDelimiter.Newline` reads them back:
+In a real program the export already exists. For this page we write a small one to a temporary directory, and name the files the later steps write:
 
 ```scala mdoc:silent
-val events: ZStream[Any, Nothing, Event] =
-  ZStream(Event(1, "created"), Event(2, "updated"), Event(3, "deleted"))
+val dir: Path = Files.createTempDirectory("events")
+
+val exportFile: Path  = dir.resolve("events.json")
+val linesFile: Path   = dir.resolve("events.jsonl")
+val damagedFile: Path = dir.resolve("damaged.jsonl")
+val arrayFile: Path   = dir.resolve("good-events.json")
+
+Files.write(
+  exportFile,
+  """[
+    |  {"id": 1, "kind": "created"},
+    |  {"id": 2, "kind": "updated"},
+    |  {"id": 3, "kind": "deleted"}
+    |]""".stripMargin.getBytes(StandardCharsets.UTF_8)
+)
 ```
 
-The stream is encoded with the line-delimited pipeline:
+## 1. Read a Large JSON Array One Element at a Time
+
+`ZStream.fromPath` reads the file as bytes, `ZPipeline.decodeCharsWith` turns the bytes into characters, and `JsonDecoder#decodeJsonPipeline` decodes the elements of the array one by one. Its default delimiter, `JsonStreamDelimiter.Array`, expects one JSON array:
+
+```scala mdoc:silent
+val exported: ZStream[Any, Throwable, Event] =
+  ZStream
+    .fromPath(exportFile)
+    .via(ZPipeline.decodeCharsWith(StandardCharsets.UTF_8))
+    .via(JsonDecoder[Event].decodeJsonPipeline())
+```
+
+The stream holds only the elements it is working on, so it can filter, count or transform an array of any size. To count the `deleted` events:
 
 ```scala mdoc
-
-val lines: String =
-  runSync(events.via(JsonEncoder[Event].encodeJsonLinesPipeline).runCollect.map(_.mkString))
-
-lines
+runSync(exported.filter(_.kind == "deleted").runCount)
 ```
 
-Decoding the same text back into values uses the decoder pipeline:
+If the file holds one large object rather than an array, decode it with `JsonDecoder#decodeJsonStreamInput(ZStream.fromPath(exportFile))` instead. It reads the bytes incrementally and returns the single value.
+
+## 2. Write a Stream of Values as JSON Lines
+
+`writeJsonLinesAs`, from the `zio.json` package, encodes every value of a stream on its own line and writes the result to a file as UTF-8. It creates the file or replaces its contents:
 
 ```scala mdoc
-val parsed: Chunk[Event] =
-  runSync(
-    ZStream
-      .fromIterable(lines)
-      .via(JsonDecoder[Event].decodeJsonPipeline(JsonStreamDelimiter.Newline))
-      .runCollect
-  )
+runSync(writeJsonLinesAs(linesFile, exported))
 
-parsed.toList
+println(readText(linesFile))
 ```
 
-## JSON Arrays
+:::warning[Live consumers]
+The stream encoders collect output in a 4096-character buffer, so a value written to a socket or a server-sent events response can wait until about 4 KB of later output arrives. When each value must reach the consumer as soon as it is produced, encode the values one at a time, for example `stream.map(_.toJson + "\n")` for a `stream` of values. See [Output Format and Buffering](../reference/streaming.md#output-format-and-buffering).
+:::
 
-`JsonEncoder#encodeJsonArrayPipeline` writes the values as a single JSON array, and `JsonDecoder#decodeJsonPipeline` with its default `JsonStreamDelimiter.Array` reads a JSON array one element at a time:
+## 3. Read JSON Lines Back
+
+`readJsonLinesAs` reads a JSON Lines file into a stream of values:
 
 ```scala mdoc
-val array: String =
-  runSync(events.via(JsonEncoder[Event].encodeJsonArrayPipeline).runCollect.map(_.mkString))
-
-array
+runSync(readJsonLinesAs[Event](linesFile).runCollect)
 ```
 
-Decoding that string with the default delimiter reads each element back:
+`readJsonLinesAs` stops the stream at the first line that does not decode, and values decoded just before that line can be lost with it (see [Errors in a Decoding Pipeline](../reference/streaming.md#errors-in-a-decoding-pipeline)). For files that may contain bad lines, use the next step instead.
+
+## 4. Skip Bad Lines Instead of Failing
+
+Log files and exports from other systems sometimes contain a damaged line. Here the line for event 2 has lost its `kind` field, the line for event 4 is cut short, and one line is blank:
+
+```scala mdoc:silent
+Files.write(
+  damagedFile,
+  """{"id":1,"kind":"created"}
+    |{"id":2}
+    |
+    |{"id":3,"kind":"deleted"}
+    |{"id":4,"kind":
+    |{"id":5,"kind":"restored"}
+    |""".stripMargin.getBytes(StandardCharsets.UTF_8)
+)
+```
+
+To keep going past a bad line, split the text into lines yourself with `ZPipeline.utf8Decode` and `ZPipeline.splitLines`, drop blank lines, and decode each line on its own with `fromJson`. Every line then gives an `Either`, and a bad line does not affect the others:
+
+```scala mdoc:silent
+val decodedLines: ZStream[Any, Throwable, Either[String, Event]] =
+  ZStream
+    .fromPath(damagedFile)
+    .via(ZPipeline.utf8Decode >>> ZPipeline.splitLines)
+    .filter(_.trim.nonEmpty)
+    .map(_.fromJson[Event])
+```
+
+Running the stream shows one result per non-blank line:
 
 ```scala mdoc
-val fromArray: Chunk[Event] =
-  runSync(
-    ZStream
-      .fromIterable(array)
-      .via(JsonDecoder[Event].decodeJsonPipeline())
-      .runCollect
-  )
-
-fromArray.toList
+runSync(decodedLines.runCollect)
 ```
 
-Choose JSON Lines for logs and exported data that are written and read incrementally, because each line is a complete value. Choose the array form when the consumer expects a single JSON document.
+To log the errors and keep only the good values, tap the `Left` results and then collect the `Right` results:
 
-## Reading and Writing Files
-
-The `zio.json` package object provides helpers that combine these pipelines with file streams. They are available on the JVM only.
-
-`readJsonLinesAs` reads a file of JSON Lines into a stream of values of a type with a decoder, and `writeJsonLinesAs` writes a stream of values to a file as JSON Lines. `readJsonLinesAs` has overloads for `File`, `Path`, `String` and `URL`, and `writeJsonLinesAs` has overloads for `File`, `Path` and `String`:
-
-```scala mdoc:compile-only
-import zio._
-import zio.stream._
-import zio.json._
-import java.nio.file.Paths
-
-val path = Paths.get("events.jsonl")
-
-val write: RIO[Any, Unit] =
-  writeJsonLinesAs(path, ZStream(Event(1, "created"), Event(2, "deleted")))
-
-val read: ZStream[Any, Throwable, Event] =
-  readJsonLinesAs[Event](path)
+```scala mdoc:silent
+val goodEvents: ZStream[Any, Throwable, Event] =
+  decodedLines
+    .tap {
+      case Left(error) => Console.printLine(s"skipping bad line: $error")
+      case Right(_)    => ZIO.unit
+    }
+    .collect { case Right(event) => event }
 ```
 
-`readJsonAs` and `writeJsonLines` work the same way with the JSON AST type `zio.json.ast.Json` instead of a domain type. `readJsonAs` reads JSON Lines, not a single JSON document, so use `fromJson` on the file contents when you want to read one document.
+The stream prints a message for each bad line and keeps the three good events:
 
-## Errors
+```scala mdoc
+runSync(goodEvents.runCollect)
+```
 
-Stream operations report failures in the error channel as a `Throwable`. A malformed value in the middle of a stream fails the stream at that point, and the values before it have already been emitted. If you want to skip malformed lines instead, handle the error in the stream, for example with `ZStream#catchAll`.
+This approach uses only `fromJson`, so it also works on Scala.js and Scala Native with a stream source other than a file.
+
+## 5. Write a Stream of Values as a JSON Array File
+
+Some consumers expect one JSON document rather than JSON Lines. `JsonEncoder#encodeJsonArrayPipeline` writes the stream as a single array, `ZPipeline.encodeCharsWith` turns the characters into UTF-8 bytes, and `ZSink.fromPath` writes them to a file. Here the input is `goodEvents` from step 4, so the damaged file is read again and its bad lines are logged again; the sink returns the number of bytes written:
+
+```scala mdoc
+runSync(
+  goodEvents
+    .via(JsonEncoder[Event].encodeJsonArrayPipeline)
+    .via(ZPipeline.encodeCharsWith(StandardCharsets.UTF_8))
+    .run(ZSink.fromPath(arrayFile))
+)
+
+println(readText(arrayFile))
+```
+
+The output is compact; the stream encoders have no pretty-printed form. The file can be read back with step 1.
+
+## See Also
+
+- [Streaming API](../reference/streaming.md) for every streaming method, the delimiters, the file helpers and the exact error behaviour.
+- [JsonEncoder](../reference/json-encoder.md#streaming) and [JsonDecoder](../reference/json-decoder.md#streaming) for the type classes that carry the streaming methods.
+- [Errors](../reference/errors.md) for the error messages a failed stream carries.

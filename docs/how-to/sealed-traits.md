@@ -1,6 +1,6 @@
 ---
 id: sealed-traits
-title: "Sealed traits"
+title: "Sealed Traits"
 description: "Control how ZIO JSON encodes sealed traits: type hints, hint name formats, a discriminator field, and enums as strings."
 keywords:
   - "Sealed Trait Encoding"
@@ -17,11 +17,13 @@ By default, a value of a sealed family is written as an object with one key, the
 {"Banana":{"curvature":0.5}}
 ```
 
-This page shows how to change the key (the type hint), how to use a discriminator field instead, and how case objects can become plain strings.
+This page shows how to change the key (the type hint), how to use a discriminator field instead, and how case objects can become plain strings. Each step is a separate option. Use the ones you need.
 
 ## What you need
 
-```scala mdoc:silent
+Every example on this page uses one import:
+
+```scala mdoc:silent:reset-object
 import zio.json._
 ```
 
@@ -49,7 +51,7 @@ println((Apple(false): Fruit).toJson)
 
 ## 2. Transform all hints with `@jsonHintNames`
 
-`@jsonHintNames` goes on the sealed trait and applies a `JsonMemberFormat` to every hint in the family. It accepts the same formats as `@jsonMemberNames`, which are listed in [Field names](field-names.md). A `@jsonHint` on a subtype wins over the format.
+`@jsonHintNames` goes on the sealed trait and applies a `JsonMemberFormat` to every hint in the family. It accepts the same formats as `@jsonMemberNames`, which are listed in [Field names](field-names.md). A `@jsonHint` on a subtype wins over the format. To write every hint of a family in snake_case:
 
 ```scala mdoc:silent
 @jsonHintNames(SnakeCase)
@@ -63,6 +65,8 @@ object FruitKind {
 }
 ```
 
+Each hint is the class name in snake_case:
+
 ```scala mdoc
 println((GoodFruit(true): FruitKind).toJson)
 println((BadFruit(true): FruitKind).toJson)
@@ -74,7 +78,7 @@ The codec of `FruitKind` expects the hint. You cannot decode a bare `{"good":tru
 
 To read one subtype without a hint, give that subtype its own codec in its companion. A case class does not need a discriminator to be decoded on its own:
 
-```scala mdoc:silent:reset
+```scala mdoc:silent:reset-object
 import zio.json._
 
 @jsonHintNames(SnakeCase)
@@ -92,6 +96,8 @@ object Nut {
 }
 ```
 
+The codec of `Almond` reads the bare object:
+
 ```scala mdoc
 """{"salted":true}""".fromJson[Almond]
 ```
@@ -106,6 +112,8 @@ val cashewDecoder: JsonDecoder[Cashew] =
   }
 ```
 
+The decoder accepts a cashew and rejects any other member of the family:
+
 ```scala mdoc
 """{"cashew":{"roasted":true}}""".fromJson[Cashew](cashewDecoder)
 """{"almond":{"salted":true}}""".fromJson[Cashew](cashewDecoder)
@@ -119,7 +127,7 @@ Some schemas put the type name inside the object:
 {"type":"banaani","curvature":0.5}
 ```
 
-Use `@jsonDiscriminator` on the sealed trait to get this shape. The value of the field is still the hint, so `@jsonHint` and `@jsonHintNames` work as before.
+Use `@jsonDiscriminator` on the sealed trait to get this shape. The value of the field is still the hint, so `@jsonHint` and `@jsonHintNames` work as before. The family from section 1, with a discriminator named `type`:
 
 ```scala mdoc:silent
 @jsonDiscriminator("type")
@@ -133,20 +141,28 @@ object Tropical {
 }
 ```
 
+The encoder writes the hint into the `type` field, and the decoder reads it from there:
+
 ```scala mdoc
 println((TropicalBanana(0.5): Tropical).toJson)
 """{"type":"omena","poison":false}""".fromJson[Tropical]
 ```
 
+The encoder always writes the discriminator as the first field. The decoder accepts it anywhere in the object, so input from a producer that writes it last decodes too:
+
+```scala mdoc
+"""{"poison":false,"type":"omena"}""".fromJson[Tropical]
+```
+
 :::warning[Use it only when you must]
-A discriminator is slower, uses more memory, and is more exposed to denial-of-service input than the default wrapper object. Use it only to match a schema that you do not control. Do not combine it with `@jsonNoExtraFields`, because the discriminator counts as an extra field of the subtype.
+A discriminator is slower, uses more memory, and is more exposed to denial-of-service input than the default wrapper object. Use it only to match a schema that you do not control. Do not combine it with `@jsonNoExtraFields` or with `JsonCodecConfiguration(allowExtraFields = false)`, because the discriminator counts as an extra field of the subtype: decoding then fails with an `(invalid extra field)` error.
 :::
 
 ## 4. Set it for the whole program
 
 The configuration form of the same options is `JsonCodecConfiguration`. Use `SumTypeHandling.DiscriminatorField` for `sumTypeHandling`, and `sumTypeMapping` for the hint format:
 
-```scala mdoc:silent:reset
+```scala mdoc:silent:reset-object
 import zio.json._
 import zio.json.JsonCodecConfiguration.SumTypeHandling
 
@@ -164,6 +180,8 @@ object Berry {
 }
 ```
 
+The hint goes into the `type` field, in snake_case:
+
 ```scala mdoc
 println((BlueBerry(true): Berry).toJson)
 ```
@@ -178,7 +196,7 @@ A sealed family made only of case objects can be written as a plain JSON string:
 "Red"
 ```
 
-Whether this happens depends on the `enumValuesAsStrings` setting of `JsonCodecConfiguration`:
+Whether this happens depends on the [`enumValuesAsStrings`](../reference/json-codec-configuration.md#enumvaluesasstrings) setting of `JsonCodecConfiguration`:
 
 | Scala version | Default of `enumValuesAsStrings` |
 |---------------|----------------------------------|
@@ -191,7 +209,7 @@ On Scala 3, a sealed family of case objects and an `enum` with only parameterles
 
 On Scala 2 the default is the single-key object, `{"Red":{}}`. Turn the setting on with an implicit configuration:
 
-```scala mdoc:silent:reset
+```scala mdoc:silent:reset-object
 import zio.json._
 
 implicit val config: JsonCodecConfiguration =
@@ -206,14 +224,84 @@ object Color {
 }
 ```
 
+The case objects are now written and read as strings:
+
 ```scala mdoc
 println((Red: Color).toJson)
 """"Green"""".fromJson[Color]
 ```
 
-:::note[Scala 2 caveat]
-On Scala 2 the string form is off unless you set `enumValuesAsStrings = true`. The enum sections of [Encoding](encoding.md) and [Decoding](decoding.md) describe the Scala 3 behavior. Turn the setting on yourself on Scala 2, or the JSON will differ between the two Scala versions.
-:::
+The two Scala versions disagree on what counts as an enumeration value. On Scala 2, a case class with an empty parameter list counts, like a case object. With the setting on, this family is written as strings:
+
+```scala mdoc:silent
+sealed trait Signal
+case object On         extends Signal
+final case class Off() extends Signal
+
+object Signal {
+  implicit val codec: JsonCodec[Signal] = DeriveJsonCodec.gen[Signal]
+}
+```
+
+Both cases become strings on Scala 2:
+
+```scala mdoc
+println((On: Signal).toJson)
+println((Off(): Signal).toJson)
+```
+
+On Scala 3, only case objects and parameterless `enum` cases count. A family that contains a case class with no fields is not an enumeration, so every case, the case objects included, uses the object form. The same family on Scala 3:
+
+```scala mdoc:passthrough
+docs.Scala3Source.print("zio-json-docs-scala3/src/main/scala-3/zio/json/docs/sealedtraits/EmptyCaseClassEnumExample.scala", "empty-case-class")
+```
+
+Running the example file on Scala 3, `(On: Signal).toJson` gives `{"On":{}}` and `(Off(): Signal).toJson` gives `{"Off":{}}`. A family made only of case objects is written as strings on Scala 3, as the `Color` family in the same file shows:
+
+```scala mdoc:passthrough
+docs.Scala3Source.print("zio-json-docs-scala3/src/main/scala-3/zio/json/docs/sealedtraits/EmptyCaseClassEnumExample.scala", "case-objects")
+```
+
+`(Red: Color).toJson` gives `"Red"`. If the JSON must be the same on both versions, use case objects rather than empty case classes. The other Scala 2 and Scala 3 differences are listed in [JsonCodecConfiguration](../reference/json-codec-configuration.md#scala-2-and-scala-3-differences).
+
+## 6. Nest sealed traits
+
+A sealed trait can extend another one. The codec of the outer trait sees only the leaf cases, the case classes and case objects at the bottom of the hierarchy. An intermediate sealed trait gets no hint of its own, so the JSON is the same as for a flat family. This holds on Scala 2 and on Scala 3:
+
+```scala mdoc:silent:reset-object
+import zio.json._
+
+sealed trait Animal
+sealed trait Pet extends Animal
+
+final case class Dog(name: String) extends Pet
+final case class Cat(name: String) extends Pet
+final case class Wolf(pack: Int)   extends Animal
+
+object Animal {
+  implicit val codec: JsonCodec[Animal] = DeriveJsonCodec.gen[Animal]
+}
+```
+
+A `Dog` is written with its own name as the hint, and a hint that names the intermediate trait is not accepted:
+
+```scala mdoc
+println((Dog("Rex"): Animal).toJson)
+"""{"Cat":{"name":"Tom"}}""".fromJson[Animal]
+"""{"Pet":{"Dog":{"name":"Rex"}}}""".fromJson[Animal]
+```
+
+Because the leaf names share one namespace, two leaves in different branches must not have the same hint.
+
+## 7. Keep hint names unique
+
+Every case of a family must end up with a distinct hint after `@jsonHint` and `@jsonHintNames` are applied. A clash is not a compile error. The code compiles, and the derived decoder, and with it a derived `JsonCodec`, throws an `AssertionError` at runtime when it is first initialised, on Scala 2 and Scala 3 alike. The message names the family by its fully qualified name. For a family `com.example.Dup` where two cases both carry `@jsonHint("x")`, it reads:
+
+```text
+java.lang.AssertionError: Case names in ADT com.example.Dup must be distinct, name(s) x are duplicated
+```
+
+An encoder derived on its own with `DeriveJsonEncoder.gen` does not check, and writes the same hint for both cases. A test that decodes one value of each family is enough to catch the clash early.
 
 ## See also
 

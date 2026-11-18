@@ -96,6 +96,7 @@ lazy val zioJsonRoot = project
   )
   .aggregate(
     docs,
+    docsScala3,
     zioJsonJVM,
     zioJsonJS,
     zioJson.native,
@@ -507,3 +508,16 @@ lazy val docs = project
          |""".stripMargin
   )
   .enablePlugins(WebsitePlugin)
+
+// Scala 3 code shown in the documentation. The docs project above runs mdoc on Scala 2.13 only, so
+// Scala 3 examples live here as ordinary sources under src/main/scala-3: the Scala 3 leg of
+// `sbt +test` compiles them in CI (the Scala 2 legs have nothing to compile), and the pages print
+// them with `docs.Scala3Source.print`.
+lazy val docsScala3 = project
+  .in(file("zio-json-docs-scala3"))
+  .settings(stdSettings("zio-json-docs-scala3"))
+  .settings(
+    publish / skip        := true,
+    mimaPreviousArtifacts := Set()
+  )
+  .dependsOn(zioJsonJVM)
