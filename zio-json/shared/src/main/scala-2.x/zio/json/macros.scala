@@ -1010,9 +1010,8 @@ object DeriveJsonDecoder {
    * fields is read from any JSON value in text (only from an empty object with [[jsonNoExtraFields]]), and from an
    * object or `null` in a JSON AST.
    *
-   * @throws java.lang.AssertionError
-   *   when the decoder is created, if two fields or aliases of a case class have the same JSON name, or two cases of a
-   *   sealed trait have the same type hint
+   * Throws a `java.lang.AssertionError` when the decoder is created, if two fields or aliases of a case class have the
+   * same JSON name, or two cases of a sealed trait have the same type hint.
    */
   def gen[A]: JsonDecoder[A] = macro Magnolia.gen[A]
 }
@@ -1419,9 +1418,8 @@ object DeriveJsonCodec {
    * scope or else `JsonCodecConfiguration.default`. The result behaves as
    * `JsonCodec(DeriveJsonEncoder.gen[A], DeriveJsonDecoder.gen[A])`.
    *
-   * @throws java.lang.AssertionError
-   *   when the codec is created, if two fields or aliases of a case class have the same JSON name, or two cases of a
-   *   sealed trait have the same type hint
+   * Throws a `java.lang.AssertionError` when the codec is created, if two fields or aliases of a case class have the
+   * same JSON name, or two cases of a sealed trait have the same type hint.
    */
   def gen[A]: JsonCodec[A] = macro genBoth[A]
 
