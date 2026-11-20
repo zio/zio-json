@@ -21,6 +21,7 @@ Step 1 parses the document, and step 2 defines the cursors the other steps use. 
 The AST and cursors are part of the core `zio-json` module:
 
 ```scala
+// ZIO JSON: JSON encoders, decoders and codecs (JVM, Scala.js, Scala Native)
 libraryDependencies += "dev.zio" %% "zio-json" % "@VERSION@"
 ```
 

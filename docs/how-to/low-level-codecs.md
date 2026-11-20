@@ -24,6 +24,7 @@ You rarely need this. Derived codecs and combinators such as `JsonEncoder#contra
 Only the core module:
 
 ```scala
+// ZIO JSON: JSON encoders, decoders and codecs (JVM, Scala.js, Scala Native)
 libraryDependencies += "dev.zio" %% "zio-json" % "@VERSION@"
 ```
 

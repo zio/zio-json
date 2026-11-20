@@ -29,6 +29,7 @@ Each step below is a separate option; use the ones you need. The steps derive on
 Only the core module:
 
 ```scala
+// ZIO JSON: JSON encoders, decoders and codecs (JVM, Scala.js, Scala Native)
 libraryDependencies += "dev.zio" %% "zio-json" % "@VERSION@"
 ```
 

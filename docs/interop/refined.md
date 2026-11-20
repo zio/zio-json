@@ -12,6 +12,7 @@ The `zio-json-interop-refined` module provides ZIO JSON instances for [refined](
 Add the module to your `build.sbt`:
 
 ```scala
+// Refined types integration for ZIO JSON
 libraryDependencies += "dev.zio" %% "zio-json-interop-refined" % "@VERSION@"
 ```
 

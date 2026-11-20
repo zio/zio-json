@@ -146,6 +146,7 @@ All 16 `java.time` types are written as ISO-8601 strings. The examples in the ta
 On Scala.js and Scala Native, `ZoneId` and `ZonedDateTime` with region ids need the time-zone database, `scala-java-time-tzdb`, as an extra dependency. Use the same version as the `scala-java-time` in your dependency tree, as described in the [installation notes](../index.md). For example, when that version is 2.10.0:
 
 ```scala
+// Time zone data for java.time on Scala.js
 libraryDependencies += "io.github.cquiroz" %%% "scala-java-time-tzdb" % "2.10.0"
 ```
 

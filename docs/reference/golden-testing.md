@@ -62,6 +62,7 @@ The first run writes `src/test/resources/golden/Banana_new.json` and fails. Afte
 Add the module to the test classpath:
 
 ```scala
+// Golden testing helpers for JSON output
 libraryDependencies += "dev.zio" %% "zio-json-golden" % "@VERSION@" % Test
 ```
 

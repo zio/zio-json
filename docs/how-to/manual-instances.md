@@ -19,10 +19,11 @@ This works whenever your type's JSON is the JSON of a type that already has an i
 The core module. Steps 2, 4 and 5 also use the [refined](https://github.com/fthomas/refined) library for a validation function, but any function that returns an `Either[String, A]` works the same way:
 
 ```scala
-libraryDependencies ++= Seq(
-  "dev.zio"    %% "zio-json" % "@VERSION@",
-  "eu.timepit" %% "refined"  % "0.11.4" // only for the validation in steps 2, 4 and 5
-)
+// ZIO JSON: JSON encoders, decoders and codecs (JVM, Scala.js, Scala Native)
+libraryDependencies += "dev.zio"    %% "zio-json" % "@VERSION@"
+
+// only for the validation in steps 2, 4 and 5
+libraryDependencies += "eu.timepit" %% "refined"  % "0.11.4"
 ```
 
 The examples model a fruit stock. A `FruitCount` wraps an `Int`, and a `FruitName` is a string that must not be empty:
