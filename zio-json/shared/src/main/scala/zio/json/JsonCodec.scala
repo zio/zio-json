@@ -247,14 +247,15 @@ object JsonCodec extends GeneratedTupleCodecs with CodecLowPriority0 with JsonCo
   implicit val int: JsonCodec[Int] = JsonCodec(JsonEncoder.int, JsonDecoder.int)
 
   /**
-   * Codec for `java.math.BigInteger`, as a JSON number. Decoding an integer outside the signed 256-bit range, from -2
-   * to the power 255 up to 2 to the power 255 minus 1, fails with `(expected a 256-bit BigInteger)`.
+   * Codec for `java.math.BigInteger`, as a JSON number. When decoding text, an integer outside the signed 256-bit
+   * range, from minus 2 to the power 255 up to 2 to the power 255 minus 1, fails with
+   * `(expected a 256-bit BigInteger)`.
    */
   implicit val bigInteger: JsonCodec[java.math.BigInteger] = JsonCodec(JsonEncoder.bigInteger, JsonDecoder.bigInteger)
 
   /**
-   * Codec for `BigInt`, as a JSON number. Decoding an integer outside the signed 256-bit range, from -2 to the power
-   * 255 up to 2 to the power 255 minus 1, fails with `(expected a 256-bit BigInt)`.
+   * Codec for `BigInt`, as a JSON number. When decoding text, an integer outside the signed 256-bit range, from minus 2
+   * to the power 255 up to 2 to the power 255 minus 1, fails with `(expected a 256-bit BigInt)`.
    */
   implicit val scalaBigInt: JsonCodec[BigInt] = JsonCodec(JsonEncoder.scalaBigInt, JsonDecoder.scalaBigInt)
 
