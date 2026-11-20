@@ -76,7 +76,10 @@ trait JsonFieldDecoder[+A] {
   def unsafeDecodeField(trace: List[JsonError], in: String): A
 }
 
-/** Instances of [[JsonFieldDecoder]] for `String`, `Int`, `Long` and `java.util.UUID` keys. */
+/**
+ * Instances of [[JsonFieldDecoder]] for `String`, `Int`, `Long` and `java.util.UUID` keys. On Scala 3 it also has one
+ * for any subtype of `String` that has a [[JsonDecoder]].
+ */
 object JsonFieldDecoder extends LowPriorityJsonFieldDecoder {
 
   /** Returns the `JsonFieldDecoder[A]` in implicit scope, as in `JsonFieldDecoder[Int]`. */
