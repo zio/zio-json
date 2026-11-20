@@ -1620,11 +1620,15 @@ private[json] object InlineHelpers {
 /**
  * Derives a [[JsonDecoder]] for a case class or a sealed trait at compile time. A case class is read from a JSON object
  * with one key per field. A case of a sealed trait is read from an object whose only key is the type hint (the short
- * type name by default) and whose value is the case. The annotations of the type, such as [[jsonField]] or
- * [[jsonDiscriminator]], and the [[JsonCodecConfiguration]] in implicit scope change these defaults.
+ * type name by default) and whose value is the case. On Scala 3, where `enumValuesAsStrings` is `true` by default, a
+ * sealed trait whose cases are all case objects is read from a JSON string such as `"Red"`. The annotations of the
+ * type, such as [[jsonField]] or [[jsonDiscriminator]], and the [[JsonCodecConfiguration]] in implicit scope change
+ * these defaults.
  *
  * On Scala 2, the derivation uses Magnolia, and every field type needs a decoder in implicit scope. On Scala 3, it uses
- * the `Mirror` of the type and derives a decoder for a field type that has none.
+ * the `Mirror` of the type, and derives a decoder for a field whose type is a case class or a sealed trait without one.
+ * A known bug on Scala 3: a field of type `Option[Inner]`, where `Inner` has no decoder, is derived as a sealed trait
+ * and read from `{"Some":{"value":...}}`, and a `List[Inner]` field fails to compile; give `Inner` its own decoder.
  *
  * {{{
  * final case class Sensor(id: String, celsius: Double, label: Option[String])
@@ -1743,11 +1747,16 @@ object DeriveJsonDecoder {
 /**
  * Derives a [[JsonEncoder]] for a case class or a sealed trait at compile time. A case class is written as a JSON
  * object with one key per field, in declaration order. A case of a sealed trait is wrapped in an object whose only key
- * is the type hint (the short type name by default). The annotations of the type, such as [[jsonField]] or
- * [[jsonDiscriminator]], and the [[JsonCodecConfiguration]] in implicit scope change these defaults.
+ * is the type hint (the short type name by default). On Scala 3, where `enumValuesAsStrings` is `true` by default, a
+ * sealed trait whose cases are all case objects is written as a JSON string such as `"Red"`. The annotations of the
+ * type, such as [[jsonField]] or [[jsonDiscriminator]], and the [[JsonCodecConfiguration]] in implicit scope change
+ * these defaults.
  *
  * On Scala 2, the derivation uses Magnolia, and every field type needs an encoder in implicit scope. On Scala 3, it
- * uses the `Mirror` of the type and derives an encoder for a field type that has none.
+ * uses the `Mirror` of the type, and derives an encoder for a field whose type is a case class or a sealed trait
+ * without one. A known bug on Scala 3: a field of type `Option[Inner]`, where `Inner` has no encoder, is derived as a
+ * sealed trait and written as `{"Some":{"value":...}}` or `{"None":{}}`, and a `List[Inner]` field fails to compile;
+ * give `Inner` its own encoder.
  *
  * {{{
  * final case class Parcel(id: String, weightKg: Double, note: Option[String])
@@ -2027,7 +2036,8 @@ object DeriveJsonEncoder { self =>
  * Derives a [[JsonCodec]] for a case class or a sealed trait at compile time: an encoder and a decoder that read and
  * write the same JSON. It reads the same annotations and [[JsonCodecConfiguration]] as [[DeriveJsonEncoder]] and
  * [[DeriveJsonDecoder]]. A case class is written as an object with one key per field; a case of a sealed trait is
- * wrapped in an object whose only key is the type hint.
+ * wrapped in an object whose only key is the type hint. On Scala 3, where `enumValuesAsStrings` is `true` by default, a
+ * sealed trait whose cases are all case objects is written as a JSON string such as `"Red"`.
  *
  * On Scala 2, put the codec of a recursive type in an `implicit lazy val`.
  *
