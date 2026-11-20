@@ -80,8 +80,8 @@ final case class JsonCodec[A](encoder: JsonEncoder[A], decoder: JsonDecoder[A]) 
   final def <*(that: => JsonCodec[Unit]): JsonCodec[A] = self.zipLeft(that)
 
   /**
-   * Decodes `str` with `decoder`. Returns `Right` with the value, or `Left` with an error message that starts with the
-   * path of the failing value, such as `.total(missing)`.
+   * Decodes `str` with `decoder`. Returns `Right` with the value, or `Left` with the path of the failing value followed
+   * by the reason, such as `.total(missing)`, or `Unexpected end of input` when the text ends in the middle of a value.
    */
   final def decodeJson(str: CharSequence): Either[String, A] = decoder.decodeJson(str)
 
@@ -158,16 +158,18 @@ final case class JsonCodec[A](encoder: JsonEncoder[A], decoder: JsonDecoder[A]) 
 
   /**
    * Returns a codec for `B` that keeps only the second element of [[JsonCodec#zip]]. It is available when this codec's
-   * type is `Unit`: it writes the encoding of `()` in the first slot of the array, and skips the first element when
-   * decoding. With a `Unit` codec built from `JsonEncoder.unit`, `3` is written as `[{},3]`.
+   * type is `Unit`: it writes the encoding of `()` in the first slot of the array, and when decoding it reads the first
+   * element with this codec's decoder and drops the result. With a `Unit` codec built from `JsonEncoder.unit` and
+   * `JsonDecoder.unit`, `3` is written as `[{},3]` and any first element is accepted.
    */
   final def zipRight[B](that: => JsonCodec[B])(implicit ev: Unit <:< A): JsonCodec[B] =
     self.zip(that).transform((t: (A, B)) => t._2, b => (ev(()), b))
 
   /**
    * Returns a codec for `A` that keeps only the first element of [[JsonCodec#zip]] with a `Unit` codec: it writes the
-   * encoding of `()` in the second slot of the array, and skips the second element when decoding. With a `Unit` codec
-   * built from `JsonEncoder.unit`, `3` is written as `[3,{}]`.
+   * encoding of `()` in the second slot of the array, and when decoding it reads the second element with the decoder of
+   * `that` and drops the result. With a `Unit` codec built from `JsonEncoder.unit` and `JsonDecoder.unit`, `3` is
+   * written as `[3,{}]` and any second element is accepted.
    */
   final def zipLeft(that: => JsonCodec[Unit]): JsonCodec[A] =
     self.zip(that).transform((t: (A, Unit)) => t._1, a => (a, ()))
