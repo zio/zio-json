@@ -139,7 +139,7 @@ final case class JsonCodecConfiguration(
    * Returns a configuration with the given options. Unlike the `copy` of a case class, each parameter defaults to the
    * library default, not to the value in this configuration, so every option that is not named is reset:
    * `JsonCodecConfiguration(fieldNameMapping = SnakeCase).copy(allowExtraFields = false)` has `IdentityFormat` as its
-   * `fieldNameMapping`. Call it on `JsonCodecConfiguration.default`, or name every option to keep.
+   * `fieldNameMapping`. It ignores the configuration it is called on, so name every option whose value should be kept.
    */
   def copy(
     sumTypeHandling: SumTypeHandling = WrapperWithClassNameField.asInstanceOf[SumTypeHandling],
@@ -264,7 +264,7 @@ object JsonCodecConfiguration {
     def discriminatorField: Option[String]
   }
 
-  /** The two values of [[SumTypeHandling]]. */
+  /** The two kinds of [[SumTypeHandling]]. */
   object SumTypeHandling {
 
     /**
@@ -283,7 +283,9 @@ object JsonCodecConfiguration {
      * field, so decoding fails with `(Circle)(invalid extra field)`, where `Circle` is the type hint.
      *
      * Note that using a discriminator is less performant, uses more memory, and may be prone to DOS attacks that are
-     * impossible with the default encoding. Use it when an external schema requires a discriminator field.
+     * impossible with the default encoding. A hand-written encoder of a case must write a JSON object: for any other
+     * JSON, `toJson` writes invalid JSON and `toJsonAST` returns a `Left`. Use it when an external schema requires a
+     * discriminator field.
      */
     final case class DiscriminatorField(name: String) extends SumTypeHandling {
       override def discriminatorField: Option[String] = Some(name)

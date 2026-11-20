@@ -66,9 +66,9 @@ final case class jsonAliases(alias: String, aliases: String*) extends Annotation
  * overrides the `sumTypeHandling` option of the [[JsonCodecConfiguration]].
  *
  * Decoding fails with `(missing hint 'type')` when the field is absent (here `type` is the `name`), and with
- * `(invalid disambiguator)` when its value is not the hint of a case. The decoder of each case sees the hint field, so
- * a case that rejects unknown fields ([[jsonNoExtraFields]] or `allowExtraFields = false`) fails with
- * `(Circle)(invalid extra field)`, where `Circle` is the hint.
+ * `(invalid disambiguator)` when its value is a string that is not the hint of a case. The decoder of each case sees
+ * the hint field, so a case that rejects unknown fields ([[jsonNoExtraFields]] or `allowExtraFields = false`) fails
+ * with `(Circle)(invalid extra field)`, where `Circle` is the hint.
  *
  * Note that using a discriminator is less performant, uses more memory, and may be prone to DOS attacks that are
  * impossible with the default encoding. A hand-written encoder of a case must write a JSON object: for any other JSON,
@@ -194,8 +194,9 @@ object ziojson_03 {
 
 /**
  * Sets the [[JsonMemberFormat]] that turns the field names of a case class into JSON names, for both encoding and
- * decoding. The decoder accepts only the converted names. It overrides the `fieldNameMapping` of the
- * [[JsonCodecConfiguration]] for this class, and [[jsonField]] overrides it for one field.
+ * decoding. The decoder accepts the converted names and the [[jsonAliases]] of each field, not the original field
+ * names. It overrides the `fieldNameMapping` of the [[JsonCodecConfiguration]] for this class, and [[jsonField]]
+ * overrides it for one field.
  *
  * {{{
  * @jsonMemberNames(SnakeCase)
@@ -298,10 +299,11 @@ private[json] object jsonMemberNames {
 }
 
 /**
- * Sets the type hint of a case class or case object in a sealed family: the key of the wrapper object, or the value of
- * the discriminator field. Without it, the hint is the short type name after the [[jsonHintNames]] format of the sealed
- * type or the `sumTypeMapping` of the [[JsonCodecConfiguration]]. The name given here is used unchanged. Decoding a
- * hint that names no case fails with `(invalid disambiguator)`.
+ * Sets the type hint of a case class or case object in a sealed family: the key of the wrapper object, the value of the
+ * discriminator field, or the string written when `enumValuesAsStrings` applies. Without it, the hint is the short type
+ * name after the [[jsonHintNames]] format of the sealed type or the `sumTypeMapping` of the [[JsonCodecConfiguration]].
+ * The name given here is used unchanged. Decoding a hint that names no case fails with `(invalid disambiguator)`, or
+ * with `(invalid enumeration value)` for the string form.
  *
  * {{{
  * sealed trait Payment
@@ -346,7 +348,8 @@ final case class jsonHintNames(format: JsonMemberFormat) extends Annotation
 /**
  * Makes the derived encoder write an `Option` field that is `None` as `null` instead of leaving the key out. On a case
  * class it applies to every field, on a field only to that field. `JsonCodecConfiguration(explicitNulls = true)` does
- * the same for every derived class. The decoder is not affected: it reads a missing key and `null` as `None`.
+ * the same for every class derived with that configuration in scope. The decoder is not affected: it reads a missing
+ * key and `null` as `None`.
  *
  * {{{
  * final case class Sensor(id: String, @jsonExplicitNull reading: Option[Double], unit: Option[String])
@@ -393,8 +396,8 @@ final case class jsonExplicitEmptyCollections(encoding: Boolean = true, decoding
 /**
  * Makes the derived decoder of a case class fail with `(invalid extra field)` at the first key that is neither a JSON
  * field name nor an alias of the class. Without it, the decoder skips unknown keys.
- * `JsonCodecConfiguration(allowExtraFields = false)` does the same for every derived class. On a case class without
- * fields, decoding JSON text accepts only an empty object.
+ * `JsonCodecConfiguration(allowExtraFields = false)` does the same for every class derived with that configuration in
+ * scope. On a case class without fields, decoding JSON text accepts only an empty object.
  *
  * This adds extra protections against a DOS attacks but means that changes in the schema will result in a hard error
  * rather than silently ignoring those fields.
@@ -1648,10 +1651,12 @@ object DeriveJsonDecoder {
 
   /**
    * Derives a `JsonDecoder[A]` for the case class or sealed trait `A`, with the [[JsonCodecConfiguration]] in implicit
-   * scope or else `JsonCodecConfiguration.default`. A missing field gets its default value, `None` for an `Option`, and
-   * otherwise fails with `.name(missing)`, where `name` is the JSON name of the field. A `null` for a field with a
-   * default value also gives the default. Unknown keys are skipped unless [[jsonNoExtraFields]] or
-   * `allowExtraFields = false` applies.
+   * scope or else `JsonCodecConfiguration.default`. A missing field gets its default value, `None` for an `Option`, an
+   * empty collection when `explicitEmptyCollections.decoding` is `false`, and otherwise fails with `.name(missing)`,
+   * where `name` is the JSON name of the field. A `null` for a field with a default value also gives the default.
+   * Unknown keys are skipped unless [[jsonNoExtraFields]] or `allowExtraFields = false` applies. A case class without
+   * fields is read from any JSON value in text (only from an empty object with [[jsonNoExtraFields]]), and from an
+   * object or `null` in a JSON AST.
    *
    * @throws java.lang.AssertionError
    *   when the decoder is created, if two fields or aliases of a case class have the same JSON name, or two cases of a
@@ -1933,7 +1938,8 @@ object DeriveJsonEncoder { self =>
 
     /**
      * Writes the characters of `cs` from `from` until `to` before the first field of the case has been written: drops
-     * them up to and including the opening `{`, then writes the rest. Used by `write`.
+     * them up to and including the opening `{`, then writes a `,` (unless the case is an empty object) and the rest.
+     * Used by `write`.
      */
     @noinline def nonZeroStateWrite(cs: Array[Char], from: Int, to: Int): Unit = {
       var i = from
