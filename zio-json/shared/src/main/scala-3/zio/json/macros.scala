@@ -70,9 +70,10 @@ final case class jsonAliases(alias: String, aliases: String*) extends Annotation
  * a case that rejects unknown fields ([[jsonNoExtraFields]] or `allowExtraFields = false`) fails with
  * `(Circle)(invalid extra field)`, where `Circle` is the hint.
  *
- * Decoding with a discriminator does more work and uses more memory than the wrapper form; limit the size of untrusted
- * input. A hand-written encoder of a case must write a JSON object: for any other JSON, `toJson` writes invalid JSON
- * and `toJsonAST` returns a `Left`. Use a discriminator when an external schema requires one.
+ * Note that using a discriminator is less performant, uses more memory, and may be prone to DOS attacks that are
+ * impossible with the default encoding. A hand-written encoder of a case must write a JSON object: for any other JSON,
+ * `toJson` writes invalid JSON and `toJsonAST` returns a `Left`. Use a discriminator when an external schema requires
+ * one.
  *
  * {{{
  * @jsonDiscriminator("type")
@@ -391,9 +392,12 @@ final case class jsonExplicitEmptyCollections(encoding: Boolean = true, decoding
 
 /**
  * Makes the derived decoder of a case class fail with `(invalid extra field)` at the first key that is neither a JSON
- * field name nor an alias of the class. Without it, the decoder skips unknown keys. A new field in the JSON then
- * becomes a decoding error instead of being ignored. `JsonCodecConfiguration(allowExtraFields = false)` does the same
- * for every derived class. On a case class without fields, decoding JSON text accepts only an empty object.
+ * field name nor an alias of the class. Without it, the decoder skips unknown keys.
+ * `JsonCodecConfiguration(allowExtraFields = false)` does the same for every derived class. On a case class without
+ * fields, decoding JSON text accepts only an empty object.
+ *
+ * This adds extra protections against a DOS attacks but means that changes in the schema will result in a hard error
+ * rather than silently ignoring those fields.
  *
  * It cannot be combined with [[jsonDiscriminator]]: the decoder of the case sees the discriminator field as an extra
  * field, so decoding fails with `(Circle)(invalid extra field)`, where `Circle` is the type hint.

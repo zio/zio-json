@@ -277,9 +277,10 @@ object JsonCodecConfiguration {
      * configuration: `{"type":"Circle","radius":1.5}`. [[jsonDiscriminator]] on a sealed type overrides it.
      *
      * Do not combine it with `allowExtraFields = false`: the decoder of each case sees the hint field as an extra
-     * field, so decoding fails with `(Circle)(invalid extra field)`, where `Circle` is the type hint. Decoding with a
-     * discriminator does more work and uses more memory than the wrapper form; limit the size of untrusted input. Use
-     * it when an external schema requires a discriminator field.
+     * field, so decoding fails with `(Circle)(invalid extra field)`, where `Circle` is the type hint.
+     *
+     * Note that using a discriminator is less performant, uses more memory, and may be prone to DOS attacks that are
+     * impossible with the default encoding. Use it when an external schema requires a discriminator field.
      */
     final case class DiscriminatorField(name: String) extends SumTypeHandling {
       override def discriminatorField: Option[String] = Some(name)
