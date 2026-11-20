@@ -243,7 +243,7 @@ object JsonEncoder extends GeneratedTupleEncoders with EncoderLowPriority1 with 
   /**
    * Encodes a `String` as a JSON string. It escapes `"` and `\` with a backslash, and control characters below a space
    * as `\n`, `\t`, `\r`, `\b`, `\f` or a hex escape; every other character, including non-ASCII ones, is written as it
-   * is. A `null` string throws a `java.lang.NullPointerException`.
+   * is. On the JVM, a `null` string throws a `java.lang.NullPointerException`.
    */
   implicit val string: JsonEncoder[String] = new JsonEncoder.AbstractJsonEncoder[String] {
     override def unsafeEncode(a: String, indent: Option[Int], out: Write): Unit = {
