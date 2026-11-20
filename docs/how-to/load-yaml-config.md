@@ -19,6 +19,7 @@ The same `JsonDecoder` that reads JSON reads the YAML, so there are no casts and
 Add the module to `build.sbt`. It depends on `zio-json` and on [SnakeYAML](https://bitbucket.org/snakeyaml/snakeyaml), and it is available on the JVM only, not on Scala.js or Scala Native:
 
 ```scala
+// YAML support for ZIO JSON
 libraryDependencies += "dev.zio" %% "zio-json-yaml" % "@VERSION@"
 ```
 

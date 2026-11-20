@@ -19,6 +19,7 @@ Goal: get a first draft of case classes and codecs for a JSON document you only 
 `Generator` is part of the core `zio-json` module, so there is nothing else to add:
 
 ```scala
+// ZIO JSON: JSON encoders, decoders and codecs (JVM, Scala.js, Scala Native)
 libraryDependencies += "dev.zio" %% "zio-json" % "@VERSION@"
 ```
 

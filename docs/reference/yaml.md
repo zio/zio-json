@@ -18,6 +18,7 @@ The module is available for the JVM only, since it depends on [SnakeYAML](https:
 Add the module to your `build.sbt`:
 
 ```scala
+// YAML support for ZIO JSON
 libraryDependencies += "dev.zio" %% "zio-json-yaml" % "@VERSION@"
 ```
 

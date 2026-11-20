@@ -26,6 +26,7 @@ This guide shows each case on its own, with the JSON it produces when run on Sca
 Only the core module, which is published for Scala 3:
 
 ```scala
+// ZIO JSON: JSON encoders, decoders and codecs (JVM, Scala.js, Scala Native)
 libraryDependencies += "dev.zio" %% "zio-json" % "@VERSION@"
 ```
 

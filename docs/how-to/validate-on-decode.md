@@ -131,6 +131,7 @@ Because the check runs after the object is built, the error has no path below th
 The `zio-json-interop-refined` module gives you encoders and decoders for [refined](https://github.com/fthomas/refined) types, so a predicate such as `NonEmpty` or `Positive` replaces the hand-written check. Add it to your build:
 
 ```sbt
+// Refined types integration for ZIO JSON
 libraryDependencies += "dev.zio" %% "zio-json-interop-refined" % "@VERSION@"
 ```
 

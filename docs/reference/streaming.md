@@ -86,6 +86,7 @@ runSync(
 The streaming API is part of the core `zio-json` artifact, which depends on `zio-streams`. No extra module is needed:
 
 ```scala
+// ZIO JSON: JSON encoders, decoders and codecs (JVM, Scala.js, Scala Native)
 libraryDependencies += "dev.zio" %% "zio-json" % "@VERSION@"
 ```
 

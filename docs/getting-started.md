@@ -18,6 +18,7 @@ By the end you will have a small user-profile model: a `Profile` that holds a `P
 Add the library to your `build.sbt`:
 
 ```sbt
+// ZIO JSON: JSON encoders, decoders and codecs (JVM, Scala.js, Scala Native)
 libraryDependencies += "dev.zio" %% "zio-json" % "@VERSION@"
 ```
 
@@ -27,6 +28,7 @@ ZIO JSON is published for the JVM, Scala.js and Scala Native, for Scala 2.12, 2.
 On those two platforms the `java.time` types come from the `scala-java-time` library. If you use `java.time.ZoneId` or `java.time.ZonedDateTime` there, also add the time-zone database in the same version as the `scala-java-time` in your dependency tree (`sbt dependencyTree` shows it), for example:
 
 ```scala
+// Time zone data for java.time on Scala.js
 libraryDependencies += "io.github.cquiroz" %%% "scala-java-time-tzdb" % "2.10.0"
 ```
 

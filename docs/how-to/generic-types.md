@@ -25,6 +25,7 @@ The fix is a codec that is a function of the element codecs: an `implicit def` (
 Only the core module:
 
 ```scala
+// ZIO JSON: JSON encoders, decoders and codecs (JVM, Scala.js, Scala Native)
 libraryDependencies += "dev.zio" %% "zio-json" % "@VERSION@"
 ```
 
