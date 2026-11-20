@@ -80,6 +80,9 @@ case class ExplicitEmptyCollections(encoding: Boolean = true, decoding: Boolean 
  *   such a case, and the string form is skipped when a case has a codec of its own; on Scala 3 only case objects and
  *   enum cases without parameters count. It has no effect when a discriminator is set. `false` by default on Scala 2
  *   and `true` on Scala 3.
+ *
+ * @see
+ *   [[https://zio.dev/zio-json/configuration/ Configuration]]
  */
 final case class JsonCodecConfiguration(
   sumTypeHandling: SumTypeHandling = WrapperWithClassNameField,

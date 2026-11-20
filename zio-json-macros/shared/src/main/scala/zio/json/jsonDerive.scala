@@ -59,7 +59,7 @@ object JsonDeriveConfig {
  * @param config
  *   what to generate, see [[JsonDeriveConfig]]
  * @see
- *   [[https://zio.dev/zio-json/getting-started/ Getting Started]]
+ *   [[https://zio.dev/zio-json/configuration/ Configuration]]
  */
 class jsonDerive(
   val config: JsonDeriveConfig = JsonDeriveConfig.Codec
