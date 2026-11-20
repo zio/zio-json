@@ -1202,7 +1202,7 @@ object DeriveJsonEncoder {
           if (indent eq None) out.write(':')
           else out.write(" : ")
           out.write(encodedNames(idx))
-          // whitespace is always off by 2 spaces at the end, probably not worth fixing
+          // pretty printing: a case without fields gets its closing `}` right after the hint, on the same line
           tcs(idx).unsafeEncode(a, indent, new NestedWriter(out, indent_))
         }
 

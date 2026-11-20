@@ -465,8 +465,8 @@ private[json] final case class SumMeta(
 
 // =======================================================================================
 // Macro helpers for annotation and metadata extraction.
-// These are small, isolated macros that only extract data — they don't derive
-// codecs, so they cannot cause cyclic macro dependencies.
+// Most of these macros only extract data; the summon* ones also emit
+// DeriveJsonEncoder.gen / DeriveJsonDecoder.gen calls for types without an instance.
 // =======================================================================================
 private[json] object MacroHelpers {
 
@@ -1277,7 +1277,7 @@ private[json] object DeriveHelpers {
             if (matrix2 eq null) Lexer.enumeration(trace, in, matrix1)
             else Lexer.enumeration128(trace, in, matrix1, matrix2)
           if (field >= 0) {
-            // Lexer.enumeration already consumed the string token, just construct via sub-decoder's missing path
+            // Lexer.enumeration already consumed the string token, so construct the case without reading more input
             // For enum values (case objects), we decode from AST to avoid re-reading consumed input
             tcs(field).unsafeFromJsonAST(trace, Json.Obj(Chunk.empty)).asInstanceOf[A]
           } else {
@@ -1561,7 +1561,7 @@ private[json] object DeriveHelpers {
           else out.write(" : ")
           JsonEncoder.string.unsafeEncode(name, indent_, out)
 
-          // whitespace is always off by 2 spaces at the end, probably not worth fixing
+          // pretty printing: a case without fields gets its closing `}` right after the hint, on the same line
           val intermediate = new DeriveJsonEncoder.NestedWriter(out, indent_)
           encoder.unsafeEncode(a.asInstanceOf, indent, intermediate)
         }
