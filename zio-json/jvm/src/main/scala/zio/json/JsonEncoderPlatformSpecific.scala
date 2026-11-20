@@ -4,10 +4,18 @@ import zio.json.internal.WriteWriter
 import zio.stream._
 import zio.{ Chunk, Ref, Unsafe, ZIO }
 
+/**
+ * The platform-specific methods of [[JsonEncoder]]. On the JVM they encode values to a `zio.stream.ZStream` of
+ * characters: `encodeJsonStream`, `encodeJsonLinesPipeline` and `encodeJsonArrayPipeline`. On Scala.js and Scala Native
+ * the trait has no methods.
+ *
+ * @see
+ *   [[https://zio.dev/zio-json/streaming/ Streaming]]
+ */
 trait JsonEncoderPlatformSpecific[A] { self: JsonEncoder[A] =>
 
   /**
-   * Encodes the specified value into a character stream.
+   * Encodes `a` as compact JSON and returns its characters as a stream.
    */
   final def encodeJsonStream(a: A): ZStream[Any, Throwable, Char] =
     ZStream(a).via(encodeJsonDelimitedPipeline(None, None, None))
@@ -74,9 +82,19 @@ trait JsonEncoderPlatformSpecific[A] { self: JsonEncoder[A] =>
       }
     }
 
+  /**
+   * A pipeline that encodes each element as compact JSON followed by a newline, in the JSON Lines format: the elements
+   * `1`, `2` and `3` become the characters of `"1\n2\n3\n"`. An empty stream gives no characters, and an element whose
+   * encoder throws fails the stream with that exception.
+   */
   final lazy val encodeJsonLinesPipeline: ZPipeline[Any, Throwable, A, Char] =
     encodeJsonDelimitedPipeline(None, Some('\n'), None)
 
+  /**
+   * A pipeline that encodes all elements as one compact JSON array: the elements `1`, `2` and `3` become the characters
+   * of `[1,2,3]`, and an empty stream becomes `[]`. An element whose encoder throws fails the stream with that
+   * exception.
+   */
   final lazy val encodeJsonArrayPipeline: ZPipeline[Any, Throwable, A, Char] =
     encodeJsonDelimitedPipeline(Some('['), Some(','), Some(']'))
 }
