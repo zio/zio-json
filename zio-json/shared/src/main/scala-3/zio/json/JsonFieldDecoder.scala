@@ -135,8 +135,7 @@ private[json] trait LowPriorityJsonFieldDecoder {
   /**
    * Scala 3 only: a key decoder for any subtype `T` of `String` that has a `JsonDecoder[T]`, such as a union of string
    * literals. It puts the key between quotes and decodes the result with that `JsonDecoder`, so the key `test` for the
-   * type `"dev" | "prod"` fails with `.test(expected one of: dev, prod)`. A known bug: the key is not escaped again
-   * first, so a key that contains `"` or `\` does not decode to the original string.
+   * type `"dev" | "prod"` fails with `.test(expected one of: dev, prod)`.
    */
   implicit def stringLike[T <: String](implicit decoder: JsonDecoder[T]): JsonFieldDecoder[T] =
     new JsonFieldDecoder[T] {

@@ -102,8 +102,7 @@ trait JsonDecoder[A] extends JsonDecoderPlatformSpecific[A] {
   final def bothLeft[B](that: => JsonDecoder[B]): JsonDecoder[A] = bothWith(that)((a, _) => a)
 
   /**
-   * Like [[JsonDecoder#both]], but combines the two results with `f`. The decoder records what this decoder reads and
-   * replays it for `that`, so it holds the whole value in memory.
+   * Like [[JsonDecoder#both]], but combines the two results with `f`.
    */
   final def bothWith[B, C](that: => JsonDecoder[B])(f: (A, B) => C): JsonDecoder[C] =
     new JsonDecoder.AbstractJsonDecoder[C] {
@@ -178,10 +177,10 @@ trait JsonDecoder[A] extends JsonDecoderPlatformSpecific[A] {
   /**
    * Returns a new decoder that combines this decoder and the specified decoder using fallback semantics: such that if
    * this decoder fails, the input is rewound and the specified decoder is tried instead. When both fail, the error is
-   * the one from `that`.
+   * the one from `that`. This method may be unsafe from a security perspective: it can use more memory than hand coded
+   * alternative and so lead to DOS.
    *
-   * To rewind, the decoder records everything this decoder reads, so it can use more memory than a hand-coded
-   * alternative. When the first character tells the alternatives apart, `JsonDecoder.peekChar` needs no recording:
+   * When the first character tells the alternatives apart, `JsonDecoder.peekChar` avoids the fallback:
    *
    * {{{
    * val decoder: JsonDecoder[AnyVal] = JsonDecoder.peekChar[AnyVal] {
