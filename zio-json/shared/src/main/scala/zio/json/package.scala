@@ -49,8 +49,9 @@ package object json extends JsonPackagePlatformSpecific {
 
     // Jon Pretty's better looking brother, but a bit slower
     /**
-     * Encodes the value as indented JSON text: one field or element per line, two spaces per level, and `" : "` between
-     * a key and its value.
+     * Encodes the value as indented JSON text, two spaces per level, with `" : "` between a key and its value. Object
+     * fields and the elements of arrays and collections go on separate lines; tuple elements stay on one line,
+     * separated by `", "`.
      */
     @inline def toJsonPretty(implicit encoder: JsonEncoder[A]): String = encoder.encodeJson(a, Some(0)).toString
 
