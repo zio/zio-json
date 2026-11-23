@@ -39,7 +39,8 @@ object filehelpers {
   /**
    * Creates the folder `pathToDir` inside the module root, with any missing parent folders, and returns its path. The
    * module root is the value of the system property named by `moduleRootProperty` when it is set; otherwise it is the
-   * parent of the `target` folder that `getRootDir` finds from the class path.
+   * parent of the `target` folder that `getRootDir` finds from the class path. The effect succeeds with that path even
+   * when the folder can't be created, for example when the module root is a file.
    *
    * The returned path is relative when the system property holds a relative path. When the property is unset and no
    * `target` folder is found, the effect dies with a `java.lang.NullPointerException`.
@@ -69,7 +70,7 @@ object filehelpers {
    * Reads the first JSON value in the file at `path` and decodes it as a [[GoldenSample]].
    *
    * Fails with a `java.nio.file.NoSuchFileException` when the file doesn't exist, with a
-   * `java.util.NoSuchElementException` when it is empty, and with a `java.lang.Exception` that carries the error
+   * `java.util.NoSuchElementException` when it is empty or holds only an incomplete JSON value, and with a `java.lang.Exception` that carries the error
    * message when the content can't be decoded (`.samples(missing)` for a JSON object without a `samples` field).
    */
   def readSampleFromFile(path: Path)(implicit trace: Trace): Task[GoldenSample] =
