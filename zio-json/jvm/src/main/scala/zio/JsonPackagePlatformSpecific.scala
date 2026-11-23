@@ -11,8 +11,10 @@ import java.nio.file.{ Path, Paths }
 /**
  * Platform-specific helpers of the `zio.json` package.
  *
- * On the JVM they read and write files and URLs as streams of JSON Lines, that is one JSON value per line. Scala.js and
- * Scala Native have none.
+ * On the JVM they read files and URLs, and write files, as streams of JSON Lines, that is one JSON value per line.
+ * Scala.js and Scala Native have none.
+ *
+ * On the JVM, for example:
  *
  * {{{
  * import zio.json._
@@ -29,7 +31,7 @@ trait JsonPackagePlatformSpecific {
   /**
    * Reads a file of JSON Lines as a stream of [[zio.json.ast.Json]] values.
    *
-   * See `readJsonLinesAs` for the format and the failures.
+   * See the `Path` overload of `readJsonLinesAs` for the format and the failures.
    */
   def readJsonAs(file: File): ZStream[Any, Throwable, ast.Json] =
     readJsonLinesAs[ast.Json](file)
@@ -37,7 +39,7 @@ trait JsonPackagePlatformSpecific {
   /**
    * Reads a file of JSON Lines as a stream of [[zio.json.ast.Json]] values.
    *
-   * See `readJsonLinesAs` for the format and the failures.
+   * See the `Path` overload of `readJsonLinesAs` for the format and the failures.
    */
   def readJsonAs(path: Path): ZStream[Any, Throwable, ast.Json] =
     readJsonLinesAs[ast.Json](path)
@@ -45,7 +47,7 @@ trait JsonPackagePlatformSpecific {
   /**
    * Reads the file at `path` as a stream of [[zio.json.ast.Json]] values, one per line of JSON Lines.
    *
-   * See `readJsonLinesAs` for the format and the failures.
+   * See the `Path` overload of `readJsonLinesAs` for the format and the failures.
    */
   def readJsonAs(path: String): ZStream[Any, Throwable, ast.Json] =
     readJsonLinesAs[ast.Json](path)
@@ -53,7 +55,7 @@ trait JsonPackagePlatformSpecific {
   /**
    * Reads the content of `url` as a stream of [[zio.json.ast.Json]] values, one per line of JSON Lines.
    *
-   * See `readJsonLinesAs` for the format and the failures.
+   * See the `Path` overload of `readJsonLinesAs` for the format and the failures.
    */
   def readJsonAs(url: URL): ZStream[Any, Throwable, ast.Json] =
     readJsonLinesAs[ast.Json](url)
@@ -67,9 +69,11 @@ trait JsonPackagePlatformSpecific {
   /**
    * Reads a file of JSON Lines as a stream of `A` values.
    *
-   * The file is read as UTF-8 and every line is decoded with the implicit `JsonDecoder`, so a line must hold one
-   * complete JSON value. Blank lines are skipped. The stream fails with the file error when the file cannot be opened,
-   * and with an exception that carries the decoding error message when a line cannot be decoded.
+   * The file is read as UTF-8 and decoded with the implicit `JsonDecoder` as JSON values separated by line breaks (`\n`
+   * or `\r\n`); a value may also span several lines. Blank lines are skipped. The stream fails with the file error when
+   * the file cannot be opened, and with a `java.lang.Exception` whose message is the decoding error, for example
+   * `(expected an Int)`, when a value cannot be decoded. An incomplete value at the end of the file is dropped without
+   * an error.
    *
    * {{{
    * import zio.json._
@@ -100,7 +104,7 @@ trait JsonPackagePlatformSpecific {
    * Reads the content of `url` as a stream of `A` values, decoding each line of JSON Lines with the implicit
    * `JsonDecoder`.
    *
-   * The connection is closed when the stream ends or fails.
+   * The input stream opened from `url` is closed when the stream ends, fails or is interrupted.
    */
   def readJsonLinesAs[A: JsonDecoder](url: URL): ZStream[Any, Throwable, A] = {
     val scoped = ZIO

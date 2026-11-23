@@ -19,10 +19,11 @@ package zio.json.ast
  * A path from one JSON node to another, used to read and edit a document with `Json#get`, `Json#delete`,
  * `Json#transformAt` and `Json#relocate`.
  *
- * `From` is the kind of node the path starts at and `To` the kind of node it ends at. Build a cursor from the
- * constructors in the companion (`JsonCursor.field`, `JsonCursor.element`, `JsonCursor.identity`), then extend it with
- * `field`, `element`, the `is...` checks and `>>>`. A cursor is only a description: it does not hold or change any
- * JSON.
+ * `To` is the kind of node the cursor ends at. `From` is the kind of node its last step reads from (`Json.Obj` after
+ * `field`, `Json.Arr` after `element`, `Json` otherwise), and `>>>` uses it to check that an appended cursor fits.
+ * Build a cursor from the constructors in the companion (`JsonCursor.field`, `JsonCursor.element`,
+ * `JsonCursor.identity`), then extend it with `field`, `element`, the `is...` checks and `>>>`. A cursor is only a
+ * description: it does not hold or change any JSON.
  *
  * {{{
  * import zio.json._
@@ -39,7 +40,7 @@ package zio.json.ast
  * }}}
  *
  * @see
- *   [[https://zio.dev/zio-json/ ZIO JSON]]
+ *   [[https://zio.dev/zio-json/json-ast/ JSON AST]]
  */
 sealed trait JsonCursor[-From, +To <: Json] { self =>
 

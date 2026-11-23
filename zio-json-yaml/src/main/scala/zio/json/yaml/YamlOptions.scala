@@ -21,9 +21,10 @@ import zio.json.ast.Json
  * }}}
  *
  * @param newDumperOptions
- *   Creates the SnakeYAML `DumperOptions` that writing starts from, for settings that have no field here. The fields
- *   `indentation`, `sequenceIndentation`, `maxScalarWidth`, `lineBreak` and `indentWithIndicator` are then applied on
- *   top of it.
+ *   Creates the SnakeYAML `DumperOptions` that writing starts from, for settings that have no field here, such as
+ *   `setExplicitStart`. Its default flow and scalar styles have no effect, because `flowStyle` and `scalarStyle` set
+ *   the style of every node. The fields `indentation`, `sequenceIndentation`, `maxScalarWidth`, `lineBreak` and
+ *   `indentWithIndicator` are then applied on top of it.
  * @param dropNulls
  *   Whether object fields whose value is `Json.Null` are left out. Nulls inside arrays are always written.
  * @param indentation
@@ -38,13 +39,14 @@ import zio.json.ast.Json
  * @param flowStyle
  *   Chooses the flow or block style of each mapping and sequence, from the `Json` value it is written for
  * @param scalarStyle
- *   Chooses the style of each scalar value (plain, quoted or literal), from the `Json` value it is written for. A plain
- *   string that contains a line break is written as a literal block.
+ *   Chooses the style of each scalar value (plain, quoted, literal or folded), from the `Json` value it is written for.
+ *   A plain string that contains a line feed is written as a literal block, and SnakeYAML quotes a plain string that
+ *   would read back as another type, such as `'true'`.
  * @param keyStyle
  *   Chooses the style of each mapping key, from the key
  * @param nonPrintableStyle
- *   How strings with non-printable characters are written: escaped, or, for `NonPrintableStyle.BINARY`, as base64
- *   `!!binary` text
+ *   How string values with non-printable characters are written: escaped, or, for `NonPrintableStyle.BINARY`, as base64
+ *   `!!binary` text. Keys are always escaped.
  * @param indentWithIndicator
  *   Passed to `DumperOptions#setIndentWithIndicator`
  */
@@ -76,8 +78,9 @@ object YamlOptions {
    *
    * Null object fields are dropped, indentation is 2 spaces for both the levels and the sequence indicator, scalars may
    * be split at 80 columns, the line break is the one of the platform when SnakeYAML knows it and Unix otherwise, and
-   * mappings, sequences, scalars and keys use SnakeYAML's automatic or plain styles. Non-printable characters are
-   * escaped, and the sequence indentation is counted with the indicator.
+   * mappings and sequences use `FlowStyle.AUTO`, which `toYaml` writes in block style, and scalars and keys use
+   * `ScalarStyle.PLAIN`. Non-printable characters are escaped, and `indentWithIndicator` is set, so the content of a
+   * sequence item is indented past its `-` indicator.
    */
   val default: YamlOptions = YamlOptions(
     () => new DumperOptions(),

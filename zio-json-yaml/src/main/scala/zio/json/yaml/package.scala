@@ -43,7 +43,7 @@ import scala.util.matching.Regex
  * }}}
  *
  * @see
- *   [[https://zio.dev/zio-json/ ZIO JSON]]
+ *   [[https://zio.dev/zio-json/yaml/ YAML]]
  */
 package object yaml {
 
@@ -55,11 +55,12 @@ package object yaml {
     /**
      * Writes this value as YAML text, formatted according to `options`.
      *
-     * The text ends with a line break. The result is `Left` when SnakeYAML fails to write the document.
+     * The text ends with a line break. The result is `Left` when SnakeYAML rejects the options or fails to write the
+     * document.
      *
-     * Objects become YAML mappings and arrays become sequences. Integer-valued numbers are written through `Long`, so
-     * values outside the `Long` range are not preserved. Null fields of objects are dropped when `options.dropNulls` is
-     * set, which is the default.
+     * Objects become YAML mappings and arrays become sequences. Integer-valued numbers are written through `Long`, so a
+     * value outside the `Long` range is written as a different number, for example `18446744073709551616` becomes `0`.
+     * Null fields of objects are dropped when `options.dropNulls` is set, which is the default.
      *
      * {{{
      * import zio.json.ast.Json
@@ -113,7 +114,8 @@ package object yaml {
     }
 
     /**
-     * Converts this value to a SnakeYAML node tree, according to `options`.
+     * Converts this value to a SnakeYAML node tree. Only `dropNulls`, `flowStyle`, `scalarStyle`, `keyStyle` and
+     * `nonPrintableStyle` of `options` are used; the others apply when `toYaml` writes the tree.
      *
      * Use it to take over serialization with SnakeYAML directly. `toYaml` writes this tree.
      */
@@ -132,11 +134,10 @@ package object yaml {
      * The result is `Left` with an error message when encoding fails or when writing the YAML fails.
      *
      * {{{
-     * import zio.json.ast.Json
      * import zio.json.yaml._
      *
-     * Json.Arr(Json.Num(1), Json.Num(2)).toYaml()
-     * // Right("  - 1\n  - 2\n")
+     * Map("port" -> 8080, "debug" -> 1).toYaml()
+     * // Right("port: 8080\ndebug: 1\n")
      * }}}
      *
      * @param options
@@ -163,10 +164,10 @@ package object yaml {
     /**
      * Parses this text as one YAML document and decodes it to an `A` with the implicit `JsonDecoder`.
      *
-     * Anchors and aliases are resolved. Plain scalars are typed by the YAML core rules, for example `~` is null, `0x10`
-     * is 16 and `2020-01-01` stays a string. The result is `Left` with an error message when the text is not valid
-     * YAML, when it holds more than one document, when a mapping has a key that is not a scalar, or when decoding
-     * fails.
+     * Plain scalars are typed by the YAML 1.1 rules that SnakeYAML uses, for example `~` is null, `yes` and `on` are
+     * `true`, `0x10` is 16, `010` is 8 and `2020-01-01` stays a string. The result is `Left` with an error message when
+     * the text is not valid YAML, when it holds no document or more than one, when a mapping has a key that is not a
+     * scalar, when a number is `.inf` or `.nan`, or when decoding fails.
      *
      * {{{
      * import zio.json.ast.Json

@@ -37,8 +37,8 @@ import scala.annotation._
  * are non-total or are known DOS vectors (e.g. calling `.toBigInteger` on a "1e214748364" will consume an excessive
  * amount of heap memory).
  *
- * Object equality ignores the order of the fields. `Json` has a `JsonEncoder`, a `JsonDecoder` and a `JsonCodec`, so it
- * can be parsed with `fromJson` and printed with `toJson`.
+ * Object equality ignores the order of the fields when every name occurs once. `Json` has a `JsonEncoder`, a
+ * `JsonDecoder` and a `JsonCodec`, so it can be parsed with `fromJson` and printed with `toJson`.
  *
  * {{{
  * import zio.json._
@@ -52,12 +52,14 @@ import scala.annotation._
  * }}}
  *
  * @see
- *   [[https://zio.dev/zio-json/ ZIO JSON]]
+ *   [[https://zio.dev/zio-json/json-ast/ JSON AST]]
  */
 sealed abstract class Json { self =>
 
   /**
-   * Decodes this value into an `A` with the implicit decoder, without going through text.
+   * Decodes this value into an `A` with the `fromJsonAST` of the implicit decoder.
+   *
+   * Decoders that do not override `unsafeFromJsonAST` encode the value to JSON text and parse that text.
    *
    * Returns `Left` with the decoding error message when this value cannot be decoded as an `A`.
    *
@@ -166,8 +168,9 @@ sealed abstract class Json { self =>
   /**
    * Deletes the node that `cursor` points to.
    *
-   * The result is `Left` with an error message when the node does not exist. Deleting the whole document, with
-   * `JsonCursor.identity`, gives `Right(Json.Null)`.
+   * The result is `Left` with an error message when the node does not exist or a node above it has a different type
+   * than the cursor expects. A type check at the end of the cursor, such as `isString`, is not applied: the node is
+   * deleted whatever its type. Deleting the whole document, with `JsonCursor.identity`, gives `Right(Json.Null)`.
    *
    * {{{
    * import zio.json._
@@ -355,8 +358,9 @@ sealed abstract class Json { self =>
    * Intersects two JSON values of the same kind.
    *
    * When both values are `Json.Obj`, the result keeps the fields that appear on both sides with equal names and equal
-   * values, in the order of this object. When both are `Json.Arr`, the result keeps the elements that appear in both
-   * arrays. Nested values are compared whole, not intersected recursively.
+   * values, in the order of this object. When both are `Json.Arr`, the result keeps the elements of this array that
+   * also appear in `that`, in the order of this array; an element that is repeated here is kept at most as many times
+   * as it occurs in `that`. Nested values are compared whole, not intersected recursively.
    *
    * {{{
    * import zio.json._
@@ -388,10 +392,10 @@ sealed abstract class Json { self =>
   /**
    * Merges `that` into this value.
    *
-   *   - merging objects results in a new objects with all pairs of both sides, with the right hand side being used on
-   *     key conflicts
-   *   - merging arrays results in all of the individual elements being merged
-   *   - scalar values will be replaced by the right hand side
+   *   - merging two objects keeps the fields of both; when both have a field with the same name, the two values are
+   *     merged
+   *   - merging two arrays merges the elements at the same index, and keeps the extra elements of the longer array
+   *   - in every other case the result is `that`
    *
    * {{{
    * import zio.json._
@@ -414,7 +418,8 @@ sealed abstract class Json { self =>
    * Moves the node that the `from` cursor points to, to the location that the `to` cursor points to.
    *
    * The node at `to` is replaced by the node from `from`, and the node at `from` is then deleted. The result is `Left`
-   * when either cursor points to a node that does not exist; an object field that does not exist yet is not created.
+   * when either cursor points to a node that does not exist or has a different type than the cursor expects; an object
+   * field that does not exist yet is not created.
    *
    * {{{
    * import zio.json._
@@ -492,7 +497,8 @@ sealed abstract class Json { self =>
   }
 
   /**
-   * Like `transformDown`, but values for which `pf` is not defined are kept as they are.
+   * Like `transformDown`, but a value for which `pf` is not defined is left unchanged, and its children are still
+   * visited.
    */
   final def transformDownSome(pf: PartialFunction[Json, Json]): Json = {
     val lifted = pf.lift
@@ -560,7 +566,8 @@ sealed abstract class Json { self =>
   }
 
   /**
-   * Like `transformUp`, but values for which `pf` is not defined are kept as they are.
+   * Like `transformUp`, but a value for which `pf` is not defined is left unchanged, and its children are still
+   * visited.
    */
   final def transformUpSome(pf: PartialFunction[Json, Json]): Json = {
     val lifted = pf.lift
@@ -588,8 +595,8 @@ object Json {
   /**
    * A JSON object: an ordered list of field names and values.
    *
-   * Field order is kept when encoding, but ignored by equality. The same name can occur more than once if the `Chunk`
-   * holds it more than once.
+   * Field order is kept when encoding. Equality ignores the order of the fields when every name occurs once. The same
+   * name can occur more than once if the `Chunk` holds it more than once.
    *
    * {{{
    * val person = Json.Obj("name" -> Json.Str("Ada"), "age" -> Json.Num(36))
@@ -645,8 +652,10 @@ object Json {
      * Adds the field `key` with `value`, by merging a one-field object into this one.
      *
      * A name that does not exist yet is appended after the existing fields. When the name exists, the two values are
-     * combined with `Json.merge`: for scalars the new `value` replaces the old one, and for objects and arrays the two
+     * combined with `Json#merge`: for scalars the new `value` replaces the old one, and for objects and arrays the two
      * are merged.
+     *
+     * A name that occurs more than once in this object ends up as one field holding its last value.
      */
     def add(key: String, value: Json): Json.Obj = merge(Json.Obj(key -> value))
 
@@ -681,8 +690,10 @@ object Json {
      * Merges `that` into this object.
      *
      * The result has the fields of this object followed by the fields that only `that` has. When both objects have a
-     * field with the same name, the two values are combined with `Json.merge`, so for scalars the value from `that` is
+     * field with the same name, the two values are combined with `Json#merge`, so for scalars the value from `that` is
      * used.
+     *
+     * A name that occurs more than once in this object ends up as one field holding its last value.
      */
     def merge(that: Json.Obj): Json.Obj = {
       val fields1  = this.fields
@@ -814,7 +825,7 @@ object Json {
     /**
      * Merges `that` into this array, element by element.
      *
-     * The element at each index is combined with the element of `that` at the same index using `Json.merge`. When one
+     * The element at each index is combined with the element of `that` at the same index using `Json#merge`. When one
      * array is longer, its remaining elements are kept.
      */
     def merge(that: Json.Arr): Json.Arr = {
@@ -1008,8 +1019,8 @@ object Json {
   /**
    * A JSON number, held as a `java.math.BigDecimal`.
    *
-   * Equality and hash codes follow `java.math.BigDecimal`, which compares the scale as well: `Json.Num(1.0)` is not
-   * equal to `Json.Num(1)`.
+   * Equality follows `java.math.BigDecimal`, which compares the scale as well: `Json.Num(1.0)` is not equal to
+   * `Json.Num(1)`.
    *
    * {{{
    * Json.Num(42)
@@ -1077,14 +1088,14 @@ object Json {
     /**
      * Creates a number from a `Float`, using the shortest decimal text of the float.
      *
-     * Throws a `NumberFormatException` for `NaN` and the infinite values.
+     * Throws a `java.lang.NumberFormatException` for `NaN` and the infinite values.
      */
     def apply(value: Float): Num = new Num(new java.math.BigDecimal(SafeNumbers.toString(value)))
 
     /**
      * Creates a number from a `Double`, using the shortest decimal text of the double.
      *
-     * Throws a `NumberFormatException` for `NaN` and the infinite values.
+     * Throws a `java.lang.NumberFormatException` for `NaN` and the infinite values.
      */
     def apply(value: Double): Num = new Num(new java.math.BigDecimal(SafeNumbers.toString(value)))
 
@@ -1168,7 +1179,7 @@ object Json {
   }
 
   /**
-   * Decodes any JSON value, choosing the kind of value from its first character.
+   * Decodes any JSON value, choosing the kind of value from its first non-whitespace character.
    */
   implicit val decoder: JsonDecoder[Json] = new JsonDecoder.AbstractJsonDecoder[Json] {
     def unsafeDecode(trace: List[JsonError], in: RetractReader): Json = {

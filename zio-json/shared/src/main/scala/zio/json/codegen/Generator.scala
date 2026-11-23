@@ -25,7 +25,8 @@ object Generator {
    * Renders the JSON string as a series of Scala case classes derived from the structure of the JSON.
    *
    * The classes are printed to the console in cyan. When the input is not valid JSON, it prints `Invalid JSON: `
-   * followed by the input.
+   * followed by the input. It throws a `java.lang.UnsupportedOperationException` when an array is empty, and a
+   * `java.lang.Exception` when an array mixes types that cannot be combined, such as numbers and strings.
    *
    * For example, the following JSON:
    *
@@ -38,7 +39,7 @@ object Generator {
    * }
    * ```
    *
-   * Would print the following Scala code to the console:
+   * Prints the following Scala code to the console, shown here with the `import zio.json._` it needs:
    *
    * {{{
    * import zio.json._
@@ -61,11 +62,14 @@ object Generator {
    * }
    * }}}
    *
-   * The top-level object is called `RootObject` and every nested object is a case class named after its field, written
-   * in PascalCase. Integers become `Int` or `Long`, other numbers `Double` or `BigDecimal`, and arrays `List`. Strings
-   * that are ISO dates, ISO date times or UUIDs become `java.time.LocalDate`, `java.time.LocalDateTime` or
-   * `java.util.UUID`. When the elements of an array, or the objects of one name, differ, their types are unified and a
-   * field that is missing from some of them becomes an `Option`.
+   * The top-level object is called `RootObject` and every nested object is a case class named after its field, with the
+   * first letter and each letter after `_`, `-` or `.` in upper case. Whole numbers that fit an `Int` or a `Long`
+   * become `Int` or `Long`, numbers larger than `Double.MaxValue` become `BigDecimal`, and other numbers `Double`.
+   * Arrays become `List`. Strings that parse as ISO date times (with or without an offset), ISO dates, or UUIDs as
+   * `java.util.UUID.fromString` accepts them become `java.time.LocalDateTime`, `java.time.LocalDate` or
+   * `java.util.UUID`. When the elements of an array differ, their types are unified, and a field that is missing from
+   * some of them becomes an `Option`. Objects of the same name in different places are not unified, so the output can
+   * hold two case classes with one name.
    *
    * @param input
    *   The JSON text to read
@@ -215,7 +219,7 @@ object JsonType {
   case object JString extends JsonType
 
   /**
-   * A JSON number that fits an `Int`.
+   * A whole JSON number that fits an `Int`.
    */
   case object JInt extends JsonType
 
@@ -225,7 +229,7 @@ object JsonType {
   case object JLong extends JsonType
 
   /**
-   * A JSON number that is not an integer or is too large for a `Long`, up to `Double.MaxValue`.
+   * A JSON number that is not a whole number fitting a `Long` and is not larger than `Double.MaxValue`.
    */
   case object JDouble extends JsonType
 
@@ -322,8 +326,8 @@ object ${clazz.name} {
    * Infers the type of a JSON value.
    *
    * Numbers are typed by size, strings that parse as ISO date times, ISO dates or UUIDs are typed as such, objects
-   * become case classes named after `key` in PascalCase (`RootObject` when there is no key), and the elements of an
-   * array are unified into one type.
+   * become case classes named after `key` (`RootObject` when there is no key), and the elements of an array are unified
+   * into one type. An empty array throws a `java.lang.UnsupportedOperationException`.
    */
   def unifyTypes(json: Json, key: Option[String] = None): JsonType =
     json match {
