@@ -638,9 +638,7 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority1 with 
   }
 
   /**
-   * Decodes a JSON integer, or one inside a JSON string, into a `java.math.BigInteger`. When decoding text, an integer
-   * outside the signed 256-bit range, from minus 2 to the power 255 up to 2 to the power 255 minus 1, fails with
-   * `expected a 256-bit BigInteger`.
+   * Decodes a JSON integer, or one inside a JSON string, into a `java.math.BigInteger`.
    */
   implicit val bigInteger: JsonDecoder[java.math.BigInteger] =
     new JsonDecoder.AbstractJsonDecoder[java.math.BigInteger] {
@@ -674,9 +672,7 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority1 with 
     }
 
   /**
-   * Decodes a JSON integer, or one inside a JSON string, into a `BigInt`. When decoding text, an integer outside the
-   * signed 256-bit range, from minus 2 to the power 255 up to 2 to the power 255 minus 1, fails with
-   * `expected a 256-bit BigInt`.
+   * Decodes a JSON integer, or one inside a JSON string, into a `BigInt`.
    */
   implicit val scalaBigInt: JsonDecoder[BigInt] = new JsonDecoder.AbstractJsonDecoder[BigInt] {
     def unsafeDecode(trace: List[JsonError], in: RetractReader): BigInt =
@@ -772,9 +768,7 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority1 with 
   }
 
   /**
-   * Decodes a JSON number, or one inside a JSON string, into a `java.math.BigDecimal`. When decoding text, a number
-   * whose digits, read without the decimal point, are outside the signed 256-bit range fails with
-   * `expected a BigDecimal with 256-bit mantissa`.
+   * Decodes a JSON number, or one inside a JSON string, into a `java.math.BigDecimal`.
    */
   implicit val bigDecimal: JsonDecoder[java.math.BigDecimal] =
     new JsonDecoder.AbstractJsonDecoder[java.math.BigDecimal] {
@@ -805,9 +799,7 @@ object JsonDecoder extends GeneratedTupleDecoders with DecoderLowPriority1 with 
     }
 
   /**
-   * Decodes a JSON number, or one inside a JSON string, into a `BigDecimal`. When decoding text, a number whose digits,
-   * read without the decimal point, are outside the signed 256-bit range fails with
-   * `expected a BigDecimal with 256-bit mantissa`.
+   * Decodes a JSON number, or one inside a JSON string, into a `BigDecimal`.
    */
   implicit val scalaBigDecimal: JsonDecoder[BigDecimal] = new JsonDecoder.AbstractJsonDecoder[BigDecimal] {
     def unsafeDecode(trace: List[JsonError], in: RetractReader): BigDecimal =
