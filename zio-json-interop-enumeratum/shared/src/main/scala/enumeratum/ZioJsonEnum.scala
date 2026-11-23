@@ -3,43 +3,41 @@ package enumeratum
 import zio.json.{ JsonDecoder, JsonEncoder }
 
 /**
- * Helper trait that adds implicit zio-json encoders and decoders for an [[Enum]]'s members
+ * Mix into an enumeratum `Enum` to give its entry type an implicit `JsonEncoder` and `JsonDecoder`. Each entry is written as a JSON string holding its `entryName`, and reading accepts only that exact string.
  *
- * Example:
+ * The codecs are for the entry type (`ShirtSize`), not for the type of a single entry: `ShirtSize.Small.toJson` doesn't compile, so give the value the entry type first. The enum's name in an error message is its `toString`, which is the plain name for a `case object` and the default `Object.toString` (class name and hash code) for a plain `object`.
  *
  * {{{
- * scala> import enumeratum._
- * scala> import zio.json._
+ * import zio.json._
  *
- * scala> sealed trait ShirtSize extends EnumEntry
- * scala> case object ShirtSize extends Enum[ShirtSize] with ZioJsonEnum[ShirtSize] {
- *     |  case object Small  extends ShirtSize
- *     |  case object Medium extends ShirtSize
- *     |  case object Large  extends ShirtSize
- *     |  val values = findValues
- *     | }
+ * sealed trait ShirtSize extends EnumEntry
+ * case object ShirtSize extends Enum[ShirtSize] with ZioJsonEnum[ShirtSize] {
+ *   case object Small  extends ShirtSize
+ *   case object Medium extends ShirtSize
+ *   case object Large  extends ShirtSize
+ *   val values = findValues
+ * }
  *
- * scala> val size: ShirtSize = ShirtSize.Small
+ * val size: ShirtSize = ShirtSize.Small
  *
- * scala> size.toJson
- * res0: String = "Small"
- *
- * scala> """"Large"""".fromJson[ShirtSize]
- * res1: Either[String, ShirtSize] = Right(Large)
- *
- * scala> """"XLarge"""".fromJson[ShirtSize]
- * res2: Either[String, ShirtSize] = Left('XLarge' is not a member of enum ShirtSize)
+ * val json = size.toJson
+ * // "Small"
+ * val large = "\"Large\"".fromJson[ShirtSize]
+ * // Right(Large)
+ * val unknown = "\"XLarge\"".fromJson[ShirtSize]
+ * // Left(('XLarge' is not a member of enum ShirtSize))
  * }}}
+ *
+ * @see
+ *   [[https://zio.dev/zio-json/interop/enumeratum/ Enumeratum Interop]]
  */
 trait ZioJsonEnum[A <: EnumEntry] { this: Enum[A] =>
 
-  /**
-   * Implicit JsonEncoder for this enum
-   */
+  /** Writes an entry as a JSON string holding its `entryName`. */
   implicit val zioJsonEncoder: JsonEncoder[A] = ZioJson.encoder(this)
 
   /**
-   * Implicit JsonDecoder for this enum
+   * Reads a JSON string as the entry whose `entryName` equals it, with the same letter case. Any other string fails with a message such as `'XLarge' is not a member of enum ShirtSize`, and a JSON value that isn't a string fails with `expected string`.
    */
   implicit val zioJsonDecoder: JsonDecoder[A] = ZioJson.decoder(this)
 }
