@@ -70,8 +70,9 @@ object filehelpers {
    * Reads the first JSON value in the file at `path` and decodes it as a [[GoldenSample]].
    *
    * Fails with a `java.nio.file.NoSuchFileException` when the file doesn't exist, with a
-   * `java.util.NoSuchElementException` when it is empty or holds only an incomplete JSON value, and with a `java.lang.Exception` that carries the error
-   * message when the content can't be decoded (`.samples(missing)` for a JSON object without a `samples` field).
+   * `java.util.NoSuchElementException` when it is empty or holds only an incomplete JSON value, and with a
+   * `java.lang.Exception` that carries the error message when the content can't be decoded (`.samples(missing)` for a
+   * JSON object without a `samples` field).
    */
   def readSampleFromFile(path: Path)(implicit trace: Trace): Task[GoldenSample] =
     for {
