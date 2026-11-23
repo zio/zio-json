@@ -22,8 +22,8 @@ import zio.json.ast.Json
  *
  * @param newDumperOptions
  *   Creates the SnakeYAML `DumperOptions` that writing starts from, for settings that have no field here. The fields
- *   `indentation`, `sequenceIndentation`, `maxScalarWidth`, `lineBreak` and `indentWithIndicator` are then applied on top
- *   of it.
+ *   `indentation`, `sequenceIndentation`, `maxScalarWidth`, `lineBreak` and `indentWithIndicator` are then applied on
+ *   top of it.
  * @param dropNulls
  *   Whether object fields whose value is `Json.Null` are left out. Nulls inside arrays are always written.
  * @param indentation
@@ -31,7 +31,8 @@ import zio.json.ast.Json
  * @param sequenceIndentation
  *   The indentation of the `-` indicator of a sequence, passed to `DumperOptions#setIndicatorIndent`
  * @param maxScalarWidth
- *   The preferred maximum line width, after which long scalars are split over several lines. `None` turns splitting off.
+ *   The preferred maximum line width, after which long scalars are split over several lines. `None` turns splitting
+ *   off.
  * @param lineBreak
  *   The line break to write
  * @param flowStyle
@@ -73,10 +74,10 @@ object YamlOptions {
   /**
    * The options used when none are given.
    *
-   * Null object fields are dropped, indentation is 2 spaces for both the levels and the sequence indicator, scalars may be
-   * split at 80 columns, the line break is the one of the platform when SnakeYAML knows it and Unix otherwise, and
-   * mappings, sequences, scalars and keys use SnakeYAML's automatic or plain styles. Non-printable characters are escaped,
-   * and the sequence indentation is counted with the indicator.
+   * Null object fields are dropped, indentation is 2 spaces for both the levels and the sequence indicator, scalars may
+   * be split at 80 columns, the line break is the one of the platform when SnakeYAML knows it and Unix otherwise, and
+   * mappings, sequences, scalars and keys use SnakeYAML's automatic or plain styles. Non-printable characters are
+   * escaped, and the sequence indentation is counted with the indicator.
    */
   val default: YamlOptions = YamlOptions(
     () => new DumperOptions(),

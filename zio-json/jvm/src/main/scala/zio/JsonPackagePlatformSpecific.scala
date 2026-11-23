@@ -25,6 +25,7 @@ import java.nio.file.{ Path, Paths }
  * }}}
  */
 trait JsonPackagePlatformSpecific {
+
   /**
    * Reads a file of JSON Lines as a stream of [[zio.json.ast.Json]] values.
    *
@@ -66,9 +67,9 @@ trait JsonPackagePlatformSpecific {
   /**
    * Reads a file of JSON Lines as a stream of `A` values.
    *
-   * The file is read as UTF-8 and every line is decoded with the implicit `JsonDecoder`, so a line must hold one complete JSON
-   * value. Blank lines are skipped. The stream fails with the file error when the file cannot be opened, and with an exception
-   * that carries the decoding error message when a line cannot be decoded.
+   * The file is read as UTF-8 and every line is decoded with the implicit `JsonDecoder`, so a line must hold one
+   * complete JSON value. Blank lines are skipped. The stream fails with the file error when the file cannot be opened,
+   * and with an exception that carries the decoding error message when a line cannot be decoded.
    *
    * {{{
    * import zio.json._
@@ -87,7 +88,8 @@ trait JsonPackagePlatformSpecific {
       )
 
   /**
-   * Reads the file at `path` as a stream of `A` values, decoding each line of JSON Lines with the implicit `JsonDecoder`.
+   * Reads the file at `path` as a stream of `A` values, decoding each line of JSON Lines with the implicit
+   * `JsonDecoder`.
    *
    * See the `Path` overload for the format and the failures.
    */
@@ -95,7 +97,8 @@ trait JsonPackagePlatformSpecific {
     readJsonLinesAs(Paths.get(path))
 
   /**
-   * Reads the content of `url` as a stream of `A` values, decoding each line of JSON Lines with the implicit `JsonDecoder`.
+   * Reads the content of `url` as a stream of `A` values, decoding each line of JSON Lines with the implicit
+   * `JsonDecoder`.
    *
    * The connection is closed when the stream ends or fails.
    */
@@ -146,8 +149,8 @@ trait JsonPackagePlatformSpecific {
   /**
    * Writes a stream of `A` values to a file as JSON Lines.
    *
-   * Every element is encoded with the implicit `JsonEncoder` on its own line, and the lines are written as UTF-8. The file is
-   * created when it does not exist and replaced when it does.
+   * Every element is encoded with the implicit `JsonEncoder` on its own line, and the lines are written as UTF-8. The
+   * file is created when it does not exist and replaced when it does.
    *
    * {{{
    * import zio.json._
@@ -166,7 +169,8 @@ trait JsonPackagePlatformSpecific {
       .unit
 
   /**
-   * Writes a stream of `A` values to the file at `path` as JSON Lines, encoding each element with the implicit `JsonEncoder`.
+   * Writes a stream of `A` values to the file at `path` as JSON Lines, encoding each element with the implicit
+   * `JsonEncoder`.
    *
    * See the `Path` overload for the format.
    */

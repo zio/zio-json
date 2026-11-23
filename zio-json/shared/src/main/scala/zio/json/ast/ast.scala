@@ -51,9 +51,11 @@ import scala.annotation._
  * // {"name":"Ada","age":36}
  * }}}
  *
- * @see [[https://zio.dev/zio-json/ ZIO JSON]]
+ * @see
+ *   [[https://zio.dev/zio-json/ ZIO JSON]]
  */
 sealed abstract class Json { self =>
+
   /**
    * Decodes this value into an `A` with the implicit decoder, without going through text.
    *
@@ -71,72 +73,85 @@ sealed abstract class Json { self =>
   /**
    * Returns `Some(())` when this value is `Json.Null`, and `None` otherwise.
    */
-  def asNull: Option[Unit]         = None
+  def asNull: Option[Unit] = None
+
   /**
    * Returns the value when this is a `Json.Bool`, and `None` otherwise.
    */
-  def asBoolean: Option[Boolean]   = None
+  def asBoolean: Option[Boolean] = None
+
   /**
    * Returns this value when it is a `Json.Num`, and `None` otherwise.
    */
-  def asNumber: Option[Json.Num]   = None
+  def asNumber: Option[Json.Num] = None
+
   /**
    * Returns the string when this is a `Json.Str`, and `None` otherwise.
    */
-  def asString: Option[String]     = None
+  def asString: Option[String] = None
+
   /**
    * Returns the elements when this is a `Json.Arr`, and `None` otherwise.
    */
   def asArray: Option[Chunk[Json]] = None
+
   /**
    * Returns this value when it is a `Json.Obj`, and `None` otherwise.
    */
-  def asObject: Option[Json.Obj]   = None
+  def asObject: Option[Json.Obj] = None
 
   /**
    * Applies `f` to the value when this is a `Json.Bool`, and returns this value unchanged otherwise.
    */
-  def mapBoolean(@nowarn f: Boolean => Boolean): Json                          = self
+  def mapBoolean(@nowarn f: Boolean => Boolean): Json = self
+
   /**
    * Applies `f` to the number when this is a `Json.Num`, and returns this value unchanged otherwise.
    */
   def mapNumber(@nowarn f: java.math.BigDecimal => java.math.BigDecimal): Json = self
+
   /**
    * Applies `f` to the string when this is a `Json.Str`, and returns this value unchanged otherwise.
    */
-  def mapString(@nowarn f: String => String): Json                             = self
+  def mapString(@nowarn f: String => String): Json = self
+
   /**
    * Applies `f` to the elements when this is a `Json.Arr`, and returns this value unchanged otherwise.
    */
-  def mapArray(@nowarn f: Chunk[Json] => Chunk[Json]): Json                    = self
+  def mapArray(@nowarn f: Chunk[Json] => Chunk[Json]): Json = self
+
   /**
    * Applies `f` to each element when this is a `Json.Arr`, and returns this value unchanged otherwise.
    */
-  def mapArrayValues(@nowarn f: Json => Json): Json                            = self
+  def mapArrayValues(@nowarn f: Json => Json): Json = self
+
   /**
    * Applies `f` to this object when this is a `Json.Obj`, and returns this value unchanged otherwise.
    */
-  def mapObject(@nowarn f: Json.Obj => Json.Obj): Json                         = self
+  def mapObject(@nowarn f: Json.Obj => Json.Obj): Json = self
+
   /**
    * Applies `f` to each field name when this is a `Json.Obj`, and returns this value unchanged otherwise.
    *
    * The values are not changed.
    */
-  def mapObjectKeys(@nowarn f: String => String): Json                         = self
+  def mapObjectKeys(@nowarn f: String => String): Json = self
+
   /**
    * Applies `f` to each field value when this is a `Json.Obj`, and returns this value unchanged otherwise.
    */
-  def mapObjectValues(@nowarn f: Json => Json): Json                           = self
+  def mapObjectValues(@nowarn f: Json => Json): Json = self
+
   /**
    * Applies `f` to each name and value pair when this is a `Json.Obj`, and returns this value unchanged otherwise.
    */
-  def mapObjectEntries(@nowarn f: ((String, Json)) => (String, Json)): Json    = self
+  def mapObjectEntries(@nowarn f: ((String, Json)) => (String, Json)): Json = self
 
   /**
    * Folds this value into an `X` according to its shape.
    *
-   * Calls `jsonArray` with the elements when this is a `Json.Arr`, `jsonObject` when this is a `Json.Obj`, and evaluates `or`
-   * for every other kind of value.
+   * Calls `jsonArray` with the elements when this is a `Json.Arr`, `jsonObject` when this is a `Json.Obj`, and
+   * evaluates `or` for every other kind of value.
    */
   final def arrayOrObject[X](
     or: => X,
@@ -244,8 +259,8 @@ sealed abstract class Json { self =>
   /**
    * Folds over this value and all of its descendants, visiting every child before its parent.
    *
-   * Object fields and array elements are visited in order, and this value is visited last. `f` receives the accumulator and
-   * the visited value.
+   * Object fields and array elements are visited in order, and this value is visited last. `f` receives the accumulator
+   * and the visited value.
    */
   final def foldUp[A](initial: A)(f: (A, Json) => A): A = {
     // bottom (leaves) up
@@ -276,8 +291,8 @@ sealed abstract class Json { self =>
   /**
    * Returns the node that `cursor` points to.
    *
-   * The result is `Left` with an error message when a field or an array index on the path does not exist, or when a node
-   * on the path has a different type than the cursor expects (for example `expected object`).
+   * The result is `Left` with an error message when a field or an array index on the path does not exist, or when a
+   * node on the path has a different type than the cursor expects (for example `expected object`).
    *
    * {{{
    * import zio.json._
@@ -398,8 +413,8 @@ sealed abstract class Json { self =>
   /**
    * Moves the node that the `from` cursor points to, to the location that the `to` cursor points to.
    *
-   * The node at `to` is replaced by the node from `from`, and the node at `from` is then deleted. The result is `Left` when
-   * either cursor points to a node that does not exist; an object field that does not exist yet is not created.
+   * The node at `to` is replaced by the node from `from`, and the node at `from` is then deleted. The result is `Left`
+   * when either cursor points to a node that does not exist; an object field that does not exist yet is not created.
    *
    * {{{
    * import zio.json._
@@ -453,7 +468,8 @@ sealed abstract class Json { self =>
   /**
    * Rebuilds this value from the top down: `f` is applied to a value first, and then to each child of the result.
    *
-   * Because `f` runs before the children are visited, a replacement that has children has those children transformed as well.
+   * Because `f` runs before the children are visited, a replacement that has children has those children transformed as
+   * well.
    *
    * {{{
    * import zio.json._
@@ -520,7 +536,8 @@ sealed abstract class Json { self =>
     }
 
   /**
-   * Rebuilds this value from the bottom up: each child is transformed first, and `f` is then applied to the value rebuilt from the transformed children.
+   * Rebuilds this value from the bottom up: each child is transformed first, and `f` is then applied to the value
+   * rebuilt from the transformed children.
    *
    * {{{
    * import zio.json._
@@ -563,15 +580,16 @@ sealed abstract class Json { self =>
 /**
  * Constructors and instances for [[Json]].
  *
- * `Json.apply` builds an object from fields; `Json.Obj`, `Json.Arr`, `Json.Str`, `Json.Num`, `Json.Bool` and `Json.Null`
- * build the individual kinds of value. `Json` also has an implicit encoder, decoder and codec.
+ * `Json.apply` builds an object from fields; `Json.Obj`, `Json.Arr`, `Json.Str`, `Json.Num`, `Json.Bool` and
+ * `Json.Null` build the individual kinds of value. `Json` also has an implicit encoder, decoder and codec.
  */
 object Json {
+
   /**
    * A JSON object: an ordered list of field names and values.
    *
-   * Field order is kept when encoding, but ignored by equality. The same name can occur more than once if the `Chunk` holds
-   * it more than once.
+   * Field order is kept when encoding, but ignored by equality. The same name can occur more than once if the `Chunk`
+   * holds it more than once.
    *
    * {{{
    * val person = Json.Obj("name" -> Json.Str("Ada"), "age" -> Json.Num(36))
@@ -587,70 +605,86 @@ object Json {
    * }}}
    */
   final case class Obj(fields: Chunk[(String, Json)]) extends Json {
+
     /**
      * Returns `true` when a field called `key` exists.
      */
-    def contains(key: String): Boolean                      = fields.exists(_._1 == key)
+    def contains(key: String): Boolean = fields.exists(_._1 == key)
+
     /**
      * Returns the value of the first field called `key`, or `None` when there is none.
      */
-    def get(key: String): Option[Json]                      = fields.find(_._1 == key).map(_._2)
+    def get(key: String): Option[Json] = fields.find(_._1 == key).map(_._2)
+
     /**
      * Returns `true` when the object has no fields.
      */
-    def isEmpty: Boolean                                    = fields.isEmpty
+    def isEmpty: Boolean = fields.isEmpty
+
     /**
      * Returns `true` when the object has at least one field.
      */
-    def nonEmpty: Boolean                                   = !isEmpty
+    def nonEmpty: Boolean = !isEmpty
+
     /**
      * The field names, in field order.
      */
-    lazy val keys: Chunk[String]                            = fields.map(_._1)
+    lazy val keys: Chunk[String] = fields.map(_._1)
+
     /**
      * The field values, in field order.
      */
-    lazy val values: Chunk[Json]                            = fields.map(_._2)
+    lazy val values: Chunk[Json] = fields.map(_._2)
+
     /**
      * Converts the fields to a `Map`. When a name occurs more than once, the last value is kept.
      */
-    def toMap: Map[String, Json]                            = fields.toMap
+    def toMap: Map[String, Json] = fields.toMap
+
     /**
      * Adds the field `key` with `value`, by merging a one-field object into this one.
      *
-     * A name that does not exist yet is appended after the existing fields. When the name exists, the two values are combined
-     * with `Json.merge`: for scalars the new `value` replaces the old one, and for objects and arrays the two are merged.
+     * A name that does not exist yet is appended after the existing fields. When the name exists, the two values are
+     * combined with `Json.merge`: for scalars the new `value` replaces the old one, and for objects and arrays the two
+     * are merged.
      */
-    def add(key: String, value: Json): Json.Obj             = merge(Json.Obj(key -> value))
+    def add(key: String, value: Json): Json.Obj = merge(Json.Obj(key -> value))
+
     /**
      * Alias for `add` that takes the field as a pair.
      *
      * Despite the operator name, the new field is appended after the existing fields.
      */
-    def +:(entry: (String, Json)): Json.Obj                 = add(entry._1, entry._2)
+    def +:(entry: (String, Json)): Json.Obj = add(entry._1, entry._2)
+
     /**
      * Removes every field called `key`.
      */
-    def remove(key: String): Json.Obj                       = Json.Obj(fields.filterNot(_._1 == key))
+    def remove(key: String): Json.Obj = Json.Obj(fields.filterNot(_._1 == key))
+
     /**
      * Applies `f` to each field value and keeps the names.
      */
-    def mapValues(f: Json => Json): Json.Obj                = Json.Obj(fields.map(e => e._1 -> f(e._2)))
+    def mapValues(f: Json => Json): Json.Obj = Json.Obj(fields.map(e => e._1 -> f(e._2)))
+
     /**
      * Keeps the fields for which `pred` holds.
      */
     def filter(pred: ((String, Json)) => Boolean): Json.Obj = Json.Obj(fields.filter(pred))
+
     /**
      * Keeps the fields whose name satisfies `pred`.
      */
-    def filterKeys(pred: String => Boolean): Json.Obj       = Json.Obj(fields.filter(e => pred(e._1)))
+    def filterKeys(pred: String => Boolean): Json.Obj = Json.Obj(fields.filter(e => pred(e._1)))
+
     /**
      * Merges `that` into this object.
      *
-     * The result has the fields of this object followed by the fields that only `that` has. When both objects have a field with
-     * the same name, the two values are combined with `Json.merge`, so for scalars the value from `that` is used.
+     * The result has the fields of this object followed by the fields that only `that` has. When both objects have a
+     * field with the same name, the two values are combined with `Json.merge`, so for scalars the value from `that` is
+     * used.
      */
-    def merge(that: Json.Obj): Json.Obj                     = {
+    def merge(that: Json.Obj): Json.Obj = {
       val fields1  = this.fields
       val fields2  = that.fields
       val leftMap  = fields1.toMap
@@ -688,10 +722,12 @@ object Json {
     override def mapObjectValues(f: Json => Json): Json.Obj                        = mapValues(f)
     override def mapObjectEntries(f: ((String, Json)) => (String, Json)): Json.Obj = Json.Obj(fields.map(f))
   }
+
   /**
    * Constructors and instances for [[Json.Obj]].
    */
   object Obj {
+
     /**
      * The object with no fields.
      */
@@ -717,7 +753,8 @@ object Json {
     def apply(key: String, value: Json): Obj =
       new Obj(Chunk.single(key -> value))
 
-    private lazy val objd                  = JsonDecoder.keyValueChunk[String, Json]
+    private lazy val objd = JsonDecoder.keyValueChunk[String, Json]
+
     /**
      * Decodes a JSON object. It fails for any other kind of JSON value.
      */
@@ -731,7 +768,8 @@ object Json {
           case _        => Lexer.error("Not an object", trace)
         }
     }
-    private lazy val obje                  = JsonEncoder.keyValueChunk[String, Json]
+    private lazy val obje = JsonEncoder.keyValueChunk[String, Json]
+
     /**
      * Encodes the fields as a JSON object, in field order.
      */
@@ -747,6 +785,7 @@ object Json {
      */
     implicit val codec: JsonCodec[Obj] = JsonCodec(encoder, decoder)
   }
+
   /**
    * A JSON array: an ordered list of values.
    *
@@ -761,10 +800,12 @@ object Json {
    * }}}
    */
   final case class Arr(elements: Chunk[Json]) extends Json {
+
     /**
      * Returns `true` when the array has no elements.
      */
-    def isEmpty: Boolean  = elements.isEmpty
+    def isEmpty: Boolean = elements.isEmpty
+
     /**
      * Returns `true` when the array has at least one element.
      */
@@ -773,8 +814,8 @@ object Json {
     /**
      * Merges `that` into this array, element by element.
      *
-     * The element at each index is combined with the element of `that` at the same index using `Json.merge`. When one array
-     * is longer, its remaining elements are kept.
+     * The element at each index is combined with the element of `that` at the same index using `Json.merge`. When one
+     * array is longer, its remaining elements are kept.
      */
     def merge(that: Json.Arr): Json.Arr = {
       val elements1 = this.elements
@@ -793,10 +834,12 @@ object Json {
     override def mapArray(f: Chunk[Json] => Chunk[Json]): Json.Arr = Json.Arr(f(elements))
     override def mapArrayValues(f: Json => Json): Json.Arr         = Json.Arr(elements.map(f))
   }
+
   /**
    * Constructors and instances for [[Json.Arr]].
    */
   object Arr {
+
     /**
      * The array with no elements.
      */
@@ -816,7 +859,8 @@ object Json {
       if (elements.isEmpty) empty
       else new Arr(Chunk(elements: _*))
 
-    private lazy val arrd                  = JsonDecoder.chunk[Json]
+    private lazy val arrd = JsonDecoder.chunk[Json]
+
     /**
      * Decodes a JSON array. It fails for any other kind of JSON value.
      */
@@ -830,7 +874,8 @@ object Json {
           case _        => Lexer.error("Not an array", trace)
         }
     }
-    private lazy val arre                  = JsonEncoder.chunk[Json]
+    private lazy val arre = JsonEncoder.chunk[Json]
+
     /**
      * Encodes the elements as a JSON array.
      */
@@ -846,6 +891,7 @@ object Json {
      */
     implicit val codec: JsonCodec[Arr] = JsonCodec(encoder, decoder)
   }
+
   /**
    * A JSON boolean.
    *
@@ -863,14 +909,16 @@ object Json {
    * Constructors and instances for [[Json.Bool]].
    */
   object Bool {
+
     /**
      * The JSON value `false`.
      */
     val False: Bool = new Bool(false)
+
     /**
      * The JSON value `true`.
      */
-    val True: Bool  = new Bool(true)
+    val True: Bool = new Bool(true)
 
     /**
      * Returns `Json.Bool.True` or `Json.Bool.False`.
@@ -892,6 +940,7 @@ object Json {
           case _       => Lexer.error("Not a bool value", trace)
         }
     }
+
     /**
      * Encodes the boolean as `true` or `false`.
      */
@@ -907,6 +956,7 @@ object Json {
      */
     implicit val codec: JsonCodec[Bool] = JsonCodec(encoder, decoder)
   }
+
   /**
    * A JSON string.
    *
@@ -919,10 +969,12 @@ object Json {
     override def asString: Some[String]                   = new Some(value)
     override def mapString(f: String => String): Json.Str = new Json.Str(f(value))
   }
+
   /**
    * Constructors and instances for [[Json.Str]].
    */
   object Str {
+
     /**
      * Decodes a JSON string. It fails for any other kind of JSON value.
      */
@@ -936,6 +988,7 @@ object Json {
           case _      => Lexer.error("Not a string value", trace)
         }
     }
+
     /**
      * Encodes the string as a quoted and escaped JSON string.
      */
@@ -951,11 +1004,12 @@ object Json {
      */
     implicit val codec: JsonCodec[Str] = JsonCodec(encoder, decoder)
   }
+
   /**
    * A JSON number, held as a `java.math.BigDecimal`.
    *
-   * Equality and hash codes follow `java.math.BigDecimal`, which compares the scale as well: `Json.Num(1.0)` is not equal
-   * to `Json.Num(1)`.
+   * Equality and hash codes follow `java.math.BigDecimal`, which compares the scale as well: `Json.Num(1.0)` is not
+   * equal to `Json.Num(1)`.
    *
    * {{{
    * Json.Num(42)
@@ -969,25 +1023,30 @@ object Json {
     override def asNumber: Some[Json.Num]                                             = new Some(this)
     override def mapNumber(f: java.math.BigDecimal => java.math.BigDecimal): Json.Num = new Json.Num(f(value))
   }
+
   /**
    * Constructors and instances for [[Json.Num]].
    */
   object Num {
+
     /**
      * Creates a number from a `Byte`.
      */
-    @inline def apply(value: Byte): Num  = apply(value.toInt)
+    @inline def apply(value: Byte): Num = apply(value.toInt)
+
     /**
      * Creates a number from a `Short`.
      */
     @inline def apply(value: Short): Num = apply(value.toInt)
+
     /**
      * Creates a number from an `Int`.
      */
-    def apply(value: Int): Num           = new Num({
+    def apply(value: Int): Num = new Num({
       if (value < 512 && value > -512) new java.math.BigDecimal(value)
       else BigDecimal(value).bigDecimal
     })
+
     /**
      * Creates a number from a `Long`.
      */
@@ -995,28 +1054,33 @@ object Json {
       if (value < 512 && value > -512) new java.math.BigDecimal(value)
       else BigDecimal(value).bigDecimal
     })
+
     /**
      * Creates a number from a `BigDecimal`.
      */
     @inline def apply(value: BigDecimal): Num = new Num(value.bigDecimal)
+
     /**
      * Creates a number from a `BigInt`.
      */
-    def apply(value: BigInt): Num             =
+    def apply(value: BigInt): Num =
       if (value.isValidLong) apply(value.toLong)
       else new Json.Num(new java.math.BigDecimal(value.bigInteger))
+
     /**
      * Creates a number from a `java.math.BigInteger`.
      */
     def apply(value: java.math.BigInteger): Num =
       if (value.bitLength < 64) apply(value.longValue)
       else new Json.Num(new java.math.BigDecimal(value))
+
     /**
      * Creates a number from a `Float`, using the shortest decimal text of the float.
      *
      * Throws a `NumberFormatException` for `NaN` and the infinite values.
      */
-    def apply(value: Float): Num  = new Num(new java.math.BigDecimal(SafeNumbers.toString(value)))
+    def apply(value: Float): Num = new Num(new java.math.BigDecimal(SafeNumbers.toString(value)))
+
     /**
      * Creates a number from a `Double`, using the shortest decimal text of the double.
      *
@@ -1037,6 +1101,7 @@ object Json {
           case _      => Lexer.error("Not a number", trace)
         }
     }
+
     /**
      * Encodes the number as a JSON number.
      */
@@ -1052,10 +1117,12 @@ object Json {
      */
     implicit val codec: JsonCodec[Num] = JsonCodec(encoder, decoder)
   }
+
   /**
    * The type of the `Json.Null` value.
    */
   type Null = Null.type
+
   /**
    * The JSON `null` value.
    *
@@ -1065,7 +1132,8 @@ object Json {
    * }}}
    */
   case object Null extends Json {
-    private[this] val nullChars: Array[Char]     = "null".toCharArray
+    private[this] val nullChars: Array[Char] = "null".toCharArray
+
     /**
      * Decodes the JSON text `null`. It fails for any other JSON value.
      */
@@ -1080,6 +1148,7 @@ object Json {
         Null
       }
     }
+
     /**
      * Encodes the value as the JSON text `null`.
      */
@@ -1121,6 +1190,7 @@ object Json {
     override final def unsafeFromJsonAST(trace: List[JsonError], json: Json): Json =
       json
   }
+
   /**
    * Encodes any JSON value as JSON text.
    */

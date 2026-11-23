@@ -16,15 +16,16 @@ import scala.util.Try
 /**
  * Generates Scala case classes, with `JsonCodec` instances, from a sample of JSON.
  *
- * @see [[https://zio.dev/zio-json/ ZIO JSON]]
+ * @see
+ *   [[https://zio.dev/zio-json/ ZIO JSON]]
  */
 object Generator {
 
   /**
    * Renders the JSON string as a series of Scala case classes derived from the structure of the JSON.
    *
-   * The classes are printed to the console in cyan. When the input is not valid JSON, it prints `Invalid JSON: ` followed by
-   * the input.
+   * The classes are printed to the console in cyan. When the input is not valid JSON, it prints `Invalid JSON: `
+   * followed by the input.
    *
    * For example, the following JSON:
    *
@@ -60,11 +61,11 @@ object Generator {
    * }
    * }}}
    *
-   * The top-level object is called `RootObject` and every nested object is a case class named after its field, written in
-   * PascalCase. Integers become `Int` or `Long`, other numbers `Double` or `BigDecimal`, and arrays `List`. Strings that
-   * are ISO dates, ISO date times or UUIDs become `java.time.LocalDate`, `java.time.LocalDateTime` or `java.util.UUID`. When the
-   * elements of an array, or the objects of one name, differ, their types are unified and a field that is missing from some
-   * of them becomes an `Option`.
+   * The top-level object is called `RootObject` and every nested object is a case class named after its field, written
+   * in PascalCase. Integers become `Int` or `Long`, other numbers `Double` or `BigDecimal`, and arrays `List`. Strings
+   * that are ISO dates, ISO date times or UUIDs become `java.time.LocalDate`, `java.time.LocalDateTime` or
+   * `java.util.UUID`. When the elements of an array, or the objects of one name, differ, their types are unified and a
+   * field that is missing from some of them becomes an `Option`.
    *
    * @param input
    *   The JSON text to read
@@ -91,8 +92,8 @@ object Generator {
 private[codegen] sealed trait JsonType extends Product with Serializable { self =>
 
   /**
-   * Combines two inferred types into one that fits both, for example `Int` and `Long` into `Long`, or `null` and `String`
-   * into `Option[String]`.
+   * Combines two inferred types into one that fits both, for example `Int` and `Long` into `Long`, or `null` and
+   * `String` into `Option[String]`.
    *
    * Throws an `Exception` when the types cannot be combined.
    */
@@ -196,6 +197,7 @@ object JsonType {
    * A JSON object that is printed as a case class called `name`.
    */
   final case class CaseClass(name: String, fields: JObject) extends JsonType {
+
     /**
      * The name of the case class.
      */
@@ -206,58 +208,71 @@ object JsonType {
    * A JSON object, with the inferred type of each field in order.
    */
   final case class JObject(fields: ListMap[String, JsonType]) extends JsonType
+
   /**
    * A JSON string.
    */
-  case object JString                                         extends JsonType
+  case object JString extends JsonType
+
   /**
    * A JSON number that fits an `Int`.
    */
-  case object JInt                                            extends JsonType
+  case object JInt extends JsonType
+
   /**
    * A JSON number that fits a `Long` but not an `Int`.
    */
-  case object JLong                                           extends JsonType
+  case object JLong extends JsonType
+
   /**
    * A JSON number that is not an integer or is too large for a `Long`, up to `Double.MaxValue`.
    */
-  case object JDouble                                         extends JsonType
+  case object JDouble extends JsonType
+
   /**
    * A JSON number that is larger than `Double.MaxValue`.
    */
-  case object JBigDecimal                                     extends JsonType
+  case object JBigDecimal extends JsonType
+
   /**
    * The JSON `null` value.
    */
-  case object JNull                                           extends JsonType
+  case object JNull extends JsonType
+
   /**
    * A JSON boolean.
    */
-  case object JBoolean                                        extends JsonType
+  case object JBoolean extends JsonType
+
   /**
    * A JSON string that is an ISO date.
    */
-  case object JLocalDate                                      extends JsonType
+  case object JLocalDate extends JsonType
+
   /**
    * A JSON string that is an ISO date and time.
    */
-  case object JLocalDateTime                                  extends JsonType
+  case object JLocalDateTime extends JsonType
+
   /**
    * A JSON string that is a UUID.
    */
-  case object JUUID                                           extends JsonType
+  case object JUUID extends JsonType
+
   /**
    * A type that may be missing or `null`.
    */
-  final case class JOption(value: JsonType)                   extends JsonType
+  final case class JOption(value: JsonType) extends JsonType
+
   /**
    * A JSON array whose elements have the type `value`.
    */
-  final case class JArray(value: JsonType)                    extends JsonType
+  final case class JArray(value: JsonType) extends JsonType
+
   /**
    * A set of alternative types.
    */
-  final case class Alternatives(values: Chunk[JsonType])      extends JsonType
+  final case class Alternatives(values: Chunk[JsonType]) extends JsonType
 
   /**
    * Renders all the case classes found in `jsonType`, once each, separated by blank lines.
@@ -306,8 +321,9 @@ object ${clazz.name} {
   /**
    * Infers the type of a JSON value.
    *
-   * Numbers are typed by size, strings that parse as ISO date times, ISO dates or UUIDs are typed as such, objects become case classes named
-   * after `key` in PascalCase (`RootObject` when there is no key), and the elements of an array are unified into one type.
+   * Numbers are typed by size, strings that parse as ISO date times, ISO dates or UUIDs are typed as such, objects
+   * become case classes named after `key` in PascalCase (`RootObject` when there is no key), and the elements of an
+   * array are unified into one type.
    */
   def unifyTypes(json: Json, key: Option[String] = None): JsonType =
     json match {

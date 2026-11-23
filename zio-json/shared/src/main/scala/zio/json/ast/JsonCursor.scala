@@ -19,9 +19,10 @@ package zio.json.ast
  * A path from one JSON node to another, used to read and edit a document with `Json#get`, `Json#delete`,
  * `Json#transformAt` and `Json#relocate`.
  *
- * `From` is the kind of node the path starts at and `To` the kind of node it ends at. Build a cursor from the constructors
- * in the companion (`JsonCursor.field`, `JsonCursor.element`, `JsonCursor.identity`), then extend it with `field`,
- * `element`, the `is...` checks and `>>>`. A cursor is only a description: it does not hold or change any JSON.
+ * `From` is the kind of node the path starts at and `To` the kind of node it ends at. Build a cursor from the
+ * constructors in the companion (`JsonCursor.field`, `JsonCursor.element`, `JsonCursor.identity`), then extend it with
+ * `field`, `element`, the `is...` checks and `>>>`. A cursor is only a description: it does not hold or change any
+ * JSON.
  *
  * {{{
  * import zio.json._
@@ -37,9 +38,11 @@ package zio.json.ast
  * // Right({"users":[{"name":"Grace"},{"name":"Alan"}]})
  * }}}
  *
- * @see [[https://zio.dev/zio-json/ ZIO JSON]]
+ * @see
+ *   [[https://zio.dev/zio-json/ ZIO JSON]]
  */
 sealed trait JsonCursor[-From, +To <: Json] { self =>
+
   /**
    * Appends the cursor `that` to this one: the result starts where this cursor starts and follows `that` from the node
    * this cursor ends at.
@@ -113,8 +116,8 @@ sealed trait JsonCursor[-From, +To <: Json] { self =>
   /**
    * Extends this cursor to the value of the object field called `field`.
    *
-   * It only applies to a cursor that ends at a `Json.Obj`. Reading fails with `No such field: '<name>'` when the object has
-   * no such field.
+   * It only applies to a cursor that ends at a `Json.Obj`. Reading fails with `No such field: '<name>'` when the object
+   * has no such field.
    */
   final def field(field: String)(implicit ev: To <:< Json.Obj): JsonCursor.DownField =
     JsonCursor.DownField(self.widenTo[Json.Obj], field)
@@ -122,8 +125,8 @@ sealed trait JsonCursor[-From, +To <: Json] { self =>
   /**
    * Extends this cursor to the array element at `index`, counting from 0.
    *
-   * It only applies to a cursor that ends at a `Json.Arr`. Reading fails with `The array does not have index <index>` when
-   * the array is too short.
+   * It only applies to a cursor that ends at a `Json.Arr`. Reading fails with `The array does not have index <index>`
+   * when the array is too short.
    */
   final def element(index: Int)(implicit ev: To <:< Json.Arr): JsonCursor.DownElement =
     JsonCursor.DownElement(self.widenTo[Json.Arr], index)
@@ -140,6 +143,7 @@ sealed trait JsonCursor[-From, +To <: Json] { self =>
  * }}}
  */
 object JsonCursor {
+
   /**
    * The cursor that points to the node it starts at, which is the whole document.
    */
@@ -179,6 +183,7 @@ object JsonCursor {
    * A cursor that points to the whole document and checks that it has the given `jsonType`.
    */
   def filter[A <: Json](jsonType: JsonType[A]): JsonCursor[Json, A] = FilterType(identity, jsonType)
+
   /**
    * A cursor that points to the element at `index` of a document that is a `Json.Arr`.
    *
@@ -186,7 +191,8 @@ object JsonCursor {
    * val third = JsonCursor.element(2)
    * }}}
    */
-  def element(index: Int): JsonCursor[Json.Arr, Json]               = DownElement(isArray, index)
+  def element(index: Int): JsonCursor[Json.Arr, Json] = DownElement(isArray, index)
+
   /**
    * A cursor that points to the value of the field `name` of a document that is a `Json.Obj`.
    *
@@ -194,20 +200,23 @@ object JsonCursor {
    * val name = JsonCursor.field("name")
    * }}}
    */
-  def field(name: String): JsonCursor[Json.Obj, Json]               = DownField(isObject, name)
+  def field(name: String): JsonCursor[Json.Obj, Json] = DownField(isObject, name)
 
   /**
    * The cursor that points to the node it starts at.
    */
-  case object Identity                                                      extends JsonCursor[Json, Json]
+  case object Identity extends JsonCursor[Json, Json]
+
   /**
    * The cursor that follows the field `name` of the object that `parent` points to.
    */
   final case class DownField(parent: JsonCursor[_, Json.Obj], name: String) extends JsonCursor[Json.Obj, Json]
+
   /**
    * The cursor that follows the element at `index` of the array that `parent` points to.
    */
   final case class DownElement(parent: JsonCursor[_, Json.Arr], index: Int) extends JsonCursor[Json.Arr, Json]
+
   /**
    * The cursor that checks that the node `parent` points to has the type `jsonType`.
    */
