@@ -18,7 +18,7 @@ package zio.json
 /**
  * Tells a streaming decoder how the values in its input are laid out: as the elements of one JSON array
  * ([[JsonStreamDelimiter.Array]]) or as values separated by newlines ([[JsonStreamDelimiter.Newline]]).
- * `decodeJsonPipeline` takes it as a parameter.
+ * `decodeJsonPipeline` takes it as a parameter (on the JVM only; Scala.js and Scala Native have no streaming decoder).
  */
 sealed trait JsonStreamDelimiter
 

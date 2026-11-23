@@ -18,7 +18,8 @@ private[json] trait JsonCodecVersionSpecific {
 
   /**
    * Derives a codec for the case class or sealed trait `A` with `DeriveJsonCodec.gen`, using the
-   * `JsonCodecConfiguration` given in scope. It also makes `derives JsonCodec` work on a Scala 3 definition.
+   * `JsonCodecConfiguration` in implicit scope, or `JsonCodecConfiguration.default` when there is none. It also makes
+   * `derives JsonCodec` work on a Scala 3 definition.
    */
   inline def derived[A: deriving.Mirror.Of](using config: JsonCodecConfiguration): JsonCodec[A] = DeriveJsonCodec.gen[A]
 
