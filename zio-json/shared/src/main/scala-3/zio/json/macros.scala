@@ -16,24 +16,81 @@ import scala.quoted.*
 import scala.reflect.*
 
 /**
- * If used on a case class field, determines the name of the JSON field. Defaults to the case class field name.
+ * Sets the JSON name of a case class field, for both encoding and decoding. Without it, the JSON name is the field name
+ * after the [[jsonMemberNames]] format of the class or the `fieldNameMapping` of the [[JsonCodecConfiguration]]. The
+ * name given here is used unchanged and wins over both. The decoder accepts only this name and the [[jsonAliases]] of
+ * the field.
+ *
+ * {{{
+ * final case class Book(@jsonField("book_title") title: String, pages: Int)
+ *
+ * object Book {
+ *   implicit val codec: JsonCodec[Book] = DeriveJsonCodec.gen[Book]
+ * }
+ *
+ * Book("Dune", 412).toJson // {"book_title":"Dune","pages":412}
+ * }}}
+ *
+ * @see
+ *   [[https://zio.dev/zio-json/configuration/ Configuration]]
  */
 final case class jsonField(name: String) extends Annotation
 
 /**
- * If used on a case class field, determines the alternative names of the JSON field.
+ * Adds names that the derived decoder also accepts for a case class field, next to its JSON name. The encoder writes
+ * only the JSON name. An object that holds a field under two of its names fails to decode with `(duplicate)`. Creating
+ * the decoder throws a `java.lang.AssertionError` when an alias equals a JSON field name or another alias of the class.
+ *
+ * On Scala 3, only one `jsonAliases` annotation per field is read; put all the aliases in one annotation.
+ *
+ * {{{
+ * final case class Customer(@jsonAliases("full_name", "fullName") name: String)
+ *
+ * object Customer {
+ *   implicit val codec: JsonCodec[Customer] = DeriveJsonCodec.gen[Customer]
+ * }
+ *
+ * """{"full_name":"Ada"}""".fromJson[Customer] // Right(Customer(Ada))
+ * Customer("Ada").toJson                       // {"name":"Ada"}
+ * }}}
+ *
+ * @see
+ *   [[https://zio.dev/zio-json/configuration/ Configuration]]
  */
 final case class jsonAliases(alias: String, aliases: String*) extends Annotation
 
 /**
- * If used on a sealed class, will determine the name of the field for disambiguating classes.
+ * Writes the type hint of a sealed trait or class as a field named `name` inside the object of each case, instead of
+ * wrapping the case in an object whose only key is the type hint. The encoder writes the hint field first, and the
+ * decoder accepts it at any position. A case object is written as an object with only the hint field. The annotation
+ * overrides the `sumTypeHandling` option of the [[JsonCodecConfiguration]].
  *
- * The default is to not use a typehint field and instead have an object with a single key that is the class name.
+ * Decoding fails with `(missing hint 'type')` when the field is absent (here `type` is the `name`), and with
+ * `(invalid disambiguator)` when its value is a string that is not the hint of a case. The decoder of each case sees
+ * the hint field, so a case that rejects unknown fields ([[jsonNoExtraFields]] or `allowExtraFields = false`) fails
+ * with `(Circle)(invalid extra field)`, where `Circle` is the hint.
  *
  * Note that using a discriminator is less performant, uses more memory, and may be prone to DOS attacks that are
- * impossible with the default encoding. In addition, there is slightly less type safety when using custom product
- * encoders (which must write an unenforced object type). Only use this option if you must model an externally defined
- * schema.
+ * impossible with the default encoding. A hand-written encoder of a case must write a JSON object: for any other JSON,
+ * `toJson` writes invalid JSON and `toJsonAST` returns a `Left`. Use a discriminator when an external schema requires
+ * one.
+ *
+ * {{{
+ * @jsonDiscriminator("type")
+ * sealed trait Shape
+ * final case class Circle(radius: Double) extends Shape
+ * final case class Square(side: Double)   extends Shape
+ *
+ * object Shape {
+ *   implicit val codec: JsonCodec[Shape] = DeriveJsonCodec.gen[Shape]
+ * }
+ *
+ * (Circle(1.5): Shape).toJson                            // {"type":"Circle","radius":1.5}
+ * """{"side":2.0,"type":"Square"}""".fromJson[Shape] // Right(Square(2.0))
+ * }}}
+ *
+ * @see
+ *   [[https://zio.dev/zio-json/configuration/ Configuration]]
  */
 final case class jsonDiscriminator(name: String) extends Annotation
 // TODO a strategy where the constructor is inferred from the field names, only
@@ -42,33 +99,93 @@ final case class jsonDiscriminator(name: String) extends Annotation
 // does not provide a mechanism for obtaining the CaseClass associated to the
 // Subtype.
 
+/**
+ * A function that turns a Scala name into a JSON name. Derivation applies it to the field names of a case class
+ * ([[jsonMemberNames]], or the `fieldNameMapping` of the [[JsonCodecConfiguration]]) and to the type hints of a sealed
+ * trait ([[jsonHintNames]], or `sumTypeMapping`), for both encoding and decoding. The formats are [[SnakeCase]],
+ * [[KebabCase]], [[CamelCase]], [[PascalCase]], [[IdentityFormat]] and [[CustomCase]], plus the zio-json 0.3.0 variants
+ * `ziojson_03.SnakeCase` and `ziojson_03.KebabCase`.
+ *
+ * {{{
+ * SnakeCase("firstName")            // first_name
+ * KebabCase("firstName")            // first-name
+ * PascalCase("first_name")          // FirstName
+ * CustomCase(_.toUpperCase)("name") // NAME
+ * }}}
+ *
+ * @see
+ *   [[https://zio.dev/zio-json/configuration/ Configuration]]
+ */
 sealed trait JsonMemberFormat              extends (String => String)
+/**
+ * A [[JsonMemberFormat]] that applies `f` to each name, for cases that the built-in formats do not cover.
+ *
+ * {{{
+ * @jsonMemberNames(CustomCase(name => name.toUpperCase))
+ * final case class Reading(value: Double)
+ *
+ * object Reading {
+ *   implicit val codec: JsonCodec[Reading] = DeriveJsonCodec.gen[Reading]
+ * }
+ *
+ * Reading(21.5).toJson // {"VALUE":21.5}
+ * }}}
+ */
 case class CustomCase(f: String => String) extends JsonMemberFormat {
   override def apply(memberName: String): String = f(memberName)
 }
+/**
+ * Writes names in snake case: `firstName` becomes `first_name`, `HTTPServer` becomes `http_server`, and a `-` becomes
+ * `_`. A digit does not start a new word, so `sensor2Value` becomes `sensor2_value`; `ziojson_03.SnakeCase` gives
+ * `sensor_2_value`.
+ */
 case object SnakeCase extends JsonMemberFormat {
   override def apply(memberName: String): String = jsonMemberNames.enforceSnakeOrKebabCase(memberName, '_')
 }
+/**
+ * Writes names in camel case: `first_name` and `first-name` become `firstName`. In a name with `_` or `-`, the
+ * separators are dropped, the letter after each one is upper-cased, and the other letters are lower-cased. A name
+ * without them only gets a lower-case first letter, so `HTTPServer` becomes `hTTPServer`.
+ */
 case object CamelCase extends JsonMemberFormat {
   override def apply(memberName: String): String =
     jsonMemberNames.enforceCamelOrPascalCase(memberName, toPascal = false)
 }
+/**
+ * Writes names in Pascal case: `firstName`, `first_name` and `first-name` become `FirstName`. In a name with `_` or
+ * `-`, the separators are dropped, the first letter and the letter after each separator are upper-cased, and the other
+ * letters are lower-cased. A name without them only gets an upper-case first letter.
+ */
 case object PascalCase extends JsonMemberFormat {
   override def apply(memberName: String): String = jsonMemberNames.enforceCamelOrPascalCase(memberName, toPascal = true)
 }
+/**
+ * Writes names in kebab case: `firstName` becomes `first-name`, `HTTPServer` becomes `http-server`, and a `_` becomes
+ * `-`. A digit does not start a new word, so `sensor2Value` becomes `sensor2-value`; `ziojson_03.KebabCase` gives
+ * `sensor-2-value`.
+ */
 case object KebabCase extends JsonMemberFormat {
   override def apply(memberName: String): String = jsonMemberNames.enforceSnakeOrKebabCase(memberName, '-')
 }
+/**
+ * Leaves names unchanged. It is the default `fieldNameMapping` and `sumTypeMapping` of [[JsonCodecConfiguration]].
+ */
 case object IdentityFormat extends JsonMemberFormat {
   override def apply(memberName: String): String = memberName
 }
 
-/** zio-json version 0.3.0 formats. abc123Def -> abc_123_def */
+/**
+ * The snake case and kebab case formats of zio-json 0.3.0. They start a new word at a digit that follows a lower-case
+ * letter, so `abc123Def` becomes `abc_123_def`, where the current `zio.json.SnakeCase` gives `abc123_def`. Use them to
+ * keep JSON names that were produced with that version.
+ */
 object ziojson_03 {
+  /** Snake case as in zio-json 0.3.0: `abc123Def` becomes `abc_123_def`. */
   case object SnakeCase extends JsonMemberFormat {
     override def apply(memberName: String): String =
       jsonMemberNames.enforceSnakeOrKebabCaseSeparateNumbers(memberName, '_')
   }
+  /** Kebab case as in zio-json 0.3.0: `abc123Def` becomes `abc-123-def`. */
   case object KebabCase extends JsonMemberFormat {
     override def apply(memberName: String): String =
       jsonMemberNames.enforceSnakeOrKebabCaseSeparateNumbers(memberName, '-')
@@ -76,8 +193,24 @@ object ziojson_03 {
 }
 
 /**
- * If used on a case class, determines the strategy of member names transformation during serialization and
- * deserialization. Four common strategies are provided above and a custom one to support specific use cases.
+ * Sets the [[JsonMemberFormat]] that turns the field names of a case class into JSON names, for both encoding and
+ * decoding. The decoder accepts the converted names and the [[jsonAliases]] of each field, not the original field
+ * names. It overrides the `fieldNameMapping` of the [[JsonCodecConfiguration]] for this class, and [[jsonField]]
+ * overrides it for one field.
+ *
+ * {{{
+ * @jsonMemberNames(SnakeCase)
+ * final case class Order(orderId: Int, totalAmount: Double)
+ *
+ * object Order {
+ *   implicit val codec: JsonCodec[Order] = DeriveJsonCodec.gen[Order]
+ * }
+ *
+ * Order(1, 9.5).toJson // {"order_id":1,"total_amount":9.5}
+ * }}}
+ *
+ * @see
+ *   [[https://zio.dev/zio-json/configuration/ Configuration]]
  */
 final case class jsonMemberNames(format: JsonMemberFormat) extends Annotation
 private[json] object jsonMemberNames {
@@ -166,41 +299,147 @@ private[json] object jsonMemberNames {
 }
 
 /**
- * If used on a case class will determine the type hint value for disambiguating sealed traits. Defaults to the short
- * type name.
+ * Sets the type hint of a case class or case object in a sealed family: the key of the wrapper object, the value of the
+ * discriminator field, or the string written when `enumValuesAsStrings` applies. Without it, the hint is the short type
+ * name after the [[jsonHintNames]] format of the sealed type or the `sumTypeMapping` of the [[JsonCodecConfiguration]].
+ * The name given here is used unchanged. Decoding a hint that names no case fails with `(invalid disambiguator)`, or
+ * with `(invalid enumeration value)` for the string form.
+ *
+ * {{{
+ * sealed trait Payment
+ * @jsonHint("card") final case class CreditCard(number: String) extends Payment
+ * case object Cash extends Payment
+ *
+ * object Payment {
+ *   implicit val codec: JsonCodec[Payment] = DeriveJsonCodec.gen[Payment]
+ * }
+ *
+ * (CreditCard("4111"): Payment).toJson // {"card":{"number":"4111"}}
+ * }}}
+ *
+ * @see
+ *   [[https://zio.dev/zio-json/configuration/ Configuration]]
  */
 final case class jsonHint(name: String) extends Annotation
 
 /**
- * If used on a sealed class will determine the strategy of type hint value transformation for disambiguating classes
- * during serialization and deserialization. Same strategies are provided as for [[jsonMemberNames]].
+ * Sets the [[JsonMemberFormat]] that turns the short type names of the cases of a sealed trait or class into type
+ * hints, for both encoding and decoding. It overrides the `sumTypeMapping` of the [[JsonCodecConfiguration]] for this
+ * type, and a case with [[jsonHint]] keeps the hint given there.
+ *
+ * {{{
+ * @jsonHintNames(KebabCase)
+ * sealed trait Transfer
+ * final case class BankTransfer(iban: String) extends Transfer
+ * final case class WireTransfer(swift: String) extends Transfer
+ *
+ * object Transfer {
+ *   implicit val codec: JsonCodec[Transfer] = DeriveJsonCodec.gen[Transfer]
+ * }
+ *
+ * (BankTransfer("DE89"): Transfer).toJson // {"bank-transfer":{"iban":"DE89"}}
+ * }}}
+ *
+ * @see
+ *   [[https://zio.dev/zio-json/configuration/ Configuration]]
  */
 final case class jsonHintNames(format: JsonMemberFormat) extends Annotation
 
 /**
- * If used on a case class or case class field, will encode `None` values as `null`.
+ * Makes the derived encoder write an `Option` field that is `None` as `null` instead of leaving the key out. On a case
+ * class it applies to every field, on a field only to that field. `JsonCodecConfiguration(explicitNulls = true)` does
+ * the same for every class derived with that configuration in scope. The decoder is not affected: it reads a missing
+ * key and `null` as `None`.
+ *
+ * {{{
+ * final case class Sensor(id: String, @jsonExplicitNull reading: Option[Double], unit: Option[String])
+ *
+ * object Sensor {
+ *   implicit val codec: JsonCodec[Sensor] = DeriveJsonCodec.gen[Sensor]
+ * }
+ *
+ * Sensor("t1", None, None).toJson // {"id":"t1","reading":null}
+ * }}}
+ *
+ * @see
+ *   [[https://zio.dev/zio-json/configuration/ Configuration]]
  */
 final case class jsonExplicitNull() extends Annotation
 
 /**
- * If used on a case class, will encode/decode empty collections explicitly.
+ * Sets, for a case class or one of its fields, whether fields that hold an empty collection are written and required.
+ * It overrides the `explicitEmptyCollections` option of the [[JsonCodecConfiguration]].
+ *
+ * With `encoding = false`, the derived encoder leaves out a field whose collection is empty, such as an empty `List` or
+ * `Map`. On Scala 2 it also leaves out a field whose type is a case class without fields; Scala 3 writes it as `{}`.
+ * With `decoding = false` on the class, the derived decoder reads a missing collection field as an empty collection;
+ * with the default `true`, it fails with `.tracks(missing)`, where `tracks` is the field name. On a field, only
+ * `encoding` has an effect.
+ *
+ * {{{
+ * @jsonExplicitEmptyCollections(encoding = false, decoding = false)
+ * final case class Playlist(name: String, tracks: List[String])
+ *
+ * object Playlist {
+ *   implicit val codec: JsonCodec[Playlist] = DeriveJsonCodec.gen[Playlist]
+ * }
+ *
+ * Playlist("chill", Nil).toJson              // {"name":"chill"}
+ * """{"name":"chill"}""".fromJson[Playlist] // Right(Playlist(chill,List()))
+ * }}}
+ *
+ * @see
+ *   [[https://zio.dev/zio-json/configuration/ Configuration]]
  */
 final case class jsonExplicitEmptyCollections(encoding: Boolean = true, decoding: Boolean = true) extends Annotation
 
 /**
- * If used on a case class, will exit early if any fields are in the JSON that do not correspond to field names in the
- * case class.
+ * Makes the derived decoder of a case class fail with `(invalid extra field)` at the first key that is neither a JSON
+ * field name nor an alias of the class. Without it, the decoder skips unknown keys.
+ * `JsonCodecConfiguration(allowExtraFields = false)` does the same for every class derived with that configuration in
+ * scope. On a case class without fields, decoding JSON text accepts only an empty object.
  *
  * This adds extra protections against a DOS attacks but means that changes in the schema will result in a hard error
  * rather than silently ignoring those fields.
  *
- * Cannot be combined with `@jsonDiscriminator` since it is considered an extra field from the perspective of the case
- * class.
+ * It cannot be combined with [[jsonDiscriminator]]: the decoder of the case sees the discriminator field as an extra
+ * field, so decoding fails with `(Circle)(invalid extra field)`, where `Circle` is the type hint.
+ *
+ * {{{
+ * @jsonNoExtraFields
+ * final case class Point(x: Int, y: Int)
+ *
+ * object Point {
+ *   implicit val codec: JsonCodec[Point] = DeriveJsonCodec.gen[Point]
+ * }
+ *
+ * """{"x":1,"y":2,"z":3}""".fromJson[Point] // Left((invalid extra field))
+ * }}}
+ *
+ * @see
+ *   [[https://zio.dev/zio-json/configuration/ Configuration]]
  */
 final class jsonNoExtraFields extends Annotation
 
 /**
- * If used on a case class field, will exclude it from the resulting JSON.
+ * Leaves a case class field out of the JSON that the derived encoder writes. The derived decoder still reads the field
+ * when its key is present. When the key is missing, the decoder uses the default value of the field, `None` for an
+ * `Option`, and otherwise fails with `.cacheKey(missing)`, where `cacheKey` is the field name. Give an excluded field a
+ * default value or an `Option` type so that the encoder's output can be decoded.
+ *
+ * {{{
+ * final case class Account(name: String, @jsonExclude cacheKey: Int = 0)
+ *
+ * object Account {
+ *   implicit val codec: JsonCodec[Account] = DeriveJsonCodec.gen[Account]
+ * }
+ *
+ * Account("ann", 42).toJson               // {"name":"ann"}
+ * """{"name":"ann"}""".fromJson[Account] // Right(Account(ann,0))
+ * }}}
+ *
+ * @see
+ *   [[https://zio.dev/zio-json/configuration/ Configuration]]
  */
 final class jsonExclude extends Annotation
 
@@ -226,8 +465,8 @@ private[json] final case class SumMeta(
 
 // =======================================================================================
 // Macro helpers for annotation and metadata extraction.
-// These are small, isolated macros that only extract data — they don't derive
-// codecs, so they cannot cause cyclic macro dependencies.
+// Most of these macros only extract data; the summon* ones also emit
+// DeriveJsonEncoder.gen / DeriveJsonDecoder.gen calls for types without an instance.
 // =======================================================================================
 private[json] object MacroHelpers {
 
@@ -1038,7 +1277,7 @@ private[json] object DeriveHelpers {
             if (matrix2 eq null) Lexer.enumeration(trace, in, matrix1)
             else Lexer.enumeration128(trace, in, matrix1, matrix2)
           if (field >= 0) {
-            // Lexer.enumeration already consumed the string token, just construct via sub-decoder's missing path
+            // Lexer.enumeration already consumed the string token, so construct the case without reading more input
             // For enum values (case objects), we decode from AST to avoid re-reading consumed input
             tcs(field).unsafeFromJsonAST(trace, Json.Obj(Chunk.empty)).asInstanceOf[A]
           } else {
@@ -1322,7 +1561,7 @@ private[json] object DeriveHelpers {
           else out.write(" : ")
           JsonEncoder.string.unsafeEncode(name, indent_, out)
 
-          // whitespace is always off by 2 spaces at the end, probably not worth fixing
+          // pretty printing: a case without fields gets its closing `}` right after the hint, on the same line
           val intermediate = new DeriveJsonEncoder.NestedWriter(out, indent_)
           encoder.unsafeEncode(a.asInstanceOf, indent, intermediate)
         }
@@ -1381,8 +1620,47 @@ private[json] object InlineHelpers {
 // =======================================================================================
 // DeriveJsonDecoder — uses inline match on Mirror, not ${ ... } macro splice
 // =======================================================================================
+/**
+ * Derives a [[JsonDecoder]] for a case class or a sealed trait at compile time. A case class is read from a JSON object
+ * with one key per field. A case of a sealed trait is read from an object whose only key is the type hint (the short
+ * type name by default) and whose value is the case. On Scala 3, where `enumValuesAsStrings` is `true` by default, a
+ * sealed trait whose cases are all case objects is read from a JSON string such as `"Red"`. The annotations of the
+ * type, such as [[jsonField]] or [[jsonDiscriminator]], and the [[JsonCodecConfiguration]] in implicit scope change
+ * these defaults.
+ *
+ * On Scala 2, the derivation uses Magnolia, and every field type needs a decoder in implicit scope. On Scala 3, it uses
+ * the `Mirror` of the type, and derives a decoder for a field whose type is a case class or a sealed trait without one.
+ * A known bug on Scala 3: a field of type `Option[Inner]`, where `Inner` has no decoder, is derived as a sealed trait
+ * and read from `{"Some":{"value":...}}`, and a `List[Inner]` field fails to compile; give `Inner` its own decoder.
+ *
+ * {{{
+ * final case class Sensor(id: String, celsius: Double, label: Option[String])
+ *
+ * object Sensor {
+ *   implicit val decoder: JsonDecoder[Sensor] = DeriveJsonDecoder.gen[Sensor]
+ * }
+ *
+ * """{"id":"s1","celsius":21.5}""".fromJson[Sensor] // Right(Sensor(s1,21.5,None))
+ * """{"id":"s1"}""".fromJson[Sensor]                // Left(.celsius(missing))
+ * }}}
+ *
+ * @see
+ *   [[https://zio.dev/zio-json/getting-started/ Getting Started]]
+ */
 object DeriveJsonDecoder {
 
+  /**
+   * Derives a `JsonDecoder[A]` for the case class or sealed trait `A`, with the [[JsonCodecConfiguration]] in implicit
+   * scope or else `JsonCodecConfiguration.default`. A missing field gets its default value, `None` for an `Option`, an
+   * empty collection when `explicitEmptyCollections.decoding` is `false`, and otherwise fails with `.name(missing)`,
+   * where `name` is the JSON name of the field. A `null` for a field with a default value also gives the default.
+   * Unknown keys are skipped unless [[jsonNoExtraFields]] or `allowExtraFields = false` applies. A case class without
+   * fields is read from any JSON value in text (only from an empty object with [[jsonNoExtraFields]]), and from an
+   * object or `null` in a JSON AST.
+   *
+   * Throws a `java.lang.AssertionError` when the decoder is created, if two fields or aliases of a case class have the
+   * same JSON name, or two cases of a sealed trait have the same type hint.
+   */
   inline def gen[A](using
     config: JsonCodecConfiguration = JsonCodecConfiguration.default
   )(using mirror: Mirror.Of[A]): JsonDecoder[A] =
@@ -1470,8 +1748,41 @@ object DeriveJsonDecoder {
 // =======================================================================================
 // DeriveJsonEncoder — uses inline match on Mirror, not ${ ... } macro splice
 // =======================================================================================
+/**
+ * Derives a [[JsonEncoder]] for a case class or a sealed trait at compile time. A case class is written as a JSON
+ * object with one key per field, in declaration order. A case of a sealed trait is wrapped in an object whose only key
+ * is the type hint (the short type name by default). On Scala 3, where `enumValuesAsStrings` is `true` by default, a
+ * sealed trait whose cases are all case objects is written as a JSON string such as `"Red"`. The annotations of the
+ * type, such as [[jsonField]] or [[jsonDiscriminator]], and the [[JsonCodecConfiguration]] in implicit scope change
+ * these defaults.
+ *
+ * On Scala 2, the derivation uses Magnolia, and every field type needs an encoder in implicit scope. On Scala 3, it
+ * uses the `Mirror` of the type, and derives an encoder for a field whose type is a case class or a sealed trait
+ * without one. A known bug on Scala 3: a field of type `Option[Inner]`, where `Inner` has no encoder, is derived as a
+ * sealed trait and written as `{"Some":{"value":...}}` or `{"None":{}}`, and a `List[Inner]` field fails to compile;
+ * give `Inner` its own encoder.
+ *
+ * {{{
+ * final case class Parcel(id: String, weightKg: Double, note: Option[String])
+ *
+ * object Parcel {
+ *   implicit val encoder: JsonEncoder[Parcel] = DeriveJsonEncoder.gen[Parcel]
+ * }
+ *
+ * Parcel("p1", 2.5, None).toJson // {"id":"p1","weightKg":2.5}
+ * }}}
+ *
+ * @see
+ *   [[https://zio.dev/zio-json/getting-started/ Getting Started]]
+ */
 object DeriveJsonEncoder { self =>
 
+  /**
+   * Derives a `JsonEncoder[A]` for the case class or sealed trait `A`, with the [[JsonCodecConfiguration]] in implicit
+   * scope or else `JsonCodecConfiguration.default`. By default, a field that is `None` is left out and an empty
+   * collection is written; [[jsonExplicitNull]] and [[jsonExplicitEmptyCollections]] change this. Fields with
+   * [[jsonExclude]] are left out.
+   */
   inline def gen[A](using
     config: JsonCodecConfiguration = JsonCodecConfiguration.default
   )(using mirror: Mirror.Of[A]): JsonEncoder[A] =
@@ -1558,11 +1869,18 @@ object DeriveJsonEncoder { self =>
     )
   }
 
-  // intercepts the first `{` of a nested writer and discards it. We also need to
-  // inject a `,` unless an empty object `{}` has been written.
+  /**
+   * A writer that the derived encoder of a sealed trait with a discriminator uses to put the fields of a case into the
+   * object that holds the hint field. It drops what the case writes up to and including its opening `{`, then writes a
+   * `,` before the first field unless the case is an empty object. Used by the derivation; call `gen` instead.
+   */
   final class NestedWriter(out: Write, indent: Option[Int]) extends Write {
     private[this] var state = 2
 
+    /**
+     * Writes `c`. Before the first field of the case, it drops whitespace and everything up to and including the
+     * opening `{`, and writes a `,` before the first field.
+     */
     @inline def write(c: Char): Unit =
       if (state == 0) out.write(c)
       else nonZeroStateWrite(c)
@@ -1581,6 +1899,10 @@ object DeriveJsonEncoder { self =>
         }
       }
 
+    /**
+     * Writes `s`. Before the first field of the case, it drops whitespace and everything up to and including the
+     * opening `{`, and writes a `,` before the first field.
+     */
     @inline def write(s: String): Unit =
       if (state == 0) out.write(s)
       else nonZeroStateWrite(s)
@@ -1613,6 +1935,11 @@ object DeriveJsonEncoder { self =>
       if (state == 0) out.write(cs, from, to)
       else nonZeroStateWrite(cs, from, to)
 
+    /**
+     * Writes the characters of `cs` from `from` until `to` before the first field of the case has been written: drops
+     * them up to and including the opening `{`, then writes a `,` (unless the case is an empty object) and the rest.
+     * Used by `write`.
+     */
     @noinline def nonZeroStateWrite(cs: Array[Char], from: Int, to: Int): Unit = {
       var i = from
       while (i < to) {
@@ -1710,7 +2037,40 @@ object DeriveJsonEncoder { self =>
   }
 }
 
+/**
+ * Derives a [[JsonCodec]] for a case class or a sealed trait at compile time: an encoder and a decoder that read and
+ * write the same JSON. It reads the same annotations and [[JsonCodecConfiguration]] as [[DeriveJsonEncoder]] and
+ * [[DeriveJsonDecoder]]. A case class is written as an object with one key per field; a case of a sealed trait is
+ * wrapped in an object whose only key is the type hint. On Scala 3, where `enumValuesAsStrings` is `true` by default, a
+ * sealed trait whose cases are all case objects is written as a JSON string such as `"Red"`.
+ *
+ * On Scala 2, put the codec of a recursive type in an `implicit lazy val`.
+ *
+ * {{{
+ * sealed trait Shape
+ * final case class Circle(radius: Double)                 extends Shape
+ * final case class Rectangle(width: Double, height: Double) extends Shape
+ *
+ * object Shape {
+ *   implicit val codec: JsonCodec[Shape] = DeriveJsonCodec.gen[Shape]
+ * }
+ *
+ * (Circle(1.5): Shape).toJson // {"Circle":{"radius":1.5}}
+ * """{"Rectangle":{"width":2.0,"height":3.0}}""".fromJson[Shape] // Right(Rectangle(2.0,3.0))
+ * }}}
+ *
+ * @see
+ *   [[https://zio.dev/zio-json/getting-started/ Getting Started]]
+ */
 object DeriveJsonCodec {
+  /**
+   * Derives a `JsonCodec[A]` for the case class or sealed trait `A`, with the [[JsonCodecConfiguration]] in implicit
+   * scope or else `JsonCodecConfiguration.default`. The result behaves as
+   * `JsonCodec(DeriveJsonEncoder.gen[A], DeriveJsonDecoder.gen[A])`.
+   *
+   * Throws a `java.lang.AssertionError` when the codec is created, if two fields or aliases of a case class have the
+   * same JSON name, or two cases of a sealed trait have the same type hint.
+   */
   inline def gen[A](using
     config: JsonCodecConfiguration = JsonCodecConfiguration.default
   )(using mirror: Mirror.Of[A]): JsonCodec[A] =
