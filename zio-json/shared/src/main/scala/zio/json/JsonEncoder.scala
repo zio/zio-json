@@ -405,8 +405,7 @@ object JsonEncoder extends GeneratedTupleEncoders with EncoderLowPriority1 with 
   }
 
   /**
-   * Encodes a `java.math.BigInteger` as a JSON number with all its digits. The encoder has no size limit, unlike the
-   * decoder.
+   * Encodes a `java.math.BigInteger` as a JSON number with all its digits.
    */
   implicit val bigInteger: JsonEncoder[java.math.BigInteger] =
     new JsonEncoder.AbstractJsonEncoder[java.math.BigInteger] {
@@ -416,7 +415,7 @@ object JsonEncoder extends GeneratedTupleEncoders with EncoderLowPriority1 with 
     }
 
   /**
-   * Encodes a `BigInt` as a JSON number with all its digits. The encoder has no size limit, unlike the decoder.
+   * Encodes a `BigInt` as a JSON number with all its digits.
    */
   implicit val scalaBigInt: JsonEncoder[BigInt] = new JsonEncoder.AbstractJsonEncoder[BigInt] {
     def unsafeEncode(a: BigInt, indent: Option[Int], out: Write): Unit =
