@@ -3,7 +3,9 @@ package enumeratum
 import zio.json.{ JsonFieldDecoder, JsonFieldEncoder }
 
 /**
- * Mix into an enumeratum `Enum` to give its entry type an implicit `JsonFieldEncoder` and `JsonFieldDecoder`, so that entries can be the keys of a JSON object, for example of a `Map` keyed by the enum. Each key holds the entry's `entryName`. Mix in `ZioJsonEnum` as well to read and write entries as values.
+ * Mix into an enumeratum `Enum` to give its entry type an implicit `JsonFieldEncoder` and `JsonFieldDecoder`, so that
+ * entries can be the keys of a JSON object, for example of a `Map` keyed by the enum. Each key holds the entry's
+ * `entryName`. Mix in `ZioJsonEnum` as well to read and write entries as values.
  *
  * {{{
  * import zio.json._
@@ -34,7 +36,8 @@ trait ZioJsonKeyEnum[A <: EnumEntry] { this: Enum[A] =>
   implicit val zioJsonKeyEncoder: JsonFieldEncoder[A] = ZioJson.keyEncoder(this)
 
   /**
-   * Reads an object key as the entry whose `entryName` equals it, with the same letter case. Any other key fails with a message such as `'Cherry' is not a member of enum Fruit`.
+   * Reads an object key as the entry whose `entryName` equals it, with the same letter case. Any other key fails with a
+   * message such as `'Cherry' is not a member of enum Fruit`.
    */
   implicit val zioJsonKeyDecoder: JsonFieldDecoder[A] = ZioJson.keyDecoder(this)
 }

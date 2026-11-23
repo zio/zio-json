@@ -5,8 +5,8 @@ import org.http4s.EntityDecoder
 import zio.json.JsonDecoder
 
 /**
- * Provides an implicit http4s `EntityDecoder[F, A]` for every `A` that has a `zio.json.JsonDecoder`. Use it through
- * the companion (`import ZIOEntityDecoder._`) or by mixing the trait into your own object.
+ * Provides an implicit http4s `EntityDecoder[F, A]` for every `A` that has a `zio.json.JsonDecoder`. Use it through the
+ * companion (`import ZIOEntityDecoder._`) or by mixing the trait into your own object.
  *
  * {{{
  * import cats.effect.IO
@@ -26,6 +26,7 @@ import zio.json.JsonDecoder
  * }}}
  */
 trait ZIOEntityDecoder {
+
   /**
    * Returns an `EntityDecoder[F, A]` for the media type `application/json`; it is the decoder that `jsonOf[F, A]`
    * builds.

@@ -5,6 +5,7 @@ import eu.timepit.refined.refineV
 import zio.json._
 
 package object refined {
+
   /**
    * Encodes a refined value as its underlying value: the JSON text is the same as for the plain `A`, and no trace of
    * the `Refined` wrapper or its predicate appears in it.

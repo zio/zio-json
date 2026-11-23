@@ -4,8 +4,8 @@ import org.http4s.EntityEncoder
 import zio.json.JsonEncoder
 
 /**
- * Provides an implicit http4s `EntityEncoder[F, A]` for every `A` that has a `zio.json.JsonEncoder`. Use it through
- * the companion (`import ZIOEntityEncoder._`) or by mixing the trait into your own object.
+ * Provides an implicit http4s `EntityEncoder[F, A]` for every `A` that has a `zio.json.JsonEncoder`. Use it through the
+ * companion (`import ZIOEntityEncoder._`) or by mixing the trait into your own object.
  *
  * {{{
  * import cats.effect.IO
@@ -24,6 +24,7 @@ import zio.json.JsonEncoder
  * }}}
  */
 trait ZIOEntityEncoder {
+
   /**
    * Returns an `EntityEncoder[F, A]` that writes the value as JSON text with the `Content-Type` `application/json`; it
    * is the encoder that `jsonEncoderOf[F, A]` builds.

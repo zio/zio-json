@@ -29,13 +29,21 @@ package object golden {
     Diff[Json].diff(x.samples, y.samples)
 
   /**
-   * Creates a test that compares the JSON encoding of values drawn from `gen` with a golden file, so that a change to the encoder of `A` fails the test. The test is named `golden test for` followed by the short name of `A`.
+   * Creates a test that compares the JSON encoding of values drawn from `gen` with a golden file, so that a change to
+   * the encoder of `A` fails the test. The test is named `golden test for` followed by the short name of `A`.
    *
-   * The test draws `sampleSize` values from `gen`, encodes each one with the implicit `JsonEncoder`, and compares the resulting JSON array with the golden file. The file is named after the short name of `A` (`Point.json` for `Point`, `List.json` for `List[Int]`) and lives in the folder `src/test/resources/golden` plus `relativePath` under the module root (see `filehelpers.moduleRootProperty`). An implicit [[GoldenConfiguration]] sets `relativePath` and `sampleSize`; without one, `GoldenConfiguration.default` applies.
+   * The test draws `sampleSize` values from `gen`, encodes each one with the implicit `JsonEncoder`, and compares the
+   * resulting JSON array with the golden file. The file is named after the short name of `A` (`Point.json` for `Point`,
+   * `List.json` for `List[Int]`) and lives in the folder `src/test/resources/golden` plus `relativePath` under the
+   * module root (see `filehelpers.moduleRootProperty`). An implicit [[GoldenConfiguration]] sets `relativePath` and
+   * `sampleSize`; without one, `GoldenConfiguration.default` applies.
    *
-   *   - When the golden file doesn't exist, the test writes the samples to `Point_new.json` and fails with `No existing golden test for`, the path of `Point.json`, and `. Remove _new from the suffix and re-run the test.`
+   *   - When the golden file doesn't exist, the test writes the samples to `Point_new.json` and fails with
+   *     `No existing golden test for`, the path of `Point.json`, and
+   *     `. Remove _new from the suffix and re-run the test.`
    *   - When the samples equal the stored ones, the test passes. Two runs of the same test draw the same samples.
-   *   - When they differ, the test writes the new samples to `Point_changed.json` and fails with a diff between the stored and the new samples.
+   *   - When they differ, the test writes the new samples to `Point_changed.json` and fails with a diff between the
+   *     stored and the new samples.
    *
    * {{{
    * import zio.json.golden._

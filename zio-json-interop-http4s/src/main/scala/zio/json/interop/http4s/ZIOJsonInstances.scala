@@ -12,6 +12,7 @@ import java.nio.charset.StandardCharsets
  * `zio.json.JsonEncoder`. The package object of `zio.json.interop.http4s` extends this trait.
  */
 trait ZIOJsonInstances {
+
   /**
    * Returns an `EntityDecoder[F, A]` for the media type `application/json`. It reads the whole body, decodes the bytes
    * as UTF-8 (whatever charset the request declares) and parses them with the `JsonDecoder` of `A`.

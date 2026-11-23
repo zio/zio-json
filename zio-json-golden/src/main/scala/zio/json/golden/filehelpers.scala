@@ -17,7 +17,8 @@ object filehelpers {
   val moduleRootProperty: String = "zio.json.golden.moduleRoot"
 
   /**
-   * Returns `file` itself when its name is `target`, or else its nearest ancestor named `target`. When neither `file` nor any ancestor is named `target`, the effect dies with a `java.lang.NullPointerException` instead of failing.
+   * Returns `file` itself when its name is `target`, or else its nearest ancestor named `target`. When neither `file`
+   * nor any ancestor is named `target`, the effect dies with a `java.lang.NullPointerException` instead of failing.
    */
   def getRootDir(file: File)(implicit trace: Trace): Task[File] =
     if (file.getName == "target") ZIO.succeed(file)
@@ -36,9 +37,12 @@ object filehelpers {
     }
 
   /**
-   * Creates the folder `pathToDir` inside the module root, with any missing parent folders, and returns its path. The module root is the value of the system property named by `moduleRootProperty` when it is set; otherwise it is the parent of the `target` folder that `getRootDir` finds from the class path.
+   * Creates the folder `pathToDir` inside the module root, with any missing parent folders, and returns its path. The
+   * module root is the value of the system property named by `moduleRootProperty` when it is set; otherwise it is the
+   * parent of the `target` folder that `getRootDir` finds from the class path.
    *
-   * The returned path is relative when the system property holds a relative path. When the property is unset and no `target` folder is found, the effect dies with a `java.lang.NullPointerException`.
+   * The returned path is relative when the system property holds a relative path. When the property is unset and no
+   * `target` folder is found, the effect dies with a `java.lang.NullPointerException`.
    */
   def createGoldenDirectory(pathToDir: String)(implicit trace: Trace): Task[Path] =
     for {
@@ -49,7 +53,9 @@ object filehelpers {
     } yield path
 
   /**
-   * Writes `sample` to the file at `path` as pretty-printed JSON in UTF-8, creating the file or replacing its content. Fails with a `java.io.IOException` when the file can't be written, for example a `java.nio.file.NoSuchFileException` when its folder doesn't exist.
+   * Writes `sample` to the file at `path` as pretty-printed JSON in UTF-8, creating the file or replacing its content.
+   * Fails with a `java.io.IOException` when the file can't be written, for example a
+   * `java.nio.file.NoSuchFileException` when its folder doesn't exist.
    */
   def writeSampleToFile(path: Path, sample: GoldenSample)(implicit trace: Trace): IO[IOException, Unit] = {
     val jsonString = sample.toJsonPretty
@@ -62,7 +68,9 @@ object filehelpers {
   /**
    * Reads the first JSON value in the file at `path` and decodes it as a [[GoldenSample]].
    *
-   * Fails with a `java.nio.file.NoSuchFileException` when the file doesn't exist, with a `java.util.NoSuchElementException` when it is empty, and with a `java.lang.Exception` that carries the error message when the content can't be decoded (`.samples(missing)` for a JSON object without a `samples` field).
+   * Fails with a `java.nio.file.NoSuchFileException` when the file doesn't exist, with a
+   * `java.util.NoSuchElementException` when it is empty, and with a `java.lang.Exception` that carries the error
+   * message when the content can't be decoded (`.samples(missing)` for a JSON object without a `samples` field).
    */
   def readSampleFromFile(path: Path)(implicit trace: Trace): Task[GoldenSample] =
     for {

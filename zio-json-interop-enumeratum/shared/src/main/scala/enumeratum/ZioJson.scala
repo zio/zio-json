@@ -3,7 +3,8 @@ package enumeratum
 import zio.json.{ JsonDecoder, JsonEncoder, JsonFieldDecoder, JsonFieldEncoder }
 
 /**
- * Builds zio-json codecs for an enumeratum `Enum` whose entries are written as their `entryName`. Use these when the enum can't mix in `ZioJsonEnum` or `ZioJsonKeyEnum`, or to choose the letter case of the JSON.
+ * Builds zio-json codecs for an enumeratum `Enum` whose entries are written as their `entryName`. Use these when the
+ * enum can't mix in `ZioJsonEnum` or `ZioJsonKeyEnum`, or to choose the letter case of the JSON.
  *
  * {{{
  * import zio.json._
@@ -31,46 +32,62 @@ import zio.json.{ JsonDecoder, JsonEncoder, JsonFieldDecoder, JsonFieldEncoder }
  */
 object ZioJson {
 
-  /** Returns an encoder that writes an entry as a JSON string holding its `entryName`. The enum argument only fixes the entry type. */
+  /**
+   * Returns an encoder that writes an entry as a JSON string holding its `entryName`. The enum argument only fixes the
+   * entry type.
+   */
   def encoder[A <: EnumEntry](@annotation.unused e: Enum[A]): JsonEncoder[A] =
     stringEncoder.contramap(_.entryName)
 
-  /** Returns an encoder that writes an entry as a JSON string holding its `entryName` in lower case (`"monday"` for `Monday`). */
+  /**
+   * Returns an encoder that writes an entry as a JSON string holding its `entryName` in lower case (`"monday"` for
+   * `Monday`).
+   */
   def encoderLowercase[A <: EnumEntry](@annotation.unused e: Enum[A]): JsonEncoder[A] =
     stringEncoder.contramap(_.entryName.toLowerCase)
 
-  /** Returns an encoder that writes an entry as a JSON string holding its `entryName` in upper case (`"MONDAY"` for `Monday`). */
+  /**
+   * Returns an encoder that writes an entry as a JSON string holding its `entryName` in upper case (`"MONDAY"` for
+   * `Monday`).
+   */
   def encoderUppercase[A <: EnumEntry](@annotation.unused e: Enum[A]): JsonEncoder[A] =
     stringEncoder.contramap(_.entryName.toUpperCase)
 
   /**
-   * Returns a decoder that reads a JSON string as the entry whose `entryName` equals it, with the same letter case. A JSON value that isn't a string fails with `expected string`.
+   * Returns a decoder that reads a JSON string as the entry whose `entryName` equals it, with the same letter case. A
+   * JSON value that isn't a string fails with `expected string`.
    *
-   * Any other string fails with a message such as `'tuesday' is not a member of enum Weekday`: the input, then the enum's `toString`, which is the plain name for a `case object` and the default `Object.toString` (class name and hash code) for a plain `object`.
+   * Any other string fails with a message such as `'tuesday' is not a member of enum Weekday`: the input, then the
+   * enum's `toString`, which is the plain name for a `case object` and the default `Object.toString` (class name and
+   * hash code) for a plain `object`.
    */
   def decoder[A <: EnumEntry](e: Enum[A]): JsonDecoder[A] =
     stringDecoder.mapOrFail(s => fromOption(e.withNameOption(s), s, e.toString))
 
   /**
-   * Returns a decoder that accepts only the lower-case form of an `entryName`: `"monday"` reads as `Monday`, and `"Monday"` fails with a message such as `'Monday' is not a member of enum Weekday`.
+   * Returns a decoder that accepts only the lower-case form of an `entryName`: `"monday"` reads as `Monday`, and
+   * `"Monday"` fails with a message such as `'Monday' is not a member of enum Weekday`.
    */
   def decoderLowercaseOnly[A <: EnumEntry](e: Enum[A]): JsonDecoder[A] =
     stringDecoder.mapOrFail(s => fromOption(e.withNameLowercaseOnlyOption(s), s, e.toString))
 
   /**
-   * Returns a decoder that accepts only the upper-case form of an `entryName`: `"MONDAY"` reads as `Monday`, and `"Monday"` fails with a message such as `'Monday' is not a member of enum Weekday`.
+   * Returns a decoder that accepts only the upper-case form of an `entryName`: `"MONDAY"` reads as `Monday`, and
+   * `"Monday"` fails with a message such as `'Monday' is not a member of enum Weekday`.
    */
   def decoderUppercaseOnly[A <: EnumEntry](e: Enum[A]): JsonDecoder[A] =
     stringDecoder.mapOrFail(s => fromOption(e.withNameUppercaseOnlyOption(s), s, e.toString))
 
   /**
-   * Returns a decoder that accepts an `entryName` in any letter case: `"Monday"` and `"mOnDaY"` both read as `Monday`. Any other string fails with a message such as `'Mon' is not a member of enum Weekday`.
+   * Returns a decoder that accepts an `entryName` in any letter case: `"Monday"` and `"mOnDaY"` both read as `Monday`.
+   * Any other string fails with a message such as `'Mon' is not a member of enum Weekday`.
    */
   def decoderCaseInsensitive[A <: EnumEntry](e: Enum[A]): JsonDecoder[A] =
     stringDecoder.mapOrFail(s => fromOption(e.withNameInsensitiveOption(s), s, e.toString))
 
   /**
-   * Returns a field encoder that writes an entry as an object key holding its `entryName`, for a `Map` keyed by the enum.
+   * Returns a field encoder that writes an entry as an object key holding its `entryName`, for a `Map` keyed by the
+   * enum.
    *
    * {{{
    * import zio.json._
@@ -95,7 +112,8 @@ object ZioJson {
     stringFieldEncoder.contramap(_.entryName)
 
   /**
-   * Returns a field decoder that reads an object key as the entry whose `entryName` equals it, with the same letter case. Any other key fails with a message such as `'usd' is not a member of enum Currency`.
+   * Returns a field decoder that reads an object key as the entry whose `entryName` equals it, with the same letter
+   * case. Any other key fails with a message such as `'usd' is not a member of enum Currency`.
    */
   def keyDecoder[A <: EnumEntry](e: Enum[A]): JsonFieldDecoder[A] =
     stringFieldDecoder.mapOrFail(s => fromOption(e.withNameOption(s), s, e.toString))
