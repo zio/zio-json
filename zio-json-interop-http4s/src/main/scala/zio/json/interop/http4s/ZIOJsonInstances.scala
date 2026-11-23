@@ -14,11 +14,13 @@ import java.nio.charset.StandardCharsets
 trait ZIOJsonInstances {
 
   /**
-   * Returns an `EntityDecoder[F, A]` for the media type `application/json`. It reads the whole body, decodes the bytes
-   * as UTF-8 (whatever charset the request declares) and parses them with the `JsonDecoder` of `A`.
+   * Returns an `EntityDecoder[F, A]` for the media type `application/json`. It decodes the body bytes as UTF-8 (whatever
+   * charset the request declares) and parses them with the `JsonDecoder` of `A`.
    *
    * Decoding fails with a `MalformedMessageBodyFailure`: its details are `Invalid JSON: empty body` for an empty body
-   * and the zio-json error text for a body that is not valid JSON for `A`.
+   * and the zio-json error text for a body that is not valid JSON for `A`. With `strict = true`, a message whose
+   * `Content-Type` is not `application/json` fails with a `MediaTypeMismatch` instead, and a message with no `Content-Type`
+   * fails with a `MediaTypeMissing`.
    *
    * {{{
    * import cats.effect.IO
