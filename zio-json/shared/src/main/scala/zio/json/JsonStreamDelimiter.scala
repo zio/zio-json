@@ -15,9 +15,16 @@
  */
 package zio.json
 
+/**
+ * Tells a streaming decoder how the values in its input are laid out: as the elements of one JSON array
+ * ([[JsonStreamDelimiter.Array]]) or as values separated by newlines ([[JsonStreamDelimiter.Newline]]). `decodeJsonPipeline` takes it as a parameter.
+ */
 sealed trait JsonStreamDelimiter
 
+/** The two delimiters a streaming decoder understands. */
 object JsonStreamDelimiter {
+  /** The input is a sequence of JSON values separated by newlines (`\n` or `\r\n`); each value is decoded on its own. */
   case object Newline extends JsonStreamDelimiter
+  /** The input is one JSON array and each of its elements is decoded and emitted in turn. It is the default of `decodeJsonPipeline`. */
   case object Array   extends JsonStreamDelimiter
 }
