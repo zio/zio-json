@@ -32,6 +32,7 @@ The modules are not all published for the same platforms. The table below follow
 The http4s module is a JVM-only project. The other three are cross-built, so in a Scala.js or Scala Native project you add them with `%%%` instead of `%%`:
 
 ```scala
+// Refined types integration for ZIO JSON
 libraryDependencies += "dev.zio" %%% "zio-json-interop-refined" % "@VERSION@"
 ```
 

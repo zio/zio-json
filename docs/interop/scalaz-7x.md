@@ -12,6 +12,7 @@ The `zio-json-interop-scalaz7x` module provides a `JsonEncoder` and a `JsonDecod
 Add the module to your `build.sbt`:
 
 ```scala
+// Scalaz 7.x integration for ZIO JSON
 libraryDependencies += "dev.zio" %% "zio-json-interop-scalaz7x" % "@VERSION@"
 ```
 

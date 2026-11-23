@@ -34,6 +34,7 @@ The module is published for Scala 2.12 and 2.13, on the JVM, Scala.js and Scala 
 On Scala 2.13, macro annotations are a compiler option:
 
 ```scala
+// Macros that generate JSON codecs for case classes and sealed traits
 libraryDependencies += "dev.zio" %% "zio-json-macros" % "@VERSION@"
 scalacOptions += "-Ymacro-annotations"
 ```
@@ -41,6 +42,7 @@ scalacOptions += "-Ymacro-annotations"
 On Scala 2.12, they need the macro paradise compiler plugin instead:
 
 ```scala
+// Macros that generate JSON codecs for case classes and sealed traits
 libraryDependencies += "dev.zio" %% "zio-json-macros" % "@VERSION@"
 addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full)
 ```

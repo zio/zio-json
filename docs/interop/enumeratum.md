@@ -12,6 +12,7 @@ The `zio-json-interop-enumeratum` module connects ZIO JSON to [enumeratum](https
 Add the module to your `build.sbt`:
 
 ```scala
+// Enumeratum integration for ZIO JSON
 libraryDependencies += "dev.zio" %% "zio-json-interop-enumeratum" % "@VERSION@"
 ```
 

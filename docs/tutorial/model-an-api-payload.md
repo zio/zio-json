@@ -267,6 +267,7 @@ A *golden test* guards against this. It encodes a set of sample values, stores t
 Add the module to `build.sbt`. It brings ZIO Test with it, so the only other line tells sbt to run ZIO Test specs:
 
 ```sbt
+// Golden testing helpers for JSON output
 libraryDependencies += "dev.zio" %% "zio-json-golden" % "@VERSION@" % Test
 
 testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework")

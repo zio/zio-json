@@ -21,6 +21,7 @@ Steps 2 to 4 are alternatives, one per kind of key. Follow the one that matches 
 Only the core module:
 
 ```scala
+// ZIO JSON: JSON encoders, decoders and codecs (JVM, Scala.js, Scala Native)
 libraryDependencies += "dev.zio" %% "zio-json" % "@VERSION@"
 ```
 

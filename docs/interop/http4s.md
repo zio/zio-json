@@ -14,6 +14,7 @@ The module targets http4s 0.23 and cats-effect 3 (the build uses http4s 0.23.38 
 Add the module to your `build.sbt`:
 
 ```scala
+// http4s integration for ZIO JSON
 libraryDependencies += "dev.zio" %% "zio-json-interop-http4s" % "@VERSION@"
 ```
 

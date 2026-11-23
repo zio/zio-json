@@ -19,6 +19,7 @@ A golden test stores the encoded JSON of a set of sample values in a file, the g
 Add `zio-json-golden` to the test classpath. It brings ZIO Test, its sbt runner and `zio-test-magnolia` with it:
 
 ```scala
+// Golden testing helpers for JSON output
 libraryDependencies += "dev.zio" %% "zio-json-golden" % "@VERSION@" % Test
 ```
 

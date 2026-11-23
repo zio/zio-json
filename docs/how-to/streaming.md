@@ -19,6 +19,7 @@ The steps follow one data set through a round trip: a large JSON array export is
 The streaming API is part of the core module, but it exists on the JVM only:
 
 ```scala
+// ZIO JSON: JSON encoders, decoders and codecs (JVM, Scala.js, Scala Native)
 libraryDependencies += "dev.zio" %% "zio-json" % "@VERSION@"
 ```
 
