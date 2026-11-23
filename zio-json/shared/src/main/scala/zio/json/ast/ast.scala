@@ -216,7 +216,7 @@ sealed abstract class Json { self =>
    * val json = """{"a":[1,2],"b":3}""".fromJson[Json].toOption.get
    *
    * json.foldDown(0)((count, _) => count + 1)
-   * // 6
+   * // 5
    * }}}
    */
   final def foldDown[A](initial: A)(f: (A, Json) => A): A = {

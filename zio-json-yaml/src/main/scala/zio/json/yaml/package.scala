@@ -61,6 +61,7 @@ package object yaml {
      *
      * {{{
      * import zio.json.ast.Json
+     * import zio.json.yaml._
      *
      * val json = Json.Obj(
      *   "name"  -> Json.Str("Ada"),
@@ -128,6 +129,7 @@ package object yaml {
      *
      * {{{
      * import zio.json.ast.Json
+     * import zio.json.yaml._
      *
      * Json.Arr(Json.Num(1), Json.Num(2)).toYaml()
      * // Right("  - 1\n  - 2\n")
@@ -161,6 +163,7 @@ package object yaml {
      *
      * {{{
      * import zio.json.ast.Json
+     * import zio.json.yaml._
      *
      * """
      * name: Ada
