@@ -7,7 +7,7 @@ import sbtcrossproject.CrossPlugin.autoImport.crossProject
 import zio.sbt.githubactions.Step
 
 ThisBuild / ciCheckScaladocExamples := true
-Global / onChangedBuildSource := ReloadOnSourceChanges
+Global / onChangedBuildSource       := ReloadOnSourceChanges
 
 inThisBuild(
   List(
