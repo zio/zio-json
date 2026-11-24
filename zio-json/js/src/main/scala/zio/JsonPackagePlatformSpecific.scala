@@ -9,6 +9,7 @@ package zio
  * On the JVM, for example:
  *
  * {{{
+ * // jvm-only
  * import zio.json._
  * import zio.json.ast.Json
  * import zio.stream._
