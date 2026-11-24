@@ -4,7 +4,7 @@ addSbtPlugin("com.github.sbt"     % "sbt-ci-release"                % "1.12.0")
 addSbtPlugin("com.github.cb372"   % "sbt-explicit-dependencies"     % "0.3.1")
 addSbtPlugin("com.typesafe"       % "sbt-mima-plugin"               % "1.2.1")
 addSbtPlugin("com.github.sbt"     % "sbt-header"                    % "5.11.0")
-addSbtPlugin("dev.zio"            % "zio-sbt-ci"                    % "0.8.3")
+addSbtPlugin("dev.zio"            % "zio-sbt-ci"                    % "0.8.12+2-24e2cb6c-SNAPSHOT")
 addSbtPlugin("org.portable-scala" % "sbt-scala-native-crossproject" % "1.4.0")
 addSbtPlugin("org.portable-scala" % "sbt-scalajs-crossproject"      % "1.4.0")
 addSbtPlugin("org.scala-js"       % "sbt-scalajs"                   % "1.22.0")
@@ -15,5 +15,8 @@ addSbtPlugin("org.scoverage"      % "sbt-scoverage"                 % "2.4.4")
 resolvers += "Sonatype Snapshots" at "https://central.sonatype.com/repository/maven-snapshots/"
 addSbtPlugin("dev.zio"       % "zio-sbt-website" % "0.7.0")
 addSbtPlugin("ch.epfl.scala" % "sbt-scalafix"    % "0.14.9")
+
+resolvers += Resolver.sonatypeCentralSnapshots
+addSbtPlugin("dev.zio" % "zio-sbt-scaladoc" % "0.8.12+2-24e2cb6c-SNAPSHOT")
 
 libraryDependencies += "org.snakeyaml" % "snakeyaml-engine" % "3.1.1"

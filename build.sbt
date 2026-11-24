@@ -6,6 +6,7 @@ import explicitdeps.ExplicitDepsPlugin.autoImport.moduleFilterRemoveValue
 import sbtcrossproject.CrossPlugin.autoImport.crossProject
 import zio.sbt.githubactions.Step
 
+ThisBuild / ciCheckScaladocExamples := true
 Global / onChangedBuildSource := ReloadOnSourceChanges
 
 inThisBuild(
