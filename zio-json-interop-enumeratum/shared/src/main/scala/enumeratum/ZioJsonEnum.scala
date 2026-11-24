@@ -8,27 +8,21 @@ import zio.json.{ JsonDecoder, JsonEncoder }
  * Example:
  *
  * {{{
- * scala> import enumeratum._
- * scala> import zio.json._
+ * import enumeratum._
+ * import zio.json._
  *
- * scala> sealed trait ShirtSize extends EnumEntry
- * scala> case object ShirtSize extends Enum[ShirtSize] with ZioJsonEnum[ShirtSize] {
- *     |  case object Small  extends ShirtSize
- *     |  case object Medium extends ShirtSize
- *     |  case object Large  extends ShirtSize
- *     |  val values = findValues
- *     | }
+ * sealed trait ShirtSize extends EnumEntry
+ * case object ShirtSize extends Enum[ShirtSize] with ZioJsonEnum[ShirtSize] {
+ *   case object Small  extends ShirtSize
+ *   case object Medium extends ShirtSize
+ *   case object Large  extends ShirtSize
+ *   val values = findValues
+ * }
  *
- * scala> val size: ShirtSize = ShirtSize.Small
- *
- * scala> size.toJson
- * res0: String = "Small"
- *
- * scala> """"Large"""".fromJson[ShirtSize]
- * res1: Either[String, ShirtSize] = Right(Large)
- *
- * scala> """"XLarge"""".fromJson[ShirtSize]
- * res2: Either[String, ShirtSize] = Left('XLarge' is not a member of enum ShirtSize)
+ * val size: ShirtSize = ShirtSize.Small
+ * assert(size.toJson == "\"Small\"")
+ * assert("\"Large\"".fromJson[ShirtSize] == Right(ShirtSize.Large))
+ * assert("\"XLarge\"".fromJson[ShirtSize].isLeft)
  * }}}
  */
 trait ZioJsonEnum[A <: EnumEntry] { this: Enum[A] =>

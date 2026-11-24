@@ -30,27 +30,21 @@ trait ZioJsonValueEnum[ValueType, EntryType <: ValueEnumEntry[ValueType]] {
  * ZioJsonValueEnum for IntEnumEntry
  *
  * {{{
- * scala> import enumeratum.values._
- * scala> import zio.json._
+ * import enumeratum.values._
+ * import zio.json._
  *
- * scala> sealed abstract class ShirtSize(val value: Int) extends IntEnumEntry
- * scala> case object ShirtSize extends IntEnum[ShirtSize] with IntZioJsonEnum[ShirtSize] {
- *     |  case object Small  extends ShirtSize(1)
- *     |  case object Medium extends ShirtSize(2)
- *     |  case object Large  extends ShirtSize(3)
- *     |  val values = findValues
- *     | }
+ * sealed abstract class ShirtSize(val value: Int) extends IntEnumEntry
+ * case object ShirtSize extends IntEnum[ShirtSize] with IntZioJsonEnum[ShirtSize] {
+ *   case object Small  extends ShirtSize(1)
+ *   case object Medium extends ShirtSize(2)
+ *   case object Large  extends ShirtSize(3)
+ *   val values = findValues
+ * }
  *
- * scala> val size: ShirtSize = ShirtSize.Small
- *
- * scala> size.toJson
- * res0: String = 1
- *
- * scala> "3".fromJson[ShirtSize]
- * res1: Either[String, ShirtSize] = Right(Large)
- *
- * scala> "10".fromJson[ShirtSize]
- * res2: Either[String, ShirtSize] = Left('10' is not a member of enum ShirtSize)
+ * val size: ShirtSize = ShirtSize.Small
+ * assert(size.toJson == "1")
+ * assert("3".fromJson[ShirtSize] == Right(ShirtSize.Large))
+ * assert("10".fromJson[ShirtSize].isLeft)
  * }}}
  */
 trait IntZioJsonEnum[EntryType <: IntEnumEntry] extends ZioJsonValueEnum[Int, EntryType] {
