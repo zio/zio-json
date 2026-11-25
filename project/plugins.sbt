@@ -19,4 +19,4 @@ addSbtPlugin("ch.epfl.scala" % "sbt-scalafix"    % "0.14.9")
 resolvers += Resolver.sonatypeCentralSnapshots
 addSbtPlugin("dev.zio" % "zio-sbt-scaladoc" % "0.8.12+2-24e2cb6c-SNAPSHOT")
 
-libraryDependencies += "org.snakeyaml" % "snakeyaml-engine" % "3.1.1"
+libraryDependencies += "org.snakeyaml" % "snakeyaml-engine" % "3.2"
