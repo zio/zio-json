@@ -302,6 +302,128 @@ object DecoderVersionSpecificSpec extends ZIOSpecDefault {
           val expected = immutable.ArraySeq("5XL", "2XL", "XL")
           assert(json.as[Seq[String]])(isRight(equalTo(expected)))
         }
+      ),
+      suite("named tuples")(
+        test("decode a single value tuple") {
+          type Person = (name: String)
+          val json             = Json.Obj("name", Json.Str("hello"))
+          val expected: Person = (name = "hello")
+          assert(json.as[Person])(isRight(equalTo(expected)))
+        },
+        test("decode multi value hetrogenous tuple") {
+          type Person = (name: String, age: Int)
+          val json             = Json.Obj("name" -> Json.Str("hello"), "age" -> Json.Num(42))
+          val expected: Person = (name = "hello", age = 42)
+          assert(json.as[Person])(isRight(equalTo(expected)))
+        },
+        test("decode multi value with optional value") {
+          type Person = (name: String, age: Option[Int])
+          val json             = Json.Obj("name" -> Json.Str("hello"), "age" -> Json.Num(42))
+          val expected: Person = (name = "hello", age = Some(42))
+          assert(json.as[Person])(isRight(equalTo(expected)))
+        },
+        test("decode missing optional value") {
+          type Person = (name: String, age: Option[Int])
+          val json             = Json.Obj("name" -> Json.Str("hello"))
+          val expected: Person = (name = "hello", age = None)
+          assert(json.as[Person])(isRight(equalTo(expected)))
+        },
+        test("supports json configuration overrides") {
+          type Person = (firstName: String, lastName: String)
+          implicit val config  = JsonCodecConfiguration(fieldNameMapping = SnakeCase)
+          val json             = Json.Obj("first_name" -> Json.Str("John"), "last_name" -> Json.Str("Doe"))
+          val expected: Person = (firstName = "John", lastName = "Doe")
+          assert(json.as[Person])(isRight(equalTo(expected)))
+        },
+        test("decode from a JSON string") {
+          type Person = (name: String, age: Option[Int])
+          assertTrue(
+            """{"name":"hello","age":42}""".fromJson[Person] == Right((name = "hello", age = Some(42))),
+            """{"age":42,"name":"hello"}""".fromJson[Person] == Right((name = "hello", age = Some(42))),
+            """{"name":"hello"}""".fromJson[Person] == Right((name = "hello", age = None))
+          )
+        },
+        test("supports json configuration overrides from a JSON string") {
+          type Person = (firstName: String, lastName: String)
+          implicit val config: JsonCodecConfiguration = JsonCodecConfiguration(fieldNameMapping = SnakeCase)
+          assertTrue(
+            """{"first_name":"John","last_name":"Doe"}""".fromJson[Person] == Right(
+              (firstName = "John", lastName = "Doe")
+            )
+          )
+        },
+        test("ignores extra fields by default") {
+          type Person = (name: String)
+          assertTrue(
+            """{"name":"hello","extra":[1,2]}""".fromJson[Person] == Right((name = "hello")),
+            Json.Obj("name" -> Json.Str("hello"), "extra" -> Json.Num(1)).as[Person] == Right((name = "hello"))
+          )
+        },
+        test("rejects extra fields when configured") {
+          type Person = (name: String)
+          implicit val config: JsonCodecConfiguration = JsonCodecConfiguration(allowExtraFields = false)
+          assertTrue(
+            """{"name":"hello","extra":1}""".fromJson[Person] == Left("(invalid extra field)"),
+            Json.Obj("name" -> Json.Str("hello"), "extra" -> Json.Num(1)).as[Person] == Left("(invalid extra field)")
+          )
+        },
+        test("rejects duplicate fields") {
+          type Person = (name: String, age: Int)
+          assertTrue(
+            """{"name":"hello","name":"world","age":1}""".fromJson[Person] == Left("(duplicate)"),
+            Json.Obj("name" -> Json.Str("hello"), "name" -> Json.Str("world")).as[Person] == Left("(duplicate)")
+          )
+        },
+        test("reports missing required fields") {
+          type Person = (name: String, age: Int)
+          assertTrue(
+            """{"name":"hello"}""".fromJson[Person] == Left(".age(missing)"),
+            Json.Obj("name" -> Json.Str("hello")).as[Person] == Left(".age(missing)")
+          )
+        },
+        test("reports the path of nested errors") {
+          type Person = (name: String, age: Int)
+          assertTrue(
+            """{"name":"hello","age":"old"}""".fromJson[Person].swap.exists(_.startsWith(".age(")),
+            """[]""".fromJson[Person].isLeft,
+            Json.Str("hello").as[Person] == Left("(expected object)")
+          )
+        },
+        test("missing collections respect explicitEmptyCollections") {
+          type Basket = (owner: String, items: List[Int])
+          val strict = {
+            implicit val config: JsonCodecConfiguration = JsonCodecConfiguration()
+            JsonDecoder[Basket]
+          }
+          val lenient = {
+            implicit val config: JsonCodecConfiguration =
+              JsonCodecConfiguration(explicitEmptyCollections = ExplicitEmptyCollections(decoding = false))
+            JsonDecoder[Basket]
+          }
+          assertTrue(
+            strict.decodeJson("""{"owner":"me"}""") == Left(".items(missing)"),
+            lenient.decodeJson("""{"owner":"me"}""") == Right((owner = "me", items = List.empty[Int])),
+            lenient.fromJsonAST(Json.Obj("owner" -> Json.Str("me"))) == Right((owner = "me", items = List.empty[Int]))
+          )
+        },
+        test("decodes nested named tuples") {
+          type Person = (name: String, address: (city: String, zip: Option[String]))
+          assertTrue(
+            """{"name":"hello","address":{"city":"Paris"}}""".fromJson[Person] ==
+              Right((name = "hello", address = (city = "Paris", zip = None)))
+          )
+        },
+        test("decodes the empty named tuple") {
+          assertTrue(
+            "{}".fromJson[NamedTuple.Empty] == Right(NamedTuple.Empty),
+            """{"extra":1}""".fromJson[NamedTuple.Empty] == Right(NamedTuple.Empty)
+          )
+        },
+        test("rejects field names that collide after mapping") {
+          type Clash = (fooBar: Int, foo_bar: Int)
+          implicit val config: JsonCodecConfiguration = JsonCodecConfiguration(fieldNameMapping = SnakeCase)
+          assertTrue(scala.util.Try(JsonDecoder[Clash]).isFailure)
+        }
       )
     )
 }
