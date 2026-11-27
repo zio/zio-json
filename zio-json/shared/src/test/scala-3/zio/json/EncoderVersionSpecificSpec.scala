@@ -105,6 +105,23 @@ object EncoderVersionSpecificSpec extends ZIOSpecDefault {
           import WithExplicitEmpty._
           val result = WithExplicitEmpty(List(1, 2, 3), "test").toJson
           assertTrue(result == """{"items":[1,2,3],"name":"test"}""")
+        },
+        // config is passed explicitly, not as a given: a given in scope would hide the bug
+        test("gen(using config) applies config to derived sealed trait subtypes") {
+          sealed trait Shape
+          case class Circle(radiusInMeters: Double, label: Option[String]) extends Shape
+
+          val config = JsonCodecConfiguration(fieldNameMapping = SnakeCase, explicitNulls = true)
+          val json   = DeriveJsonEncoder.gen[Shape](using config).encodeJson(Circle(1.5, None), None)
+          assertTrue(json == """{"Circle":{"radius_in_meters":1.5,"label":null}}""")
+        },
+        test("gen(using config) applies config to derived case-class field types") {
+          case class Size(widthInMeters: Double, label: Option[String])
+          case class Box(outerSize: Size)
+
+          val config = JsonCodecConfiguration(fieldNameMapping = SnakeCase, explicitNulls = true)
+          val json   = DeriveJsonEncoder.gen[Box](using config).encodeJson(Box(Size(2.0, None)), None)
+          assertTrue(json == """{"outer_size":{"width_in_meters":2.0,"label":null}}""")
         }
       ),
       suite("toJsonAST")(

@@ -882,9 +882,11 @@ private[json] object MacroHelpers {
 
   // Summon encoders for leaf types (flattened through intermediate sealed traits)
   inline def summonLeafEncoders[T](using config: JsonCodecConfiguration): Array[JsonEncoder[?]] =
-    ${ summonLeafEncodersImpl[T] }
+    ${ summonLeafEncodersImpl[T]('config) }
 
-  private def summonLeafEncodersImpl[T: Type](using Quotes): Expr[Array[JsonEncoder[?]]] = {
+  private def summonLeafEncodersImpl[T: Type](
+    config: Expr[JsonCodecConfiguration]
+  )(using Quotes): Expr[Array[JsonEncoder[?]]] = {
     import quotes.reflect.*
     val tpe = TypeRepr.of[T]
     val sym = tpe.typeSymbol
@@ -906,7 +908,7 @@ private[json] object MacroHelpers {
           Expr.summon[JsonEncoder[t]].getOrElse {
             Expr.summon[scala.deriving.Mirror.Of[t]] match {
               case Some(mirror) =>
-                '{ DeriveJsonEncoder.gen[t](using summonInline[JsonCodecConfiguration])(using $mirror) }
+                '{ DeriveJsonEncoder.gen[t](using $config)(using $mirror) }
               case _ =>
                 report.errorAndAbort(s"Cannot find or derive JsonEncoder for ${Type.show[t]}")
             }
@@ -918,9 +920,11 @@ private[json] object MacroHelpers {
 
   // Summon decoders for leaf types (flattened through intermediate sealed traits)
   inline def summonLeafDecoders[T](using config: JsonCodecConfiguration): Array[JsonDecoder[?]] =
-    ${ summonLeafDecodersImpl[T] }
+    ${ summonLeafDecodersImpl[T]('config) }
 
-  private def summonLeafDecodersImpl[T: Type](using Quotes): Expr[Array[JsonDecoder[?]]] = {
+  private def summonLeafDecodersImpl[T: Type](
+    config: Expr[JsonCodecConfiguration]
+  )(using Quotes): Expr[Array[JsonDecoder[?]]] = {
     import quotes.reflect.*
     val tpe = TypeRepr.of[T]
     val sym = tpe.typeSymbol
@@ -942,7 +946,7 @@ private[json] object MacroHelpers {
           Expr.summon[JsonDecoder[t]].getOrElse {
             Expr.summon[scala.deriving.Mirror.Of[t]] match {
               case Some(mirror) =>
-                '{ DeriveJsonDecoder.gen[t](using summonInline[JsonCodecConfiguration])(using $mirror) }
+                '{ DeriveJsonDecoder.gen[t](using $config)(using $mirror) }
               case _ =>
                 report.errorAndAbort(s"Cannot find or derive JsonDecoder for ${Type.show[t]}")
             }
@@ -970,9 +974,11 @@ private[json] object MacroHelpers {
   }
 
   inline def summonDecoders[T <: Tuple](using config: JsonCodecConfiguration): List[JsonDecoder[?]] =
-    ${ summonDecodersImpl[T] }
+    ${ summonDecodersImpl[T]('config) }
 
-  private def summonDecodersImpl[T: Type](using Quotes): Expr[List[JsonDecoder[?]]] = {
+  private def summonDecodersImpl[T: Type](
+    config: Expr[JsonCodecConfiguration]
+  )(using Quotes): Expr[List[JsonDecoder[?]]] = {
     import quotes.reflect.*
     def extractTypes(tpe: TypeRepr): List[TypeRepr] = tpe.dealias match {
       case AppliedType(_, List(head, tail)) => head :: extractTypes(tail)
@@ -987,7 +993,7 @@ private[json] object MacroHelpers {
             case _ =>
               Expr.summon[scala.deriving.Mirror.Of[t]] match {
                 case Some(mirror) =>
-                  '{ DeriveJsonDecoder.gen[t](using summonInline[JsonCodecConfiguration])(using $mirror) }
+                  '{ DeriveJsonDecoder.gen[t](using $config)(using $mirror) }
                     .asExprOf[JsonDecoder[?]]
                 case _ =>
                   report.errorAndAbort(s"Cannot find or derive JsonDecoder for ${Type.show[t]}")
@@ -999,9 +1005,11 @@ private[json] object MacroHelpers {
   }
 
   inline def summonEncoders[T <: Tuple](using config: JsonCodecConfiguration): List[JsonEncoder[?]] =
-    ${ summonEncodersImpl[T] }
+    ${ summonEncodersImpl[T]('config) }
 
-  private def summonEncodersImpl[T: Type](using Quotes): Expr[List[JsonEncoder[?]]] = {
+  private def summonEncodersImpl[T: Type](
+    config: Expr[JsonCodecConfiguration]
+  )(using Quotes): Expr[List[JsonEncoder[?]]] = {
     import quotes.reflect.*
     def extractTypes(tpe: TypeRepr): List[TypeRepr] = tpe.dealias match {
       case AppliedType(_, List(head, tail)) => head :: extractTypes(tail)
@@ -1016,7 +1024,7 @@ private[json] object MacroHelpers {
             case _ =>
               Expr.summon[scala.deriving.Mirror.Of[t]] match {
                 case Some(mirror) =>
-                  '{ DeriveJsonEncoder.gen[t](using summonInline[JsonCodecConfiguration])(using $mirror) }
+                  '{ DeriveJsonEncoder.gen[t](using $config)(using $mirror) }
                     .asExprOf[JsonEncoder[?]]
                 case _ =>
                   report.errorAndAbort(s"Cannot find or derive JsonEncoder for ${Type.show[t]}")
