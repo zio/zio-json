@@ -14,7 +14,7 @@ addSbtPlugin("pl.project13.scala" % "sbt-jcstress"                  % "0.2.0")
 addSbtPlugin("org.scoverage"      % "sbt-scoverage"                 % "2.4.4")
 resolvers += "Sonatype Snapshots" at "https://central.sonatype.com/repository/maven-snapshots/"
 addSbtPlugin("dev.zio"       % "zio-sbt-website" % "0.8.12+6-b8319c78-SNAPSHOT")
-addSbtPlugin("ch.epfl.scala" % "sbt-scalafix"    % "0.14.9")
+addSbtPlugin("ch.epfl.scala" % "sbt-scalafix"    % "0.14.10")
 
 resolvers += Resolver.sonatypeCentralSnapshots
 addSbtPlugin("dev.zio" % "zio-sbt-scaladoc" % "0.8.12+6-b8319c78-SNAPSHOT")
