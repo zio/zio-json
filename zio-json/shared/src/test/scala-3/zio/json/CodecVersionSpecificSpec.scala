@@ -82,6 +82,31 @@ object CodecVersionSpecificSpec extends ZIOSpecDefault {
             .fromJson[List[MyDomain]] ==
             Right(List(MyDomain("xxx"), MyDomain(777), MyDomain(true), MyDomain(false), MyDomain(null)))
         )
+      },
+      // config is passed explicitly, not as a given: a given in scope would hide the bug
+      test("gen(using config) applies config to derived sealed trait subtypes") {
+        sealed trait Shape
+        case class Circle(radiusInMeters: Double) extends Shape
+
+        val config = JsonCodecConfiguration(fieldNameMapping = SnakeCase)
+        val codec  = DeriveJsonCodec.gen[Shape](using config)
+        val json   = """{"Circle":{"radius_in_meters":1.5}}"""
+        assertTrue(
+          codec.encoder.encodeJson(Circle(1.5), None) == json,
+          codec.decoder.decodeJson(json) == Right(Circle(1.5))
+        )
+      },
+      test("gen(using config) applies config to derived case-class field types") {
+        case class Size(widthInMeters: Double)
+        case class Box(outerSize: Size)
+
+        val config = JsonCodecConfiguration(fieldNameMapping = SnakeCase)
+        val codec  = DeriveJsonCodec.gen[Box](using config)
+        val json   = """{"outer_size":{"width_in_meters":2.0}}"""
+        assertTrue(
+          codec.encoder.encodeJson(Box(Size(2.0)), None) == json,
+          codec.decoder.decodeJson(json) == Right(Box(Size(2.0)))
+        )
       }
     )
 }
