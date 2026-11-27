@@ -195,22 +195,13 @@ sealed abstract class Json { self =>
     transformOrDelete(c, delete = true)(_ => rightNull)
   }
 
-  override final def equals(that: Any): Boolean = {
-    def objEqual(left: Map[String, Json], right: Chunk[(String, Json)]): Boolean =
-      right.forall { case (key, r) =>
-        left.get(key) match {
-          case Some(l) if l == r => true
-          case _                 => false
-        }
-      }
-
+  override final def equals(that: Any): Boolean =
     that match {
       case that: Json =>
         (self, that) match {
           case (Obj(l), Obj(r)) =>
-            // order does not matter for JSON Objects
-            if (l.length == r.length) objEqual(l.toMap, r)
-            else false
+            // order does not matter for JSON Objects; compare maps so duplicate keys cannot mask missing keys
+            l.toMap == r.toMap
           case (Arr(l), Arr(r))   => l == r
           case (Bool(l), Bool(r)) => l == r
           case (Str(l), Str(r))   => l == r
@@ -221,7 +212,6 @@ sealed abstract class Json { self =>
 
       case _ => false
     }
-  }
 
   /**
    * Folds over this value and all of its descendants, visiting every parent before its children.
@@ -342,9 +332,7 @@ sealed abstract class Json { self =>
       case n: Num  => n.value.hashCode
       case b: Bool => b.value.hashCode
       case o: Obj  =>
-        var result = 0
-        o.fields.foreach(tuple => result = result ^ tuple.hashCode)
-        result
+        o.fields.toMap.hashCode
       case a: Arr =>
         var result = 0
         a.elements.foreach { json =>
