@@ -115,6 +115,9 @@ object JsonSpec extends ZIOSpecDefault {
           test("failure") {
             val missingElement = JsonCursor.field("entities").isObject.field("hashtags").isArray.element(2)
             assert(tweet.delete(missingElement))(isLeft)
+          },
+          test("negative element index") {
+            assert(Json.Arr(Json.Str("a"), Json.Str("b")).delete(JsonCursor.element(-1)))(isLeft)
           }
         )
       ),
@@ -623,6 +626,9 @@ object JsonSpec extends ZIOSpecDefault {
           test("failure") {
             val missingElement = JsonCursor.field("entities").isObject.field("hashtags").isArray.element(2)
             assert(tweet.transformAt(missingElement)(identity))(isLeft)
+          },
+          test("negative element index") {
+            assert(Json.Arr(Json.Num(1), Json.Num(2)).transformAt(JsonCursor.element(-1))(_ => Json.Null))(isLeft)
           }
         )
       )
